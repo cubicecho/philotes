@@ -129,6 +129,8 @@ export interface ContactInfoListProps {
   person: ContactInfo_ListFragment;
   onAdd: () => void;
   onDelete: () => void;
+  createOpen?: boolean;
+  onCreateOpenChange?: (open: boolean) => void;
 }
 
 // ---------------------------------------------------------------------------
@@ -310,8 +312,10 @@ function AddContactInfoForm({ personId, onAdded, onCancel }: AddContactInfoFormP
 // Main export
 // ---------------------------------------------------------------------------
 
-export function ContactInfoList({ person, onAdd, onDelete }: ContactInfoListProps) {
-  const [dialogOpen, setDialogOpen] = useState(false);
+export function ContactInfoList({ person, onAdd, onDelete, createOpen, onCreateOpenChange }: ContactInfoListProps) {
+  const [internalOpen, setInternalOpen] = useState(false);
+  const dialogOpen = createOpen ?? internalOpen;
+  const setDialogOpen = onCreateOpenChange ?? setInternalOpen;
   const contactInfos = person.contactInfos ?? [];
 
   return (
@@ -346,9 +350,6 @@ export function ContactInfoList({ person, onAdd, onDelete }: ContactInfoListProp
         </DialogContent>
       </Dialog>
 
-      <Button size="sm" variant="outline" onClick={() => setDialogOpen(true)} className="mt-1">
-        Add Contact Info
-      </Button>
     </div>
   );
 }

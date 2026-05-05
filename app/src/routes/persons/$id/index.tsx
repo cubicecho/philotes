@@ -515,6 +515,7 @@ function PersonDetailPage() {
   const [activityDialogOpen, setActivityDialogOpen] = useState(false);
   const [taskDialogOpen, setTaskDialogOpen] = useState(false);
   const [addressDialogOpen, setAddressDialogOpen] = useState(false);
+  const [contactInfoDialogOpen, setContactInfoDialogOpen] = useState(false);
   const [showAddLabel, setShowAddLabel] = useState(false);
   const [showAddRelationship, setShowAddRelationship] = useState(false);
   const [editPersonOpen, setEditPersonOpen] = useState(false);
@@ -844,13 +845,27 @@ function PersonDetailPage() {
             {/* Contact Info */}
             <Card>
               <CardContent className="p-4">
-                <div className="flex items-center justify-between mb-3">
-                  <h2 className="font-semibold text-base">Contact Info</h2>
-                  <BookUser className="h-4 w-4 text-muted-foreground" />
-                </div>
-                <div className="max-h-64 overflow-y-auto space-y-2">
-                  <ContactInfoList person={person} onAdd={() => refetch()} onDelete={() => refetch()} />
-                </div>
+                <ListLayout
+                  className="h-64"
+                  header={
+                    <div className="flex items-center justify-between">
+                      <h2 className="font-semibold text-base">Contact Info</h2>
+                      <Button size="sm" variant="outline" onClick={() => setContactInfoDialogOpen(true)}>
+                        <BookUser className="mr-1.5 h-4 w-4" />
+                        Add Contact
+                      </Button>
+                    </div>
+                  }
+                  body={
+                    <ContactInfoList
+                      person={person}
+                      onAdd={() => refetch()}
+                      onDelete={() => refetch()}
+                      createOpen={contactInfoDialogOpen}
+                      onCreateOpenChange={setContactInfoDialogOpen}
+                    />
+                  }
+                />
               </CardContent>
             </Card>
 
