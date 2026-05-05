@@ -87,10 +87,12 @@ function overridePersonsResolvers(schema: GraphQLSchema): void {
       .offset(args.offset as number | undefined ?? 0);
   };
 
-  // person(id) — single, must be in user's contacts
-  qf.person.resolve = async (_parent: unknown, args: { id: string }, ctx: Context) => {
+  // person(where) — single, must be in user's contacts
+  qf.person.resolve = async (_parent: unknown, args: { where?: { id?: { eq?: string } } }, ctx: Context) => {
     const userId = requireAuth(ctx);
     const db = ctx.db as AnyDB;
+    const id = args.where?.id?.eq;
+    if (!id) return null;
     const rows = await db
       .select(personSelect)
       .from(dbSchema.persons)
@@ -98,7 +100,7 @@ function overridePersonsResolvers(schema: GraphQLSchema): void {
         dbSchema.userPersons,
         and(eq(dbSchema.userPersons.personId, dbSchema.persons.id), eq(dbSchema.userPersons.userId, userId)),
       )
-      .where(eq(dbSchema.persons.id, args.id))
+      .where(eq(dbSchema.persons.id, id))
       .limit(1);
     return rows[0] ?? null;
   };

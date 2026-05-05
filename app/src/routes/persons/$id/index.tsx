@@ -60,7 +60,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 
 const GET_PERSON_DETAIL = graphql(`
   query GetPersonDetail($id: String!) {
-    persons(where: { id: { eq: $id } }) {
+    person(where: { id: { eq: $id } }) {
       id
       firstName
       lastName
@@ -535,7 +535,7 @@ function PersonDetailPage() {
   if (loading) return <Spinner />;
   if (error) return <p>Error loading person: {error.message}</p>;
 
-  const person = data?.persons?.[0];
+  const person = data?.person;
   if (!person) return <p className="text-muted-foreground">Person not found.</p>;
 
   const allPersonStubs = (allPersonsData?.persons ?? []).map((p) => ({
