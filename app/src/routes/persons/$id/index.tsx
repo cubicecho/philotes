@@ -771,10 +771,6 @@ function PersonDetailPage() {
             <NotebookPen className="mr-1.5 h-4 w-4" />
             Add Note
           </Button>
-          <Button size="sm" variant="outline" onClick={() => setDateDialogOpen(true)}>
-            <CalendarPlus className="mr-1.5 h-4 w-4" />
-            Add Date
-          </Button>
           <Button size="sm" variant="outline" onClick={() => setActivityDialogOpen(true)}>
             <Activity className="mr-1.5 h-4 w-4" />
             Add Activity
