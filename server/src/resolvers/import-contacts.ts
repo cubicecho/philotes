@@ -10,7 +10,7 @@ import { requireAuth } from './auth.ts';
 interface ParsedContact {
   firstName: string;
   lastName: string;
-  email: string;
+  email: string | null;
   emails: Array<{ label: string; value: string }>;
   phones: Array<{ label: string; value: string }>;
   websites: Array<{ label: string; value: string }>;
@@ -202,12 +202,6 @@ function parseGoogleContactsCsv(csvText: string): {
       return true;
     });
 
-    // Skip contacts with no email — persons.email is required and unique
-    if (emails.length === 0) {
-      skippedCount++;
-      continue;
-    }
-
     // Collect phones
     const phones: Array<{ label: string; value: string }> = [];
     for (let n = 1; ; n++) {
@@ -283,7 +277,7 @@ function parseGoogleContactsCsv(csvText: string): {
     contacts.push({
       firstName: resolvedFirstName,
       lastName: resolvedLastName,
-      email: emails[0].value,
+      email: emails[0]?.value ?? null,
       emails,
       phones,
       websites,
@@ -419,11 +413,13 @@ export function applyImportContactsExtension(schema: GraphQLSchema): GraphQLSche
           continue;
         }
 
-        // Duplicate email — fetch the existing person's ID and merge their data
+        // Duplicate email — fetch the existing person's ID and merge their data.
+        // This branch is only reachable when contact.email is non-null (null emails
+        // never trigger a unique constraint violation in Postgres).
         const [existing] = await db
           .select({ id: dbSchema.persons.id })
           .from(dbSchema.persons)
-          .where(eq(dbSchema.persons.email, contact.email));
+          .where(eq(dbSchema.persons.email, contact.email!));
 
         if (!existing) {
           errors.push(`Could not find existing person for email ${contact.email}`);

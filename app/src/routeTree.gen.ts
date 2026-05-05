@@ -9,7 +9,6 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as RegisterRouteImport } from './routes/register'
 import { Route as NetworkRouteImport } from './routes/network'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as IndexRouteImport } from './routes/index'
@@ -17,15 +16,11 @@ import { Route as TagsIndexRouteImport } from './routes/tags/index'
 import { Route as SettingsIndexRouteImport } from './routes/settings/index'
 import { Route as PersonsIndexRouteImport } from './routes/persons/index'
 import { Route as PersonsIdRouteImport } from './routes/persons/$id'
+import { Route as AuthVerifyRouteImport } from './routes/auth.verify'
 import { Route as PersonsIdIndexRouteImport } from './routes/persons/$id/index'
 import { Route as PersonsIdTimelineRouteImport } from './routes/persons/$id/timeline'
 import { Route as PersonsIdDatesDateIdRouteImport } from './routes/persons/$id/dates/$dateId'
 
-const RegisterRoute = RegisterRouteImport.update({
-  id: '/register',
-  path: '/register',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const NetworkRoute = NetworkRouteImport.update({
   id: '/network',
   path: '/network',
@@ -61,6 +56,11 @@ const PersonsIdRoute = PersonsIdRouteImport.update({
   path: '/persons/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthVerifyRoute = AuthVerifyRouteImport.update({
+  id: '/auth/verify',
+  path: '/auth/verify',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const PersonsIdIndexRoute = PersonsIdIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -81,7 +81,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/network': typeof NetworkRoute
-  '/register': typeof RegisterRoute
+  '/auth/verify': typeof AuthVerifyRoute
   '/persons/$id': typeof PersonsIdRouteWithChildren
   '/persons/': typeof PersonsIndexRoute
   '/settings/': typeof SettingsIndexRoute
@@ -94,7 +94,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/network': typeof NetworkRoute
-  '/register': typeof RegisterRoute
+  '/auth/verify': typeof AuthVerifyRoute
   '/persons': typeof PersonsIndexRoute
   '/settings': typeof SettingsIndexRoute
   '/tags': typeof TagsIndexRoute
@@ -107,7 +107,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/network': typeof NetworkRoute
-  '/register': typeof RegisterRoute
+  '/auth/verify': typeof AuthVerifyRoute
   '/persons/$id': typeof PersonsIdRouteWithChildren
   '/persons/': typeof PersonsIndexRoute
   '/settings/': typeof SettingsIndexRoute
@@ -122,7 +122,7 @@ export interface FileRouteTypes {
     | '/'
     | '/login'
     | '/network'
-    | '/register'
+    | '/auth/verify'
     | '/persons/$id'
     | '/persons/'
     | '/settings/'
@@ -135,7 +135,7 @@ export interface FileRouteTypes {
     | '/'
     | '/login'
     | '/network'
-    | '/register'
+    | '/auth/verify'
     | '/persons'
     | '/settings'
     | '/tags'
@@ -147,7 +147,7 @@ export interface FileRouteTypes {
     | '/'
     | '/login'
     | '/network'
-    | '/register'
+    | '/auth/verify'
     | '/persons/$id'
     | '/persons/'
     | '/settings/'
@@ -161,7 +161,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   LoginRoute: typeof LoginRoute
   NetworkRoute: typeof NetworkRoute
-  RegisterRoute: typeof RegisterRoute
+  AuthVerifyRoute: typeof AuthVerifyRoute
   PersonsIdRoute: typeof PersonsIdRouteWithChildren
   PersonsIndexRoute: typeof PersonsIndexRoute
   SettingsIndexRoute: typeof SettingsIndexRoute
@@ -170,13 +170,6 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/register': {
-      id: '/register'
-      path: '/register'
-      fullPath: '/register'
-      preLoaderRoute: typeof RegisterRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/network': {
       id: '/network'
       path: '/network'
@@ -226,6 +219,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PersonsIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/auth/verify': {
+      id: '/auth/verify'
+      path: '/auth/verify'
+      fullPath: '/auth/verify'
+      preLoaderRoute: typeof AuthVerifyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/persons/$id/': {
       id: '/persons/$id/'
       path: '/'
@@ -270,7 +270,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   LoginRoute: LoginRoute,
   NetworkRoute: NetworkRoute,
-  RegisterRoute: RegisterRoute,
+  AuthVerifyRoute: AuthVerifyRoute,
   PersonsIdRoute: PersonsIdRouteWithChildren,
   PersonsIndexRoute: PersonsIndexRoute,
   SettingsIndexRoute: SettingsIndexRoute,

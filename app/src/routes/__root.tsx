@@ -2,7 +2,7 @@ import { createRootRoute, Outlet, redirect } from '@tanstack/react-router';
 import { Header } from '@/components/layouts/header';
 import { isAuthenticated } from '@/lib/auth';
 
-const PUBLIC_PATHS = ['/login', '/register'];
+const PUBLIC_PATHS = ['/login', '/auth/verify'];
 
 export const Route = createRootRoute({
   beforeLoad: ({ location }) => {

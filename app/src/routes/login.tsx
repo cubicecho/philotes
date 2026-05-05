@@ -1,17 +1,16 @@
 import { useMutation } from '@apollo/client';
-import { createFileRoute, useNavigate } from '@tanstack/react-router';
+import { createFileRoute } from '@tanstack/react-router';
 import { useState } from 'react';
 import { graphql } from '@/__generated__/gql.js';
 import { Button } from '@/components/ui/button.js';
 import { Input } from '@/components/ui/input.js';
 import { Label } from '@/components/ui/label.js';
-import { setToken } from '@/lib/auth.js';
 
-const LOGIN = graphql(`
-  mutation Login($email: String!, $password: String!) {
-    login(email: $email, password: $password) {
-      token
-      userId
+const REQUEST_MAGIC_LINK = graphql(`
+  mutation RequestMagicLink($email: String!) {
+    requestMagicLink(email: $email) {
+      ok
+      magicLink
     }
   }
 `);
@@ -21,33 +20,72 @@ export const Route = createFileRoute('/login')({
 });
 
 function LoginPage() {
-  const navigate = useNavigate();
   const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState<string | null>(null);
+  const [submitted, setSubmitted] = useState(false);
+  const [magicLink, setMagicLink] = useState<string | null>(null);
 
-  const [login, { loading }] = useMutation(LOGIN);
+  const [requestLink, { loading, error }] = useMutation(REQUEST_MAGIC_LINK, {
+    onCompleted(data) {
+      setMagicLink(data.requestMagicLink.magicLink ?? null);
+      setSubmitted(true);
+    },
+  });
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setError(null);
-    try {
-      const { data } = await login({ variables: { email, password } });
-      if (data?.login.token) {
-        setToken(data.login.token);
-        navigate({ to: '/' });
-      }
-    } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Login failed');
-    }
-  };
+    requestLink({ variables: { email } });
+  }
+
+  if (submitted && magicLink) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="text-center max-w-sm p-8">
+          <h1 className="text-2xl font-semibold mb-2">Your magic link</h1>
+          <p className="text-sm text-muted-foreground mb-4">
+            Click the link below to sign in as <strong>{email}</strong>.
+          </p>
+          <a
+            href={magicLink}
+            className="inline-block rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+          >
+            Sign in →
+          </a>
+          <p className="mt-6 text-xs text-muted-foreground">
+            This link is shown here because the server is running in development mode.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  if (submitted && !magicLink) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="text-center max-w-sm p-8">
+          <h1 className="text-2xl font-semibold mb-2">Check your email</h1>
+          <p className="text-sm text-muted-foreground mb-4">
+            We sent a magic link to <strong>{email}</strong>. Click it to sign in.
+          </p>
+          <button
+            type="button"
+            onClick={() => { setSubmitted(false); setEmail(''); }}
+            className="text-sm underline text-muted-foreground"
+          >
+            Use a different email
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background">
       <div className="w-full max-w-sm space-y-6 p-6 border rounded-lg shadow-sm bg-card">
         <div className="space-y-1">
           <h1 className="text-2xl font-semibold">Sign in</h1>
-          <p className="text-sm text-muted-foreground">Enter your email and password to continue.</p>
+          <p className="text-sm text-muted-foreground">
+            Enter your email and we'll send you a magic link.
+          </p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -62,31 +100,13 @@ function LoginPage() {
               onChange={(e) => setEmail(e.target.value)}
             />
           </div>
-          <div className="space-y-1">
-            <Label htmlFor="password">Password</Label>
-            <Input
-              id="password"
-              type="password"
-              autoComplete="current-password"
-              required
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-            />
-          </div>
 
-          {error && <p className="text-sm text-destructive">{error}</p>}
+          {error && <p className="text-sm text-destructive">{error.message}</p>}
 
           <Button type="submit" className="w-full" disabled={loading}>
-            {loading ? 'Signing in…' : 'Sign in'}
+            {loading ? 'Sending…' : 'Send magic link'}
           </Button>
         </form>
-
-        <p className="text-center text-sm text-muted-foreground">
-          No account?{' '}
-          <a href="/register" className="underline underline-offset-4 hover:text-primary">
-            Register
-          </a>
-        </p>
       </div>
     </div>
   );

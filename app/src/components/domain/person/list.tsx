@@ -63,7 +63,7 @@ export interface FilterablePersonRow {
   id: string;
   firstName: string;
   lastName: string;
-  email: string;
+  email: string | null;
   avatarPath?: string | null;
   labels: Array<{ id: string; label: string; color: string }>;
   lastContactedAt?: Date | null;

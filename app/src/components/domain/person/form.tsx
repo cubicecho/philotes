@@ -43,7 +43,7 @@ export interface PersonFormValue {
 export interface PersonFormInitialValues {
   firstName: string;
   lastName: string;
-  email: string;
+  email: string | null;
   labelIds?: string[];
   contactFrequency?: string | null;
   howWeMet?: string | null;

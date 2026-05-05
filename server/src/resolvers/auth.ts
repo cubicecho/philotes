@@ -1,5 +1,4 @@
 import { schema as dbSchema } from '@philotes/db';
-import bcrypt from 'bcryptjs';
 import { eq } from 'drizzle-orm';
 import { GraphQLError } from 'graphql';
 import { extendSchema, type GraphQLObjectType, type GraphQLSchema, parse } from 'graphql';
@@ -7,27 +6,46 @@ import jwt from 'jsonwebtoken';
 import type { Context } from '../routes/graphql.ts';
 
 const JWT_SECRET = process.env.JWT_SECRET ?? 'dev-secret-change-in-production';
-const JWT_EXPIRES_IN = '30d';
+const APP_URL = process.env.APP_URL ?? 'http://localhost:3000';
+const IS_DEV = process.env.NODE_ENV !== 'production';
 
 const AUTH_SDL = parse(`
+  type RequestMagicLinkResult {
+    ok: Boolean!
+    magicLink: String
+  }
+
   type AuthPayload {
     token: String!
     userId: ID!
   }
 
   extend type Mutation {
-    register(email: String!, name: String!, password: String!): AuthPayload!
-    login(email: String!, password: String!): AuthPayload!
+    requestMagicLink(email: String!): RequestMagicLinkResult!
+    verifyMagicLink(token: String!): AuthPayload!
   }
 `);
 
 export function signToken(userId: string): string {
-  return jwt.sign({ userId }, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
+  return jwt.sign({ userId }, JWT_SECRET, { expiresIn: '30d' });
+}
+
+function signMagicToken(email: string): string {
+  return jwt.sign({ email }, JWT_SECRET, { expiresIn: '15m' });
 }
 
 export function verifyToken(token: string): { userId: string } | null {
   try {
     return jwt.verify(token, JWT_SECRET) as { userId: string };
+  } catch {
+    return null;
+  }
+}
+
+function verifyMagicToken(token: string): { email: string } | null {
+  try {
+    const payload = jwt.verify(token, JWT_SECRET) as { email?: string };
+    return payload.email ? { email: payload.email } : null;
   } catch {
     return null;
   }
@@ -42,71 +60,55 @@ export function requireAuth(ctx: Context): string {
   return ctx.userId;
 }
 
-interface AuthArgs {
-  email: string;
-  name?: string;
-  password: string;
-}
-
 export function applyAuthExtension(schema: GraphQLSchema): GraphQLSchema {
   const extendedSchema = extendSchema(schema, AUTH_SDL);
   const mutationType = extendedSchema.getType('Mutation') as GraphQLObjectType;
   const fields = mutationType.getFields();
 
-  fields.register.resolve = async (_parent: unknown, args: AuthArgs, context: Context) => {
+  fields.requestMagicLink.resolve = async (_parent: unknown, args: { email: string }) => {
+    const email = args.email.toLowerCase().trim();
+    const token = signMagicToken(email);
+    const magicLink = `${APP_URL}/auth/verify?token=${token}`;
+
+    if (IS_DEV) {
+      console.log(`\n[auth] Magic link for ${email}:\n${magicLink}\n`);
+      return { ok: true, magicLink };
+    }
+
+    console.log(`[auth] Magic link for ${email}: ${magicLink}`);
+    return { ok: true, magicLink: null };
+  };
+
+  fields.verifyMagicLink.resolve = async (_parent: unknown, args: { token: string }, context: Context) => {
+    const payload = verifyMagicToken(args.token);
+    if (!payload) {
+      throw new GraphQLError('Invalid or expired magic link', {
+        extensions: { code: 'UNAUTHENTICATED' },
+      });
+    }
+
     // biome-ignore lint/suspicious/noExplicitAny: drizzle-orm 1.0 column type compat
     const db = context.db as any;
+    const email = payload.email;
 
     const existing = await db
       .select({ id: dbSchema.users.id })
       .from(dbSchema.users)
-      .where(eq(dbSchema.users.email, args.email.toLowerCase()));
+      .where(eq(dbSchema.users.email, email));
 
+    let userId: string;
     if (existing.length > 0) {
-      throw new GraphQLError('Email already registered', {
-        extensions: { code: 'BAD_USER_INPUT' },
-      });
+      userId = existing[0].id;
+    } else {
+      const [created] = await db
+        .insert(dbSchema.users)
+        .values({ email })
+        .returning({ id: dbSchema.users.id });
+      if (!created) throw new GraphQLError('Failed to create user');
+      userId = created.id;
     }
 
-    const passwordHash = await bcrypt.hash(args.password, 12);
-
-    const [user] = await db
-      .insert(dbSchema.users)
-      .values({
-        email: args.email.toLowerCase(),
-        name: args.name ?? args.email,
-        passwordHash,
-      })
-      .returning({ id: dbSchema.users.id });
-
-    if (!user) throw new GraphQLError('Registration failed');
-
-    return { token: signToken(user.id), userId: user.id };
-  };
-
-  fields.login.resolve = async (_parent: unknown, args: AuthArgs, context: Context) => {
-    // biome-ignore lint/suspicious/noExplicitAny: drizzle-orm 1.0 column type compat
-    const db = context.db as any;
-
-    const [user] = await db
-      .select({ id: dbSchema.users.id, passwordHash: dbSchema.users.passwordHash })
-      .from(dbSchema.users)
-      .where(eq(dbSchema.users.email, args.email.toLowerCase()));
-
-    if (!user) {
-      throw new GraphQLError('Invalid credentials', {
-        extensions: { code: 'UNAUTHENTICATED' },
-      });
-    }
-
-    const valid = await bcrypt.compare(args.password, user.passwordHash);
-    if (!valid) {
-      throw new GraphQLError('Invalid credentials', {
-        extensions: { code: 'UNAUTHENTICATED' },
-      });
-    }
-
-    return { token: signToken(user.id), userId: user.id };
+    return { token: signToken(userId), userId };
   };
 
   return extendedSchema;

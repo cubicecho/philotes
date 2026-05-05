@@ -75,7 +75,7 @@ const GET_ALL_EVENTS_FOR_EXPORT = gql`
         lastName
       }
     }
-    activities {
+    activitys {
       id
       title
       description
@@ -186,7 +186,7 @@ interface Activity {
 interface AllEventsQueryResult {
   interactions: Interaction[];
   importantDates: ImportantDate[];
-  activities: Activity[];
+  activitys: Activity[];
 }
 
 // ── CSV helpers ────────────────────────────────────────────────────────────
@@ -396,7 +396,7 @@ function buildIcsContent(data: AllEventsQueryResult): string {
   const events = [
     ...data.interactions.map((i) => buildInteractionEvent(i, now)),
     ...data.importantDates.map((d) => buildImportantDateEvent(d, now)),
-    ...data.activities.map((a) => buildActivityEvent(a, now)),
+    ...data.activitys.map((a) => buildActivityEvent(a, now)),
   ].join('\r\n');
 
   return [
@@ -628,7 +628,7 @@ function SettingsPage() {
   const { data, loading, error } = useQuery<AllEventsQueryResult>(GET_ALL_EVENTS_FOR_EXPORT);
 
   const totalCount =
-    (data?.interactions?.length ?? 0) + (data?.importantDates?.length ?? 0) + (data?.activities?.length ?? 0);
+    (data?.interactions?.length ?? 0) + (data?.importantDates?.length ?? 0) + (data?.activitys?.length ?? 0);
 
   function handleExport() {
     if (!data) return;
@@ -657,7 +657,7 @@ function SettingsPage() {
           {!loading && !error && totalCount > 0 && (
             <p className="text-sm text-muted-foreground mt-3">
               {data?.interactions?.length ?? 0} interactions · {data?.importantDates?.length ?? 0} important dates ·{' '}
-              {data?.activities?.length ?? 0} activities
+              {data?.activitys?.length ?? 0} activities
             </p>
           )}
           {!loading && !error && totalCount === 0 && (

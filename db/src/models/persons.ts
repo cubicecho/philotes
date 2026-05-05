@@ -6,7 +6,7 @@ export const persons = pgTable(
     id: uuid('id').primaryKey().defaultRandom(),
     firstName: text('first_name').notNull(),
     lastName: text('last_name').notNull(),
-    email: text('email').notNull().unique(),
+    email: text('email').unique(),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
   },
