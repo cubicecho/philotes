@@ -5,9 +5,9 @@
   "type": "module",
   "main": "./src/index.ts",
   "scripts": {
-    "dev": "node --experimental-strip-types --env-file=../.env --watch src/index.ts",
+    "dev": "node --experimental-strip-types --preserve-symlinks --env-file=../.env --watch src/index.ts",
     "build": "echo 'no server build needed'",
-    "start": "node --experimental-strip-types src/index.ts",
+    "start": "node --experimental-strip-types --preserve-symlinks src/index.ts",
     "clean": "rm -rf src/__generated__",
     "codegen": "node --experimental-strip-types --import=./src/preload-env.ts src/write_schema.ts && graphql-codegen-esm"
   },
@@ -17,7 +17,6 @@
     "@philotes/db": "*",
     "bcryptjs": "^3.0.3",
     "cors": "^2.8.6",
-    "drizzle-graphql": "github:vantreeseba/drizzle-graphql#build_in_repo",
     "express": "^5.2.1",
     "graphql": "^16.10.0",
     "graphql-parse-resolve-info": "^4.14.1",

@@ -1,5 +1,5 @@
 import { db as dbInstance, schema as dbSchema } from '@philotes/db';
-import { buildSchema } from 'drizzle-graphql';
+import { buildSchema } from '@vantreeseba/drizzle-graphql';
 
 // drizzle-orm 1.0 beta no longer stores fullSchema on the instance; inject it
 // so the drizzle-graphql fork (which reads db._.fullSchema) still works.

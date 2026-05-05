@@ -7,8 +7,7 @@
   "workspaces": [
     "app",
     "server",
-    "db",
-    "../drizzle-graphql"
+    "db"
   ],
   "scripts": {
     "clean": "rm -rf node_modules && rm -rf package-lock.json && npm run clean -w db && npm run clean -w server && npm run clean -w app",
@@ -39,6 +38,9 @@
     "codegen": "npm run codegen:server && npm run codegen:app",
     "codegen:app": "npm run codegen -w app",
     "codegen:server": "npm run codegen -w server"
+  },
+  "overrides": {
+    "graphql": "16.13.2"
   },
   "devDependencies": {
     "@0no-co/graphqlsp": "^1.15.2",
