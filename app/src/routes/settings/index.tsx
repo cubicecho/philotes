@@ -1,9 +1,10 @@
 import { gql, useMutation, useQuery } from '@apollo/client';
 import { createFileRoute } from '@tanstack/react-router';
-import { Download, Upload } from 'lucide-react';
+import { Download, Moon, Sun, Upload } from 'lucide-react';
 import { useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { useDarkMode } from '@/hooks/use-dark-mode';
 
 // ── Queries ────────────────────────────────────────────────────────────────
 
@@ -624,14 +625,14 @@ function GoogleCsvImportCard() {
 
 // ── Component ──────────────────────────────────────────────────────────────
 
-type SettingsTab = 'import';
+type SettingsTab = 'import-export' | 'app';
 
 const TABS: { id: SettingsTab; label: string }[] = [
-  { id: 'import', label: 'Import' },
+  { id: 'import-export', label: 'Import / Export' },
+  { id: 'app', label: 'App Settings' },
 ];
 
-function SettingsPage() {
-  const [activeTab, setActiveTab] = useState<SettingsTab>('import');
+function ImportExportTab() {
   const { data, loading, error } = useQuery<AllEventsQueryResult>(GET_ALL_EVENTS_FOR_EXPORT);
 
   const totalCount =
@@ -644,10 +645,7 @@ function SettingsPage() {
   }
 
   return (
-    <div className="h-full overflow-y-auto min-h-0 pr-2">
-    <div className="px-6 py-8 max-w-2xl mx-auto space-y-6">
-      <h1 className="text-2xl font-semibold">Settings</h1>
-
+    <div className="space-y-6">
       <Card>
         <CardHeader>
           <CardTitle>Export Calendar Events</CardTitle>
@@ -676,6 +674,46 @@ function SettingsPage() {
 
       <ExportPeopleCsvCard />
 
+      <GoogleCsvImportCard />
+    </div>
+  );
+}
+
+function AppSettingsTab() {
+  const { dark, toggle } = useDarkMode();
+
+  return (
+    <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <CardTitle>Appearance</CardTitle>
+          <CardDescription>Customize how Philotes looks on your device.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium">Dark mode</p>
+              <p className="text-xs text-muted-foreground mt-0.5">Switch between light and dark theme.</p>
+            </div>
+            <Button variant="outline" size="sm" onClick={toggle}>
+              {dark ? <Sun className="mr-1.5 h-4 w-4" /> : <Moon className="mr-1.5 h-4 w-4" />}
+              {dark ? 'Light mode' : 'Dark mode'}
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+function SettingsPage() {
+  const [activeTab, setActiveTab] = useState<SettingsTab>('import-export');
+
+  return (
+    <div className="h-full overflow-y-auto min-h-0 pr-2">
+    <div className="px-6 py-8 max-w-2xl mx-auto space-y-6">
+      <h1 className="text-2xl font-semibold">Settings</h1>
+
       <div>
         <div className="flex border-b border-border">
           {TABS.map((tab) => (
@@ -694,7 +732,8 @@ function SettingsPage() {
           ))}
         </div>
         <div className="pt-6">
-          {activeTab === 'import' && <GoogleCsvImportCard />}
+          {activeTab === 'import-export' && <ImportExportTab />}
+          {activeTab === 'app' && <AppSettingsTab />}
         </div>
       </div>
     </div>
