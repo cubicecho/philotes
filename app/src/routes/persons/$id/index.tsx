@@ -6,7 +6,9 @@ import {
   BookUser,
   CalendarPlus,
   Camera,
+  CheckSquare,
   Clock,
+  MapPin,
   MessageSquare,
   NotebookPen,
   Pencil,
@@ -511,6 +513,8 @@ function PersonDetailPage() {
   const [noteDialogOpen, setNoteDialogOpen] = useState(false);
   const [interactionDialogOpen, setInteractionDialogOpen] = useState(false);
   const [activityDialogOpen, setActivityDialogOpen] = useState(false);
+  const [taskDialogOpen, setTaskDialogOpen] = useState(false);
+  const [addressDialogOpen, setAddressDialogOpen] = useState(false);
   const [showAddLabel, setShowAddLabel] = useState(false);
   const [showAddRelationship, setShowAddRelationship] = useState(false);
   const [editPersonOpen, setEditPersonOpen] = useState(false);
@@ -855,8 +859,24 @@ function PersonDetailPage() {
               <CardContent className="p-4">
                 <ListLayout
                   className="h-64"
-                  header={<h2 className="font-semibold text-base">Addresses</h2>}
-                  body={<AddressList fragmentRef={person} onAdd={() => refetch()} onDelete={() => refetch()} />}
+                  header={
+                    <div className="flex items-center justify-between">
+                      <h2 className="font-semibold text-base">Addresses</h2>
+                      <Button size="sm" variant="outline" onClick={() => setAddressDialogOpen(true)}>
+                        <MapPin className="mr-1.5 h-4 w-4" />
+                        Add Address
+                      </Button>
+                    </div>
+                  }
+                  body={
+                    <AddressList
+                      fragmentRef={person}
+                      onAdd={() => refetch()}
+                      onDelete={() => refetch()}
+                      createOpen={addressDialogOpen}
+                      onCreateOpenChange={setAddressDialogOpen}
+                    />
+                  }
                 />
               </CardContent>
             </Card>
@@ -1064,7 +1084,15 @@ function PersonDetailPage() {
               <CardContent className="p-4">
                 <ListLayout
                   className="h-64"
-                  header={<h2 className="font-semibold text-base">Tasks</h2>}
+                  header={
+                    <div className="flex items-center justify-between">
+                      <h2 className="font-semibold text-base">Tasks</h2>
+                      <Button size="sm" variant="outline" onClick={() => setTaskDialogOpen(true)}>
+                        <CheckSquare className="mr-1.5 h-4 w-4" />
+                        Add Task
+                      </Button>
+                    </div>
+                  }
                   body={
                     <TaskList
                       personId={person.id}
@@ -1079,6 +1107,8 @@ function PersonDetailPage() {
                       onAdd={() => refetch()}
                       onDelete={() => refetch()}
                       onUpdate={() => refetch()}
+                      createOpen={taskDialogOpen}
+                      onCreateOpenChange={setTaskDialogOpen}
                     />
                   }
                 />

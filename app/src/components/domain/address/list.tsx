@@ -66,6 +66,8 @@ export interface AddressListProps {
   fragmentRef: AddressListFragment;
   onAdd: () => void;
   onDelete: () => void;
+  createOpen?: boolean;
+  onCreateOpenChange?: (open: boolean) => void;
 }
 
 interface AddressData {
@@ -394,8 +396,10 @@ function AddAddressForm({ personId, onAdded, onCancel }: AddAddressFormProps) {
 // Main export
 // ---------------------------------------------------------------------------
 
-export function AddressList({ fragmentRef, onAdd, onDelete }: AddressListProps) {
-  const [dialogOpen, setDialogOpen] = useState(false);
+export function AddressList({ fragmentRef, onAdd, onDelete, createOpen, onCreateOpenChange }: AddressListProps) {
+  const [internalOpen, setInternalOpen] = useState(false);
+  const dialogOpen = createOpen ?? internalOpen;
+  const setDialogOpen = onCreateOpenChange ?? setInternalOpen;
   const person = fragmentRef;
   const addresses = (person.addresses ?? []) as AddressData[];
 
@@ -412,10 +416,6 @@ export function AddressList({ fragmentRef, onAdd, onDelete }: AddressListProps) 
         {addresses.map((address) => (
           <AddressRow key={address.id} address={address} onDelete={onDelete} />
         ))}
-
-        <Button size="sm" variant="outline" onClick={() => setDialogOpen(true)}>
-          Add Address
-        </Button>
       </div>
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>

@@ -95,6 +95,8 @@ export interface TaskListProps {
   onAdd: () => void;
   onDelete: () => void;
   onUpdate: () => void;
+  createOpen?: boolean;
+  onCreateOpenChange?: (open: boolean) => void;
 }
 
 // ---------------------------------------------------------------------------
@@ -244,21 +246,16 @@ function AddTaskForm({ personId, onAdded, onCancel }: AddTaskFormProps) {
 // Main export
 // ---------------------------------------------------------------------------
 
-export function TaskList({ personId, tasks, onAdd, onDelete, onUpdate }: TaskListProps) {
-  const [addDialogOpen, setAddDialogOpen] = useState(false);
+export function TaskList({ personId, tasks, onAdd, onDelete, onUpdate, createOpen, onCreateOpenChange }: TaskListProps) {
+  const [internalOpen, setInternalOpen] = useState(false);
+  const addDialogOpen = createOpen ?? internalOpen;
+  const setAddDialogOpen = onCreateOpenChange ?? setInternalOpen;
 
   const openTasks = tasks.filter((t) => t.completedAt == null);
   const doneTasks = tasks.filter((t) => t.completedAt != null);
 
   return (
     <div className="space-y-4">
-      {/* Add Task button */}
-      <div className="flex justify-end">
-        <Button size="sm" variant="outline" onClick={() => setAddDialogOpen(true)}>
-          Add Task
-        </Button>
-      </div>
-
       {/* Open tasks */}
       {openTasks.length === 0 && doneTasks.length === 0 && (
         <p className="text-muted-foreground text-sm">No tasks yet.</p>
