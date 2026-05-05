@@ -7,6 +7,7 @@ export * from './labels.js';
 export * from './notes.js';
 export * from './person-labels.js';
 export * from './person-relationships.js';
+export * from './relationship-types.js';
 export * from './persons.js';
 export * from './tasks.js';
 export * from './user-persons.js';

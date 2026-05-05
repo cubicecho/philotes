@@ -1,5 +1,5 @@
 import { schema as dbSchema } from '@philotes/db';
-import { and, eq } from 'drizzle-orm';
+import { type Column, type SQL, and, asc, desc, eq, gt, gte, ilike, inArray, isNotNull, isNull, like, lt, lte, ne, notInArray, or } from 'drizzle-orm';
 import { GraphQLError, extendSchema, type GraphQLObjectType, type GraphQLSchema, parse } from 'graphql';
 import type { Context } from '../routes/graphql.ts';
 import { requireAuth } from './auth.ts';
@@ -52,6 +52,72 @@ function notFound(entity: string): never {
 // The drizzle-graphql generated resolver functions are discarded; we run our
 // own queries so we control the WHERE clause completely.
 
+// ── GraphQL → Drizzle filter/sort translators ────────────────────────────────
+
+type FieldFilter = Record<string, unknown>;
+type PersonsWhere = { OR?: PersonsWhere[]; AND?: PersonsWhere[] } & Record<string, FieldFilter>;
+type PersonsOrderBy = Record<string, { direction: 'asc' | 'desc'; priority: number }>;
+
+const PERSON_COLUMNS: Record<string, Column> = {
+  id: dbSchema.persons.id as unknown as Column,
+  firstName: dbSchema.persons.firstName as unknown as Column,
+  lastName: dbSchema.persons.lastName as unknown as Column,
+  email: dbSchema.persons.email as unknown as Column,
+  createdAt: dbSchema.persons.createdAt as unknown as Column,
+  updatedAt: dbSchema.persons.updatedAt as unknown as Column,
+};
+
+function buildFieldCondition(col: Column, filter: FieldFilter): SQL | undefined {
+  const c = col as unknown as SQL;
+  const conditions: SQL[] = [];
+  if (filter.eq !== undefined) conditions.push(eq(c, filter.eq));
+  if (filter.ne !== undefined) conditions.push(ne(c, filter.ne));
+  if (filter.ilike !== undefined) conditions.push(ilike(c, filter.ilike as string));
+  if (filter.like !== undefined) conditions.push(like(c, filter.like as string));
+  if (filter.gt !== undefined) conditions.push(gt(c, filter.gt));
+  if (filter.gte !== undefined) conditions.push(gte(c, filter.gte));
+  if (filter.lt !== undefined) conditions.push(lt(c, filter.lt));
+  if (filter.lte !== undefined) conditions.push(lte(c, filter.lte));
+  if (filter.isNull === true) conditions.push(isNull(c));
+  if (filter.isNotNull === true) conditions.push(isNotNull(c));
+  if (Array.isArray(filter.inArray)) conditions.push(inArray(c, filter.inArray));
+  if (Array.isArray(filter.notInArray)) conditions.push(notInArray(c, filter.notInArray));
+  return conditions.length > 0 ? and(...conditions) : undefined;
+}
+
+function buildPersonsWhere(where: PersonsWhere): SQL | undefined {
+  const parts: SQL[] = [];
+
+  if (where.OR) {
+    const orParts = where.OR.map(buildPersonsWhere).filter(Boolean) as SQL[];
+    if (orParts.length > 0) parts.push(or(...orParts) as SQL);
+  }
+  if (where.AND) {
+    const andParts = where.AND.map(buildPersonsWhere).filter(Boolean) as SQL[];
+    if (andParts.length > 0) parts.push(and(...andParts) as SQL);
+  }
+
+  for (const [key, filter] of Object.entries(where)) {
+    if (key === 'OR' || key === 'AND') continue;
+    const col = PERSON_COLUMNS[key];
+    if (!col || !filter || typeof filter !== 'object') continue;
+    const cond = buildFieldCondition(col, filter as FieldFilter);
+    if (cond) parts.push(cond);
+  }
+
+  return parts.length > 0 ? and(...parts) : undefined;
+}
+
+function buildPersonsOrderBy(orderBy: PersonsOrderBy): SQL[] {
+  return Object.entries(orderBy)
+    .filter(([key]) => PERSON_COLUMNS[key])
+    .sort(([, a], [, b]) => (a.priority ?? 0) - (b.priority ?? 0))
+    .map(([key, { direction }]) => {
+      const col = PERSON_COLUMNS[key] as unknown as Column;
+      return direction === 'desc' ? desc(col) : asc(col);
+    });
+}
+
 function overridePersonsResolvers(schema: GraphQLSchema): void {
   const queryType = schema.getType('Query') as GraphQLObjectType;
   const mutationType = schema.getType('Mutation') as GraphQLObjectType;
@@ -76,13 +142,20 @@ function overridePersonsResolvers(schema: GraphQLSchema): void {
   qf.persons.resolve = async (_parent: unknown, args: Record<string, unknown>, ctx: Context) => {
     const userId = requireAuth(ctx);
     const db = ctx.db as AnyDB;
+
+    const userJoin = and(
+      eq(dbSchema.userPersons.personId, dbSchema.persons.id),
+      eq(dbSchema.userPersons.userId, userId),
+    );
+    const whereFilter = args.where ? buildPersonsWhere(args.where as PersonsWhere) : undefined;
+    const orderByClauses = args.orderBy ? buildPersonsOrderBy(args.orderBy as PersonsOrderBy) : [];
+
     return db
       .select(personSelect)
       .from(dbSchema.persons)
-      .innerJoin(
-        dbSchema.userPersons,
-        and(eq(dbSchema.userPersons.personId, dbSchema.persons.id), eq(dbSchema.userPersons.userId, userId)),
-      )
+      .innerJoin(dbSchema.userPersons, userJoin)
+      .where(whereFilter ? and(whereFilter) : undefined)
+      .orderBy(...(orderByClauses.length > 0 ? orderByClauses : [asc(dbSchema.persons.lastName), asc(dbSchema.persons.firstName)]))
       .limit(args.limit as number | undefined ?? 1000)
       .offset(args.offset as number | undefined ?? 0);
   };
@@ -522,6 +595,15 @@ export function applyUserScopeExtensions(schema: GraphQLSchema): GraphQLSchema {
     'createContactInfo',
     'updateContactInfos',
     'deleteContactInfos',
+  );
+  overrideUserOwnedTable(
+    extendedSchema,
+    dbSchema.relationshipTypes,
+    'relationshipType',
+    'relationshipTypes',
+    'createRelationshipType',
+    'updateRelationshipTypes',
+    'deleteRelationshipTypes',
   );
 
   // Field resolvers for the Person type.
