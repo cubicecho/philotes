@@ -18,7 +18,7 @@ export function Header() {
       <Link to="/" className="font-semibold text-lg">
         Philotes
       </Link>
-      <nav className="flex gap-4 text-sm text-muted-foreground">
+      <nav className="ml-auto flex gap-4 text-sm text-muted-foreground">
         <Link
           to="/"
           className="hover:text-foreground transition-colors"
@@ -42,7 +42,7 @@ export function Header() {
           Labels
         </Link>
       </nav>
-      <div className="ml-auto flex items-center gap-1">
+      <div className="flex items-center gap-1">
         <Button variant="ghost" size="icon" aria-label="Toggle dark mode" onClick={toggle}>
           {dark ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
         </Button>
