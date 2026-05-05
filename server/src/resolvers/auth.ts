@@ -30,7 +30,7 @@ export function signToken(userId: string): string {
   return jwt.sign({ userId }, JWT_SECRET, { expiresIn: '30d' });
 }
 
-function signMagicToken(email: string): string {
+export function signMagicToken(email: string): string {
   return jwt.sign({ email }, JWT_SECRET, { expiresIn: '15m' });
 }
 
@@ -42,7 +42,7 @@ export function verifyToken(token: string): { userId: string } | null {
   }
 }
 
-function verifyMagicToken(token: string): { email: string } | null {
+export function verifyMagicToken(token: string): { email: string } | null {
   try {
     const payload = jwt.verify(token, JWT_SECRET) as { email?: string };
     return payload.email ? { email: payload.email } : null;

@@ -1,6 +1,7 @@
 import { useQuery } from '@apollo/client';
 import { createFileRoute } from '@tanstack/react-router';
 import { graphql } from '@/__generated__/gql.js';
+import { computeOverdueByDays } from '@/lib/contact-frequency.js';
 import type { UpcomingDate } from '@/components/domain/dashboard/coming-up.js';
 import { ComingUp } from '@/components/domain/dashboard/coming-up.js';
 import { DontLoseTouch } from '@/components/domain/dashboard/dont-lose-touch.js';
@@ -89,13 +90,6 @@ type FullReviewPerson = ReviewPerson & {
 // Constants
 // ---------------------------------------------------------------------------
 
-const FREQUENCY_DAYS: Record<string, number> = {
-  weekly: 7,
-  monthly: 30,
-  quarterly: 90,
-  yearly: 365,
-};
-
 const MAX_OVERDUE_SHOWN = 5;
 const UPCOMING_WINDOW_DAYS = 14;
 const DORMANT_THRESHOLD_DAYS = 365;
@@ -114,14 +108,6 @@ function daysBetween(a: Date, b: Date): number {
   return Math.round((b.getTime() - a.getTime()) / (1000 * 60 * 60 * 24));
 }
 
-function computeOverdueByDays(contactFrequency: string, lastContactedAt: Date | null): number {
-  const periodDays = FREQUENCY_DAYS[contactFrequency] ?? 30;
-  if (!lastContactedAt) {
-    return periodDays;
-  }
-  const daysSince = Math.floor((Date.now() - lastContactedAt.getTime()) / (1000 * 60 * 60 * 24));
-  return daysSince - periodDays;
-}
 
 function daysUntilNextOccurrence(storedDate: Date, recurrence: string | null | undefined): number | null {
   const t = todayMidnight();

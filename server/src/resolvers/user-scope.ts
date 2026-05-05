@@ -55,7 +55,11 @@ function notFound(entity: string): never {
 // ── GraphQL → Drizzle filter/sort translators ────────────────────────────────
 
 type FieldFilter = Record<string, unknown>;
-type PersonsWhere = { OR?: PersonsWhere[]; AND?: PersonsWhere[] } & Record<string, FieldFilter>;
+type PersonsWhere = {
+  OR?: PersonsWhere[];
+  AND?: PersonsWhere[];
+  [key: string]: FieldFilter | PersonsWhere[] | undefined;
+};
 type PersonsOrderBy = Record<string, { direction: 'asc' | 'desc'; priority: number }>;
 
 const PERSON_COLUMNS: Record<string, Column> = {
@@ -85,7 +89,7 @@ function buildFieldCondition(col: Column, filter: FieldFilter): SQL | undefined 
   return conditions.length > 0 ? and(...conditions) : undefined;
 }
 
-function buildPersonsWhere(where: PersonsWhere): SQL | undefined {
+export function buildPersonsWhere(where: PersonsWhere): SQL | undefined {
   const parts: SQL[] = [];
 
   if (where.OR) {
@@ -108,7 +112,7 @@ function buildPersonsWhere(where: PersonsWhere): SQL | undefined {
   return parts.length > 0 ? and(...parts) : undefined;
 }
 
-function buildPersonsOrderBy(orderBy: PersonsOrderBy): SQL[] {
+export function buildPersonsOrderBy(orderBy: PersonsOrderBy): SQL[] {
   return Object.entries(orderBy)
     .filter(([key]) => PERSON_COLUMNS[key])
     .sort(([, a], [, b]) => (a.priority ?? 0) - (b.priority ?? 0))

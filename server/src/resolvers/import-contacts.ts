@@ -131,7 +131,7 @@ function parseBirthday(raw: string): string | null {
 }
 
 /** Parse a Google Contacts CSV export into typed contacts. */
-function parseGoogleContactsCsv(csvText: string): {
+export function parseGoogleContactsCsv(csvText: string): {
   contacts: ParsedContact[];
   skippedCount: number;
 } {
