@@ -637,7 +637,7 @@ function SettingsPage() {
   }
 
   return (
-    <div className="h-full overflow-y-auto min-h-0">
+    <div className="h-full overflow-y-auto min-h-0 pr-2">
     <div className="px-6 py-8 max-w-2xl mx-auto">
       <h1 className="text-2xl font-semibold mb-6">Settings</h1>
 

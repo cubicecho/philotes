@@ -104,7 +104,7 @@ function PersonTimelinePage() {
   }));
 
   return (
-    <div className="h-full overflow-y-auto min-h-0">
+    <div className="h-full overflow-y-auto min-h-0 pr-2">
     <div className="space-y-6 py-4">
       {/* Back link */}
       <div>
