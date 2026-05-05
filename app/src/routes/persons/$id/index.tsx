@@ -811,7 +811,7 @@ function PersonDetailPage() {
             <Card>
               <CardContent className="p-4">
                 <div className="flex items-center justify-between mb-3">
-                  <h2 className="font-semibold text-sm">Tags</h2>
+                  <h2 className="font-semibold text-lg">Tags</h2>
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <span tabIndex={allLabelsAttached ? 0 : undefined}>
@@ -849,7 +849,7 @@ function PersonDetailPage() {
                   className="h-64"
                   header={
                     <div className="flex items-center justify-between">
-                      <h2 className="font-semibold text-sm">Contact Info</h2>
+                      <h2 className="font-semibold text-lg">Contact Info</h2>
                       <Button size="sm" variant="outline" onClick={() => setContactInfoDialogOpen(true)}>
                         <BookUser className="mr-1.5 h-4 w-4" />
                         Add Contact
@@ -876,7 +876,7 @@ function PersonDetailPage() {
                   className="h-64"
                   header={
                     <div className="flex items-center justify-between">
-                      <h2 className="font-semibold text-sm">Addresses</h2>
+                      <h2 className="font-semibold text-lg">Addresses</h2>
                       <Button size="sm" variant="outline" onClick={() => setAddressDialogOpen(true)}>
                         <MapPin className="mr-1.5 h-4 w-4" />
                         Add Address
@@ -903,7 +903,7 @@ function PersonDetailPage() {
                   className="h-64"
                   header={
                     <div className="flex items-center justify-between">
-                      <h2 className="font-semibold text-sm">Relationships</h2>
+                      <h2 className="font-semibold text-lg">Relationships</h2>
                       <Tooltip>
                         <TooltipTrigger asChild>
                           <span tabIndex={allPersonsLinked ? 0 : undefined}>
@@ -941,7 +941,7 @@ function PersonDetailPage() {
             <Card>
               <CardContent className="p-4">
                 <div className="flex items-center justify-between mb-3">
-                  <h2 className="font-semibold text-sm">Suggested Introductions</h2>
+                  <h2 className="font-semibold text-lg">Suggested Introductions</h2>
                 </div>
                 <div className="max-h-64 overflow-y-auto space-y-2">
                   <PersonIntroductions
@@ -964,7 +964,7 @@ function PersonDetailPage() {
                   className="h-64"
                   header={
                     <div className="flex items-center justify-between">
-                      <h2 className="font-semibold text-sm">Notes</h2>
+                      <h2 className="font-semibold text-lg">Notes</h2>
                       <Button size="sm" variant="outline" onClick={() => setNoteDialogOpen(true)}>
                         <NotebookPen className="mr-1.5 h-4 w-4" />
                         Add Note
@@ -1002,7 +1002,7 @@ function PersonDetailPage() {
                   className="h-64"
                   header={
                     <div className="flex items-center justify-between">
-                      <h2 className="font-semibold text-sm">Interactions</h2>
+                      <h2 className="font-semibold text-lg">Interactions</h2>
                       <Button size="sm" variant="outline" onClick={() => setInteractionDialogOpen(true)}>
                         <MessageSquare className="mr-1.5 h-4 w-4" />
                         Log Interaction
@@ -1035,7 +1035,7 @@ function PersonDetailPage() {
             <Card>
               <CardContent className="p-4">
                 <div className="flex items-center justify-between mb-3">
-                  <h2 className="font-semibold text-sm">Important Dates</h2>
+                  <h2 className="font-semibold text-lg">Important Dates</h2>
                   <Button size="sm" variant="outline" onClick={() => setDateDialogOpen(true)}>
                     <CalendarPlus className="mr-1.5 h-4 w-4" />
                     Add Date
@@ -1074,7 +1074,7 @@ function PersonDetailPage() {
                   className="h-64"
                   header={
                     <div className="flex items-center justify-between">
-                      <h2 className="font-semibold text-sm">Activities</h2>
+                      <h2 className="font-semibold text-lg">Activities</h2>
                       <Button size="sm" variant="outline" onClick={() => setActivityDialogOpen(true)}>
                         <Activity className="mr-1.5 h-4 w-4" />
                         Add Activity
@@ -1101,7 +1101,7 @@ function PersonDetailPage() {
                   className="h-64"
                   header={
                     <div className="flex items-center justify-between">
-                      <h2 className="font-semibold text-sm">Tasks</h2>
+                      <h2 className="font-semibold text-lg">Tasks</h2>
                       <Button size="sm" variant="outline" onClick={() => setTaskDialogOpen(true)}>
                         <CheckSquare className="mr-1.5 h-4 w-4" />
                         Add Task
@@ -1135,7 +1135,7 @@ function PersonDetailPage() {
               <CardContent className="p-4">
                 <ListLayout
                   className="h-64"
-                  header={<h2 className="font-semibold text-sm">Mentioned In</h2>}
+                  header={<h2 className="font-semibold text-lg">Mentioned In</h2>}
                   body={
                     (person.mentionedInNotes ?? []).length === 0 ? (
                       <p className="text-muted-foreground text-sm">Not mentioned in any notes yet.</p>
