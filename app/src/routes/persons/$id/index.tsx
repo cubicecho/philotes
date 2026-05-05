@@ -809,7 +809,7 @@ function PersonDetailPage() {
 
             {/* Tags */}
             <Card>
-              <CardContent className="px-4 pb-4 pt-2">
+              <CardContent className="px-4 pb-4 pt-3">
                 <div className="flex items-center justify-between mb-3">
                   <h2 className="font-semibold text-xl">Tags</h2>
                   <Tooltip>
@@ -844,7 +844,7 @@ function PersonDetailPage() {
 
             {/* Contact Info */}
             <Card>
-              <CardContent className="px-4 pb-4 pt-2">
+              <CardContent className="px-4 pb-4 pt-3">
                 <ListLayout
                   className="h-64"
                   header={
@@ -871,7 +871,7 @@ function PersonDetailPage() {
 
             {/* Addresses */}
             <Card>
-              <CardContent className="px-4 pb-4 pt-2">
+              <CardContent className="px-4 pb-4 pt-3">
                 <ListLayout
                   className="h-64"
                   header={
@@ -898,7 +898,7 @@ function PersonDetailPage() {
 
             {/* Relationships */}
             <Card>
-              <CardContent className="px-4 pb-4 pt-2">
+              <CardContent className="px-4 pb-4 pt-3">
                 <ListLayout
                   className="h-64"
                   header={
@@ -939,7 +939,7 @@ function PersonDetailPage() {
 
             {/* Suggested Introductions */}
             <Card>
-              <CardContent className="px-4 pb-4 pt-2">
+              <CardContent className="px-4 pb-4 pt-3">
                 <div className="flex items-center justify-between mb-3">
                   <h2 className="font-semibold text-xl">Suggested Introductions</h2>
                 </div>
@@ -959,7 +959,7 @@ function PersonDetailPage() {
           <div className="space-y-6">
             {/* Notes */}
             <Card>
-              <CardContent className="px-4 pb-4 pt-2">
+              <CardContent className="px-4 pb-4 pt-3">
                 <ListLayout
                   className="h-64"
                   header={
@@ -997,7 +997,7 @@ function PersonDetailPage() {
 
             {/* Interactions */}
             <Card>
-              <CardContent className="px-4 pb-4 pt-2">
+              <CardContent className="px-4 pb-4 pt-3">
                 <ListLayout
                   className="h-64"
                   header={
@@ -1033,7 +1033,7 @@ function PersonDetailPage() {
 
             {/* Important Dates */}
             <Card>
-              <CardContent className="px-4 pb-4 pt-2">
+              <CardContent className="px-4 pb-4 pt-3">
                 <div className="flex items-center justify-between mb-3">
                   <h2 className="font-semibold text-xl">Important Dates</h2>
                   <Button size="sm" variant="outline" onClick={() => setDateDialogOpen(true)}>
@@ -1069,7 +1069,7 @@ function PersonDetailPage() {
 
             {/* Activities */}
             <Card>
-              <CardContent className="px-4 pb-4 pt-2">
+              <CardContent className="px-4 pb-4 pt-3">
                 <ListLayout
                   className="h-64"
                   header={
@@ -1096,7 +1096,7 @@ function PersonDetailPage() {
 
             {/* Tasks */}
             <Card>
-              <CardContent className="px-4 pb-4 pt-2">
+              <CardContent className="px-4 pb-4 pt-3">
                 <ListLayout
                   className="h-64"
                   header={
@@ -1132,7 +1132,7 @@ function PersonDetailPage() {
 
             {/* Mentioned In */}
             <Card>
-              <CardContent className="px-4 pb-4 pt-2">
+              <CardContent className="px-4 pb-4 pt-3">
                 <ListLayout
                   className="h-64"
                   header={<h2 className="font-semibold text-xl">Mentioned In</h2>}
