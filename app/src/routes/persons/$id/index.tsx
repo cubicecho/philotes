@@ -775,6 +775,10 @@ function PersonDetailPage() {
             <Activity className="mr-1.5 h-4 w-4" />
             Add Activity
           </Button>
+          <Button size="sm" variant="outline" onClick={() => setTaskDialogOpen(true)}>
+            <CheckSquare className="mr-1.5 h-4 w-4" />
+            Add Task
+          </Button>
         </div>
 
         {/* 2-column grid */}
