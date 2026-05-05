@@ -308,7 +308,7 @@ function overrideUserOwnedTable<TTable extends { userId: unknown; id: unknown }>
       return db
         .select()
         .from(table)
-        .where(eq((table as unknown as Record<string, unknown>).userId, userId))
+        .where(eq((table as any).userId, userId))
         .limit((args.limit as number | undefined) ?? 1000)
         .offset((args.offset as number | undefined) ?? 0);
     };
@@ -324,8 +324,8 @@ function overrideUserOwnedTable<TTable extends { userId: unknown; id: unknown }>
         .from(table)
         .where(
           and(
-            eq((table as unknown as Record<string, unknown>).id, args.id),
-            eq((table as unknown as Record<string, unknown>).userId, userId),
+            eq((table as any).id, args.id),
+            eq((table as any).userId, userId),
           ),
         )
         .limit(1);
@@ -380,10 +380,10 @@ function overrideUserOwnedTable<TTable extends { userId: unknown; id: unknown }>
       const targetId = (args.where as { id?: { eq?: string } } | undefined)?.id?.eq;
       const condition = targetId
         ? and(
-            eq((table as unknown as Record<string, unknown>).id, targetId),
-            eq((table as unknown as Record<string, unknown>).userId, userId),
+            eq((table as any).id, targetId),
+            eq((table as any).userId, userId),
           )
-        : eq((table as unknown as Record<string, unknown>).userId, userId);
+        : eq((table as any).userId, userId);
 
       // Strip userId from update values — callers cannot change ownership
       const { userId: _uid, ...safeValues } = { ...args.values, userId: undefined };
@@ -403,10 +403,10 @@ function overrideUserOwnedTable<TTable extends { userId: unknown; id: unknown }>
       const targetId = (args.where as { id?: { eq?: string } } | undefined)?.id?.eq;
       const condition = targetId
         ? and(
-            eq((table as unknown as Record<string, unknown>).id, targetId),
-            eq((table as unknown as Record<string, unknown>).userId, userId),
+            eq((table as any).id, targetId),
+            eq((table as any).userId, userId),
           )
-        : eq((table as unknown as Record<string, unknown>).userId, userId);
+        : eq((table as any).userId, userId);
 
       return db.delete(table).where(condition).returning();
     };
@@ -627,7 +627,8 @@ export function applyUserScopeExtensions(schema: GraphQLSchema): GraphQLSchema {
     return db
       .select()
       .from(table)
-      .where(and(eq(personIdCol, parent.id), eq(table.userId, ctx.userId)));
+      // biome-ignore lint/suspicious/noExplicitAny: drizzle-orm 1.0 column type compat
+      .where(and(eq(personIdCol as any, parent.id), eq((table as any).userId, ctx.userId)));
   };
 
   if (personFields.notes) {

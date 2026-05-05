@@ -7,7 +7,7 @@ if (!dbInstance._.fullSchema) {
   // biome-ignore lint/suspicious/noExplicitAny: compatibility shim for drizzle-orm 1.0 beta
   (dbInstance._ as any).fullSchema = dbSchema;
 }
-import { GraphQLInputObjectType, GraphQLNonNull, type GraphQLSchema } from 'graphql';
+import { GraphQLInputObjectType, GraphQLNonNull, type GraphQLNullableType, type GraphQLSchema } from 'graphql';
 import { applyAuthExtension } from './resolvers/auth.ts';
 import { applyImportContactsExtension } from './resolvers/import-contacts.ts';
 import { applyMergeLabelsExtension } from './resolvers/merge-labels.ts';
@@ -35,7 +35,7 @@ function makeUserIdOptionalInInputs(s: GraphQLSchema): GraphQLSchema {
     if (!(type instanceof GraphQLInputObjectType)) continue;
     const fields = type.getFields();
     if ('userId' in fields && fields.userId.type instanceof GraphQLNonNull) {
-      (fields.userId as { type: unknown }).type = (fields.userId.type as GraphQLNonNull<unknown>).ofType;
+      (fields.userId as { type: unknown }).type = (fields.userId.type as GraphQLNonNull<GraphQLNullableType>).ofType;
     }
   }
   return s;

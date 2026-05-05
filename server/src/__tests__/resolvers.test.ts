@@ -1,131 +1,69 @@
-// import { db } from '@philotes/db';
-// import { sql } from 'drizzle-orm';
-// import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-// import type { Resolvers } from '../__generated__/resolvers.ts';
-// import type { Context } from '../index.ts';
-// import { entities } from '../schema.ts';
-//
-// const r: Resolvers = {
-//   Query: entities.queries,
-//   Mutation: entities.mutations,
-// };
-// // const r = resolvers as unknown as CallableResolvers;
-//
-// async function createTestContext(): Promise<Context> {
-//   //   const db = await createDb("memory://");
-//   // Create the contacts table in the in-memory PGlite instance
-//   await db.execute(sql`
-//     CREATE TABLE IF NOT EXISTS contacts (
-//       id SERIAL PRIMARY KEY,
-//       first_name TEXT NOT NULL,
-//       last_name TEXT NOT NULL,
-//       email TEXT NOT NULL,
-//       created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
-//       updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
-//     )
-//   `);
-//   return { db };
-// }
-//
-// describe('resolvers', () => {
-//   let ctx: Context;
-//
-//   beforeEach(async () => {
-//     ctx = await createTestContext();
-//   });
-//
-//   afterEach(async () => {
-//     await ctx.db.execute(sql`DROP TABLE IF EXISTS contacts`);
-//   });
-//
-//   describe('Query', () => {
-//     it('should return empty contacts list', async () => {
-//       const result = await r.Query.contacts(null, null, ctx);
-//       expect(result).toEqual([]);
-//     });
-//
-//     it('should return contact by id', async () => {
-//       await r.Mutation.createContact(
-//         null,
-//         {
-//           input: {
-//             firstName: 'John',
-//             lastName: 'Doe',
-//             email: 'john@example.com',
-//           },
-//         },
-//         ctx,
-//       );
-//       const result = await r.Query.contact(null, { id: 1 }, ctx);
-//       expect(result).toBeDefined();
-//       expect((result as { firstName: string }).firstName).toBe('John');
-//       expect((result as { lastName: string }).lastName).toBe('Doe');
-//       expect((result as { email: string }).email).toBe('john@example.com');
-//     });
-//
-//     it('should return null for non-existent contact', async () => {
-//       const result = await r.Query.contact(null, { id: 999 }, ctx);
-//       expect(result).toBeNull();
-//     });
-//   });
-//
-//   describe('Mutation', () => {
-//     it('should create a contact', async () => {
-//       const result = (await r.Mutation.createContact(
-//         null,
-//         {
-//           input: {
-//             firstName: 'Jane',
-//             lastName: 'Smith',
-//             email: 'jane@example.com',
-//           },
-//         },
-//         ctx,
-//       )) as { id: number; firstName: string; lastName: string; email: string };
-//       expect(result.id).toBe(1);
-//       expect(result.firstName).toBe('Jane');
-//       expect(result.lastName).toBe('Smith');
-//       expect(result.email).toBe('jane@example.com');
-//     });
-//
-//     it('should update a contact', async () => {
-//       await r.Mutation.createContact(
-//         null,
-//         {
-//           input: {
-//             firstName: 'John',
-//             lastName: 'Doe',
-//             email: 'john@example.com',
-//           },
-//         },
-//         ctx,
-//       );
-//       const result = (await r.Mutation.updateContact(
-//         null,
-//         { id: 1, input: { firstName: 'Jonathan' } },
-//         ctx,
-//       )) as { firstName: string; lastName: string };
-//       expect(result.firstName).toBe('Jonathan');
-//       expect(result.lastName).toBe('Doe');
-//     });
-//
-//     it('should delete a contact', async () => {
-//       await r.Mutation.createContact(
-//         null,
-//         {
-//           input: {
-//             firstName: 'John',
-//             lastName: 'Doe',
-//             email: 'john@example.com',
-//           },
-//         },
-//         ctx,
-//       );
-//       const result = await r.Mutation.deleteContact(null, { id: 1 }, ctx);
-//       expect(result).toBe(true);
-//
-//       const remaining = await r.Query.contacts(null, null, ctx);
-//       expect(remaining).toEqual([]);
-//     });
-//   });
-// });
+import { describe, expect, it } from 'vitest';
+
+// ---------------------------------------------------------------------------
+// Inline re-export of the pure CSV parsing utilities so we can unit-test
+// them without spinning up a DB or GraphQL server.
+// ---------------------------------------------------------------------------
+
+// The functions below are extracted verbatim from import-contacts.ts.
+// If that file is refactored, keep these in sync.
+
+function stripGoogleDuplicate(s: string): string {
+  const idx = s.indexOf(' ::: ');
+  return idx !== -1 ? s.slice(0, idx).trim() : s.trim();
+}
+
+function normalizeHyphens(s: string): string {
+  return s.replace(/[‐‑‒–]/g, '-');
+}
+
+function parseBirthday(raw: string): string | null {
+  if (!raw) return null;
+  if (raw.startsWith('--')) return null;
+  if (raw.startsWith('0000-')) return null;
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(raw);
+  if (!match) return null;
+  if (Number(match[1]) === 0) return null;
+  return raw;
+}
+
+// ---------------------------------------------------------------------------
+
+describe('stripGoogleDuplicate', () => {
+  it('returns the first part when \" ::: \" is present', () => {
+    expect(stripGoogleDuplicate('foo ::: bar')).toBe('foo');
+  });
+  it('returns the whole string when no separator', () => {
+    expect(stripGoogleDuplicate('hello')).toBe('hello');
+  });
+  it('trims whitespace', () => {
+    expect(stripGoogleDuplicate('  hello  ')).toBe('hello');
+  });
+});
+
+describe('normalizeHyphens', () => {
+  it('replaces Unicode hyphen variants with ASCII hyphen', () => {
+    expect(normalizeHyphens('‐‑‒–')).toBe('----');
+  });
+  it('leaves regular hyphens untouched', () => {
+    expect(normalizeHyphens('555-1234')).toBe('555-1234');
+  });
+});
+
+describe('parseBirthday', () => {
+  it('returns null for empty string', () => {
+    expect(parseBirthday('')).toBeNull();
+  });
+  it('returns null for --MM-DD format (no year)', () => {
+    expect(parseBirthday('--03-15')).toBeNull();
+  });
+  it('returns null for 0000-MM-DD format', () => {
+    expect(parseBirthday('0000-03-15')).toBeNull();
+  });
+  it('returns the date string for valid YYYY-MM-DD', () => {
+    expect(parseBirthday('1990-03-15')).toBe('1990-03-15');
+  });
+  it('returns null for non-matching format', () => {
+    expect(parseBirthday('March 15')).toBeNull();
+  });
+});
