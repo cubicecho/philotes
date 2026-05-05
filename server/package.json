@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "@apollo/server": "^5.x.x",
+    "@vantreeseba/drizzle-graphql": "^1.0.1",
     "@as-integrations/express5": "^1.1.2",
     "@philotes/db": "*",
     "bcryptjs": "^3.0.3",
