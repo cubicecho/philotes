@@ -658,7 +658,8 @@ function PersonDetailPage() {
 
   return (
     <TooltipProvider>
-      <div className="space-y-6">
+      <div className="h-full overflow-y-auto min-h-0">
+      <div className="space-y-6 py-4">
         {/* Back link + sub-nav */}
         <div className="flex items-center justify-between gap-4">
           <Link
@@ -1143,6 +1144,7 @@ function PersonDetailPage() {
             />
           </DialogContent>
         </Dialog>
+      </div>
       </div>
     </TooltipProvider>
   );
