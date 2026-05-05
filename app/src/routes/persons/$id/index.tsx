@@ -867,7 +867,7 @@ function PersonDetailPage() {
                 <ListLayout
                   className="h-64"
                   header={
-                    <>
+                    <div className="flex items-center justify-between">
                       <h2 className="font-semibold text-base">Relationships</h2>
                       <Tooltip>
                         <TooltipTrigger asChild>
@@ -885,7 +885,7 @@ function PersonDetailPage() {
                         </TooltipTrigger>
                         {allPersonsLinked && <TooltipContent>All persons are already linked</TooltipContent>}
                       </Tooltip>
-                    </>
+                    </div>
                   }
                   body={
                     <PersonRelationships
@@ -927,7 +927,15 @@ function PersonDetailPage() {
               <CardContent className="p-4">
                 <ListLayout
                   className="h-64"
-                  header={<h2 className="font-semibold text-base">Notes</h2>}
+                  header={
+                    <div className="flex items-center justify-between">
+                      <h2 className="font-semibold text-base">Notes</h2>
+                      <Button size="sm" variant="outline" onClick={() => setNoteDialogOpen(true)}>
+                        <NotebookPen className="mr-1.5 h-4 w-4" />
+                        Add Note
+                      </Button>
+                    </div>
+                  }
                   body={
                     <PersonNotes
                       personId={person.id}
@@ -957,7 +965,15 @@ function PersonDetailPage() {
               <CardContent className="p-4">
                 <ListLayout
                   className="h-64"
-                  header={<h2 className="font-semibold text-base">Interactions</h2>}
+                  header={
+                    <div className="flex items-center justify-between">
+                      <h2 className="font-semibold text-base">Interactions</h2>
+                      <Button size="sm" variant="outline" onClick={() => setInteractionDialogOpen(true)}>
+                        <MessageSquare className="mr-1.5 h-4 w-4" />
+                        Log Interaction
+                      </Button>
+                    </div>
+                  }
                   body={
                     <PersonInteractions
                       personId={person.id}
@@ -983,8 +999,12 @@ function PersonDetailPage() {
             {/* Important Dates */}
             <Card>
               <CardContent className="p-4">
-                <div className="mb-3">
+                <div className="flex items-center justify-between mb-3">
                   <h2 className="font-semibold text-base">Important Dates</h2>
+                  <Button size="sm" variant="outline" onClick={() => setDateDialogOpen(true)}>
+                    <CalendarPlus className="mr-1.5 h-4 w-4" />
+                    Add Date
+                  </Button>
                 </div>
                 <div className="max-h-64 overflow-y-auto space-y-2">
                   {person.importantDates.length === 0 ? (
@@ -1017,7 +1037,15 @@ function PersonDetailPage() {
               <CardContent className="p-4">
                 <ListLayout
                   className="h-64"
-                  header={<h2 className="font-semibold text-base">Activities</h2>}
+                  header={
+                    <div className="flex items-center justify-between">
+                      <h2 className="font-semibold text-base">Activities</h2>
+                      <Button size="sm" variant="outline" onClick={() => setActivityDialogOpen(true)}>
+                        <Activity className="mr-1.5 h-4 w-4" />
+                        Add Activity
+                      </Button>
+                    </div>
+                  }
                   body={
                     <ActivityList
                       person={person}
