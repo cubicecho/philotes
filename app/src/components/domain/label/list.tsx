@@ -103,7 +103,7 @@ export function LabelList({ labels, onClickAdd, onClickDelete, onClickEdit, onCl
   return (
     <ListLayout
       header={
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between pt-3">
           <h1 className="font-bold text-3xl">Labels</h1>
           <Button onClick={onClickAdd}>
             <Tag className="mr-2 h-4 w-4" />

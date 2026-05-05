@@ -249,7 +249,7 @@ export function PersonList({
   return (
     <ListLayout
       header={
-        <div className="space-y-3">
+        <div className="space-y-3 pt-3">
           <div className="flex items-center justify-between">
             <h1 className="font-bold text-3xl">Persons</h1>
             {onClickAdd && (

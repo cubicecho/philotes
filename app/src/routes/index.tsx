@@ -300,7 +300,7 @@ function DashboardPage() {
 
   return (
     <ListLayout
-      header={<h1 className="font-bold text-2xl">Dashboard</h1>}
+      header={<h1 className="font-bold text-2xl pt-3">Dashboard</h1>}
       spacing={false}
       body={
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
