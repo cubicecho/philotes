@@ -756,6 +756,26 @@ function PersonDetailPage() {
           </div>
         </div>
 
+        {/* Action bar */}
+        <div className="flex flex-wrap gap-2">
+          <Button size="sm" variant="outline" onClick={() => setInteractionDialogOpen(true)}>
+            <MessageSquare className="mr-1.5 h-4 w-4" />
+            Log Interaction
+          </Button>
+          <Button size="sm" variant="outline" onClick={() => setNoteDialogOpen(true)}>
+            <NotebookPen className="mr-1.5 h-4 w-4" />
+            Add Note
+          </Button>
+          <Button size="sm" variant="outline" onClick={() => setDateDialogOpen(true)}>
+            <CalendarPlus className="mr-1.5 h-4 w-4" />
+            Add Date
+          </Button>
+          <Button size="sm" variant="outline" onClick={() => setActivityDialogOpen(true)}>
+            <Activity className="mr-1.5 h-4 w-4" />
+            Add Activity
+          </Button>
+        </div>
+
         {/* 2-column grid */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
           {/* LEFT COLUMN */}
@@ -907,15 +927,7 @@ function PersonDetailPage() {
               <CardContent className="p-4">
                 <ListLayout
                   className="h-64"
-                  header={
-                    <>
-                      <h2 className="font-semibold text-base">Notes</h2>
-                      <Button size="sm" variant="outline" onClick={() => setNoteDialogOpen(true)}>
-                        <NotebookPen className="mr-1.5 h-4 w-4" />
-                        Add Note
-                      </Button>
-                    </>
-                  }
+                  header={<h2 className="font-semibold text-base">Notes</h2>}
                   body={
                     <PersonNotes
                       personId={person.id}
@@ -945,15 +957,7 @@ function PersonDetailPage() {
               <CardContent className="p-4">
                 <ListLayout
                   className="h-64"
-                  header={
-                    <>
-                      <h2 className="font-semibold text-base">Interactions</h2>
-                      <Button size="sm" variant="outline" onClick={() => setInteractionDialogOpen(true)}>
-                        <MessageSquare className="mr-1.5 h-4 w-4" />
-                        Log Interaction
-                      </Button>
-                    </>
-                  }
+                  header={<h2 className="font-semibold text-base">Interactions</h2>}
                   body={
                     <PersonInteractions
                       personId={person.id}
@@ -979,12 +983,8 @@ function PersonDetailPage() {
             {/* Important Dates */}
             <Card>
               <CardContent className="p-4">
-                <div className="flex items-center justify-between mb-3">
+                <div className="mb-3">
                   <h2 className="font-semibold text-base">Important Dates</h2>
-                  <Button size="sm" variant="outline" onClick={() => setDateDialogOpen(true)}>
-                    <CalendarPlus className="mr-1.5 h-4 w-4" />
-                    Add Date
-                  </Button>
                 </div>
                 <div className="max-h-64 overflow-y-auto space-y-2">
                   {person.importantDates.length === 0 ? (
@@ -1017,15 +1017,7 @@ function PersonDetailPage() {
               <CardContent className="p-4">
                 <ListLayout
                   className="h-64"
-                  header={
-                    <>
-                      <h2 className="font-semibold text-base">Activities</h2>
-                      <Button size="sm" variant="outline" onClick={() => setActivityDialogOpen(true)}>
-                        <Activity className="mr-1.5 h-4 w-4" />
-                        Add Activity
-                      </Button>
-                    </>
-                  }
+                  header={<h2 className="font-semibold text-base">Activities</h2>}
                   body={
                     <ActivityList
                       person={person}
