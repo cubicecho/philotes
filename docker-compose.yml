@@ -1,0 +1,19 @@
+services:
+  philotes:
+    image: vantreeseba/philotes:latest
+    restart: unless-stopped
+    environment:
+      # Required — generate with: openssl rand -hex 32
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required}
+      APP_URL: ${APP_URL:-http://localhost:3001}
+      NODE_ENV: production
+      PORT: 3001
+    ports:
+      - "${PORT:-3001}:3001"
+    volumes:
+      - philotes_data:/data
+      - philotes_avatars:/avatars
+
+volumes:
+  philotes_data:
+  philotes_avatars:
