@@ -84,7 +84,7 @@ export function applyApiKeysExtension(schema: GraphQLSchema): GraphQLSchema {
         name: name.trim(),
         keyHash: hash,
         keyPrefix: prefix,
-        expiresAt: expiresAt ? new Date(expiresAt) : null,
+        ...(expiresAt ? { expiresAt: new Date(expiresAt) } : {}),
       })
       .returning({
         id: apiKeys.id,
