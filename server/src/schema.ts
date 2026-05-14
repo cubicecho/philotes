@@ -8,6 +8,7 @@ if (!dbInstance._.fullSchema) {
   (dbInstance._ as any).fullSchema = dbSchema;
 }
 import { GraphQLInputObjectType, GraphQLNonNull, type GraphQLNullableType, type GraphQLSchema } from 'graphql';
+import { applyApiKeysExtension } from './resolvers/api-keys.ts';
 import { applyAuthExtension } from './resolvers/auth.ts';
 import { applyImportContactsExtension } from './resolvers/import-contacts.ts';
 import { applyMergeLabelsExtension } from './resolvers/merge-labels.ts';
@@ -51,5 +52,6 @@ schema = applyScalarResolvers(schema);
 schema = applyNullListCoercion(schema);
 schema = applyImportContactsExtension(schema);
 schema = applyMergeLabelsExtension(schema);
+schema = applyApiKeysExtension(schema);
 
 export { schema, entities };

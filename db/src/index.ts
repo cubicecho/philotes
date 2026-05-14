@@ -35,3 +35,4 @@ if (isPostgres) {
 
 export { schema };
 export * from './schema.ts';
+export * from './api-keys.ts';

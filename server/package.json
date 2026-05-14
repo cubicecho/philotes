@@ -13,9 +13,9 @@
   },
   "dependencies": {
     "@apollo/server": "^5.x.x",
-    "@vantreeseba/drizzle-graphql": "^1.0.1",
     "@as-integrations/express5": "^1.1.2",
     "@philotes/db": "*",
+    "@vantreeseba/drizzle-graphql": "^1.0.1",
     "bcryptjs": "^3.0.3",
     "cors": "^2.8.6",
     "express": "^5.2.1",
@@ -23,6 +23,7 @@
     "graphql-parse-resolve-info": "^4.14.1",
     "graphql-scalars": "^1.25.0",
     "graphql-tag": "^2.12.6",
+    "ical-generator": "^10.2.0",
     "jsonwebtoken": "^9.0.3",
     "multer": "^2.1.1"
   },

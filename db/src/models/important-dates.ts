@@ -1,8 +1,8 @@
 import { date, index, pgTable, primaryKey, text, uuid } from 'drizzle-orm/pg-core';
 
-import { labels } from './labels.js';
-import { persons } from './persons.js';
-import { users } from './users.js';
+import { labels } from './labels.ts';
+import { persons } from './persons.ts';
+import { users } from './users.ts';
 
 // Recurrence values mirror Google Calendar's model.
 // null = one-time event (only appears if the original date is upcoming).

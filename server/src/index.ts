@@ -7,6 +7,7 @@ import { migrate } from 'drizzle-orm/pglite/migrator';
 import express from 'express';
 import { createAvatarRouter } from './routes/avatars.ts';
 import { createGraphQLRouter } from './routes/graphql.ts';
+import { icalHandler } from './routes/ical.ts';
 
 export type { Context } from './routes/graphql.ts';
 
@@ -30,6 +31,7 @@ const httpServer = createServer(app);
 
 app.use(cors());
 app.use('/graphql', await createGraphQLRouter(httpServer));
+app.get('/ical', icalHandler);
 app.use('/avatars', express.static(avatarDir));
 app.use('/avatars', createAvatarRouter(avatarDir));
 app.use(express.static(staticDir));

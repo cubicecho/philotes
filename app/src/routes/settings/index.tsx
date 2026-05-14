@@ -2,6 +2,7 @@ import { gql, useMutation, useQuery } from '@apollo/client';
 import { createFileRoute } from '@tanstack/react-router';
 import { Download, Moon, Sun, Upload } from 'lucide-react';
 import { useRef, useState } from 'react';
+import { ApiKeyManager } from '@/components/settings/ApiKeyManager';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useDarkMode } from '@/hooks/use-dark-mode';
@@ -625,10 +626,11 @@ function GoogleCsvImportCard() {
 
 // ── Component ──────────────────────────────────────────────────────────────
 
-type SettingsTab = 'import-export' | 'app';
+type SettingsTab = 'import-export' | 'api-keys' | 'app';
 
 const TABS: { id: SettingsTab; label: string }[] = [
   { id: 'import-export', label: 'Import / Export' },
+  { id: 'api-keys', label: 'API Keys' },
   { id: 'app', label: 'App Settings' },
 ];
 
@@ -733,6 +735,7 @@ function SettingsPage() {
         </div>
         <div className="pt-6">
           {activeTab === 'import-export' && <ImportExportTab />}
+          {activeTab === 'api-keys' && <ApiKeyManager />}
           {activeTab === 'app' && <AppSettingsTab />}
         </div>
       </div>
