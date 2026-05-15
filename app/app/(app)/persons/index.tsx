@@ -1,5 +1,4 @@
 import { useMutation, useQuery } from '@apollo/client';
-import { createFileRoute } from '@tanstack/react-router';
 import { useCallback, useState } from 'react';
 import { graphql } from '@/__generated__/gql.js';
 import { OrderDirection, type PersonFilters, type PersonOrderBy } from '@/__generated__/graphql.js';
@@ -94,14 +93,10 @@ interface PersonsUrlState {
 }
 
 // ---------------------------------------------------------------------------
-// Route
+// Page
 // ---------------------------------------------------------------------------
 
-export const Route = createFileRoute('/persons/')({
-  component: PersonsPage,
-});
-
-function PersonsPage() {
+export default function PersonsPage() {
   // ── URL state ──────────────────────────────────────────────────────────────
   const [urlState, setUrlState] = useQueryStringState<PersonsUrlState>(
     {

@@ -1,5 +1,5 @@
 import { useFragment } from '@apollo/client';
-import { Link } from '@tanstack/react-router';
+import { Link } from 'expo-router';
 import { Search, Trash2, UserPlus, X } from 'lucide-react';
 import { graphql } from '@/__generated__/gql.js';
 import type { Person_ListFragment } from '@/__generated__/graphql.ts';
@@ -123,7 +123,7 @@ function PersonRow({ person: from, onClickDelete, activeLabelIds, lastContactedA
         <Avatar firstName={person.firstName} lastName={person.lastName} avatarPath={person.avatarPath} size="md" />
         <div className="min-w-0 flex-1 space-y-1">
           <p className="font-medium">
-            <Link to="/persons/$id" params={{ id: person.id }} className="hover:underline">
+            <Link href={`/persons/`} className="hover:underline">
               {person.firstName} {person.lastName}
             </Link>
           </p>

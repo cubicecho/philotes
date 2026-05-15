@@ -1,0 +1,17 @@
+{
+  "expo": {
+    "name": "Philotes",
+    "slug": "philotes",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "scheme": "philotes",
+    "userInterfaceStyle": "automatic",
+    "web": {
+      "bundler": "metro",
+      "output": "single",
+      "favicon": "./assets/favicon.png"
+    },
+    "platforms": ["ios", "android", "web"],
+    "plugins": ["expo-router"]
+  }
+}

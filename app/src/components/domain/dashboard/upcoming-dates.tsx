@@ -1,5 +1,5 @@
 import { useQuery } from '@apollo/client';
-import { Link } from '@tanstack/react-router';
+import { Link } from 'expo-router';
 import { CalendarDays } from 'lucide-react';
 import { useState } from 'react';
 import { graphql } from '@/__generated__/gql.js';
@@ -116,15 +116,14 @@ export function UpcomingDates() {
               >
                 <div className="min-w-0 flex-1">
                   <Link
-                    to="/persons/$id/dates/$dateId"
-                    params={{ id: d.personId, dateId: d.id }}
+                    href={`/persons/${d.personId}/dates/${d.id}`}
                     className="font-medium hover:underline"
                   >
                     {d.name}
                   </Link>
                   {d.description && <span className="ml-2 text-xs text-muted-foreground">{d.description}</span>}
                   <div className="text-xs text-muted-foreground mt-0.5 flex items-center gap-1.5">
-                    <Link to="/persons/$id" params={{ id: d.personId }} className="hover:underline">
+                    <Link href={`/persons/${d.personId}`} className="hover:underline">
                       {d.personFirstName} {d.personLastName}
                     </Link>
                     <span>·</span>

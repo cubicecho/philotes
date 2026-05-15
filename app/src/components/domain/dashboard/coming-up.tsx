@@ -1,4 +1,4 @@
-import { Link } from '@tanstack/react-router';
+import { Link } from 'expo-router';
 import { CalendarCheck } from 'lucide-react';
 import { useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card.js';
@@ -76,8 +76,7 @@ export function ComingUp({ dates }: { dates: UpcomingDate[] }) {
                 <div className="min-w-0 flex-1">
                   <p className="font-medium">{d.name}</p>
                   <Link
-                    to="/persons/$id"
-                    params={{ id: d.personId }}
+                    href={`/persons/${d.personId}`}
                     className="text-xs text-muted-foreground hover:underline"
                   >
                     {d.personFirstName} {d.personLastName}

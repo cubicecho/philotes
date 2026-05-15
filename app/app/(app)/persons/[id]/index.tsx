@@ -1,5 +1,5 @@
 import { useMutation, useQuery } from '@apollo/client';
-import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
+import { Link, useLocalSearchParams, useRouter } from 'expo-router';
 import {
   Activity,
   ArrowLeft,
@@ -341,14 +341,6 @@ const DELETE_PERSON = graphql(`
 `);
 
 // ---------------------------------------------------------------------------
-// Route
-// ---------------------------------------------------------------------------
-
-export const Route = createFileRoute('/persons/$id/')({
-  component: PersonDetailPage,
-});
-
-// ---------------------------------------------------------------------------
 // Important date row
 // ---------------------------------------------------------------------------
 
@@ -410,8 +402,7 @@ function ImportantDateRow({
         <div className="flex items-center justify-between gap-3">
           <div className="min-w-0 flex-1">
             <Link
-              to="/persons/$id/dates/$dateId"
-              params={{ id: personId, dateId: id }}
+              href={`/persons/${personId}/dates/${id}`}
               className="font-medium hover:underline"
             >
               {name}
@@ -484,9 +475,9 @@ function ImportantDateRow({
 // Page
 // ---------------------------------------------------------------------------
 
-function PersonDetailPage() {
-  const { id } = Route.useParams();
-  const navigate = useNavigate();
+export default function PersonDetailPage() {
+  const { id } = useLocalSearchParams<{ id: string }>();
+  const router = useRouter();
 
   const { data, loading, error, refetch } = useQuery(GET_PERSON_DETAIL, {
     variables: { id },
@@ -653,7 +644,7 @@ function PersonDetailPage() {
 
   const handleDeletePerson = async (): Promise<void> => {
     await deletePerson({ variables: { id } });
-    void navigate({ to: '/persons' });
+    router.push('/persons');
   };
 
   const allLabelsAttached = allLabels.length > 0 && allLabels.length === person.labels.length;
@@ -668,15 +659,14 @@ function PersonDetailPage() {
         {/* Back link + sub-nav */}
         <div className="flex items-center justify-between gap-4">
           <Link
-            to="/persons"
+            href="/persons"
             className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
           >
             <ArrowLeft className="h-4 w-4" />
             All Persons
           </Link>
           <Link
-            to="/persons/$id/timeline"
-            params={{ id }}
+            href={`/persons/${id}/timeline`}
             className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
           >
             <Clock className="h-4 w-4" />
@@ -1149,7 +1139,7 @@ function PersonDetailPage() {
                             {n.person && (
                               <p className="text-xs text-muted-foreground">
                                 by{' '}
-                                <Link to="/persons/$id" params={{ id: n.person.id }} className="hover:underline">
+                                <Link href={`/persons/${n.person.id}`} className="hover:underline">
                                   {n.person.firstName} {n.person.lastName}
                                 </Link>
                               </p>

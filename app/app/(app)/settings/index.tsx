@@ -1,5 +1,4 @@
 import { gql, useMutation, useQuery } from '@apollo/client';
-import { createFileRoute } from '@tanstack/react-router';
 import { Download, Moon, Sun, Upload } from 'lucide-react';
 import { useRef, useState } from 'react';
 import { ApiKeyManager } from '@/components/settings/ApiKeyManager';
@@ -708,7 +707,7 @@ function AppSettingsTab() {
   );
 }
 
-function SettingsPage() {
+export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState<SettingsTab>('import-export');
 
   return (
@@ -743,7 +742,3 @@ function SettingsPage() {
     </div>
   );
 }
-
-export const Route = createFileRoute('/settings/')({
-  component: SettingsPage,
-});

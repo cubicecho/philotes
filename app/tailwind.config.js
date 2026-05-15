@@ -1,9 +1,13 @@
-import type { Config } from 'tailwindcss';
-import tailwindcssAnimate from 'tailwindcss-animate';
+const tailwindcssAnimate = require('tailwindcss-animate');
 
-const config: Config = {
+/** @type {import('tailwindcss').Config} */
+module.exports = {
   darkMode: ['class'],
-  content: ['./index.html', './src/**/*.{ts,tsx}'],
+  content: [
+    './app/**/*.{ts,tsx}',
+    './src/**/*.{ts,tsx}',
+  ],
+  presets: [require('nativewind/preset')],
   theme: {
     extend: {
       colors: {
@@ -55,7 +59,5 @@ const config: Config = {
       },
     },
   },
-  plugins: [tailwindcssAnimate, require('tailwindcss-animate')],
+  plugins: [tailwindcssAnimate],
 };
-
-export default config;

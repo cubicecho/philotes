@@ -1,5 +1,4 @@
 import { useQuery } from '@apollo/client';
-import { createFileRoute } from '@tanstack/react-router';
 import { graphql } from '@/__generated__/gql.js';
 import { computeOverdueByDays } from '@/lib/contact-frequency.js';
 import type { UpcomingDate } from '@/components/domain/dashboard/coming-up.js';
@@ -52,14 +51,6 @@ const GET_WEEKLY_REVIEW = graphql(`
     }
   }
 `);
-
-// ---------------------------------------------------------------------------
-// Route
-// ---------------------------------------------------------------------------
-
-export const Route = createFileRoute('/')({
-  component: DashboardPage,
-});
 
 // ---------------------------------------------------------------------------
 // Types
@@ -251,7 +242,7 @@ type DashboardModule = {
 // Page
 // ---------------------------------------------------------------------------
 
-function DashboardPage() {
+export default function DashboardPage() {
   const { data, loading, error } = useQuery(GET_WEEKLY_REVIEW);
 
   if (loading) {
