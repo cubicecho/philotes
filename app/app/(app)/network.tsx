@@ -2,7 +2,7 @@ import { useQuery } from '@apollo/client';
 import { useRouter } from 'expo-router';
 import * as d3 from 'd3';
 import { useEffect, useRef, useState } from 'react';
-import { graphql } from '@/__generated__/gql.js';
+import { graphql } from '@/__generated__/gql';
 
 const GET_NETWORK_DATA = graphql(`
   query GetNetworkData {

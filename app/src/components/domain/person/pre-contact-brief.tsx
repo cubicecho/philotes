@@ -1,5 +1,5 @@
 import { Mail, MessageSquare, MoreHorizontal, Phone, Users, Video } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card.js';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 // ---------------------------------------------------------------------------
 // Types

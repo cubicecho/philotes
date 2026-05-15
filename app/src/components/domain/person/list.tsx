@@ -1,10 +1,10 @@
 import { useFragment } from '@apollo/client';
 import { Link } from 'expo-router';
 import { Search, Trash2, UserPlus, X } from 'lucide-react';
-import { graphql } from '@/__generated__/gql.js';
+import { graphql } from '@/__generated__/gql';
 import type { Person_ListFragment } from '@/__generated__/graphql.ts';
-import { PERSON_RELATIONSHIPS } from '@/components/domain/person/relationships.js';
-import { ListLayout } from '@/components/layouts/list.js';
+import { PERSON_RELATIONSHIPS } from '@/components/domain/person/relationships';
+import { ListLayout } from '@/components/layouts/list';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -15,17 +15,17 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from '@/components/ui/alert-dialog.js';
-import { Avatar } from '@/components/ui/avatar.js';
-import { Button } from '@/components/ui/button.js';
-import { Card, CardContent } from '@/components/ui/card.js';
+} from '@/components/ui/alert-dialog';
+import { Avatar } from '@/components/ui/avatar';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
 import {
   Pagination,
   PaginationContent,
   PaginationItem,
   PaginationNext,
   PaginationPrevious,
-} from '@/components/ui/pagination.js';
+} from '@/components/ui/pagination';
 import { Spinner } from '@/components/ui/spinner.tsx';
 
 const PERSON_LIST = graphql(`

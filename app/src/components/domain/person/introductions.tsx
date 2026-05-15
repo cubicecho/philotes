@@ -1,5 +1,5 @@
 import { Link } from 'expo-router';
-import { Avatar } from '@/components/ui/avatar.js';
+import { Avatar } from '@/components/ui/avatar';
 
 // ---------------------------------------------------------------------------
 // Types

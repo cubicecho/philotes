@@ -1,9 +1,9 @@
 import { useMutation } from '@apollo/client';
 import { useState } from 'react';
-import { graphql } from '@/__generated__/gql.js';
-import { Button } from '@/components/ui/button.js';
-import { Input } from '@/components/ui/input.js';
-import { Label } from '@/components/ui/label.js';
+import { graphql } from '@/__generated__/gql';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 
 const REQUEST_MAGIC_LINK = graphql(`
   mutation RequestMagicLink($email: String!) {

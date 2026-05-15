@@ -1,8 +1,8 @@
 import { useMutation } from '@apollo/client';
 import { useRouter } from 'expo-router';
 import { useEffect } from 'react';
-import { graphql } from '@/__generated__/gql.js';
-import { setToken } from '@/lib/auth.js';
+import { graphql } from '@/__generated__/gql';
+import { setToken } from '@/lib/auth';
 
 const VERIFY_MAGIC_LINK = graphql(`
   mutation VerifyMagicLink($token: String!) {

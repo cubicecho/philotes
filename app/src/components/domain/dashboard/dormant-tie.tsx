@@ -1,7 +1,7 @@
 import { Link } from 'expo-router';
 import { Heart } from 'lucide-react';
-import { Avatar } from '@/components/ui/avatar.js';
-import { Card, CardContent } from '@/components/ui/card.js';
+import { Avatar } from '@/components/ui/avatar';
+import { Card, CardContent } from '@/components/ui/card';
 
 // ---------------------------------------------------------------------------
 // Types

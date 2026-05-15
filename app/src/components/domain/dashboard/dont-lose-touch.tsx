@@ -2,18 +2,18 @@ import { useQuery } from '@apollo/client';
 import { Link } from 'expo-router';
 import { Bell, MessageSquare } from 'lucide-react';
 import { useState } from 'react';
-import { graphql } from '@/__generated__/gql.js';
-import { PersonInteractions } from '@/components/domain/person/interactions.js';
-import { Avatar } from '@/components/ui/avatar.js';
-import { Card, CardContent } from '@/components/ui/card.js';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog.js';
+import { graphql } from '@/__generated__/gql';
+import { PersonInteractions } from '@/components/domain/person/interactions';
+import { Avatar } from '@/components/ui/avatar';
+import { Card, CardContent } from '@/components/ui/card';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import {
   Pagination,
   PaginationContent,
   PaginationItem,
   PaginationNext,
   PaginationPrevious,
-} from '@/components/ui/pagination.js';
+} from '@/components/ui/pagination';
 import { Spinner } from '@/components/ui/spinner.tsx';
 
 // ---------------------------------------------------------------------------

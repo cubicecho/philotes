@@ -1,6 +1,6 @@
 import { useMutation } from '@apollo/client';
 import { Tag, X } from 'lucide-react';
-import { graphql } from '@/__generated__/gql.js';
+import { graphql } from '@/__generated__/gql';
 
 // ---------------------------------------------------------------------------
 // Mutations

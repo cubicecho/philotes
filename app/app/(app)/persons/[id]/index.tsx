@@ -17,27 +17,27 @@ import {
   UserRoundPlus,
 } from 'lucide-react';
 import { useRef, useState } from 'react';
-import { graphql } from '@/__generated__/gql.js';
-import { getToken } from '@/lib/auth.js';
-import type { ImportantDatesMilestoneTypeEnum } from '@/__generated__/graphql.js';
-import { ActivityList } from '@/components/domain/activity/list.js';
-import { AddressList } from '@/components/domain/address/list.js';
-import { ContactInfoList } from '@/components/domain/contact-info/list.js';
-import { PersonForm, type PersonFormValue } from '@/components/domain/person/form.js';
+import { graphql } from '@/__generated__/gql';
+import { getToken } from '@/lib/auth';
+import type { ImportantDatesMilestoneTypeEnum } from '@/__generated__/graphql';
+import { ActivityList } from '@/components/domain/activity/list';
+import { AddressList } from '@/components/domain/address/list';
+import { ContactInfoList } from '@/components/domain/contact-info/list';
+import { PersonForm, type PersonFormValue } from '@/components/domain/person/form';
 import {
   ImportantDateForm,
   type ImportantDateFormValue,
   MILESTONE_TYPE_OPTIONS,
   RECURRENCE_OPTIONS,
-} from '@/components/domain/person/important-date-form.js';
-import { ImportantDateTags } from '@/components/domain/person/important-date-tags.js';
-import { PersonInteractions } from '@/components/domain/person/interactions.js';
-import { PersonIntroductions } from '@/components/domain/person/introductions.js';
-import { PersonLabels } from '@/components/domain/person/labels.js';
-import { PersonNotes } from '@/components/domain/person/notes.js';
-import { PersonRelationships } from '@/components/domain/person/relationships.js';
-import { TaskList } from '@/components/domain/task/list.js';
-import { ListLayout } from '@/components/layouts/list.js';
+} from '@/components/domain/person/important-date-form';
+import { ImportantDateTags } from '@/components/domain/person/important-date-tags';
+import { PersonInteractions } from '@/components/domain/person/interactions';
+import { PersonIntroductions } from '@/components/domain/person/introductions';
+import { PersonLabels } from '@/components/domain/person/labels';
+import { PersonNotes } from '@/components/domain/person/notes';
+import { PersonRelationships } from '@/components/domain/person/relationships';
+import { TaskList } from '@/components/domain/task/list';
+import { ListLayout } from '@/components/layouts/list';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -48,13 +48,13 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from '@/components/ui/alert-dialog.js';
-import { Avatar } from '@/components/ui/avatar.js';
-import { Button } from '@/components/ui/button.js';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card.js';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog.js';
+} from '@/components/ui/alert-dialog';
+import { Avatar } from '@/components/ui/avatar';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Spinner } from '@/components/ui/spinner.tsx';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip.js';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 // ---------------------------------------------------------------------------
 // GraphQL

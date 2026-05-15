@@ -1,14 +1,14 @@
 import { Link } from 'expo-router';
 import { CalendarCheck } from 'lucide-react';
 import { useState } from 'react';
-import { Card, CardContent } from '@/components/ui/card.js';
+import { Card, CardContent } from '@/components/ui/card';
 import {
   Pagination,
   PaginationContent,
   PaginationItem,
   PaginationNext,
   PaginationPrevious,
-} from '@/components/ui/pagination.js';
+} from '@/components/ui/pagination';
 
 // ---------------------------------------------------------------------------
 // Types

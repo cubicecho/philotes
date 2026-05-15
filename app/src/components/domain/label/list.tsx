@@ -1,18 +1,18 @@
 import { useFragment } from '@apollo/client';
 import { GitMerge, Pencil, Tag, Trash2 } from 'lucide-react';
 import { useState } from 'react';
-import { graphql } from '@/__generated__/gql.js';
+import { graphql } from '@/__generated__/gql';
 import type { Label_ListFragment } from '@/__generated__/graphql.ts';
-import { ListLayout } from '@/components/layouts/list.js';
-import { Button } from '@/components/ui/button.js';
-import { Card, CardContent } from '@/components/ui/card.js';
+import { ListLayout } from '@/components/layouts/list';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
 import {
   Pagination,
   PaginationContent,
   PaginationItem,
   PaginationNext,
   PaginationPrevious,
-} from '@/components/ui/pagination.js';
+} from '@/components/ui/pagination';
 import { Spinner } from '@/components/ui/spinner.tsx';
 
 const LABEL_LIST = graphql(`

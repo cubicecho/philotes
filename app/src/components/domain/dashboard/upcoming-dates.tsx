@@ -2,15 +2,15 @@ import { useQuery } from '@apollo/client';
 import { Link } from 'expo-router';
 import { CalendarDays } from 'lucide-react';
 import { useState } from 'react';
-import { graphql } from '@/__generated__/gql.js';
-import { Card, CardContent } from '@/components/ui/card.js';
+import { graphql } from '@/__generated__/gql';
+import { Card, CardContent } from '@/components/ui/card';
 import {
   Pagination,
   PaginationContent,
   PaginationItem,
   PaginationNext,
   PaginationPrevious,
-} from '@/components/ui/pagination.js';
+} from '@/components/ui/pagination';
 import { Spinner } from '@/components/ui/spinner.tsx';
 
 // ---------------------------------------------------------------------------

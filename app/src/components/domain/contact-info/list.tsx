@@ -12,11 +12,11 @@ import {
   Twitter,
 } from 'lucide-react';
 import { useState } from 'react';
-import { graphql } from '@/__generated__/gql.js';
-import type { ContactInfo_ListFragment } from '@/__generated__/graphql.js';
-import { ContactInfosTypeEnum } from '@/__generated__/graphql.js';
-import { Button } from '@/components/ui/button.js';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog.js';
+import { graphql } from '@/__generated__/gql';
+import type { ContactInfo_ListFragment } from '@/__generated__/graphql';
+import { ContactInfosTypeEnum } from '@/__generated__/graphql';
+import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 // ---------------------------------------------------------------------------
 // Fragment

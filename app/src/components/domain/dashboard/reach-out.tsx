@@ -1,15 +1,15 @@
 import { Link } from 'expo-router';
 import { Users } from 'lucide-react';
 import { useState } from 'react';
-import { Avatar } from '@/components/ui/avatar.js';
-import { Card, CardContent } from '@/components/ui/card.js';
+import { Avatar } from '@/components/ui/avatar';
+import { Card, CardContent } from '@/components/ui/card';
 import {
   Pagination,
   PaginationContent,
   PaginationItem,
   PaginationNext,
   PaginationPrevious,
-} from '@/components/ui/pagination.js';
+} from '@/components/ui/pagination';
 
 // ---------------------------------------------------------------------------
 // Types

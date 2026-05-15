@@ -1,13 +1,13 @@
 import { useQuery } from '@apollo/client';
 import { Link, useLocalSearchParams } from 'expo-router';
 import { ArrowLeft, Clock } from 'lucide-react';
-import { graphql } from '@/__generated__/gql.js';
+import { graphql } from '@/__generated__/gql';
 import {
   PersonTimeline,
   type TimelineActivity,
   type TimelineImportantDate,
   type TimelineInteraction,
-} from '@/components/domain/person/timeline.js';
+} from '@/components/domain/person/timeline';
 import { Spinner } from '@/components/ui/spinner.tsx';
 
 // ---------------------------------------------------------------------------

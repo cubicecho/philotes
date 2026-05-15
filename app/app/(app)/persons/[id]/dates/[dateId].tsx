@@ -1,9 +1,9 @@
 import { useQuery } from '@apollo/client';
 import { Link, useLocalSearchParams } from 'expo-router';
 import { ArrowLeft, CalendarDays } from 'lucide-react';
-import { graphql } from '@/__generated__/gql.js';
-import { RECURRENCE_OPTIONS } from '@/components/domain/person/important-date-form.js';
-import { Card, CardContent } from '@/components/ui/card.js';
+import { graphql } from '@/__generated__/gql';
+import { RECURRENCE_OPTIONS } from '@/components/domain/person/important-date-form';
+import { Card, CardContent } from '@/components/ui/card';
 import { Spinner } from '@/components/ui/spinner.tsx';
 
 // ---------------------------------------------------------------------------

@@ -2,10 +2,10 @@ import { useMutation } from '@apollo/client';
 import { Link } from 'expo-router';
 import { Pencil, Tag, Trash2, X } from 'lucide-react';
 import { useRef, useState } from 'react';
-import { graphql } from '@/__generated__/gql.js';
-import { Button } from '@/components/ui/button.js';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog.js';
-import { TagMultiSelect } from '@/components/ui/tag-multi-select.js';
+import { graphql } from '@/__generated__/gql';
+import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { TagMultiSelect } from '@/components/ui/tag-multi-select';
 
 // ---------------------------------------------------------------------------
 // Mutations

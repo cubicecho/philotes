@@ -2,9 +2,9 @@ import { createFormHook } from '@tanstack/react-form';
 import { X } from 'lucide-react';
 import { useState } from 'react';
 import { z } from 'zod';
-import type { Label_ListFragment } from '@/__generated__/graphql.js';
-import { Button } from '@/components/ui/button.js';
-import { FieldGroup } from '@/components/ui/field.js';
+import type { Label_ListFragment } from '@/__generated__/graphql';
+import { Button } from '@/components/ui/button';
+import { FieldGroup } from '@/components/ui/field';
 import { FormError, fieldContext, formContext, TextField } from '@/components/ui/form-field.tsx';
 
 const CONTACT_FREQUENCY_OPTIONS = [

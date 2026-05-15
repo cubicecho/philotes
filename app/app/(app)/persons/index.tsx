@@ -1,12 +1,12 @@
 import { useMutation, useQuery } from '@apollo/client';
 import { useCallback, useState } from 'react';
-import { graphql } from '@/__generated__/gql.js';
-import { OrderDirection, type PersonFilters, type PersonOrderBy } from '@/__generated__/graphql.js';
-import { PersonForm, type PersonFormValue } from '@/components/domain/person/form.js';
-import { PersonList } from '@/components/domain/person/list.js';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog.js';
+import { graphql } from '@/__generated__/gql';
+import { OrderDirection, type PersonFilters, type PersonOrderBy } from '@/__generated__/graphql';
+import { PersonForm, type PersonFormValue } from '@/components/domain/person/form';
+import { PersonList } from '@/components/domain/person/list';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Spinner } from '@/components/ui/spinner.tsx';
-import { useQueryStringState } from '@/hooks/use-query-string-state.js';
+import { useQueryStringState } from '@/hooks/use-query-string-state';
 
 // ---------------------------------------------------------------------------
 // Utilities

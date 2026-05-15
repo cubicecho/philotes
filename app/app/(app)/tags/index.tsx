@@ -1,11 +1,11 @@
 import { useMutation, useQuery } from '@apollo/client';
 import { useState } from 'react';
-import { graphql } from '@/__generated__/gql.js';
-import type { Label_ListFragment, CreateLabelInput } from '@/__generated__/graphql.js';
-import { LabelList } from '@/components/domain/label/list.js';
-import { TagForm } from '@/components/domain/tag/form.js';
-import { Button } from '@/components/ui/button.js';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog.js';
+import { graphql } from '@/__generated__/gql';
+import type { Label_ListFragment, CreateLabelInput } from '@/__generated__/graphql';
+import { LabelList } from '@/components/domain/label/list';
+import { TagForm } from '@/components/domain/tag/form';
+import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Spinner } from '@/components/ui/spinner.tsx';
 
 const GET_TAGS = graphql(`
