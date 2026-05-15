@@ -7,7 +7,6 @@ import type { Context } from '../routes/graphql.ts';
 
 const JWT_SECRET = process.env.JWT_SECRET ?? 'dev-secret-change-in-production';
 const APP_URL = process.env.APP_URL ?? 'http://localhost:3000';
-const IS_DEV = process.env.NODE_ENV !== 'production';
 
 const AUTH_SDL = parse(`
   type RequestMagicLinkResult {
@@ -69,14 +68,11 @@ export function applyAuthExtension(schema: GraphQLSchema): GraphQLSchema {
     const email = args.email.toLowerCase().trim();
     const token = signMagicToken(email);
     const magicLink = `${APP_URL}/auth/verify?token=${token}`;
-
-    if (IS_DEV) {
-      console.log(`\n[auth] Magic link for ${email}:\n${magicLink}\n`);
-      return { ok: true, magicLink };
+    console.log(`\n[auth] Magic link for ${email}:\n${magicLink}\n`);
+    if (process.env.NODE_ENV === 'production') {
+      return { ok: true, magicLink: null };
     }
-
-    console.log(`[auth] Magic link for ${email}: ${magicLink}`);
-    return { ok: true, magicLink: null };
+    return { ok: true, magicLink };
   };
 
   fields.verifyMagicLink.resolve = async (_parent: unknown, args: { token: string }, context: Context) => {

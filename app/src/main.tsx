@@ -9,7 +9,10 @@ import { clearToken, getToken } from './lib/auth.js';
 import { routeTree } from './routeTree.gen';
 import './index.css';
 
-const httpLink = new HttpLink({ uri: '/graphql' });
+const graphqlUri = import.meta.env.DEV
+  ? `http://localhost:${import.meta.env.VITE_SERVER_PORT}/graphql`
+  : '/graphql';
+const httpLink = new HttpLink({ uri: graphqlUri });
 
 const authLink = setContext((_, { headers }) => {
   const token = getToken();
@@ -22,7 +25,7 @@ const authLink = setContext((_, { headers }) => {
 });
 
 const errorLink = onError(({ graphQLErrors }) => {
-  if (graphQLErrors?.some((e) => e.extensions?.code === 'UNAUTHENTICATED')) {
+  if (graphQLErrors?.some((e) => e.extensions?.['code'] === 'UNAUTHENTICATED')) {
     clearToken();
     window.location.href = '/login';
   }

@@ -1,4 +1,4 @@
-import { createRootRoute, Outlet, redirect } from '@tanstack/react-router';
+import { createRootRoute, Outlet, redirect, useRouterState } from '@tanstack/react-router';
 import { Header } from '@/components/layouts/header';
 import { isAuthenticated } from '@/lib/auth';
 
@@ -12,7 +12,8 @@ export const Route = createRootRoute({
     }
   },
   component: () => {
-    const isPublic = PUBLIC_PATHS.some((p) => window.location.pathname.startsWith(p));
+    const pathname = useRouterState({ select: (s) => s.location.pathname });
+    const isPublic = PUBLIC_PATHS.some((p) => pathname.startsWith(p));
     if (isPublic) {
       return <Outlet />;
     }
