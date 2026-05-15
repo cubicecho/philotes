@@ -123,7 +123,7 @@ function PersonRow({ person: from, onClickDelete, activeLabelIds, lastContactedA
         <Avatar firstName={person.firstName} lastName={person.lastName} avatarPath={person.avatarPath} size="md" />
         <div className="min-w-0 flex-1 space-y-1">
           <p className="font-medium">
-            <Link href={`/persons/`} className="hover:underline">
+            <Link href={`/persons/${person.id}`} className="hover:underline">
               {person.firstName} {person.lastName}
             </Link>
           </p>

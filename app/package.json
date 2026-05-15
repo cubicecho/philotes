@@ -4,7 +4,7 @@
   "private": true,
   "main": "expo-router/entry",
   "scripts": {
-    "dev": "EXPO_NO_DEVTOOLS=1 npx expo start --web --port 3000",
+    "dev": "EXPO_NO_DEVTOOLS=1 npx expo start --port 3000",
     "build": "expo export --platform web",
     "preview": "npx serve dist",
     "clean": "rm -rf src/__generated__ node_modules .expo",

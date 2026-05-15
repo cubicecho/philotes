@@ -311,7 +311,7 @@ function RelationshipRow({ relationship, fromPersonId, allPersons, onDelete, onE
     <>
       <div className="flex items-center justify-between gap-3 rounded-md border border-border px-3 py-2 text-sm">
         <div className="min-w-0 flex-1">
-          <Link href={`/persons/`} className="font-medium hover:underline">
+          <Link href={`/persons/${relatedPersonId}`} className="font-medium hover:underline">
             {relatedPersonFirstName} {relatedPersonLastName}
           </Link>
           <span className="ml-2 rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">{type}</span>
