@@ -1,34 +1,42 @@
+import { useMutation } from '@apollo/client';
 import { Link } from 'expo-router';
-import { Users } from 'lucide-react';
+import { Check, MessageSquarePlus, Users } from 'lucide-react';
 import { useState } from 'react';
+import { graphql } from '@/__generated__/gql';
 import { Avatar } from '@/components/ui/avatar';
-import { Card, CardContent } from '@/components/ui/card';
-import {
-  Pagination,
-  PaginationContent,
-  PaginationItem,
-  PaginationNext,
-  PaginationPrevious,
-} from '@/components/ui/pagination';
+import { Button } from '@/components/ui/button';
+import { AllCaughtUp, Widget } from './widget';
 
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
 
-export type OverduePerson = {
+export type ReachOutPerson = {
   id: string;
   firstName: string;
   lastName: string;
   avatarPath?: string | null;
-  overdueByDays: number;
-  lastContactedAt: Date | null;
+  /** e.g. "3 weeks overdue" or "No contact in over a year" */
+  statusLabel: string;
+  /** Dormant entries render quieter than overdue ones. */
+  isDormant: boolean;
 };
 
 // ---------------------------------------------------------------------------
-// Helpers
+// Quick log
 // ---------------------------------------------------------------------------
 
-const PAGE_SIZE_OPTIONS = [5, 10, 25] as const;
+const QUICK_LOG_INTERACTION = graphql(`
+  mutation QuickLogInteraction($personId: String!, $occurredAt: DateTime!) {
+    createInteraction(
+      values: { personId: $personId, channel: "other", occurredAt: $occurredAt }
+    ) {
+      id
+      personId
+      occurredAt
+    }
+  }
+`);
 
 export function formatOverdueLabel(days: number): string {
   if (days === 0) return 'Due today';
@@ -42,92 +50,76 @@ export function formatOverdueLabel(days: number): string {
   return `${months} months overdue`;
 }
 
-function AllCaughtUp({ message }: { message: string }) {
-  return <p className="text-sm text-muted-foreground italic py-1">{message} ✓</p>;
-}
-
 // ---------------------------------------------------------------------------
 // Component
 // ---------------------------------------------------------------------------
 
-export function ReachOut({ persons }: { persons: OverduePerson[] }) {
-  const [page, setPage] = useState(0);
-  const [pageSize, setPageSize] = useState(5);
+interface ReachOutProps {
+  persons: ReachOutPerson[];
+  /** Called after a quick-log succeeds so the page can refetch. */
+  onLogged?: () => void;
+}
 
-  const pagedPersons = persons.slice(page * pageSize, (page + 1) * pageSize);
-  const isFirstPage = page === 0;
-  const isLastPage = pagedPersons.length < pageSize;
+export function ReachOut({ persons, onLogged }: ReachOutProps) {
+  const [quickLog] = useMutation(QUICK_LOG_INTERACTION);
+  const [loggedIds, setLoggedIds] = useState<Set<string>>(new Set());
 
-  function handlePageSizeChange(nextSize: number) {
-    setPageSize(nextSize);
-    setPage(0);
-  }
+  const handleQuickLog = async (personId: string) => {
+    await quickLog({ variables: { personId, occurredAt: new Date() } });
+    setLoggedIds((prev) => new Set(prev).add(personId));
+    onLogged?.();
+  };
 
   return (
-    <Card>
-      <CardContent className="pt-4 space-y-3">
-        <div className="flex items-center gap-2">
-          <Users className="h-4 w-4 text-muted-foreground" />
-          <h2 className="font-semibold text-base">Reach Out</h2>
-        </div>
-        <p className="text-xs text-muted-foreground">Contacts past their check-in window</p>
-        {persons.length === 0 ? (
-          <AllCaughtUp message="You're all caught up here" />
-        ) : (
-          <ul className="space-y-2">
-            {pagedPersons.map((p) => (
-              <li key={p.id} className="flex items-center gap-3 rounded-md border border-border px-3 py-2 text-sm">
+    <Widget
+      icon={<Users />}
+      title="Reach Out"
+      subtitle="people waiting to hear from you"
+      viewAllHref="/persons?sortField=lastContacted&sortDir=asc"
+    >
+      {persons.length === 0 ? (
+        <AllCaughtUp message="You're all caught up here" />
+      ) : (
+        <ul className="space-y-1">
+          {persons.map((p) => {
+            const logged = loggedIds.has(p.id);
+            return (
+              <li key={p.id} className="flex items-center gap-3 rounded-md px-2 py-1.5 hover:bg-muted/60">
                 <Avatar firstName={p.firstName} lastName={p.lastName} avatarPath={p.avatarPath} size="sm" />
                 <div className="min-w-0 flex-1">
-                  <Link href={`/persons/${p.id}`} className="font-medium hover:underline">
+                  <Link href={`/persons/${p.id}`} className="block truncate text-sm font-medium hover:underline">
                     {p.firstName} {p.lastName}
                   </Link>
-                  <p className="text-xs text-amber-600 dark:text-amber-400">{formatOverdueLabel(p.overdueByDays)}</p>
+                  <p
+                    className={`truncate text-xs ${
+                      p.isDormant ? 'text-muted-foreground' : 'text-amber-600 dark:text-amber-400'
+                    }`}
+                  >
+                    {p.statusLabel}
+                  </p>
                 </div>
+                {logged ? (
+                  <span className="inline-flex items-center gap-1 text-xs text-primary">
+                    <Check className="h-3.5 w-3.5" />
+                    Logged
+                  </span>
+                ) : (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="h-7 px-2 text-xs text-muted-foreground hover:text-primary"
+                    onClick={() => handleQuickLog(p.id)}
+                    title="Log that you reached out just now"
+                  >
+                    <MessageSquarePlus className="mr-1 h-3.5 w-3.5" />
+                    Log contact
+                  </Button>
+                )}
               </li>
-            ))}
-          </ul>
-        )}
-        {(persons.length > 0 || page > 0) && (
-          <div className="flex items-center justify-between gap-2 pt-1">
-            <div className="flex items-center gap-1.5">
-              <label htmlFor="reach-out-page-size" className="text-xs text-muted-foreground">
-                Per page
-              </label>
-              <select
-                id="reach-out-page-size"
-                value={pageSize}
-                onChange={(e) => handlePageSizeChange(Number(e.target.value))}
-                className="h-8 rounded-md border border-input bg-background px-2 text-xs focus:outline-none focus:ring-2 focus:ring-ring"
-              >
-                {PAGE_SIZE_OPTIONS.map((n) => (
-                  <option key={n} value={n}>
-                    {n}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <Pagination className="w-auto mx-0 justify-end">
-              <PaginationContent>
-                <PaginationItem>
-                  <PaginationPrevious
-                    onClick={() => setPage((p) => p - 1)}
-                    className={isFirstPage ? 'pointer-events-none opacity-50' : ''}
-                    aria-disabled={isFirstPage}
-                  />
-                </PaginationItem>
-                <PaginationItem>
-                  <PaginationNext
-                    onClick={() => setPage((p) => p + 1)}
-                    className={isLastPage ? 'pointer-events-none opacity-50' : ''}
-                    aria-disabled={isLastPage}
-                  />
-                </PaginationItem>
-              </PaginationContent>
-            </Pagination>
-          </div>
-        )}
-      </CardContent>
-    </Card>
+            );
+          })}
+        </ul>
+      )}
+    </Widget>
   );
 }

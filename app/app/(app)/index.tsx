@@ -2,26 +2,22 @@ import { useQuery } from '@apollo/client';
 import { graphql } from '@/__generated__/gql';
 import type { UpcomingDate } from '@/components/domain/dashboard/coming-up';
 import { ComingUp } from '@/components/domain/dashboard/coming-up';
-import { DontLoseTouch } from '@/components/domain/dashboard/dont-lose-touch';
-import type { ReviewPerson } from '@/components/domain/dashboard/dormant-tie';
-import { DormantTie } from '@/components/domain/dashboard/dormant-tie';
-import { DormantTies } from '@/components/domain/dashboard/dormant-ties';
 import type { OpenTask } from '@/components/domain/dashboard/open-tasks';
 import { OpenTasks } from '@/components/domain/dashboard/open-tasks';
-import type { OverduePerson } from '@/components/domain/dashboard/reach-out';
-import { ReachOut } from '@/components/domain/dashboard/reach-out';
-import { RecentPersons } from '@/components/domain/dashboard/recent-persons';
-import { UpcomingDates } from '@/components/domain/dashboard/upcoming-dates';
+import type { ReachOutPerson } from '@/components/domain/dashboard/reach-out';
+import { formatOverdueLabel, ReachOut } from '@/components/domain/dashboard/reach-out';
+import type { RecentPerson } from '@/components/domain/dashboard/recently-added';
+import { RecentlyAdded } from '@/components/domain/dashboard/recently-added';
 import { ListLayout } from '@/components/layouts/list';
 import { Spinner } from '@/components/ui/spinner.tsx';
 import { computeOverdueByDays } from '@/lib/contact-frequency';
 
 // ---------------------------------------------------------------------------
-// GraphQL
+// GraphQL — one query feeds every widget
 // ---------------------------------------------------------------------------
 
-const GET_WEEKLY_REVIEW = graphql(`
-  query WeeklyReview {
+const GET_DASHBOARD = graphql(`
+  query Dashboard {
     persons {
       id
       firstName
@@ -56,7 +52,11 @@ const GET_WEEKLY_REVIEW = graphql(`
 // Types
 // ---------------------------------------------------------------------------
 
-type FullReviewPerson = ReviewPerson & {
+type DashboardPerson = {
+  id: string;
+  firstName: string;
+  lastName: string;
+  avatarPath?: string | null;
   contactFrequency?: string | null;
   createdAt: Date;
   importantDates: Array<{
@@ -81,9 +81,10 @@ type FullReviewPerson = ReviewPerson & {
 // Constants
 // ---------------------------------------------------------------------------
 
-const MAX_OVERDUE_SHOWN = 5;
-const UPCOMING_WINDOW_DAYS = 14;
+const WIDGET_LIMIT = 6;
+const UPCOMING_WINDOW_DAYS = 30;
 const DORMANT_THRESHOLD_DAYS = 365;
+const MS_PER_DAY = 1000 * 60 * 60 * 24;
 
 // ---------------------------------------------------------------------------
 // Date utilities
@@ -96,7 +97,7 @@ function todayMidnight(): Date {
 }
 
 function daysBetween(a: Date, b: Date): number {
-  return Math.round((b.getTime() - a.getTime()) / (1000 * 60 * 60 * 24));
+  return Math.round((b.getTime() - a.getTime()) / MS_PER_DAY);
 }
 
 function daysUntilNextOccurrence(storedDate: Date, recurrence: string | null | undefined): number | null {
@@ -134,23 +135,59 @@ function daysUntilNextOccurrence(storedDate: Date, recurrence: string | null | u
 }
 
 // ---------------------------------------------------------------------------
-// Derived data computations
+// Derived data
 // ---------------------------------------------------------------------------
 
-function computeOverdueContacts(persons: FullReviewPerson[]): OverduePerson[] {
-  return persons
+/**
+ * One merged "who should I contact" list: people past their check-in window
+ * (sorted most-overdue first), then dormant ties (no contact in over a year).
+ */
+function computeReachOut(persons: DashboardPerson[]): ReachOutPerson[] {
+  const overdue = persons
     .filter((p) => Boolean(p.contactFrequency))
     .map((p) => ({
-      ...p,
-      lastContactedAt: p.interactions[0]?.occurredAt ?? null,
+      person: p,
       overdueByDays: computeOverdueByDays(p.contactFrequency ?? '', p.interactions[0]?.occurredAt ?? null),
     }))
-    .filter((p) => p.overdueByDays >= 0)
+    .filter((entry) => entry.overdueByDays >= 0)
     .sort((a, b) => b.overdueByDays - a.overdueByDays)
-    .slice(0, MAX_OVERDUE_SHOWN);
+    .map(({ person, overdueByDays }) => ({
+      id: person.id,
+      firstName: person.firstName,
+      lastName: person.lastName,
+      avatarPath: person.avatarPath,
+      statusLabel: formatOverdueLabel(overdueByDays),
+      isDormant: false,
+    }));
+
+  const overdueIds = new Set(overdue.map((p) => p.id));
+
+  const dormant = persons
+    .filter((p) => !overdueIds.has(p.id))
+    .map((p) => ({
+      person: p,
+      daysSince: p.interactions[0]?.occurredAt
+        ? Math.floor((Date.now() - p.interactions[0].occurredAt.getTime()) / MS_PER_DAY)
+        : null,
+    }))
+    .filter((entry) => entry.daysSince !== null && entry.daysSince >= DORMANT_THRESHOLD_DAYS)
+    .sort((a, b) => (b.daysSince ?? 0) - (a.daysSince ?? 0))
+    .map(({ person, daysSince }) => ({
+      id: person.id,
+      firstName: person.firstName,
+      lastName: person.lastName,
+      avatarPath: person.avatarPath,
+      statusLabel:
+        daysSince && daysSince >= 730
+          ? `No contact in over ${Math.floor(daysSince / 365)} years`
+          : 'No contact in over a year',
+      isDormant: true,
+    }));
+
+  return [...overdue, ...dormant].slice(0, WIDGET_LIMIT);
 }
 
-function computeUpcomingDates(persons: FullReviewPerson[]): UpcomingDate[] {
+function computeUpcomingDates(persons: DashboardPerson[]): UpcomingDate[] {
   const results: UpcomingDate[] = [];
 
   for (const person of persons) {
@@ -168,12 +205,12 @@ function computeUpcomingDates(persons: FullReviewPerson[]): UpcomingDate[] {
     }
   }
 
-  return results.sort((a, b) => a.daysUntil - b.daysUntil);
+  return results.sort((a, b) => a.daysUntil - b.daysUntil).slice(0, WIDGET_LIMIT);
 }
 
-function computeOpenTasks(persons: FullReviewPerson[]): OpenTask[] {
+function computeOpenTasks(persons: DashboardPerson[]): OpenTask[] {
   const now = Date.now();
-  const sevenDaysFromNow = now + 7 * 24 * 60 * 60 * 1000;
+  const sevenDaysFromNow = now + 7 * MS_PER_DAY;
   const results: OpenTask[] = [];
 
   for (const person of persons) {
@@ -198,51 +235,36 @@ function computeOpenTasks(persons: FullReviewPerson[]): OpenTask[] {
     }
   }
 
-  return results.sort((a, b) => {
-    if (a.isOverdue && !b.isOverdue) return -1;
-    if (!a.isOverdue && b.isOverdue) return 1;
-    const aTime = a.dueAt ? a.dueAt.getTime() : 0;
-    const bTime = b.dueAt ? b.dueAt.getTime() : 0;
-    return aTime - bTime;
-  });
+  return results
+    .sort((a, b) => {
+      if (a.isOverdue && !b.isOverdue) return -1;
+      if (!a.isOverdue && b.isOverdue) return 1;
+      const aTime = a.dueAt ? a.dueAt.getTime() : 0;
+      const bTime = b.dueAt ? b.dueAt.getTime() : 0;
+      return aTime - bTime;
+    })
+    .slice(0, WIDGET_LIMIT);
 }
 
-function computeMostDormantPerson(persons: FullReviewPerson[]): (ReviewPerson & { daysSinceContact: number }) | null {
-  const candidates = persons
+function computeRecentlyAdded(persons: DashboardPerson[]): RecentPerson[] {
+  return [...persons]
+    .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+    .slice(0, WIDGET_LIMIT - 1)
     .map((p) => ({
-      ...p,
-      daysSinceContact: p.interactions[0]?.occurredAt
-        ? Math.floor((Date.now() - p.interactions[0].occurredAt.getTime()) / (1000 * 60 * 60 * 24))
-        : Number.POSITIVE_INFINITY,
-    }))
-    .filter((p) => p.daysSinceContact >= DORMANT_THRESHOLD_DAYS);
-
-  if (candidates.length === 0) return null;
-
-  return candidates.reduce((most, current) => (current.daysSinceContact > most.daysSinceContact ? current : most));
+      id: p.id,
+      firstName: p.firstName,
+      lastName: p.lastName,
+      avatarPath: p.avatarPath,
+      createdAt: p.createdAt,
+    }));
 }
-
-// ---------------------------------------------------------------------------
-// Dashboard modules
-//
-// To add a new module:
-//   1. Create a self-contained component in app/src/components/domain/dashboard/
-//   2. Import it here and add it to the MODULES array below.
-//   3. Choose a span: "half" fills one column, "full" spans both columns.
-// ---------------------------------------------------------------------------
-
-type DashboardModule = {
-  id: string;
-  span: 'half' | 'full';
-  component: React.ReactNode;
-};
 
 // ---------------------------------------------------------------------------
 // Page
 // ---------------------------------------------------------------------------
 
 export default function DashboardPage() {
-  const { data, loading, error } = useQuery(GET_WEEKLY_REVIEW);
+  const { data, loading, error, refetch } = useQuery(GET_DASHBOARD);
 
   if (loading) {
     return (
@@ -256,35 +278,23 @@ export default function DashboardPage() {
     return <p className="text-destructive text-sm">Error loading dashboard data: {error.message}</p>;
   }
 
-  const persons = (data?.persons ?? []) as FullReviewPerson[];
+  const persons = (data?.persons ?? []) as DashboardPerson[];
 
-  const overdueContacts = computeOverdueContacts(persons);
+  const reachOut = computeReachOut(persons);
   const upcomingDates = computeUpcomingDates(persons);
   const openTasks = computeOpenTasks(persons);
-  const dormantPerson = computeMostDormantPerson(persons);
-
-  const MODULES: DashboardModule[] = [
-    { id: 'recent-persons', span: 'half', component: <RecentPersons /> },
-    { id: 'dont-lose-touch', span: 'half', component: <DontLoseTouch /> },
-    { id: 'dormant-ties', span: 'half', component: <DormantTies /> },
-    { id: 'upcoming-dates', span: 'half', component: <UpcomingDates /> },
-    { id: 'reach-out', span: 'half', component: <ReachOut persons={overdueContacts} /> },
-    { id: 'coming-up', span: 'half', component: <ComingUp dates={upcomingDates} /> },
-    { id: 'open-tasks', span: 'half', component: <OpenTasks tasks={openTasks} /> },
-    { id: 'dormant-tie', span: 'half', component: <DormantTie person={dormantPerson} /> },
-  ];
+  const recentlyAdded = computeRecentlyAdded(persons);
 
   return (
     <ListLayout
-      header={<h1 className="font-bold text-2xl pt-3">Dashboard</h1>}
+      header={<h1 className="font-bold text-2xl tracking-tight pt-3">Dashboard</h1>}
       spacing={false}
       body={
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-          {MODULES.map(({ id, span, component }) => (
-            <div key={id} className={span === 'full' ? 'md:col-span-2' : ''}>
-              {component}
-            </div>
-          ))}
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 pb-4">
+          <ReachOut persons={reachOut} onLogged={() => refetch()} />
+          <ComingUp dates={upcomingDates} windowDays={UPCOMING_WINDOW_DAYS} />
+          <OpenTasks tasks={openTasks} />
+          <RecentlyAdded persons={recentlyAdded} />
         </div>
       }
     />
