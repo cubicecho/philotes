@@ -2,6 +2,7 @@ import { useMutation } from '@apollo/client';
 import { Mail, MessageSquare, MoreHorizontal, Pencil, Phone, Tag, Trash2, Users, X } from 'lucide-react';
 import { useState } from 'react';
 import { graphql } from '@/__generated__/gql';
+import { relativeTime } from '@/lib/relative-time';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { TagMultiSelect } from '@/components/ui/tag-multi-select';
@@ -139,18 +140,6 @@ function ChannelIcon({ channel, className }: { channel: string; className?: stri
 
 function sentimentEmoji(sentiment: string | null | undefined): string {
   return SENTIMENT_OPTIONS.find((s) => s.value === sentiment)?.emoji ?? '';
-}
-
-function relativeTime(date: Date): string {
-  const now = new Date();
-  const diffMs = now.getTime() - date.getTime();
-  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-  if (diffDays === 0) return 'Today';
-  if (diffDays === 1) return 'Yesterday';
-  if (diffDays < 7) return `${diffDays} days ago`;
-  if (diffDays < 30) return `${Math.floor(diffDays / 7)} weeks ago`;
-  if (diffDays < 365) return `${Math.floor(diffDays / 30)} months ago`;
-  return `${Math.floor(diffDays / 365)} years ago`;
 }
 
 // ---------------------------------------------------------------------------

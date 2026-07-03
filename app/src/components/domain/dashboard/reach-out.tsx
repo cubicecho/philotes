@@ -79,7 +79,7 @@ export function ReachOut({ persons }: { persons: OverduePerson[] }) {
               <li key={p.id} className="flex items-center gap-3 rounded-md border border-border px-3 py-2 text-sm">
                 <Avatar firstName={p.firstName} lastName={p.lastName} avatarPath={p.avatarPath} size="sm" />
                 <div className="min-w-0 flex-1">
-                  <Link href={`/persons/`} className="font-medium hover:underline">
+                  <Link href={`/persons/${p.id}`} className="font-medium hover:underline">
                     {p.firstName} {p.lastName}
                   </Link>
                   <p className="text-xs text-amber-600 dark:text-amber-400">{formatOverdueLabel(p.overdueByDays)}</p>

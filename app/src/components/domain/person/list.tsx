@@ -4,6 +4,7 @@ import { Search, Trash2, UserPlus, X } from 'lucide-react';
 import { graphql } from '@/__generated__/gql';
 import type { Person_ListFragment } from '@/__generated__/graphql.ts';
 import { PERSON_RELATIONSHIPS } from '@/components/domain/person/relationships';
+import { relativeTime } from '@/lib/relative-time';
 import { ListLayout } from '@/components/layouts/list';
 import {
   AlertDialog,
@@ -92,18 +93,6 @@ interface PersonRowProps {
   /** Label IDs currently active as filters — highlighted when matched. */
   activeLabelIds: Set<string>;
   lastContactedAt?: Date | null;
-}
-
-function relativeTime(date: Date): string {
-  const now = new Date();
-  const diffMs = now.getTime() - date.getTime();
-  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-  if (diffDays === 0) return 'Today';
-  if (diffDays === 1) return 'Yesterday';
-  if (diffDays < 7) return `${diffDays}d ago`;
-  if (diffDays < 30) return `${Math.floor(diffDays / 7)}w ago`;
-  if (diffDays < 365) return `${Math.floor(diffDays / 30)}mo ago`;
-  return `${Math.floor(diffDays / 365)}y ago`;
 }
 
 function PersonRow({ person: from, onClickDelete, activeLabelIds, lastContactedAt }: PersonRowProps) {

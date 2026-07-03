@@ -1,9 +1,13 @@
+import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { relations } from './relations.ts';
 import * as schema from './schema.ts';
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
+// realpathSync resolves the node_modules/@philotes/db symlink back to db/,
+// so the default pgdata path stays at the repo root even when Node runs
+// with --preserve-symlinks (otherwise it lands in node_modules/@philotes/).
+const __dirname = fs.realpathSync(path.dirname(fileURLToPath(import.meta.url)));
 const projectRoot = path.resolve(__dirname, '../..');
 
 const DATABASE_URL = process.env.DATABASE_URL ?? path.join(projectRoot, 'pgdata');
