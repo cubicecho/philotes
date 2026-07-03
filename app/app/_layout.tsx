@@ -3,6 +3,7 @@ import { setContext } from '@apollo/client/link/context';
 import { onError } from '@apollo/client/link/error';
 import { Stack } from 'expo-router';
 import { Platform } from 'react-native';
+import { scalarTypePolicies } from '@/__generated__/type-policies';
 import { clearToken, getToken } from '@/lib/auth';
 import '../global.css';
 import '../src/index.css';
@@ -29,7 +30,7 @@ const errorLink = onError(({ graphQLErrors }) => {
 });
 
 const client = new ApolloClient({
-  cache: new InMemoryCache(),
+  cache: new InMemoryCache({ typePolicies: scalarTypePolicies }),
   link: from([errorLink, authLink, httpLink]),
 });
 
