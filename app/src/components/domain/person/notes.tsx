@@ -619,7 +619,7 @@ function NoteRow({ note, allTags, allPersons, onChanged }: NoteRowProps) {
           <div className="flex flex-wrap items-center gap-1 text-xs text-muted-foreground">
             <span className="font-medium">Mentions:</span>
             {note.mentions.map((m) => (
-              <Link key={m.id} href={`/persons/${m.id}`} className="rounded bg-muted px-1.5 py-0.5 hover:underline">
+              <Link key={m.id} href={`/persons/${m.id}`} className="rounded bg-muted px-1.5 py-0.5 text-foreground hover:underline">
                 {m.firstName} {m.lastName}
               </Link>
             ))}

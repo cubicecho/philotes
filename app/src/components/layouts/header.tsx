@@ -23,7 +23,7 @@ export function Header() {
 
   return (
     <header className="border-b border-border px-4 md:px-6 py-3 flex items-center gap-4">
-      <Link href="/" className="font-semibold text-lg tracking-tight">
+      <Link href="/" className="font-semibold text-lg tracking-tight text-foreground">
         Philotes
       </Link>
       {/* Desktop nav */}

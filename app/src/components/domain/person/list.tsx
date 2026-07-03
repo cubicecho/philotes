@@ -81,7 +81,7 @@ function PersonRow({ person, onClickDelete, activeLabelIds }: PersonRowProps) {
 
   return (
     <div className="group flex items-center gap-3 px-2 py-2.5 rounded-md hover:bg-muted/60 transition-colors">
-      <Link href={`/persons/${person.id}`} className="flex min-w-0 flex-1 items-center gap-3">
+      <Link href={`/persons/${person.id}`} className="flex min-w-0 flex-1 items-center gap-3 text-foreground">
         <Avatar firstName={person.firstName} lastName={person.lastName} avatarPath={person.avatarPath} size="md" />
         <div className="min-w-0 flex-1">
           <p className="truncate font-medium text-sm">
@@ -235,7 +235,9 @@ export function PersonList({
           </Button>
         )}
         <Button variant="outline" asChild>
-          <Link href="/settings">Import contacts</Link>
+          <Link href="/settings" className="text-foreground">
+            Import contacts
+          </Link>
         </Button>
       </div>
     </div>

@@ -401,7 +401,7 @@ function ImportantDateRow({
       <div className="rounded-md border border-border px-3 py-2 text-sm">
         <div className="flex items-center justify-between gap-3">
           <div className="min-w-0 flex-1">
-            <Link href={`/persons/${personId}/dates/${id}`} className="font-medium hover:underline">
+            <Link href={`/persons/${personId}/dates/${id}`} className="font-medium text-foreground hover:underline">
               {name}
             </Link>
             {description && <span className="ml-2 text-muted-foreground text-xs">{description}</span>}
@@ -1102,7 +1102,7 @@ export default function PersonDetailPage() {
                         {n.person && (
                           <p className="text-xs text-muted-foreground">
                             by{' '}
-                            <Link href={`/persons/${n.person.id}`} className="hover:underline">
+                            <Link href={`/persons/${n.person.id}`} className="text-foreground/80 hover:text-foreground hover:underline">
                               {n.person.firstName} {n.person.lastName}
                             </Link>
                           </p>

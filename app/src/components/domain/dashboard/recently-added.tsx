@@ -22,7 +22,7 @@ export function RecentlyAdded({ persons }: { persons: RecentPerson[] }) {
           {persons.map((p) => (
             <li key={p.id} className="flex items-center gap-3 rounded-md px-2 py-1.5 hover:bg-muted/60">
               <Avatar firstName={p.firstName} lastName={p.lastName} avatarPath={p.avatarPath} size="sm" />
-              <Link href={`/persons/${p.id}`} className="min-w-0 flex-1 truncate text-sm font-medium hover:underline">
+              <Link href={`/persons/${p.id}`} className="min-w-0 flex-1 truncate text-sm font-medium text-foreground hover:underline">
                 {p.firstName} {p.lastName}
               </Link>
               <span className="shrink-0 text-xs text-muted-foreground">{relativeTime(p.createdAt)}</span>
