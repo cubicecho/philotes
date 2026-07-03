@@ -10,7 +10,7 @@ const NAV_ITEMS = [
   { href: '/network', label: 'Network', icon: Share2, isActive: (path: string) => path === '/network' },
 ] as const;
 
-const LABELS_ITEM = { href: '/tags', label: 'Labels', isActive: (path: string) => path.startsWith('/tags') };
+const LABELS_ITEM = { href: '/labels', label: 'Labels', isActive: (path: string) => path.startsWith('/labels') };
 
 export function Header() {
   const router = useRouter();
