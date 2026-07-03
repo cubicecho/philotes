@@ -1,6 +1,6 @@
 import { apiKeys } from '@philotes/db';
 import { and, desc, eq, isNull } from 'drizzle-orm';
-import { GraphQLError, type GraphQLObjectType, type GraphQLSchema, extendSchema, parse } from 'graphql';
+import { extendSchema, GraphQLError, type GraphQLObjectType, type GraphQLSchema, parse } from 'graphql';
 import { generateApiKey } from '../api-keys.ts';
 import type { Context } from '../routes/graphql.ts';
 import { requireAuth } from './auth.ts';
@@ -100,11 +100,7 @@ export function applyApiKeysExtension(schema: GraphQLSchema): GraphQLSchema {
     return { apiKey: row, token };
   };
 
-  mf.myRevokeApiKey.resolve = async (
-    _parent: unknown,
-    args: { id: string },
-    ctx: Context,
-  ) => {
+  mf.myRevokeApiKey.resolve = async (_parent: unknown, args: { id: string }, ctx: Context) => {
     const userId = requireAuth(ctx);
     const db = ctx.db as AnyDB;
 
@@ -117,10 +113,7 @@ export function applyApiKeysExtension(schema: GraphQLSchema): GraphQLSchema {
     if (!key) throw new GraphQLError(`API key not found`);
     if (key.userId !== userId) throw new GraphQLError('Forbidden');
 
-    await db
-      .update(apiKeys)
-      .set({ revokedAt: new Date() })
-      .where(eq(apiKeys.id, args.id));
+    await db.update(apiKeys).set({ revokedAt: new Date() }).where(eq(apiKeys.id, args.id));
 
     return true;
   };

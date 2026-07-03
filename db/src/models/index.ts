@@ -1,4 +1,3 @@
-export * from './activities.ts';
 export * from './addresses.ts';
 export * from './contact-infos.ts';
 export * from './important-dates.ts';
@@ -7,8 +6,8 @@ export * from './labels.ts';
 export * from './notes.ts';
 export * from './person-labels.ts';
 export * from './person-relationships.ts';
-export * from './relationship-types.ts';
 export * from './persons.ts';
+export * from './relationship-types.ts';
 export * from './tasks.ts';
 export * from './user-persons.ts';
 export * from './users.ts';

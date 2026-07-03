@@ -1,6 +1,25 @@
 import { schema as dbSchema } from '@philotes/db';
-import { type Column, type SQL, and, asc, desc, eq, gt, gte, ilike, inArray, isNotNull, isNull, like, lt, lte, ne, notInArray, or } from 'drizzle-orm';
-import { GraphQLError, extendSchema, type GraphQLObjectType, type GraphQLSchema, parse } from 'graphql';
+import {
+  and,
+  asc,
+  type Column,
+  desc,
+  eq,
+  gt,
+  gte,
+  ilike,
+  inArray,
+  isNotNull,
+  isNull,
+  like,
+  lt,
+  lte,
+  ne,
+  notInArray,
+  or,
+  type SQL,
+} from 'drizzle-orm';
+import { extendSchema, GraphQLError, type GraphQLObjectType, type GraphQLSchema, parse } from 'graphql';
 import type { Context } from '../routes/graphql.ts';
 import { requireAuth } from './auth.ts';
 
@@ -159,9 +178,13 @@ function overridePersonsResolvers(schema: GraphQLSchema): void {
       .from(dbSchema.persons)
       .innerJoin(dbSchema.userPersons, userJoin)
       .where(whereFilter ? and(whereFilter) : undefined)
-      .orderBy(...(orderByClauses.length > 0 ? orderByClauses : [asc(dbSchema.persons.lastName), asc(dbSchema.persons.firstName)]))
-      .limit(args.limit as number | undefined ?? 1000)
-      .offset(args.offset as number | undefined ?? 0);
+      .orderBy(
+        ...(orderByClauses.length > 0
+          ? orderByClauses
+          : [asc(dbSchema.persons.lastName), asc(dbSchema.persons.firstName)]),
+      )
+      .limit((args.limit as number | undefined) ?? 1000)
+      .offset((args.offset as number | undefined) ?? 0);
   };
 
   // person(where) — single, must be in user's contacts
@@ -210,15 +233,9 @@ function overridePersonsResolvers(schema: GraphQLSchema): void {
     }
 
     // Ensure user_persons link exists (idempotent)
-    await db
-      .insert(dbSchema.userPersons)
-      .values({ userId, personId })
-      .onConflictDoNothing();
+    await db.insert(dbSchema.userPersons).values({ userId, personId }).onConflictDoNothing();
 
-    const [person] = await db
-      .select()
-      .from(dbSchema.persons)
-      .where(eq(dbSchema.persons.id, personId));
+    const [person] = await db.select().from(dbSchema.persons).where(eq(dbSchema.persons.id, personId));
     return person;
   };
 
@@ -259,11 +276,7 @@ function overridePersonsResolvers(schema: GraphQLSchema): void {
   };
 
   // deletePersons — removes from user's contacts (not global registry)
-  mf.deletePersons.resolve = async (
-    _parent: unknown,
-    args: { where?: Record<string, unknown> },
-    ctx: Context,
-  ) => {
+  mf.deletePersons.resolve = async (_parent: unknown, args: { where?: Record<string, unknown> }, ctx: Context) => {
     const userId = requireAuth(ctx);
     const db = ctx.db as AnyDB;
     const targetId = (args.where as { id?: { eq?: string } } | undefined)?.id?.eq;
@@ -282,10 +295,7 @@ function overridePersonsResolvers(schema: GraphQLSchema): void {
       .delete(dbSchema.userPersons)
       .where(and(eq(dbSchema.userPersons.userId, userId), eq(dbSchema.userPersons.personId, targetId)));
 
-    const [person] = await db
-      .select()
-      .from(dbSchema.persons)
-      .where(eq(dbSchema.persons.id, targetId));
+    const [person] = await db.select().from(dbSchema.persons).where(eq(dbSchema.persons.id, targetId));
     return person ? [person] : [];
   };
 }
@@ -326,12 +336,7 @@ function overrideUserOwnedTable<TTable extends { userId: unknown; id: unknown }>
       const rows = await db
         .select()
         .from(table)
-        .where(
-          and(
-            eq((table as any).id, args.id),
-            eq((table as any).userId, userId),
-          ),
-        )
+        .where(and(eq((table as any).id, args.id), eq((table as any).userId, userId)))
         .limit(1);
       return rows[0] ?? null;
     };
@@ -383,10 +388,7 @@ function overrideUserOwnedTable<TTable extends { userId: unknown; id: unknown }>
       const db = ctx.db as AnyDB;
       const targetId = (args.where as { id?: { eq?: string } } | undefined)?.id?.eq;
       const condition = targetId
-        ? and(
-            eq((table as any).id, targetId),
-            eq((table as any).userId, userId),
-          )
+        ? and(eq((table as any).id, targetId), eq((table as any).userId, userId))
         : eq((table as any).userId, userId);
 
       // Strip userId from update values — callers cannot change ownership
@@ -406,10 +408,7 @@ function overrideUserOwnedTable<TTable extends { userId: unknown; id: unknown }>
       const db = ctx.db as AnyDB;
       const targetId = (args.where as { id?: { eq?: string } } | undefined)?.id?.eq;
       const condition = targetId
-        ? and(
-            eq((table as any).id, targetId),
-            eq((table as any).userId, userId),
-          )
+        ? and(eq((table as any).id, targetId), eq((table as any).userId, userId))
         : eq((table as any).userId, userId);
 
       return db.delete(table).where(condition).returning();
@@ -461,10 +460,7 @@ function addUserPersonsResolvers(schema: GraphQLSchema): void {
       .where(eq(dbSchema.persons.id, args.personId));
     if (!person) notFound('Person');
 
-    await db
-      .insert(dbSchema.userPersons)
-      .values({ userId, personId: args.personId })
-      .onConflictDoNothing();
+    await db.insert(dbSchema.userPersons).values({ userId, personId: args.personId }).onConflictDoNothing();
 
     const [row] = await db
       .select()
@@ -519,24 +515,7 @@ export function applyUserScopeExtensions(schema: GraphQLSchema): GraphQLSchema {
   overridePersonsResolvers(extendedSchema);
 
   // User-owned tables — simple userId column scoping
-  overrideUserOwnedTable(
-    extendedSchema,
-    dbSchema.notes,
-    'note',
-    'notes',
-    'createNote',
-    'updateNotes',
-    'deleteNotes',
-  );
-  overrideUserOwnedTable(
-    extendedSchema,
-    dbSchema.activities,
-    'activity',
-    'activities',
-    'createActivity',
-    'updateActivities',
-    'deleteActivities',
-  );
+  overrideUserOwnedTable(extendedSchema, dbSchema.notes, 'note', 'notes', 'createNote', 'updateNotes', 'deleteNotes');
   overrideUserOwnedTable(
     extendedSchema,
     dbSchema.interactions,
@@ -546,15 +525,7 @@ export function applyUserScopeExtensions(schema: GraphQLSchema): GraphQLSchema {
     'updateInteractions',
     'deleteInteractions',
   );
-  overrideUserOwnedTable(
-    extendedSchema,
-    dbSchema.tasks,
-    'task',
-    'tasks',
-    'createTask',
-    'updateTasks',
-    'deleteTasks',
-  );
+  overrideUserOwnedTable(extendedSchema, dbSchema.tasks, 'task', 'tasks', 'createTask', 'updateTasks', 'deleteTasks');
   overrideUserOwnedTable(
     extendedSchema,
     dbSchema.labels,
@@ -622,30 +593,25 @@ export function applyUserScopeExtensions(schema: GraphQLSchema): GraphQLSchema {
     personFields[field].resolve = (parent: Record<string, unknown>) => parent[field] ?? null;
   }
 
-  const userScopedPersonRelation = (
-    table: { userId: unknown; personId: unknown },
-    personIdCol: unknown,
-  ) => async (parent: { id: string }, _args: unknown, ctx: Context) => {
-    if (!ctx.userId) return [];
-    const db = ctx.db as AnyDB;
-    return db
-      .select()
-      .from(table)
-      // biome-ignore lint/suspicious/noExplicitAny: drizzle-orm 1.0 column type compat
-      .where(and(eq(personIdCol as any, parent.id), eq((table as any).userId, ctx.userId)));
-  };
+  const userScopedPersonRelation =
+    (table: { userId: unknown; personId: unknown }, personIdCol: unknown) =>
+    async (parent: { id: string }, _args: unknown, ctx: Context) => {
+      if (!ctx.userId) return [];
+      const db = ctx.db as AnyDB;
+      return (
+        db
+          .select()
+          .from(table)
+          // biome-ignore lint/suspicious/noExplicitAny: drizzle-orm 1.0 column type compat
+          .where(and(eq(personIdCol as any, parent.id), eq((table as any).userId, ctx.userId)))
+      );
+    };
 
   if (personFields.notes) {
     personFields.notes.resolve = userScopedPersonRelation(dbSchema.notes, dbSchema.notes.personId);
   }
   if (personFields.interactions) {
-    personFields.interactions.resolve = userScopedPersonRelation(
-      dbSchema.interactions,
-      dbSchema.interactions.personId,
-    );
-  }
-  if (personFields.activities) {
-    personFields.activities.resolve = userScopedPersonRelation(dbSchema.activities, dbSchema.activities.personId);
+    personFields.interactions.resolve = userScopedPersonRelation(dbSchema.interactions, dbSchema.interactions.personId);
   }
   if (personFields.tasks) {
     personFields.tasks.resolve = userScopedPersonRelation(dbSchema.tasks, dbSchema.tasks.personId);
@@ -657,10 +623,7 @@ export function applyUserScopeExtensions(schema: GraphQLSchema): GraphQLSchema {
     );
   }
   if (personFields.contactInfos) {
-    personFields.contactInfos.resolve = userScopedPersonRelation(
-      dbSchema.contactInfos,
-      dbSchema.contactInfos.personId,
-    );
+    personFields.contactInfos.resolve = userScopedPersonRelation(dbSchema.contactInfos, dbSchema.contactInfos.personId);
   }
   if (personFields.addresses) {
     personFields.addresses.resolve = userScopedPersonRelation(dbSchema.addresses, dbSchema.addresses.personId);

@@ -4,7 +4,6 @@ import { ArrowLeft, Clock } from 'lucide-react';
 import { graphql } from '@/__generated__/gql';
 import {
   PersonTimeline,
-  type TimelineActivity,
   type TimelineImportantDate,
   type TimelineInteraction,
 } from '@/components/domain/person/timeline';
@@ -42,12 +41,6 @@ const GET_PERSON_TIMELINE = graphql(`
           label
           color
         }
-      }
-      activities {
-        id
-        occurredAt
-        title
-        description
       }
     }
   }
@@ -88,13 +81,6 @@ export default function PersonTimelinePage() {
     labels: d.labels ?? [],
   }));
 
-  const activities: TimelineActivity[] = (person.activities ?? []).map((a) => ({
-    id: a.id,
-    occurredAt: a.occurredAt,
-    title: a.title,
-    description: a.description,
-  }));
-
   return (
     <div className="h-full overflow-y-auto min-h-0 pr-2">
       <div className="space-y-6 py-4">
@@ -121,7 +107,7 @@ export default function PersonTimelinePage() {
         </div>
 
         {/* Timeline */}
-        <PersonTimeline interactions={interactions} importantDates={importantDates} activities={activities} />
+        <PersonTimeline interactions={interactions} importantDates={importantDates} />
       </div>
     </div>
   );

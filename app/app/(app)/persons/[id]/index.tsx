@@ -1,7 +1,6 @@
 import { useMutation, useQuery } from '@apollo/client';
 import { Link, useLocalSearchParams, useRouter } from 'expo-router';
 import {
-  Activity,
   ArrowLeft,
   BookUser,
   CalendarPlus,
@@ -20,7 +19,6 @@ import {
 import { type ReactNode, useRef, useState } from 'react';
 import { graphql } from '@/__generated__/gql';
 import type { ImportantDatesMilestoneTypeEnum } from '@/__generated__/graphql';
-import { ActivityList } from '@/components/domain/activity/list';
 import { AddressList } from '@/components/domain/address/list';
 import { ContactInfoList, contactHref } from '@/components/domain/contact-info/list';
 import { PersonForm, type PersonFormValue } from '@/components/domain/person/form';
@@ -134,14 +132,6 @@ const GET_PERSON_DETAIL = graphql(`
         relatedPersonFirstName
         relatedPersonLastName
       }
-      activities {
-        id
-        title
-        description
-        location
-        occurredAt
-      }
-      ...Person_ActivityList
       tasks {
         id
         title
@@ -534,7 +524,6 @@ export default function PersonDetailPage() {
   const [dateDialogOpen, setDateDialogOpen] = useState(false);
   const [noteDialogOpen, setNoteDialogOpen] = useState(false);
   const [interactionDialogOpen, setInteractionDialogOpen] = useState(false);
-  const [activityDialogOpen, setActivityDialogOpen] = useState(false);
   const [taskDialogOpen, setTaskDialogOpen] = useState(false);
   const [addressDialogOpen, setAddressDialogOpen] = useState(false);
   const [contactInfoDialogOpen, setContactInfoDialogOpen] = useState(false);
@@ -1041,26 +1030,6 @@ export default function PersonDetailPage() {
                 )}
               </Section>
 
-              {/* Activities */}
-              <Section
-                title="Activities"
-                action={
-                  <SectionAction
-                    icon={<Activity className="mr-1 h-3.5 w-3.5" />}
-                    label="Add"
-                    onClick={() => setActivityDialogOpen(true)}
-                  />
-                }
-              >
-                <ActivityList
-                  person={person}
-                  onAdd={() => refetch()}
-                  onDelete={() => refetch()}
-                  createOpen={activityDialogOpen}
-                  onCreateOpenChange={setActivityDialogOpen}
-                />
-              </Section>
-
               {/* Tasks */}
               <Section
                 title="Tasks"
@@ -1102,7 +1071,10 @@ export default function PersonDetailPage() {
                         {n.person && (
                           <p className="text-xs text-muted-foreground">
                             by{' '}
-                            <Link href={`/persons/${n.person.id}`} className="text-foreground/80 hover:text-foreground hover:underline">
+                            <Link
+                              href={`/persons/${n.person.id}`}
+                              className="text-foreground/80 hover:text-foreground hover:underline"
+                            >
                               {n.person.firstName} {n.person.lastName}
                             </Link>
                           </p>

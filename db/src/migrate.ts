@@ -1,8 +1,7 @@
 import { db } from './index.ts';
 
 const DATABASE_URL = process.env.DATABASE_URL ?? '';
-const isPostgres =
-  DATABASE_URL.startsWith('postgres://') || DATABASE_URL.startsWith('postgresql://');
+const isPostgres = DATABASE_URL.startsWith('postgres://') || DATABASE_URL.startsWith('postgresql://');
 
 if (isPostgres) {
   const { migrate } = await import('drizzle-orm/postgres-js/migrator');

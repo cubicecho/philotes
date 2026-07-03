@@ -29,7 +29,10 @@ const { default: bcrypt } = await import('bcryptjs');
 const passwordHash = await bcrypt.hash(password, 12);
 
 // Check if any users exist
-const existingUsers = await anyDb.select().from((await import('./schema.ts')).users).limit(1);
+const existingUsers = await anyDb
+  .select()
+  .from((await import('./schema.ts')).users)
+  .limit(1);
 if (existingUsers.length > 0) {
   console.log('Users already exist — skipping migration.');
   process.exit(0);
@@ -60,7 +63,6 @@ if (allPersons.length > 0) {
 // Assign userId to all user-owned tables
 const tables = [
   schema.notes,
-  schema.activities,
   schema.interactions,
   schema.tasks,
   schema.labels,
@@ -71,7 +73,10 @@ const tables = [
 ];
 
 for (const table of tables) {
-  const result = await anyDb.update(table).set({ userId: user.id }).returning({ id: (table as typeof schema.notes).id });
+  const result = await anyDb
+    .update(table)
+    .set({ userId: user.id })
+    .returning({ id: (table as typeof schema.notes).id });
   console.log(`Updated ${result.length} rows in ${(table as { _: { name: string } })._.name}.`);
 }
 

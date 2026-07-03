@@ -87,7 +87,10 @@ export function ReachOut({ persons, onLogged }: ReachOutProps) {
               <li key={p.id} className="flex items-center gap-3 rounded-md px-2 py-1.5 hover:bg-muted/60">
                 <Avatar firstName={p.firstName} lastName={p.lastName} avatarPath={p.avatarPath} size="sm" />
                 <div className="min-w-0 flex-1">
-                  <Link href={`/persons/${p.id}`} className="block truncate text-sm font-medium text-foreground hover:underline">
+                  <Link
+                    href={`/persons/${p.id}`}
+                    className="block truncate text-sm font-medium text-foreground hover:underline"
+                  >
                     {p.firstName} {p.lastName}
                   </Link>
                   <p

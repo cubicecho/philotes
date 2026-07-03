@@ -4,8 +4,8 @@ import { ApolloServerPluginDrainHttpServer } from '@apollo/server/plugin/drainHt
 import { expressMiddleware } from '@as-integrations/express5';
 import type { DB } from '@philotes/db';
 import { db } from '@philotes/db';
-import express, { Router } from 'express';
 import type { Request } from 'express';
+import express, { Router } from 'express';
 import { verifyToken } from '../resolvers/auth.ts';
 import { schema } from '../schema.ts';
 

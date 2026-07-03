@@ -76,18 +76,6 @@ const GET_ALL_EVENTS_FOR_EXPORT = gql`
         lastName
       }
     }
-    activitys {
-      id
-      title
-      description
-      location
-      occurredAt
-      person {
-        id
-        firstName
-        lastName
-      }
-    }
   }
 `;
 
@@ -175,19 +163,9 @@ interface ImportantDate {
   person?: Person | null;
 }
 
-interface Activity {
-  id: string;
-  title: string;
-  description?: string | null;
-  location?: string | null;
-  occurredAt: string;
-  person?: Person | null;
-}
-
 interface AllEventsQueryResult {
   interactions: Interaction[];
   importantDates: ImportantDate[];
-  activitys: Activity[];
 }
 
 // ── CSV helpers ────────────────────────────────────────────────────────────
@@ -368,36 +346,12 @@ function buildImportantDateEvent(importantDate: ImportantDate, now: string): str
   return lines.join('\r\n');
 }
 
-function buildActivityEvent(activity: Activity, now: string): string {
-  const personName = buildPersonDisplayName(activity.person);
-  const summary = escapeIcsText(`${activity.title} with ${personName}`);
-  const dtStart = formatIcsDateTime(activity.occurredAt);
-  const dtEnd = formatIcsDateTime(new Date(new Date(activity.occurredAt).getTime() + 60 * 60 * 1000).toISOString());
-  const lines = [
-    'BEGIN:VEVENT',
-    `UID:activity-${activity.id}@philotes`,
-    `DTSTAMP:${now}`,
-    `DTSTART:${dtStart}`,
-    `DTEND:${dtEnd}`,
-    `SUMMARY:${summary}`,
-  ];
-  if (activity.location) {
-    lines.push(`LOCATION:${escapeIcsText(activity.location)}`);
-  }
-  if (activity.description) {
-    lines.push(`DESCRIPTION:${escapeIcsText(activity.description)}`);
-  }
-  lines.push('END:VEVENT');
-  return lines.join('\r\n');
-}
-
 function buildIcsContent(data: AllEventsQueryResult): string {
   const now = formatIcsDateTime(new Date().toISOString());
 
   const events = [
     ...data.interactions.map((i) => buildInteractionEvent(i, now)),
     ...data.importantDates.map((d) => buildImportantDateEvent(d, now)),
-    ...data.activitys.map((a) => buildActivityEvent(a, now)),
   ].join('\r\n');
 
   return [
@@ -636,8 +590,7 @@ const TABS: { id: SettingsTab; label: string }[] = [
 function ImportExportTab() {
   const { data, loading, error } = useQuery<AllEventsQueryResult>(GET_ALL_EVENTS_FOR_EXPORT);
 
-  const totalCount =
-    (data?.interactions?.length ?? 0) + (data?.importantDates?.length ?? 0) + (data?.activitys?.length ?? 0);
+  const totalCount = (data?.interactions?.length ?? 0) + (data?.importantDates?.length ?? 0);
 
   function handleExport() {
     if (!data) return;
@@ -651,8 +604,8 @@ function ImportExportTab() {
         <CardHeader>
           <CardTitle>Export Calendar Events</CardTitle>
           <CardDescription>
-            Download all your interactions, important dates, and activities as an ICS file. You can import this into
-            Google Calendar, Apple Calendar, Outlook, or any other calendar application.
+            Download all your interactions and important dates as an ICS file. You can import this into Google Calendar,
+            Apple Calendar, Outlook, or any other calendar application.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -663,8 +616,7 @@ function ImportExportTab() {
           </Button>
           {!loading && !error && totalCount > 0 && (
             <p className="text-sm text-muted-foreground mt-3">
-              {data?.interactions?.length ?? 0} interactions · {data?.importantDates?.length ?? 0} important dates ·{' '}
-              {data?.activitys?.length ?? 0} activities
+              {data?.interactions?.length ?? 0} interactions · {data?.importantDates?.length ?? 0} important dates
             </p>
           )}
           {!loading && !error && totalCount === 0 && (

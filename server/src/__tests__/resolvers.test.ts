@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { parseGoogleContactsCsv } from '../resolvers/import-contacts.ts';
 import { signMagicToken, signToken, verifyMagicToken, verifyToken } from '../resolvers/auth.ts';
+import { parseGoogleContactsCsv } from '../resolvers/import-contacts.ts';
 import { buildPersonsOrderBy, buildPersonsWhere } from '../resolvers/user-scope.ts';
 
 // ---------------------------------------------------------------------------
@@ -58,7 +58,8 @@ describe('parseGoogleContactsCsv', () => {
   });
 
   it('deduplicates emails', () => {
-    const csv = 'First Name,Last Name,E-mail 1 - Value,E-mail 2 - Value\nAlice,Smith,alice@example.com,alice@example.com';
+    const csv =
+      'First Name,Last Name,E-mail 1 - Value,E-mail 2 - Value\nAlice,Smith,alice@example.com,alice@example.com';
     const { contacts } = parseGoogleContactsCsv(csv);
     expect(contacts[0].emails).toHaveLength(1);
   });
