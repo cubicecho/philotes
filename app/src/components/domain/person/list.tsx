@@ -134,8 +134,7 @@ function PersonRow({ person, onClickDelete, activeLabelIds }: PersonRowProps) {
                   Delete {person.firstName} {person.lastName}?
                 </AlertDialogTitle>
                 <AlertDialogDescription>
-                  This will permanently delete {person.firstName} and all their associated data. This cannot be
-                  undone.
+                  This will permanently delete {person.firstName} and all their associated data. This cannot be undone.
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>

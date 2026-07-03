@@ -79,10 +79,7 @@ export function OpenTasks({ tasks }: { tasks: OpenTask[] }) {
               >
                 <div className="min-w-0 flex-1">
                   <p className="font-medium truncate">{task.title}</p>
-                  <Link
-                    href={`/persons/${task.personId}`}
-                    className="text-xs text-muted-foreground hover:underline"
-                  >
+                  <Link href={`/persons/${task.personId}`} className="text-xs text-muted-foreground hover:underline">
                     {task.personFirstName} {task.personLastName}
                   </Link>
                 </div>

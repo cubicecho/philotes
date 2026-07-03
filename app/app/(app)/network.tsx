@@ -1,6 +1,6 @@
 import { useQuery } from '@apollo/client';
-import { useRouter } from 'expo-router';
 import * as d3 from 'd3';
+import { useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { graphql } from '@/__generated__/gql';
 

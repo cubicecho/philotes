@@ -1,6 +1,6 @@
 import { Redirect, Slot } from 'expo-router';
-import { isAuthenticated } from '@/lib/auth';
 import { BottomNav, Header } from '@/components/layouts/header';
+import { isAuthenticated } from '@/lib/auth';
 
 export default function AppLayout() {
   if (!isAuthenticated()) {

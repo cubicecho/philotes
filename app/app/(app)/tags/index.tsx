@@ -1,7 +1,7 @@
 import { useMutation, useQuery } from '@apollo/client';
 import { useState } from 'react';
 import { graphql } from '@/__generated__/gql';
-import type { Label_ListFragment, CreateLabelInput } from '@/__generated__/graphql';
+import type { CreateLabelInput, Label_ListFragment } from '@/__generated__/graphql';
 import { LabelList } from '@/components/domain/label/list';
 import { TagForm } from '@/components/domain/tag/form';
 import { Button } from '@/components/ui/button';

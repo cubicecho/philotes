@@ -1,9 +1,10 @@
 import { useMutation } from '@apollo/client';
-import { X } from 'lucide-react';
+import { Plus } from 'lucide-react';
 
 import { graphql } from '@/__generated__/gql';
 import type { Person_LabelsFragment } from '@/__generated__/graphql';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { LabelChip } from '@/components/ui/label-chip';
 
 // ---------------------------------------------------------------------------
 // Fragment
@@ -58,10 +59,10 @@ export interface PersonLabelsProps {
 }
 
 // ---------------------------------------------------------------------------
-// Label chip (attached)
+// Attached label chip (detaches on remove)
 // ---------------------------------------------------------------------------
 
-interface LabelChipProps {
+interface AttachedLabelChipProps {
   personId: string;
   labelId: string;
   label: string;
@@ -69,7 +70,7 @@ interface LabelChipProps {
   onDelete: (labelId: string) => void;
 }
 
-function LabelChip({ personId, labelId, label, color, onDelete }: LabelChipProps) {
+function AttachedLabelChip({ personId, labelId, label, color, onDelete }: AttachedLabelChipProps) {
   const [detachLabel] = useMutation(DETACH_LABEL);
 
   const handleDetach = async () => {
@@ -77,24 +78,7 @@ function LabelChip({ personId, labelId, label, color, onDelete }: LabelChipProps
     onDelete(labelId);
   };
 
-  return (
-    <span className="inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs">
-      <span
-        className="inline-block h-2 w-2 rounded-full shrink-0"
-        style={{ backgroundColor: color }}
-        aria-hidden="true"
-      />
-      {label}
-      <button
-        type="button"
-        onClick={handleDetach}
-        className="ml-0.5 text-muted-foreground hover:text-destructive transition-colors"
-        aria-label={`Remove tag ${label}`}
-      >
-        <X className="h-3 w-3" />
-      </button>
-    </span>
-  );
+  return <LabelChip label={label} color={color} onRemove={handleDetach} />;
 }
 
 // ---------------------------------------------------------------------------
@@ -155,29 +139,35 @@ function AddLabelPicker({ personId, allLabels, attachedLabelIds, onClose, onAdd 
 export function PersonLabels({ person, allLabels, onDelete, onAdd, showAdd = false, onShowAdd }: PersonLabelsProps) {
   const attachedIds = new Set(person.labels.map((l) => l.id));
 
-  return (
-    <div className="space-y-2">
-      {person.labels.length > 0 && (
-        <div className="flex flex-wrap gap-1.5">
-          {person.labels.map((l) => (
-            <LabelChip
-              key={l.id}
-              personId={person.id}
-              labelId={l.id}
-              label={l.label}
-              color={l.color}
-              onDelete={onDelete}
-            />
-          ))}
-        </div>
-      )}
+  const hasUnattached = allLabels.some((l) => !attachedIds.has(l.id));
 
-      {person.labels.length === 0 && <p className="text-muted-foreground text-sm">No tags attached.</p>}
+  return (
+    <div className="flex flex-wrap items-center gap-1.5">
+      {person.labels.map((l) => (
+        <AttachedLabelChip
+          key={l.id}
+          personId={person.id}
+          labelId={l.id}
+          label={l.label}
+          color={l.color}
+          onDelete={onDelete}
+        />
+      ))}
+      {hasUnattached && onShowAdd && (
+        <button
+          type="button"
+          onClick={() => onShowAdd(true)}
+          className="inline-flex items-center gap-0.5 rounded-full border border-dashed border-border px-2 py-0.5 text-xs text-muted-foreground hover:text-foreground hover:border-foreground/40 transition-colors"
+        >
+          <Plus className="h-3 w-3" />
+          Label
+        </button>
+      )}
 
       <Dialog open={showAdd} onOpenChange={onShowAdd}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Add Tag</DialogTitle>
+            <DialogTitle>Add Label</DialogTitle>
           </DialogHeader>
           <AddLabelPicker
             personId={person.id}

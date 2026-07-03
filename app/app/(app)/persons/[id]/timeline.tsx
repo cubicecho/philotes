@@ -97,32 +97,32 @@ export default function PersonTimelinePage() {
 
   return (
     <div className="h-full overflow-y-auto min-h-0 pr-2">
-    <div className="space-y-6 py-4">
-      {/* Back link */}
-      <div>
-        <Link
-          href={`/persons/${id}`}
-          className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          Back to {person.firstName} {person.lastName}
-        </Link>
-      </div>
-
-      {/* Header */}
-      <div className="flex items-center gap-3">
-        <Clock className="h-6 w-6 text-muted-foreground shrink-0" />
+      <div className="space-y-6 py-4">
+        {/* Back link */}
         <div>
-          <h1 className="font-bold text-3xl">Timeline</h1>
-          <p className="text-muted-foreground text-sm">
-            {person.firstName} {person.lastName}
-          </p>
+          <Link
+            href={`/persons/${id}`}
+            className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Back to {person.firstName} {person.lastName}
+          </Link>
         </div>
-      </div>
 
-      {/* Timeline */}
-      <PersonTimeline interactions={interactions} importantDates={importantDates} activities={activities} />
-    </div>
+        {/* Header */}
+        <div className="flex items-center gap-3">
+          <Clock className="h-6 w-6 text-muted-foreground shrink-0" />
+          <div>
+            <h1 className="font-bold text-3xl">Timeline</h1>
+            <p className="text-muted-foreground text-sm">
+              {person.firstName} {person.lastName}
+            </p>
+          </div>
+        </div>
+
+        {/* Timeline */}
+        <PersonTimeline interactions={interactions} importantDates={importantDates} activities={activities} />
+      </div>
     </div>
   );
 }

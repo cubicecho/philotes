@@ -1,6 +1,5 @@
 import { useQuery } from '@apollo/client';
 import { graphql } from '@/__generated__/gql';
-import { computeOverdueByDays } from '@/lib/contact-frequency';
 import type { UpcomingDate } from '@/components/domain/dashboard/coming-up';
 import { ComingUp } from '@/components/domain/dashboard/coming-up';
 import { DontLoseTouch } from '@/components/domain/dashboard/dont-lose-touch';
@@ -15,6 +14,7 @@ import { RecentPersons } from '@/components/domain/dashboard/recent-persons';
 import { UpcomingDates } from '@/components/domain/dashboard/upcoming-dates';
 import { ListLayout } from '@/components/layouts/list';
 import { Spinner } from '@/components/ui/spinner.tsx';
+import { computeOverdueByDays } from '@/lib/contact-frequency';
 
 // ---------------------------------------------------------------------------
 // GraphQL
@@ -98,7 +98,6 @@ function todayMidnight(): Date {
 function daysBetween(a: Date, b: Date): number {
   return Math.round((b.getTime() - a.getTime()) / (1000 * 60 * 60 * 24));
 }
-
 
 function daysUntilNextOccurrence(storedDate: Date, recurrence: string | null | undefined): number | null {
   const t = todayMidnight();

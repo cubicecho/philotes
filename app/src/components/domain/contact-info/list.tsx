@@ -100,6 +100,28 @@ const CONTACT_TYPE_PLACEHOLDERS: Record<ContactInfosTypeEnum, string> = {
   [ContactInfosTypeEnum.Other]: 'Contact value',
 };
 
+/** Actionable href for a contact value — tap to call/text/email/open. */
+export function contactHref(type: string, value: string): string | null {
+  const v = value.trim();
+  switch (type as ContactInfosTypeEnum) {
+    case ContactInfosTypeEnum.Email:
+      return `mailto:${v}`;
+    case ContactInfosTypeEnum.Phone:
+    case ContactInfosTypeEnum.Mobile:
+      return `tel:${v.replace(/[^\d+]/g, '')}`;
+    case ContactInfosTypeEnum.Linkedin:
+      return v.startsWith('http') ? v : `https://linkedin.com/in/${v.replace(/^@/, '')}`;
+    case ContactInfosTypeEnum.Twitter:
+      return v.startsWith('http') ? v : `https://x.com/${v.replace(/^@/, '')}`;
+    case ContactInfosTypeEnum.Instagram:
+      return v.startsWith('http') ? v : `https://instagram.com/${v.replace(/^@/, '')}`;
+    case ContactInfosTypeEnum.Website:
+      return v.startsWith('http') ? v : `https://${v}`;
+    default:
+      return null;
+  }
+}
+
 function ContactTypeIcon({ type, className }: { type: string; className?: string }) {
   switch (type as ContactInfosTypeEnum) {
     case ContactInfosTypeEnum.Email:
@@ -155,6 +177,7 @@ function ContactInfoRow({ id, type, value, label, isPrimary, onDelete }: Contact
   };
 
   const typeLabel = CONTACT_TYPE_OPTIONS.find((o) => o.value === type)?.label ?? type;
+  const href = contactHref(type, value);
 
   return (
     <div className="flex items-center justify-between gap-3 rounded-md border border-border px-3 py-2 text-sm">
@@ -173,16 +196,27 @@ function ContactInfoRow({ id, type, value, label, isPrimary, onDelete }: Contact
               </span>
             )}
           </div>
-          <p className="mt-0.5 truncate text-sm font-medium">{value}</p>
+          {href ? (
+            <a
+              href={href}
+              target={href.startsWith('http') ? '_blank' : undefined}
+              rel={href.startsWith('http') ? 'noreferrer' : undefined}
+              className="mt-0.5 block truncate text-sm font-medium text-primary hover:underline"
+            >
+              {value}
+            </a>
+          ) : (
+            <p className="mt-0.5 truncate text-sm font-medium">{value}</p>
+          )}
         </div>
       </div>
       <button
         type="button"
         onClick={handleDelete}
-        className="shrink-0 text-muted-foreground hover:text-destructive transition-colors"
+        className="shrink-0 flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground/60 hover:text-destructive transition-colors"
         aria-label="Delete contact info"
       >
-        <Trash2 className="h-3.5 w-3.5" />
+        <Trash2 className="h-4 w-4" />
       </button>
     </div>
   );
@@ -349,7 +383,6 @@ export function ContactInfoList({ person, onAdd, onDelete, createOpen, onCreateO
           />
         </DialogContent>
       </Dialog>
-
     </div>
   );
 }

@@ -115,10 +115,7 @@ export function UpcomingDates() {
                 className="flex items-center justify-between gap-3 rounded-md border border-border px-3 py-2 text-sm"
               >
                 <div className="min-w-0 flex-1">
-                  <Link
-                    href={`/persons/${d.personId}/dates/${d.id}`}
-                    className="font-medium hover:underline"
-                  >
+                  <Link href={`/persons/${d.personId}/dates/${d.id}`} className="font-medium hover:underline">
                     {d.name}
                   </Link>
                   {d.description && <span className="ml-2 text-xs text-muted-foreground">{d.description}</span>}

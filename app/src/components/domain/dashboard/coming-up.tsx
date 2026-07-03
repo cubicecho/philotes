@@ -75,10 +75,7 @@ export function ComingUp({ dates }: { dates: UpcomingDate[] }) {
               >
                 <div className="min-w-0 flex-1">
                   <p className="font-medium">{d.name}</p>
-                  <Link
-                    href={`/persons/${d.personId}`}
-                    className="text-xs text-muted-foreground hover:underline"
-                  >
+                  <Link href={`/persons/${d.personId}`} className="text-xs text-muted-foreground hover:underline">
                     {d.personFirstName} {d.personLastName}
                   </Link>
                 </div>
