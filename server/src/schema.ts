@@ -7,6 +7,7 @@ if (!dbInstance._.fullSchema) {
   // biome-ignore lint/suspicious/noExplicitAny: compatibility shim for drizzle-orm 1.0 beta
   (dbInstance._ as any).fullSchema = dbSchema;
 }
+
 import { GraphQLInputObjectType, GraphQLNonNull, type GraphQLNullableType, type GraphQLSchema } from 'graphql';
 import { applyApiKeysExtension } from './resolvers/api-keys.ts';
 import { applyAuthExtension } from './resolvers/auth.ts';

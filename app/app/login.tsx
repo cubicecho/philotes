@@ -63,7 +63,10 @@ export default function LoginPage() {
           </p>
           <button
             type="button"
-            onClick={() => { setSubmitted(false); setEmail(''); }}
+            onClick={() => {
+              setSubmitted(false);
+              setEmail('');
+            }}
             className="text-sm underline text-muted-foreground"
           >
             Use a different email
@@ -78,9 +81,7 @@ export default function LoginPage() {
       <div className="w-full max-w-sm space-y-6 p-6 border rounded-lg shadow-sm bg-card">
         <div className="space-y-1">
           <h1 className="text-2xl font-semibold">Sign in</h1>
-          <p className="text-sm text-muted-foreground">
-            Enter your email and we'll send you a magic link.
-          </p>
+          <p className="text-sm text-muted-foreground">Enter your email and we'll send you a magic link.</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">

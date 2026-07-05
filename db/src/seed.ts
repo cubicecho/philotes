@@ -3,9 +3,8 @@ import { db as _db } from './index.ts';
 
 // biome-ignore lint/suspicious/noExplicitAny: seed script — union db type is runtime-safe
 const db = _db as any;
+
 import {
-  activities,
-  activityTags,
   addresses,
   contactInfos,
   importantDates,
@@ -485,56 +484,6 @@ async function seedAddresses(personData: { id: string }[], userId: string) {
   console.log(`Inserted ${addressData.length} addresses`);
 }
 
-async function seedActivities(personData: { id: string }[], labelData: { id: string }[], userId: string) {
-  const activityData: {
-    id: string;
-    userId: string;
-    personId: string;
-    title: string;
-    description: string | null;
-    location: string | null;
-    occurredAt: Date;
-  }[] = [];
-
-  const activityTagData: { activityId: string; labelId: string }[] = [];
-
-  for (const person of personData) {
-    const count = Math.floor(Math.random() * 4); // 0–3
-
-    for (let i = 0; i < count; i++) {
-      const activityId = randomId();
-
-      activityData.push({
-        id: activityId,
-        userId,
-        personId: person.id,
-        title: faker.company.buzzPhrase(),
-        description: Math.random() > 0.4 ? faker.lorem.sentences(2) : null,
-        location: Math.random() > 0.4 ? faker.location.city() : null,
-        occurredAt: randomPastDate(2),
-      });
-
-      // 0–1 label tag per activity
-      if (Math.random() > 0.5) {
-        activityTagData.push({
-          activityId,
-          labelId: pickRandom(labelData).id,
-        });
-      }
-    }
-  }
-
-  if (activityData.length === 0) return;
-
-  await db.insert(activities).values(activityData);
-  console.log(`Inserted ${activityData.length} activities`);
-
-  if (activityTagData.length > 0) {
-    await db.insert(activityTags).values(activityTagData);
-    console.log(`Inserted ${activityTagData.length} activity tags`);
-  }
-}
-
 // ── main ───────────────────────────────────────────────────────────────────
 
 console.log('Starting seed...');
@@ -550,6 +499,5 @@ await seedPersonRelationships(personData, userId);
 await seedTasks(personData, userId);
 await seedContactInfos(personData, userId);
 await seedAddresses(personData, userId);
-await seedActivities(personData, labelData, userId);
 
 console.log('Seed complete.');

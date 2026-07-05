@@ -1,9 +1,5 @@
-import { useFragment } from '@apollo/client';
 import { Link } from 'expo-router';
-import { Search, Trash2, UserPlus, X } from 'lucide-react';
-import { graphql } from '@/__generated__/gql';
-import type { Person_ListFragment } from '@/__generated__/graphql.ts';
-import { PERSON_RELATIONSHIPS } from '@/components/domain/person/relationships';
+import { Mail, Phone, Search, Trash2, UserPlus, Users, X } from 'lucide-react';
 import { ListLayout } from '@/components/layouts/list';
 import {
   AlertDialog,
@@ -18,48 +14,21 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Avatar } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import {
-  Pagination,
-  PaginationContent,
-  PaginationItem,
-  PaginationNext,
-  PaginationPrevious,
-} from '@/components/ui/pagination';
-import { Spinner } from '@/components/ui/spinner.tsx';
-
-const PERSON_LIST = graphql(`
-  fragment Person_List on Person {
-    id
-    firstName
-    lastName
-    email
-    avatarPath
-    createdAt
-    updatedAt
-    labels {
-      id
-      label
-      color
-    }
-    importantDates {
-      id
-      name
-      description
-      date
-    }
-    ...Person_Relationships
-  }
-`);
-
-export { PERSON_LIST, PERSON_RELATIONSHIPS };
+import { LabelChip } from '@/components/ui/label-chip';
+import { relativeTime } from '@/lib/relative-time';
 
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
 
-export interface FilterablePersonRow {
-  ref: Person_ListFragment;
+export interface PersonContactInfo {
+  id: string;
+  type: string;
+  value: string;
+  isPrimary?: boolean | null;
+}
+
+export interface PersonRowData {
   id: string;
   firstName: string;
   lastName: string;
@@ -67,6 +36,7 @@ export interface FilterablePersonRow {
   avatarPath?: string | null;
   labels: Array<{ id: string; label: string; color: string }>;
   lastContactedAt?: Date | null;
+  contactInfos: PersonContactInfo[];
 }
 
 type SortField = 'name' | 'lastContacted';
@@ -76,141 +46,131 @@ type SortOption = `${SortField}-${SortDir}`;
 const SORT_OPTIONS: Array<{ value: SortOption; label: string }> = [
   { value: 'name-asc', label: 'Name (A–Z)' },
   { value: 'name-desc', label: 'Name (Z–A)' },
-  { value: 'lastContacted-asc', label: 'Last Contacted (oldest first)' },
-  { value: 'lastContacted-desc', label: 'Last Contacted (recent first)' },
+  { value: 'lastContacted-asc', label: 'Last contacted (oldest first)' },
+  { value: 'lastContacted-desc', label: 'Last contacted (recent first)' },
 ];
 
-const PAGE_SIZE_OPTIONS = [10, 25, 50];
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+function primaryPhone(infos: PersonContactInfo[]): string | null {
+  const phones = infos.filter((i) => i.type === 'phone' || i.type === 'mobile');
+  if (phones.length === 0) return null;
+  return (phones.find((p) => p.isPrimary) ?? phones[0]).value;
+}
+
+function groupLetter(person: PersonRowData): string {
+  const basis = person.lastName || person.firstName;
+  const first = basis.charAt(0).toUpperCase();
+  return /[A-Z]/.test(first) ? first : '#';
+}
 
 // ---------------------------------------------------------------------------
-// PersonRow
+// PersonRow — one compact, fully tappable row
 // ---------------------------------------------------------------------------
 
 interface PersonRowProps {
-  person: Person_ListFragment;
-  onClickDelete: (id: string) => void;
-  /** Label IDs currently active as filters — highlighted when matched. */
+  person: PersonRowData;
+  onClickDelete?: (id: string) => void;
   activeLabelIds: Set<string>;
-  lastContactedAt?: Date | null;
 }
 
-function relativeTime(date: Date): string {
-  const now = new Date();
-  const diffMs = now.getTime() - date.getTime();
-  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-  if (diffDays === 0) return 'Today';
-  if (diffDays === 1) return 'Yesterday';
-  if (diffDays < 7) return `${diffDays}d ago`;
-  if (diffDays < 30) return `${Math.floor(diffDays / 7)}w ago`;
-  if (diffDays < 365) return `${Math.floor(diffDays / 30)}mo ago`;
-  return `${Math.floor(diffDays / 365)}y ago`;
-}
-
-function PersonRow({ person: from, onClickDelete, activeLabelIds, lastContactedAt }: PersonRowProps) {
-  const { data: person, complete } = useFragment({
-    fragment: PERSON_LIST,
-    fragmentName: 'Person_List',
-    from,
-  });
-
-  if (!complete) {
-    return <Spinner />;
-  }
+function PersonRow({ person, onClickDelete, activeLabelIds }: PersonRowProps) {
+  const phone = primaryPhone(person.contactInfos);
 
   return (
-    <Card>
-      <CardContent className="flex items-start gap-3 justify-between p-4">
+    <div className="group flex items-center gap-3 px-2 py-2.5 rounded-md hover:bg-muted/60 transition-colors">
+      <Link href={`/persons/${person.id}`} className="flex min-w-0 flex-1 items-center gap-3 text-foreground">
         <Avatar firstName={person.firstName} lastName={person.lastName} avatarPath={person.avatarPath} size="md" />
-        <div className="min-w-0 flex-1 space-y-1">
-          <p className="font-medium">
-            <Link href={`/persons/${person.id}`} className="hover:underline">
-              {person.firstName} {person.lastName}
-            </Link>
+        <div className="min-w-0 flex-1">
+          <p className="truncate font-medium text-sm">
+            {person.firstName} {person.lastName}
           </p>
-          <p className="text-muted-foreground text-sm">{person.email}</p>
-          {lastContactedAt && (
-            <p className="text-muted-foreground text-xs">Last contact: {relativeTime(lastContactedAt)}</p>
-          )}
-          {person.labels.length > 0 && (
-            <div className="mt-1 flex flex-wrap gap-1">
-              {person.labels.map((l) => (
-                <span
-                  key={l.id}
-                  className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs ${
-                    activeLabelIds.size > 0 && activeLabelIds.has(l.id)
-                      ? 'border-foreground bg-foreground/10 font-medium'
-                      : ''
-                  }`}
-                >
-                  <span
-                    className="inline-block h-2 w-2 rounded-full"
-                    style={{ backgroundColor: l.color }}
-                    aria-hidden="true"
-                  />
-                  {l.label}
-                </span>
-              ))}
-            </div>
-          )}
+          <p className="truncate text-muted-foreground text-xs">
+            {person.lastContactedAt ? `Last contact: ${relativeTime(person.lastContactedAt)}` : (person.email ?? '')}
+          </p>
         </div>
-        <AlertDialog>
-          <AlertDialogTrigger asChild>
-            <Button variant="ghost" size="icon" className="ml-2 shrink-0 text-destructive hover:text-destructive">
-              <Trash2 className="h-4 w-4" />
-            </Button>
-          </AlertDialogTrigger>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>
-                Delete {person.firstName} {person.lastName}?
-              </AlertDialogTitle>
-              <AlertDialogDescription>
-                This will permanently delete {person.firstName} and all their associated data. This cannot be undone.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Cancel</AlertDialogCancel>
-              <AlertDialogAction
-                onClick={() => onClickDelete(person.id)}
-                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+        {person.labels.length > 0 && (
+          <div className="hidden sm:flex flex-wrap justify-end gap-1 max-w-[40%]">
+            {person.labels.map((l) => (
+              <LabelChip key={l.id} label={l.label} color={l.color} active={activeLabelIds.has(l.id)} />
+            ))}
+          </div>
+        )}
+      </Link>
+
+      {/* Quick actions */}
+      <div className="flex shrink-0 items-center gap-0.5">
+        {phone && (
+          <Button variant="ghost" size="icon" asChild className="h-9 w-9 text-muted-foreground hover:text-primary">
+            <a href={`tel:${phone}`} aria-label={`Call ${person.firstName}`}>
+              <Phone className="h-4 w-4" />
+            </a>
+          </Button>
+        )}
+        {person.email && (
+          <Button variant="ghost" size="icon" asChild className="h-9 w-9 text-muted-foreground hover:text-primary">
+            <a href={`mailto:${person.email}`} aria-label={`Email ${person.firstName}`}>
+              <Mail className="h-4 w-4" />
+            </a>
+          </Button>
+        )}
+        {onClickDelete && (
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-9 w-9 text-muted-foreground/50 hover:text-destructive"
+                aria-label={`Delete ${person.firstName} ${person.lastName}`}
               >
-                Delete
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
-      </CardContent>
-    </Card>
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>
+                  Delete {person.firstName} {person.lastName}?
+                </AlertDialogTitle>
+                <AlertDialogDescription>
+                  This will permanently delete {person.firstName} and all their associated data. This cannot be undone.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={() => onClickDelete(person.id)}
+                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                >
+                  Delete
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        )}
+      </div>
+    </div>
   );
 }
 
 // ---------------------------------------------------------------------------
 // PersonList — pure display component
-// All filtering, sorting, pagination logic lives in the parent route.
 // ---------------------------------------------------------------------------
 
 export interface PersonListProps {
-  persons: FilterablePersonRow[];
-  // Label filter UI
+  persons: PersonRowData[];
+  /** All labels in the workspace (not just the visible page). */
   allLabels: Array<{ id: string; label: string; color: string }>;
   activeLabelIds: string[];
   onToggleLabel: (id: string) => void;
-  // Search UI
   q: string;
   onSearchChange: (q: string) => void;
-  /** Whether a new query is in-flight; adds a subtle fade instead of unmounting. */
   loading?: boolean;
-  // Sort UI
-  sortValue: string; // e.g. "name-asc"
+  sortValue: string;
   onSortChange: (value: string) => void;
-  // Pagination UI
-  page: number;
-  pageSize: number;
-  hasNextPage: boolean;
-  onNextPage: () => void;
-  onPrevPage: () => void;
-  onPageSizeChange: (size: number) => void;
-  // Actions
+  /** Group rows under sticky letter headers (name sort only). */
+  grouped: boolean;
   onClickAdd?: () => void;
   onClickDelete?: (id: string) => void;
 }
@@ -225,35 +185,73 @@ export function PersonList({
   loading = false,
   sortValue,
   onSortChange,
-  page,
-  pageSize: _pageSize,
-  hasNextPage,
-  onNextPage,
-  onPrevPage,
-  onPageSizeChange,
+  grouped,
   onClickAdd,
   onClickDelete,
 }: PersonListProps) {
   const activeLabelSet = new Set(activeLabelIds);
-  const isFirstPage = page === 0;
   const hasFilters = q.trim().length > 0 || activeLabelIds.length > 0;
 
   const handleClearFilters = () => {
     onSearchChange('');
-    // Clear labels by toggling each active one off — simpler than a dedicated prop
     for (const id of activeLabelIds) {
       onToggleLabel(id);
     }
   };
 
+  // Group under letters (list arrives sorted by name from the caller).
+  const groups: Array<{ letter: string; rows: PersonRowData[] }> = [];
+  if (grouped) {
+    for (const person of persons) {
+      const letter = groupLetter(person);
+      const last = groups[groups.length - 1];
+      if (last && last.letter === letter) {
+        last.rows.push(person);
+      } else {
+        groups.push({ letter, rows: [person] });
+      }
+    }
+  }
+
+  const emptyState = hasFilters ? (
+    <div className="py-12 text-center text-sm text-muted-foreground">
+      <p>No people match the current filters.</p>
+      <button type="button" onClick={handleClearFilters} className="mt-2 text-primary hover:underline">
+        Clear filters
+      </button>
+    </div>
+  ) : (
+    <div className="flex flex-col items-center gap-3 py-16 text-center">
+      <Users className="h-10 w-10 text-muted-foreground/50" />
+      <div>
+        <p className="font-medium">No people yet</p>
+        <p className="text-sm text-muted-foreground mt-1">Add someone, or import your existing contacts.</p>
+      </div>
+      <div className="flex gap-2 mt-2">
+        {onClickAdd && (
+          <Button onClick={onClickAdd}>
+            <UserPlus className="mr-2 h-4 w-4" />
+            Add Person
+          </Button>
+        )}
+        <Button variant="outline" asChild>
+          <Link href="/settings" className="text-foreground">
+            Import contacts
+          </Link>
+        </Button>
+      </div>
+    </div>
+  );
+
   return (
     <ListLayout
+      spacing={false}
       header={
         <div className="space-y-3 pt-3">
           <div className="flex items-center justify-between">
-            <h1 className="font-bold text-3xl">Persons</h1>
+            <h1 className="font-bold text-2xl tracking-tight">People</h1>
             {onClickAdd && (
-              <Button onClick={onClickAdd}>
+              <Button onClick={onClickAdd} className="hidden md:inline-flex">
                 <UserPlus className="mr-2 h-4 w-4" />
                 Add Person
               </Button>
@@ -274,7 +272,7 @@ export function PersonList({
               value={sortValue}
               onChange={(e) => onSortChange(e.target.value)}
               className="h-9 rounded-md border border-input bg-background px-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring shrink-0"
-              aria-label="Sort persons"
+              aria-label="Sort people"
             >
               {SORT_OPTIONS.map((opt) => (
                 <option key={opt.value} value={opt.value}>
@@ -285,31 +283,23 @@ export function PersonList({
           </div>
           {allLabels.length > 0 && (
             <div className="flex flex-wrap items-center gap-1.5">
-              <span className="text-xs text-muted-foreground">Filter:</span>
               {allLabels.map((l) => (
-                <button
+                <LabelChip
                   key={l.id}
-                  type="button"
+                  label={l.label}
+                  color={l.color}
+                  active={activeLabelSet.has(l.id)}
                   onClick={() => onToggleLabel(l.id)}
-                  className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs transition-colors ${
-                    activeLabelSet.has(l.id) ? 'border-foreground bg-foreground text-background' : 'hover:bg-muted'
-                  }`}
-                >
-                  <span
-                    className="inline-block h-2 w-2 rounded-full shrink-0"
-                    style={{ backgroundColor: l.color }}
-                    aria-hidden="true"
-                  />
-                  {l.label}
-                  {activeLabelSet.has(l.id) && <X className="h-2.5 w-2.5 ml-0.5" />}
-                </button>
+                  onRemove={activeLabelSet.has(l.id) ? () => onToggleLabel(l.id) : undefined}
+                />
               ))}
               {hasFilters && (
                 <button
                   type="button"
                   onClick={handleClearFilters}
-                  className="text-xs text-muted-foreground hover:text-foreground transition-colors ml-1"
+                  className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors ml-1"
                 >
+                  <X className="h-3 w-3" />
                   Clear
                 </button>
               )}
@@ -318,68 +308,37 @@ export function PersonList({
         </div>
       }
       body={
-        <div className={`space-y-3 transition-opacity${loading ? ' opacity-60' : ''}`}>
-          <p className="text-xs text-muted-foreground">
-            {persons.length} person{persons.length !== 1 ? 's' : ''}
-          </p>
-
+        <div className={`transition-opacity${loading ? ' opacity-60' : ''}`}>
           {persons.length === 0 ? (
-            <p className="text-muted-foreground text-sm">
-              {hasFilters ? 'No persons match the current filters.' : 'No persons yet.'}
-            </p>
+            emptyState
+          ) : grouped ? (
+            groups.map((group) => (
+              <div key={group.letter}>
+                <div className="sticky top-0 z-10 bg-background/95 backdrop-blur px-2 py-1 text-xs font-semibold text-primary">
+                  {group.letter}
+                </div>
+                <div className="divide-y divide-border/60">
+                  {group.rows.map((p) => (
+                    <PersonRow key={p.id} person={p} onClickDelete={onClickDelete} activeLabelIds={activeLabelSet} />
+                  ))}
+                </div>
+              </div>
+            ))
           ) : (
-            <div className="grid gap-4">
+            <div className="divide-y divide-border/60">
               {persons.map((p) => (
-                <PersonRow
-                  key={p.id}
-                  person={p.ref}
-                  onClickDelete={onClickDelete ?? (() => undefined)}
-                  activeLabelIds={activeLabelSet}
-                  lastContactedAt={p.lastContactedAt}
-                />
+                <PersonRow key={p.id} person={p} onClickDelete={onClickDelete} activeLabelIds={activeLabelSet} />
               ))}
             </div>
           )}
         </div>
       }
       footer={
-        <div className="flex items-center justify-between gap-2">
-          <div className="flex items-center gap-1.5">
-            <label htmlFor="persons-page-size" className="text-xs text-muted-foreground">
-              Per page
-            </label>
-            <select
-              id="persons-page-size"
-              value={_pageSize}
-              onChange={(e) => onPageSizeChange(Number(e.target.value))}
-              className="h-8 rounded-md border border-input bg-background px-2 text-xs focus:outline-none focus:ring-2 focus:ring-ring"
-            >
-              {PAGE_SIZE_OPTIONS.map((n) => (
-                <option key={n} value={n}>
-                  {n}
-                </option>
-              ))}
-            </select>
-          </div>
-          <Pagination className="w-auto mx-0 justify-end">
-            <PaginationContent>
-              <PaginationItem>
-                <PaginationPrevious
-                  onClick={onPrevPage}
-                  className={isFirstPage ? 'pointer-events-none opacity-50' : ''}
-                  aria-disabled={isFirstPage}
-                />
-              </PaginationItem>
-              <PaginationItem>
-                <PaginationNext
-                  onClick={onNextPage}
-                  className={!hasNextPage ? 'pointer-events-none opacity-50' : ''}
-                  aria-disabled={!hasNextPage}
-                />
-              </PaginationItem>
-            </PaginationContent>
-          </Pagination>
-        </div>
+        persons.length > 0 ? (
+          <p className="text-xs text-muted-foreground">
+            {persons.length} {persons.length === 1 ? 'person' : 'people'}
+          </p>
+        ) : undefined
       }
     />
   );

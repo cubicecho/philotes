@@ -622,7 +622,7 @@ function NoteRow({ note, allTags, allPersons, onChanged }: NoteRowProps) {
               <Link
                 key={m.id}
                 href={`/persons/${m.id}`}
-                className="rounded bg-muted px-1.5 py-0.5 hover:underline"
+                className="rounded bg-muted px-1.5 py-0.5 text-foreground hover:underline"
               >
                 {m.firstName} {m.lastName}
               </Link>

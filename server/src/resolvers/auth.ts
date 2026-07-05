@@ -1,7 +1,6 @@
 import { schema as dbSchema } from '@philotes/db';
 import { eq } from 'drizzle-orm';
-import { GraphQLError } from 'graphql';
-import { extendSchema, type GraphQLObjectType, type GraphQLSchema, parse } from 'graphql';
+import { extendSchema, GraphQLError, type GraphQLObjectType, type GraphQLSchema, parse } from 'graphql';
 import jwt from 'jsonwebtoken';
 import type { Context } from '../routes/graphql.ts';
 
@@ -96,10 +95,7 @@ export function applyAuthExtension(schema: GraphQLSchema): GraphQLSchema {
     if (existing.length > 0) {
       userId = existing[0].id;
     } else {
-      const [created] = await db
-        .insert(dbSchema.users)
-        .values({ email })
-        .returning({ id: dbSchema.users.id });
+      const [created] = await db.insert(dbSchema.users).values({ email }).returning({ id: dbSchema.users.id });
       if (!created) throw new GraphQLError('Failed to create user');
       userId = created.id;
     }

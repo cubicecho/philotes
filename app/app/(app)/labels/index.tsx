@@ -1,7 +1,7 @@
 import { useMutation, useQuery } from '@apollo/client';
 import { useState } from 'react';
 import { graphql } from '@/__generated__/gql';
-import type { Label_ListFragment, CreateLabelInput } from '@/__generated__/graphql';
+import type { CreateLabelInput, Label_ListFragment } from '@/__generated__/graphql';
 import { LabelList } from '@/components/domain/label/list';
 import { TagForm } from '@/components/domain/tag/form';
 import { Button } from '@/components/ui/button';
@@ -110,7 +110,7 @@ export default function TagsPage() {
   const otherLabels = (data?.labels ?? []).filter((l) => l.id !== mergingLabel?.id);
 
   if (loading) return <Spinner />;
-  if (error) return <p>Error loading tags: {error.message}</p>;
+  if (error) return <p>Error loading labels: {error.message}</p>;
 
   return (
     <>
@@ -118,8 +118,8 @@ export default function TagsPage() {
       <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>New Tag</DialogTitle>
-            <DialogDescription>Add a new tag to your CRM.</DialogDescription>
+            <DialogTitle>New Label</DialogTitle>
+            <DialogDescription>Add a new label to your CRM.</DialogDescription>
           </DialogHeader>
           <TagForm onSubmit={handleCreate} onCancel={() => setCreateDialogOpen(false)} />
         </DialogContent>
@@ -134,8 +134,8 @@ export default function TagsPage() {
       >
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Edit Tag</DialogTitle>
-            <DialogDescription>Rename or recolor this tag.</DialogDescription>
+            <DialogTitle>Edit Label</DialogTitle>
+            <DialogDescription>Rename or recolor this label.</DialogDescription>
           </DialogHeader>
           {editingLabel && (
             <TagForm
@@ -161,10 +161,10 @@ export default function TagsPage() {
       >
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Merge tag</DialogTitle>
+            <DialogTitle>Merge label</DialogTitle>
             <DialogDescription>
-              Choose the tag to merge &ldquo;{mergingLabel?.label}&rdquo; into. All items tagged with &ldquo;
-              {mergingLabel?.label}&rdquo; will be re-tagged with the chosen tag, and &ldquo;{mergingLabel?.label}
+              Choose the label to merge &ldquo;{mergingLabel?.label}&rdquo; into. All items labeled with &ldquo;
+              {mergingLabel?.label}&rdquo; will be re-labeled with the chosen label, and &ldquo;{mergingLabel?.label}
               &rdquo; will be deleted.
             </DialogDescription>
           </DialogHeader>
@@ -179,7 +179,7 @@ export default function TagsPage() {
                 onChange={(e) => setMergeTargetId(e.target.value)}
                 className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
               >
-                <option value="">Select a tag…</option>
+                <option value="">Select a label…</option>
                 {otherLabels.map((l) => (
                   <option key={l.id} value={l.id}>
                     {l.label}

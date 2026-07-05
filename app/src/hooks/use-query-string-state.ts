@@ -1,4 +1,4 @@
-import { usePathname, useRouter, useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams, usePathname, useRouter } from 'expo-router';
 
 type HistoryChangeType = 'replace' | 'push';
 

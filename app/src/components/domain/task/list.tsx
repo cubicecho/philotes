@@ -246,7 +246,15 @@ function AddTaskForm({ personId, onAdded, onCancel }: AddTaskFormProps) {
 // Main export
 // ---------------------------------------------------------------------------
 
-export function TaskList({ personId, tasks, onAdd, onDelete, onUpdate, createOpen, onCreateOpenChange }: TaskListProps) {
+export function TaskList({
+  personId,
+  tasks,
+  onAdd,
+  onDelete,
+  onUpdate,
+  createOpen,
+  onCreateOpenChange,
+}: TaskListProps) {
   const [internalOpen, setInternalOpen] = useState(false);
   const addDialogOpen = createOpen ?? internalOpen;
   const setAddDialogOpen = onCreateOpenChange ?? setInternalOpen;

@@ -2,13 +2,7 @@ import { gql, useMutation } from '@apollo/client';
 import { Check, Copy } from 'lucide-react';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 
@@ -43,10 +37,13 @@ interface CreateApiKeyDialogProps {
 
 function copyToClipboard(text: string, onDone: () => void) {
   if (navigator.clipboard) {
-    navigator.clipboard.writeText(text).then(onDone).catch(() => {
-      legacyCopy(text);
-      onDone();
-    });
+    navigator.clipboard
+      .writeText(text)
+      .then(onDone)
+      .catch(() => {
+        legacyCopy(text);
+        onDone();
+      });
   } else {
     legacyCopy(text);
     onDone();
@@ -123,10 +120,7 @@ export function CreateApiKeyDialog({ open, onOpenChange, onCreated }: CreateApiK
     if (token) setState({ phase: 'reveal', token });
   }
 
-  const icalUrl =
-    state.phase === 'reveal'
-      ? `${window.location.origin}/ical?key=${state.token}`
-      : '';
+  const icalUrl = state.phase === 'reveal' ? `${window.location.origin}/ical?key=${state.token}` : '';
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
@@ -136,8 +130,8 @@ export function CreateApiKeyDialog({ open, onOpenChange, onCreated }: CreateApiK
             <DialogHeader>
               <DialogTitle>Generate API Key</DialogTitle>
               <DialogDescription>
-                Create an API key to subscribe to your important dates calendar in any calendar
-                app. The full token is shown only once.
+                Create an API key to subscribe to your important dates calendar in any calendar app. The full token is
+                shown only once.
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-4 py-4">
@@ -185,8 +179,7 @@ export function CreateApiKeyDialog({ open, onOpenChange, onCreated }: CreateApiK
             <DialogHeader>
               <DialogTitle>API Key Generated</DialogTitle>
               <DialogDescription>
-                Copy the calendar URL below and paste it into your calendar app. The token will
-                not be shown again.
+                Copy the calendar URL below and paste it into your calendar app. The token will not be shown again.
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-4 py-4">
@@ -201,25 +194,19 @@ export function CreateApiKeyDialog({ open, onOpenChange, onCreated }: CreateApiK
                   Calendar Subscription URL
                 </p>
                 <div className="flex items-center gap-2">
-                  <code className="flex-1 truncate rounded-md bg-muted px-3 py-2 text-xs font-mono">
-                    {icalUrl}
-                  </code>
+                  <code className="flex-1 truncate rounded-md bg-muted px-3 py-2 text-xs font-mono">{icalUrl}</code>
                   <CopyButton value={icalUrl} label="Copy URL" />
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  Paste this URL into Google Calendar → "Other calendars" → "From URL", or Apple
-                  Calendar → File → New Calendar Subscription.
+                  Paste this URL into Google Calendar → "Other calendars" → "From URL", or Apple Calendar → File → New
+                  Calendar Subscription.
                 </p>
               </div>
 
               <div className="space-y-1">
-                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                  Raw Token
-                </p>
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Raw Token</p>
                 <div className="flex items-center gap-2">
-                  <code className="flex-1 truncate rounded-md bg-muted px-3 py-2 text-xs font-mono">
-                    {state.token}
-                  </code>
+                  <code className="flex-1 truncate rounded-md bg-muted px-3 py-2 text-xs font-mono">{state.token}</code>
                   <CopyButton value={state.token} />
                 </div>
               </div>

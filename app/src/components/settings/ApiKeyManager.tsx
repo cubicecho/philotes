@@ -74,9 +74,8 @@ export function ApiKeyManager() {
                 API Keys / Calendar Access
               </CardTitle>
               <CardDescription className="mt-1">
-                Generate a key to subscribe your important dates (birthdays, anniversaries, etc.)
-                into any calendar app via a private URL at{' '}
-                <code className="text-xs">/ical?key=…</code>
+                Generate a key to subscribe your important dates (birthdays, anniversaries, etc.) into any calendar app
+                via a private URL at <code className="text-xs">/ical?key=…</code>
               </CardDescription>
             </div>
             <Button size="sm" variant="outline" onClick={() => setDialogOpen(true)}>
@@ -93,10 +92,7 @@ export function ApiKeyManager() {
           ) : (
             <div className="space-y-3">
               {keys.map((key) => (
-                <div
-                  key={key.id}
-                  className="flex items-start justify-between rounded-md border p-3 gap-4"
-                >
+                <div key={key.id} className="flex items-start justify-between rounded-md border p-3 gap-4">
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className="font-medium text-sm">{key.name}</span>
@@ -106,18 +102,15 @@ export function ApiKeyManager() {
                     </div>
                     <div className="mt-1.5 text-xs text-muted-foreground space-x-3">
                       <span>
-                        Last used:{' '}
-                        <span className="text-foreground">{formatRelative(key.lastUsedAt)}</span>
+                        Last used: <span className="text-foreground">{formatRelative(key.lastUsedAt)}</span>
                       </span>
                       {key.expiresAt ? (
                         <span>
-                          Expires:{' '}
-                          <span className="text-foreground">{formatDate(key.expiresAt)}</span>
+                          Expires: <span className="text-foreground">{formatDate(key.expiresAt)}</span>
                         </span>
                       ) : null}
                       <span>
-                        Created:{' '}
-                        <span className="text-foreground">{formatDate(key.createdAt)}</span>
+                        Created: <span className="text-foreground">{formatDate(key.createdAt)}</span>
                       </span>
                     </div>
                   </div>
@@ -136,11 +129,7 @@ export function ApiKeyManager() {
         </CardContent>
       </Card>
 
-      <CreateApiKeyDialog
-        open={dialogOpen}
-        onOpenChange={setDialogOpen}
-        onCreated={() => refetch()}
-      />
+      <CreateApiKeyDialog open={dialogOpen} onOpenChange={setDialogOpen} onCreated={() => refetch()} />
     </>
   );
 }

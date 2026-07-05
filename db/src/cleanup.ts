@@ -1,7 +1,5 @@
 import { db } from './index.ts';
 import {
-  activities,
-  activityTags,
   addresses,
   contactInfos,
   importantDates,
@@ -21,14 +19,12 @@ import {
 console.log('Starting cleanup...');
 
 // Junction tables first to respect FK constraints, then leaf tables, then roots
-await db.delete(activityTags);
 await db.delete(interactionTags);
 await db.delete(importantDateTags);
 await db.delete(noteTags);
 await db.delete(noteMentions);
 await db.delete(personLabels);
 await db.delete(personRelationships);
-await db.delete(activities);
 await db.delete(interactions);
 await db.delete(importantDates);
 await db.delete(notes);

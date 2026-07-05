@@ -163,7 +163,12 @@ function RelationshipTypePicker({ value, onChange, types, onTypeCreated }: TypeP
           placeholder="New type…"
           value={newTypeName}
           onChange={(e) => setNewTypeName(e.target.value)}
-          onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleAdd(); }}}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              e.preventDefault();
+              handleAdd();
+            }
+          }}
           className="flex-1 rounded-md border border-border bg-background px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
         />
         <Button type="button" size="sm" variant="outline" disabled={!newTypeName.trim() || loading} onClick={handleAdd}>
@@ -174,7 +179,10 @@ function RelationshipTypePicker({ value, onChange, types, onTypeCreated }: TypeP
       {types.length > 0 && (
         <div className="flex flex-wrap gap-1.5 pt-1">
           {types.map((t) => (
-            <span key={t.id} className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">
+            <span
+              key={t.id}
+              className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground"
+            >
               {t.name}
               <button
                 type="button"
@@ -202,11 +210,22 @@ interface RelationshipFormProps {
   existingRelatedIds: Set<string>;
   onClose: () => void;
   onCreate?: (fromPersonId: string, toPersonId: string, type: string) => void;
-  editing?: Pick<PersonRelationshipEntry, 'id' | 'type' | 'relatedPersonId' | 'relatedPersonFirstName' | 'relatedPersonLastName'>;
+  editing?: Pick<
+    PersonRelationshipEntry,
+    'id' | 'type' | 'relatedPersonId' | 'relatedPersonFirstName' | 'relatedPersonLastName'
+  >;
   onEdit?: (id: string, type: string) => void;
 }
 
-function RelationshipForm({ fromPersonId, allPersons, existingRelatedIds, onClose, onCreate, editing, onEdit }: RelationshipFormProps) {
+function RelationshipForm({
+  fromPersonId,
+  allPersons,
+  existingRelatedIds,
+  onClose,
+  onCreate,
+  editing,
+  onEdit,
+}: RelationshipFormProps) {
   const isEditing = editing !== undefined;
   const { data: typesData } = useQuery(GET_RELATIONSHIP_TYPES);
   const types = typesData?.relationshipTypes ?? [];
@@ -225,8 +244,14 @@ function RelationshipForm({ fromPersonId, allPersons, existingRelatedIds, onClos
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!toPersonId) { setError('Please select a person.'); return; }
-    if (!type) { setError('Please select or create a relationship type.'); return; }
+    if (!toPersonId) {
+      setError('Please select a person.');
+      return;
+    }
+    if (!type) {
+      setError('Please select or create a relationship type.');
+      return;
+    }
     setError(null);
 
     if (isEditing) {
@@ -255,7 +280,9 @@ function RelationshipForm({ fromPersonId, allPersons, existingRelatedIds, onClos
         >
           {!isEditing && <option value="">Select person…</option>}
           {availablePersons.map((p) => (
-            <option key={p.id} value={p.id}>{p.firstName} {p.lastName}</option>
+            <option key={p.id} value={p.id}>
+              {p.firstName} {p.lastName}
+            </option>
           ))}
           {isEditing && (
             <option value={editing.relatedPersonId}>
@@ -267,19 +294,18 @@ function RelationshipForm({ fromPersonId, allPersons, existingRelatedIds, onClos
 
       <div>
         <label className="text-sm font-medium mb-1.5 block">Relationship type</label>
-        <RelationshipTypePicker
-          value={type}
-          onChange={setType}
-          types={types}
-          onTypeCreated={() => {}}
-        />
+        <RelationshipTypePicker value={type} onChange={setType} types={types} onTypeCreated={() => {}} />
       </div>
 
       {error && <p className="text-destructive text-xs">{error}</p>}
 
       <div className="flex gap-2">
-        <Button type="submit" size="sm" disabled={loading}>{loading ? 'Saving…' : isEditing ? 'Save' : 'Add'}</Button>
-        <Button type="button" size="sm" variant="outline" onClick={onClose}>Cancel</Button>
+        <Button type="submit" size="sm" disabled={loading}>
+          {loading ? 'Saving…' : isEditing ? 'Save' : 'Add'}
+        </Button>
+        <Button type="button" size="sm" variant="outline" onClick={onClose}>
+          Cancel
+        </Button>
       </div>
     </form>
   );
@@ -311,16 +337,26 @@ function RelationshipRow({ relationship, fromPersonId, allPersons, onDelete, onE
     <>
       <div className="flex items-center justify-between gap-3 rounded-md border border-border px-3 py-2 text-sm">
         <div className="min-w-0 flex-1">
-          <Link href={`/persons/${relatedPersonId}`} className="font-medium hover:underline">
+          <Link href={`/persons/${relatedPersonId}`} className="font-medium text-foreground hover:underline">
             {relatedPersonFirstName} {relatedPersonLastName}
           </Link>
           <span className="ml-2 rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">{type}</span>
         </div>
         <div className="flex shrink-0 gap-1 text-muted-foreground">
-          <button type="button" onClick={() => setEditOpen(true)} className="hover:text-foreground transition-colors" aria-label="Edit relationship">
+          <button
+            type="button"
+            onClick={() => setEditOpen(true)}
+            className="hover:text-foreground transition-colors"
+            aria-label="Edit relationship"
+          >
             <Pencil className="h-3.5 w-3.5" />
           </button>
-          <button type="button" onClick={handleDelete} className="hover:text-destructive transition-colors" aria-label="Remove relationship">
+          <button
+            type="button"
+            onClick={handleDelete}
+            className="hover:text-destructive transition-colors"
+            aria-label="Remove relationship"
+          >
             <Trash2 className="h-3.5 w-3.5" />
           </button>
         </div>
@@ -328,14 +364,19 @@ function RelationshipRow({ relationship, fromPersonId, allPersons, onDelete, onE
 
       <Dialog open={editOpen} onOpenChange={setEditOpen}>
         <DialogContent className="max-w-md">
-          <DialogHeader><DialogTitle>Edit Relationship</DialogTitle></DialogHeader>
+          <DialogHeader>
+            <DialogTitle>Edit Relationship</DialogTitle>
+          </DialogHeader>
           <RelationshipForm
             fromPersonId={fromPersonId}
             allPersons={allPersons}
             existingRelatedIds={new Set()}
             onClose={() => setEditOpen(false)}
             editing={relationship}
-            onEdit={(editedId, editedType) => { setEditOpen(false); onEdit(editedId, editedType); }}
+            onEdit={(editedId, editedType) => {
+              setEditOpen(false);
+              onEdit(editedId, editedType);
+            }}
           />
         </DialogContent>
       </Dialog>
@@ -347,7 +388,15 @@ function RelationshipRow({ relationship, fromPersonId, allPersons, onDelete, onE
 // Main export
 // ---------------------------------------------------------------------------
 
-export function PersonRelationships({ person, allPersons, onDelete, onAdd, onEdit, showAdd = false, onShowAdd }: RelationshipsProps) {
+export function PersonRelationships({
+  person,
+  allPersons,
+  onDelete,
+  onAdd,
+  onEdit,
+  showAdd = false,
+  onShowAdd,
+}: RelationshipsProps) {
   const relationships = person.relationships ?? [];
   const existingRelatedIds = new Set(relationships.map((r) => r.relatedPersonId));
 
@@ -355,7 +404,14 @@ export function PersonRelationships({ person, allPersons, onDelete, onAdd, onEdi
     <>
       <div className="space-y-2">
         {relationships.map((r) => (
-          <RelationshipRow key={r.id} relationship={r} fromPersonId={person.id} allPersons={allPersons} onDelete={onDelete} onEdit={onEdit} />
+          <RelationshipRow
+            key={r.id}
+            relationship={r}
+            fromPersonId={person.id}
+            allPersons={allPersons}
+            onDelete={onDelete}
+            onEdit={onEdit}
+          />
         ))}
         {relationships.length === 0 && !showAdd && (
           <p className="text-muted-foreground text-sm">No relationships yet.</p>
@@ -364,7 +420,9 @@ export function PersonRelationships({ person, allPersons, onDelete, onAdd, onEdi
 
       <Dialog open={showAdd} onOpenChange={onShowAdd}>
         <DialogContent className="max-w-md">
-          <DialogHeader><DialogTitle>Add Relationship</DialogTitle></DialogHeader>
+          <DialogHeader>
+            <DialogTitle>Add Relationship</DialogTitle>
+          </DialogHeader>
           <RelationshipForm
             fromPersonId={person.id}
             allPersons={allPersons}

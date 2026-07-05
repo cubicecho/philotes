@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { FREQUENCY_DAYS, computeOverdueByDays } from '../lib/contact-frequency';
+import { computeOverdueByDays, FREQUENCY_DAYS } from '../lib/contact-frequency';
 
 describe('FREQUENCY_DAYS', () => {
   it('has the expected period values', () => {

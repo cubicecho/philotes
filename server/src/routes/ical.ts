@@ -1,5 +1,4 @@
-import { apiKeys, importantDates, persons } from '@philotes/db';
-import { db } from '@philotes/db';
+import { apiKeys, db, importantDates, persons } from '@philotes/db';
 import { and, eq, isNull } from 'drizzle-orm';
 import type { Request, Response } from 'express';
 import ical, { ICalEventRepeatingFreq } from 'ical-generator';
@@ -30,11 +29,7 @@ export async function icalHandler(req: Request, res: Response): Promise<void> {
     return;
   }
 
-  anyDb
-    .update(apiKeys)
-    .set({ lastUsedAt: now })
-    .where(eq(apiKeys.id, apiKey.id))
-    .catch(console.error);
+  anyDb.update(apiKeys).set({ lastUsedAt: now }).where(eq(apiKeys.id, apiKey.id)).catch(console.error);
 
   const rows = await anyDb
     .select({
@@ -53,8 +48,7 @@ export async function icalHandler(req: Request, res: Response): Promise<void> {
   const cal = ical({ name: 'Philotes – Important Dates' });
 
   for (const row of rows) {
-    const personName =
-      [row.personFirstName, row.personLastName].filter(Boolean).join(' ') || 'Unknown';
+    const personName = [row.personFirstName, row.personLastName].filter(Boolean).join(' ') || 'Unknown';
 
     // Parse as UTC midnight to keep the date stable across timezones
     const start = new Date(`${row.date}T00:00:00Z`);
