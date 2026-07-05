@@ -1,13 +1,13 @@
 import { useQuery } from '@apollo/client';
-import { createFileRoute, Link } from '@tanstack/react-router';
+import { Link, useLocalSearchParams } from 'expo-router';
 import { ArrowLeft, Clock } from 'lucide-react';
-import { graphql } from '@/__generated__/gql.js';
+import { graphql } from '@/__generated__/gql';
 import {
   PersonTimeline,
   type TimelineActivity,
   type TimelineImportantDate,
   type TimelineInteraction,
-} from '@/components/domain/person/timeline.js';
+} from '@/components/domain/person/timeline';
 import { Spinner } from '@/components/ui/spinner.tsx';
 
 // ---------------------------------------------------------------------------
@@ -54,19 +54,11 @@ const GET_PERSON_TIMELINE = graphql(`
 `);
 
 // ---------------------------------------------------------------------------
-// Route
-// ---------------------------------------------------------------------------
-
-export const Route = createFileRoute('/persons/$id/timeline')({
-  component: PersonTimelinePage,
-});
-
-// ---------------------------------------------------------------------------
 // Page
 // ---------------------------------------------------------------------------
 
-function PersonTimelinePage() {
-  const { id } = Route.useParams();
+export default function PersonTimelinePage() {
+  const { id } = useLocalSearchParams<{ id: string }>();
 
   const { data, loading, error } = useQuery(GET_PERSON_TIMELINE, {
     variables: { id },
@@ -109,8 +101,7 @@ function PersonTimelinePage() {
       {/* Back link */}
       <div>
         <Link
-          to="/persons/$id"
-          params={{ id }}
+          href={`/persons/${id}`}
           className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
         >
           <ArrowLeft className="h-4 w-4" />

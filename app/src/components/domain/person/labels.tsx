@@ -1,9 +1,9 @@
 import { useMutation } from '@apollo/client';
 import { X } from 'lucide-react';
 
-import { graphql } from '@/__generated__/gql.js';
-import type { Person_LabelsFragment } from '@/__generated__/graphql.js';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog.js';
+import { graphql } from '@/__generated__/gql';
+import type { Person_LabelsFragment } from '@/__generated__/graphql';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 // ---------------------------------------------------------------------------
 // Fragment

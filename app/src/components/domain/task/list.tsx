@@ -1,11 +1,11 @@
 import { useMutation } from '@apollo/client';
 import { CheckSquare, Square, Trash2 } from 'lucide-react';
 import { useState } from 'react';
-import { graphql } from '@/__generated__/gql.js';
+import { graphql } from '@/__generated__/gql';
 import { useAppForm } from '@/components/domain/person/form.tsx';
-import { Button } from '@/components/ui/button.js';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog.js';
-import { FieldGroup } from '@/components/ui/field.js';
+import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { FieldGroup } from '@/components/ui/field';
 import { FormError } from '@/components/ui/form-field.tsx';
 
 // ---------------------------------------------------------------------------

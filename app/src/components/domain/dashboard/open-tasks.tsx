@@ -1,14 +1,14 @@
-import { Link } from '@tanstack/react-router';
+import { Link } from 'expo-router';
 import { CheckSquare } from 'lucide-react';
 import { useState } from 'react';
-import { Card, CardContent } from '@/components/ui/card.js';
+import { Card, CardContent } from '@/components/ui/card';
 import {
   Pagination,
   PaginationContent,
   PaginationItem,
   PaginationNext,
   PaginationPrevious,
-} from '@/components/ui/pagination.js';
+} from '@/components/ui/pagination';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -80,8 +80,7 @@ export function OpenTasks({ tasks }: { tasks: OpenTask[] }) {
                 <div className="min-w-0 flex-1">
                   <p className="font-medium truncate">{task.title}</p>
                   <Link
-                    to="/persons/$id"
-                    params={{ id: task.personId }}
+                    href={`/persons/${task.personId}`}
                     className="text-xs text-muted-foreground hover:underline"
                   >
                     {task.personFirstName} {task.personLastName}

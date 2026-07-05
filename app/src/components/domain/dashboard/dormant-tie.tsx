@@ -1,7 +1,7 @@
-import { Link } from '@tanstack/react-router';
+import { Link } from 'expo-router';
 import { Heart } from 'lucide-react';
-import { Avatar } from '@/components/ui/avatar.js';
-import { Card, CardContent } from '@/components/ui/card.js';
+import { Avatar } from '@/components/ui/avatar';
+import { Card, CardContent } from '@/components/ui/card';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -56,7 +56,7 @@ export function DormantTie({ person }: { person: (ReviewPerson & { daysSinceCont
                   size="sm"
                 />
                 <div className="min-w-0 flex-1">
-                  <Link to="/persons/$id" params={{ id: person.id }} className="font-medium hover:underline">
+                  <Link href={`/persons/`} className="font-medium hover:underline">
                     {person.firstName} {person.lastName}
                   </Link>
                   <p className="text-xs text-muted-foreground">

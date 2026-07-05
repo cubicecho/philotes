@@ -1,6 +1,6 @@
 import { Check, ChevronDown, X } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
-import { cn } from '@/lib/utils.js';
+import { cn } from '@/lib/utils';
 
 export interface TagOption {
   id: string;

@@ -1,11 +1,11 @@
 import { useMutation, useQuery } from '@apollo/client';
-import { Link } from '@tanstack/react-router';
+import { Link } from 'expo-router';
 import { Pencil, Trash2 } from 'lucide-react';
 import { useState } from 'react';
-import { graphql } from '@/__generated__/gql.js';
-import type { Person_RelationshipsFragment, PersonRelationshipEntry } from '@/__generated__/graphql.js';
-import { Button } from '@/components/ui/button.js';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog.js';
+import { graphql } from '@/__generated__/gql';
+import type { Person_RelationshipsFragment, PersonRelationshipEntry } from '@/__generated__/graphql';
+import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 // ---------------------------------------------------------------------------
 // Fragments & queries
@@ -311,7 +311,7 @@ function RelationshipRow({ relationship, fromPersonId, allPersons, onDelete, onE
     <>
       <div className="flex items-center justify-between gap-3 rounded-md border border-border px-3 py-2 text-sm">
         <div className="min-w-0 flex-1">
-          <Link to="/persons/$id" params={{ id: relatedPersonId }} className="font-medium hover:underline">
+          <Link href={`/persons/${relatedPersonId}`} className="font-medium hover:underline">
             {relatedPersonFirstName} {relatedPersonLastName}
           </Link>
           <span className="ml-2 rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">{type}</span>

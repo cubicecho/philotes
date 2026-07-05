@@ -1,15 +1,18 @@
+import { Platform } from 'react-native';
+
 const TOKEN_KEY = 'philotes_token';
 
 export function getToken(): string | null {
-  return localStorage.getItem(TOKEN_KEY);
+  if (Platform.OS === 'web') return window.localStorage.getItem(TOKEN_KEY);
+  return null;
 }
 
 export function setToken(token: string): void {
-  localStorage.setItem(TOKEN_KEY, token);
+  if (Platform.OS === 'web') window.localStorage.setItem(TOKEN_KEY, token);
 }
 
 export function clearToken(): void {
-  localStorage.removeItem(TOKEN_KEY);
+  if (Platform.OS === 'web') window.localStorage.removeItem(TOKEN_KEY);
 }
 
 export function isAuthenticated(): boolean {

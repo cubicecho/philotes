@@ -1,9 +1,9 @@
 import { useQuery } from '@apollo/client';
-import { createFileRoute, Link } from '@tanstack/react-router';
+import { Link, useLocalSearchParams } from 'expo-router';
 import { ArrowLeft, CalendarDays } from 'lucide-react';
-import { graphql } from '@/__generated__/gql.js';
-import { RECURRENCE_OPTIONS } from '@/components/domain/person/important-date-form.js';
-import { Card, CardContent } from '@/components/ui/card.js';
+import { graphql } from '@/__generated__/gql';
+import { RECURRENCE_OPTIONS } from '@/components/domain/person/important-date-form';
+import { Card, CardContent } from '@/components/ui/card';
 import { Spinner } from '@/components/ui/spinner.tsx';
 
 // ---------------------------------------------------------------------------
@@ -37,14 +37,6 @@ const GET_DATE_DETAIL = graphql(`
 `);
 
 // ---------------------------------------------------------------------------
-// Route
-// ---------------------------------------------------------------------------
-
-export const Route = createFileRoute('/persons/$id/dates/$dateId')({
-  component: ImportantDateDetailPage,
-});
-
-// ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 
@@ -60,8 +52,8 @@ function formatDate(date: Date): string {
 // Page
 // ---------------------------------------------------------------------------
 
-function ImportantDateDetailPage() {
-  const { id: personId, dateId } = Route.useParams();
+export default function ImportantDateDetailPage() {
+  const { id: personId, dateId } = useLocalSearchParams<{ id: string; dateId: string }>();
 
   const { data, loading, error } = useQuery(GET_DATE_DETAIL, {
     variables: { dateId, personId },
@@ -85,8 +77,7 @@ function ImportantDateDetailPage() {
       {/* Back link */}
       <div>
         <Link
-          to="/persons/$id"
-          params={{ id: personId }}
+          href={`/persons/${personId}`}
           className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
         >
           <ArrowLeft className="h-4 w-4" />

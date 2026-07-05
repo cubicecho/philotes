@@ -7,3 +7,4 @@ pgdata/
 .env.local
 **/tsconfig.tsbuildinfo
 __generated__
+.expo/

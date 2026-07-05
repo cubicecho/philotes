@@ -1,5 +1,5 @@
-import { Link } from '@tanstack/react-router';
-import { Avatar } from '@/components/ui/avatar.js';
+import { Link } from 'expo-router';
+import { Avatar } from '@/components/ui/avatar';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -86,7 +86,7 @@ function SuggestionRow({ suggestion }: SuggestionRowProps) {
     <div className="flex items-start gap-3 rounded-md border border-border px-3 py-2 text-sm">
       <Avatar firstName={person.firstName} lastName={person.lastName} avatarPath={person.avatarPath} size="sm" />
       <div className="min-w-0 flex-1">
-        <Link to="/persons/$id" params={{ id: person.id }} className="font-medium hover:underline">
+        <Link href={`/persons/${person.id}`} className="font-medium hover:underline">
           {person.firstName} {person.lastName}
         </Link>
         {person.email && <p className="text-muted-foreground text-xs mt-0.5">{person.email}</p>}

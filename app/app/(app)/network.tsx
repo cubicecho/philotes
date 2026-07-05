@@ -1,8 +1,8 @@
 import { useQuery } from '@apollo/client';
-import { createFileRoute, useNavigate } from '@tanstack/react-router';
+import { useRouter } from 'expo-router';
 import * as d3 from 'd3';
 import { useEffect, useRef, useState } from 'react';
-import { graphql } from '@/__generated__/gql.js';
+import { graphql } from '@/__generated__/gql';
 
 const GET_NETWORK_DATA = graphql(`
   query GetNetworkData {
@@ -25,10 +25,6 @@ const GET_NETWORK_DATA = graphql(`
     }
   }
 `);
-
-export const Route = createFileRoute('/network')({
-  component: NetworkPage,
-});
 
 // djb2 hash → hsl color
 function nameToColor(name: string): string {
@@ -85,8 +81,8 @@ function getInitials(firstName: string, lastName: string): string {
   return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
 }
 
-function NetworkPage() {
-  const navigate = useNavigate();
+export default function NetworkPage() {
+  const router = useRouter();
   const svgRef = useRef<SVGSVGElement>(null);
   const zoomRef = useRef<d3.ZoomBehavior<SVGSVGElement, unknown> | null>(null);
   const [tooltip, setTooltip] = useState<TooltipState>(null);
@@ -250,7 +246,7 @@ function NetworkPage() {
       .join('g')
       .style('cursor', 'pointer')
       .on('click', (_event: MouseEvent, d: SimNode) => {
-        void navigate({ to: '/persons/$id', params: { id: d.id } });
+        router.push(`/persons/${d.id}`);
       })
       .on('mouseenter', (event: MouseEvent, d: SimNode) => {
         setTooltip({ x: event.clientX, y: event.clientY, person: d });
@@ -367,7 +363,7 @@ function NetworkPage() {
     return () => {
       simulation.stop();
     };
-  }, [data, navigate]);
+  }, [data, router]);
 
   if (loading) {
     return (

@@ -1,12 +1,11 @@
 import { useMutation, useQuery } from '@apollo/client';
-import { createFileRoute } from '@tanstack/react-router';
 import { useState } from 'react';
-import { graphql } from '@/__generated__/gql.js';
-import type { Label_ListFragment, CreateLabelInput } from '@/__generated__/graphql.js';
-import { LabelList } from '@/components/domain/label/list.js';
-import { TagForm } from '@/components/domain/tag/form.js';
-import { Button } from '@/components/ui/button.js';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog.js';
+import { graphql } from '@/__generated__/gql';
+import type { Label_ListFragment, CreateLabelInput } from '@/__generated__/graphql';
+import { LabelList } from '@/components/domain/label/list';
+import { TagForm } from '@/components/domain/tag/form';
+import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Spinner } from '@/components/ui/spinner.tsx';
 
 const GET_TAGS = graphql(`
@@ -63,11 +62,7 @@ const MERGE_LABEL_INTO = graphql(`
   }
 `);
 
-export const Route = createFileRoute('/tags/')({
-  component: TagsPage,
-});
-
-function TagsPage() {
+export default function TagsPage() {
   const { data, loading, error, refetch } = useQuery(GET_TAGS);
   const [createTag] = useMutation(CREATE_TAG, {
     refetchQueries: [{ query: GET_TAGS }],

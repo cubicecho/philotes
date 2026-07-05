@@ -1,5 +1,5 @@
 import { useMutation, useQuery } from '@apollo/client';
-import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
+import { Link, useLocalSearchParams, useRouter } from 'expo-router';
 import {
   Activity,
   ArrowLeft,
@@ -17,27 +17,27 @@ import {
   UserRoundPlus,
 } from 'lucide-react';
 import { useRef, useState } from 'react';
-import { graphql } from '@/__generated__/gql.js';
-import { getToken } from '@/lib/auth.js';
-import type { ImportantDatesMilestoneTypeEnum } from '@/__generated__/graphql.js';
-import { ActivityList } from '@/components/domain/activity/list.js';
-import { AddressList } from '@/components/domain/address/list.js';
-import { ContactInfoList } from '@/components/domain/contact-info/list.js';
-import { PersonForm, type PersonFormValue } from '@/components/domain/person/form.js';
+import { graphql } from '@/__generated__/gql';
+import { getToken } from '@/lib/auth';
+import type { ImportantDatesMilestoneTypeEnum } from '@/__generated__/graphql';
+import { ActivityList } from '@/components/domain/activity/list';
+import { AddressList } from '@/components/domain/address/list';
+import { ContactInfoList } from '@/components/domain/contact-info/list';
+import { PersonForm, type PersonFormValue } from '@/components/domain/person/form';
 import {
   ImportantDateForm,
   type ImportantDateFormValue,
   MILESTONE_TYPE_OPTIONS,
   RECURRENCE_OPTIONS,
-} from '@/components/domain/person/important-date-form.js';
-import { ImportantDateTags } from '@/components/domain/person/important-date-tags.js';
-import { PersonInteractions } from '@/components/domain/person/interactions.js';
-import { PersonIntroductions } from '@/components/domain/person/introductions.js';
-import { PersonLabels } from '@/components/domain/person/labels.js';
-import { PersonNotes } from '@/components/domain/person/notes.js';
-import { PersonRelationships } from '@/components/domain/person/relationships.js';
-import { TaskList } from '@/components/domain/task/list.js';
-import { ListLayout } from '@/components/layouts/list.js';
+} from '@/components/domain/person/important-date-form';
+import { ImportantDateTags } from '@/components/domain/person/important-date-tags';
+import { PersonInteractions } from '@/components/domain/person/interactions';
+import { PersonIntroductions } from '@/components/domain/person/introductions';
+import { PersonLabels } from '@/components/domain/person/labels';
+import { PersonNotes } from '@/components/domain/person/notes';
+import { PersonRelationships } from '@/components/domain/person/relationships';
+import { TaskList } from '@/components/domain/task/list';
+import { ListLayout } from '@/components/layouts/list';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -48,13 +48,13 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from '@/components/ui/alert-dialog.js';
-import { Avatar } from '@/components/ui/avatar.js';
-import { Button } from '@/components/ui/button.js';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card.js';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog.js';
+} from '@/components/ui/alert-dialog';
+import { Avatar } from '@/components/ui/avatar';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Spinner } from '@/components/ui/spinner.tsx';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip.js';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 // ---------------------------------------------------------------------------
 // GraphQL
@@ -341,14 +341,6 @@ const DELETE_PERSON = graphql(`
 `);
 
 // ---------------------------------------------------------------------------
-// Route
-// ---------------------------------------------------------------------------
-
-export const Route = createFileRoute('/persons/$id/')({
-  component: PersonDetailPage,
-});
-
-// ---------------------------------------------------------------------------
 // Important date row
 // ---------------------------------------------------------------------------
 
@@ -410,8 +402,7 @@ function ImportantDateRow({
         <div className="flex items-center justify-between gap-3">
           <div className="min-w-0 flex-1">
             <Link
-              to="/persons/$id/dates/$dateId"
-              params={{ id: personId, dateId: id }}
+              href={`/persons/${personId}/dates/${id}`}
               className="font-medium hover:underline"
             >
               {name}
@@ -484,9 +475,9 @@ function ImportantDateRow({
 // Page
 // ---------------------------------------------------------------------------
 
-function PersonDetailPage() {
-  const { id } = Route.useParams();
-  const navigate = useNavigate();
+export default function PersonDetailPage() {
+  const { id } = useLocalSearchParams<{ id: string }>();
+  const router = useRouter();
 
   const { data, loading, error, refetch } = useQuery(GET_PERSON_DETAIL, {
     variables: { id },
@@ -653,7 +644,7 @@ function PersonDetailPage() {
 
   const handleDeletePerson = async (): Promise<void> => {
     await deletePerson({ variables: { id } });
-    void navigate({ to: '/persons' });
+    router.push('/persons');
   };
 
   const allLabelsAttached = allLabels.length > 0 && allLabels.length === person.labels.length;
@@ -668,15 +659,14 @@ function PersonDetailPage() {
         {/* Back link + sub-nav */}
         <div className="flex items-center justify-between gap-4">
           <Link
-            to="/persons"
+            href="/persons"
             className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
           >
             <ArrowLeft className="h-4 w-4" />
             All Persons
           </Link>
           <Link
-            to="/persons/$id/timeline"
-            params={{ id }}
+            href={`/persons/${id}/timeline`}
             className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
           >
             <Clock className="h-4 w-4" />
@@ -1149,7 +1139,7 @@ function PersonDetailPage() {
                             {n.person && (
                               <p className="text-xs text-muted-foreground">
                                 by{' '}
-                                <Link to="/persons/$id" params={{ id: n.person.id }} className="hover:underline">
+                                <Link href={`/persons/${n.person.id}`} className="hover:underline">
                                   {n.person.firstName} {n.person.lastName}
                                 </Link>
                               </p>

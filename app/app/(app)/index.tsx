@@ -1,20 +1,19 @@
 import { useQuery } from '@apollo/client';
-import { createFileRoute } from '@tanstack/react-router';
-import { graphql } from '@/__generated__/gql.js';
-import { computeOverdueByDays } from '@/lib/contact-frequency.js';
-import type { UpcomingDate } from '@/components/domain/dashboard/coming-up.js';
-import { ComingUp } from '@/components/domain/dashboard/coming-up.js';
-import { DontLoseTouch } from '@/components/domain/dashboard/dont-lose-touch.js';
-import type { ReviewPerson } from '@/components/domain/dashboard/dormant-tie.js';
-import { DormantTie } from '@/components/domain/dashboard/dormant-tie.js';
-import { DormantTies } from '@/components/domain/dashboard/dormant-ties.js';
-import type { OpenTask } from '@/components/domain/dashboard/open-tasks.js';
-import { OpenTasks } from '@/components/domain/dashboard/open-tasks.js';
-import type { OverduePerson } from '@/components/domain/dashboard/reach-out.js';
-import { ReachOut } from '@/components/domain/dashboard/reach-out.js';
-import { RecentPersons } from '@/components/domain/dashboard/recent-persons.js';
-import { UpcomingDates } from '@/components/domain/dashboard/upcoming-dates.js';
-import { ListLayout } from '@/components/layouts/list.js';
+import { graphql } from '@/__generated__/gql';
+import { computeOverdueByDays } from '@/lib/contact-frequency';
+import type { UpcomingDate } from '@/components/domain/dashboard/coming-up';
+import { ComingUp } from '@/components/domain/dashboard/coming-up';
+import { DontLoseTouch } from '@/components/domain/dashboard/dont-lose-touch';
+import type { ReviewPerson } from '@/components/domain/dashboard/dormant-tie';
+import { DormantTie } from '@/components/domain/dashboard/dormant-tie';
+import { DormantTies } from '@/components/domain/dashboard/dormant-ties';
+import type { OpenTask } from '@/components/domain/dashboard/open-tasks';
+import { OpenTasks } from '@/components/domain/dashboard/open-tasks';
+import type { OverduePerson } from '@/components/domain/dashboard/reach-out';
+import { ReachOut } from '@/components/domain/dashboard/reach-out';
+import { RecentPersons } from '@/components/domain/dashboard/recent-persons';
+import { UpcomingDates } from '@/components/domain/dashboard/upcoming-dates';
+import { ListLayout } from '@/components/layouts/list';
 import { Spinner } from '@/components/ui/spinner.tsx';
 
 // ---------------------------------------------------------------------------
@@ -52,14 +51,6 @@ const GET_WEEKLY_REVIEW = graphql(`
     }
   }
 `);
-
-// ---------------------------------------------------------------------------
-// Route
-// ---------------------------------------------------------------------------
-
-export const Route = createFileRoute('/')({
-  component: DashboardPage,
-});
 
 // ---------------------------------------------------------------------------
 // Types
@@ -251,7 +242,7 @@ type DashboardModule = {
 // Page
 // ---------------------------------------------------------------------------
 
-function DashboardPage() {
+export default function DashboardPage() {
   const { data, loading, error } = useQuery(GET_WEEKLY_REVIEW);
 
   if (loading) {

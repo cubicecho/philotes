@@ -1,19 +1,19 @@
 import { useQuery } from '@apollo/client';
-import { Link } from '@tanstack/react-router';
+import { Link } from 'expo-router';
 import { Bell, MessageSquare } from 'lucide-react';
 import { useState } from 'react';
-import { graphql } from '@/__generated__/gql.js';
-import { PersonInteractions } from '@/components/domain/person/interactions.js';
-import { Avatar } from '@/components/ui/avatar.js';
-import { Card, CardContent } from '@/components/ui/card.js';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog.js';
+import { graphql } from '@/__generated__/gql';
+import { PersonInteractions } from '@/components/domain/person/interactions';
+import { Avatar } from '@/components/ui/avatar';
+import { Card, CardContent } from '@/components/ui/card';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import {
   Pagination,
   PaginationContent,
   PaginationItem,
   PaginationNext,
   PaginationPrevious,
-} from '@/components/ui/pagination.js';
+} from '@/components/ui/pagination';
 import { Spinner } from '@/components/ui/spinner.tsx';
 
 // ---------------------------------------------------------------------------
@@ -216,7 +216,7 @@ export function DontLoseTouch() {
                 <li key={p.id} className="flex items-center gap-3 rounded-md border border-border px-3 py-2 text-sm">
                   <Avatar firstName={p.firstName} lastName={p.lastName} avatarPath={p.avatarPath} size="sm" />
                   <div className="min-w-0 flex-1">
-                    <Link to="/persons/$id" params={{ id: p.id }} className="font-medium hover:underline">
+                    <Link href={`/persons/`} className="font-medium hover:underline">
                       {p.firstName} {p.lastName}
                     </Link>
                     <p className="text-xs text-destructive">{overdueLabel(p.overdueBy)}</p>

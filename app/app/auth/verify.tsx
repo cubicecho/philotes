@@ -1,8 +1,8 @@
 import { useMutation } from '@apollo/client';
-import { createFileRoute, useNavigate } from '@tanstack/react-router';
+import { useRouter } from 'expo-router';
 import { useEffect } from 'react';
-import { graphql } from '@/__generated__/gql.js';
-import { setToken } from '@/lib/auth.js';
+import { graphql } from '@/__generated__/gql';
+import { setToken } from '@/lib/auth';
 
 const VERIFY_MAGIC_LINK = graphql(`
   mutation VerifyMagicLink($token: String!) {
@@ -13,17 +13,13 @@ const VERIFY_MAGIC_LINK = graphql(`
   }
 `);
 
-export const Route = createFileRoute('/auth/verify')({
-  component: VerifyPage,
-});
-
-function VerifyPage() {
-  const navigate = useNavigate();
+export default function VerifyPage() {
+  const router = useRouter();
 
   const [verify, { error }] = useMutation(VERIFY_MAGIC_LINK, {
     onCompleted(data) {
       setToken(data.verifyMagicLink.token);
-      navigate({ to: '/' });
+      router.replace('/');
     },
   });
 

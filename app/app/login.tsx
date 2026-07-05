@@ -1,10 +1,9 @@
 import { useMutation } from '@apollo/client';
-import { createFileRoute } from '@tanstack/react-router';
 import { useState } from 'react';
-import { graphql } from '@/__generated__/gql.js';
-import { Button } from '@/components/ui/button.js';
-import { Input } from '@/components/ui/input.js';
-import { Label } from '@/components/ui/label.js';
+import { graphql } from '@/__generated__/gql';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 
 const REQUEST_MAGIC_LINK = graphql(`
   mutation RequestMagicLink($email: String!) {
@@ -15,11 +14,7 @@ const REQUEST_MAGIC_LINK = graphql(`
   }
 `);
 
-export const Route = createFileRoute('/login')({
-  component: LoginPage,
-});
-
-function LoginPage() {
+export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [submitted, setSubmitted] = useState(false);
   const [magicLink, setMagicLink] = useState<string | null>(null);

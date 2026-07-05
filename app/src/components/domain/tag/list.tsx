@@ -1,10 +1,10 @@
 import { useFragment } from '@apollo/client';
 import { Tag, Trash2 } from 'lucide-react';
-import { graphql } from '@/__generated__/gql.js';
+import { graphql } from '@/__generated__/gql';
 import type { Tag_ListFragment } from '@/__generated__/graphql.ts';
-import { ListLayout } from '@/components/layouts/list.js';
-import { Button } from '@/components/ui/button.js';
-import { Card, CardContent } from '@/components/ui/card.js';
+import { ListLayout } from '@/components/layouts/list';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
 import { Spinner } from '@/components/ui/spinner.tsx';
 
 export const TAG_LIST = graphql(`
