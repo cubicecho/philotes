@@ -1,3 +1,19 @@
+# [1.8.0](https://github.com/cubicecho/philotes/compare/v1.7.0...v1.8.0) (2026-07-05)
+
+
+### Bug Fixes
+
+* add react-native-worklets dep and remove corrupt package.json entry ([d090c2b](https://github.com/cubicecho/philotes/commit/d090c2b1f69c142385994110048c392787935fe0))
+* expose Metro dev server on port 3000 ([4df2290](https://github.com/cubicecho/philotes/commit/4df22909577d42bfe89e63ce2b9c94327952d07d))
+* restore Apollo scalar type policies dropped in Expo migration ([a855b4f](https://github.com/cubicecho/philotes/commit/a855b4f36840547f2a30bffed4f89a3b3fecd451))
+* restore person ID in Link hrefs dropped during Expo Router migration ([cdee65c](https://github.com/cubicecho/philotes/commit/cdee65c5c5ab66bbc7f1e28c368eca3b5766e8e9))
+* strip .js extensions from all internal imports for Metro compatibility ([4eb9110](https://github.com/cubicecho/philotes/commit/4eb9110a3ea99d770e55399476de9347029bdaef))
+
+
+### Features
+
+* migrate app to Expo web (Metro bundler + Expo Router) ([2acbe42](https://github.com/cubicecho/philotes/commit/2acbe42a7d6a758ea5fc57c9ffa6ac4b12f5c3b0))
+
 # [1.7.0](https://github.com/cubicecho/philotes/compare/v1.6.0...v1.7.0) (2026-07-05)
 
 
