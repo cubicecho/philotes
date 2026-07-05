@@ -1,3 +1,23 @@
+# [1.9.0](https://github.com/cubicecho/philotes/compare/v1.8.0...v1.9.0) (2026-07-05)
+
+
+### Bug Fixes
+
+* broken reach-out links, duplicated relative-time helpers, pgdata path under --preserve-symlinks ([4c570e9](https://github.com/cubicecho/philotes/commit/4c570e9e7ea0e6f9ca237a72e5e128819bf3b771))
+* dark mode — person names and other links rendered near-black ([51a9239](https://github.com/cubicecho/philotes/commit/51a9239cfbd611790cf8809402b7e080e4f4dc8f))
+
+
+### Features
+
+* dashboard — 4 widgets, one query, quick-log, no per-widget pagination ([37cac78](https://github.com/cubicecho/philotes/commit/37cac78441d129467735fcc90a681b75807814a2))
+* design tokens — Inter variable font, warm accent color, LabelChip component ([43ceac6](https://github.com/cubicecho/philotes/commit/43ceac6635826455636a09f7b4872ad1c554b3de))
+* labels page — chip-preview rows, no pagination ([7fe9874](https://github.com/cubicecho/philotes/commit/7fe9874f022b4c999e9ef4b146013d4e5c21d407))
+* navigation — active states, Network link, mobile bottom tabs + FAB ([8251e0c](https://github.com/cubicecho/philotes/commit/8251e0cda4c2741ef5229a019c382e697000b5d7))
+* people list — alphabetical grouped list replaces pagination ([9790f52](https://github.com/cubicecho/philotes/commit/9790f52cd46a5394a034ad15386e6209373ea345))
+* person detail — profile header with contact actions, auto-height sections ([2929d63](https://github.com/cubicecho/philotes/commit/2929d63785e26344b1daa45bacf25079669b0f87))
+* remove the activities concept — interactions cover it ([86e9e71](https://github.com/cubicecho/philotes/commit/86e9e71fdf1842cedcac732eade601666302f3f5))
+* unify terminology — /tags route becomes /labels, user copy says Label ([f12eb35](https://github.com/cubicecho/philotes/commit/f12eb355134e068598bfa95c46f11eca9c039e4b))
+
 # [1.8.0](https://github.com/cubicecho/philotes/compare/v1.7.0...v1.8.0) (2026-07-05)
 
 
