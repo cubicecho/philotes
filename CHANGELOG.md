@@ -1,3 +1,23 @@
+# [1.6.0](https://github.com/vantreeseba/philotes/compare/v1.5.1...v1.6.0) (2026-05-05)
+
+
+### Bug Fixes
+
+* add padding between scroll content and scrollbar ([985c3ad](https://github.com/vantreeseba/philotes/commit/985c3ad6ebdd527239966dae66dd82c35d83f985))
+* constrain all pages to viewport height with internal scroll ([2111fd6](https://github.com/vantreeseba/philotes/commit/2111fd6838347f45c031a9313b77f62a7e31679b))
+* move Tasks and Address add buttons to card headers, match Tags style ([4df296d](https://github.com/vantreeseba/philotes/commit/4df296d890167435a6360f4953bfeb949be23e9f))
+* person detail view always loaded first contact instead of selected one ([860f27c](https://github.com/vantreeseba/philotes/commit/860f27cce87aa476d1d3f680bcfb8dcb15be45ef))
+* restore per-card add buttons, unify header layout to match Tags card style ([8b26577](https://github.com/vantreeseba/philotes/commit/8b26577423544aa5d2879265d4887f87d9ed1121))
+* style scrollbars to match theme in light and dark mode ([b3f43b4](https://github.com/vantreeseba/philotes/commit/b3f43b453a15ecce65341530dcd9db46e07ea22d))
+* switch to @vantreeseba/drizzle-graphql, resolve duplicate graphql instance ([74f8f62](https://github.com/vantreeseba/philotes/commit/74f8f62ccd069703ede4fffad0623211c5397aa0))
+
+
+### Features
+
+* add action button bar to top of person detail view ([8591895](https://github.com/vantreeseba/philotes/commit/8591895d39e3becf2958e6f0677778f2e6789234))
+* add Dashboard nav link and dark mode toggle to header ([366ff6e](https://github.com/vantreeseba/philotes/commit/366ff6e75ef1772015abef304c40a30c0e426836))
+* magic link auth + import email-less contacts from Google CSV ([a109875](https://github.com/vantreeseba/philotes/commit/a10987597ae6da934ba85031341bf9e4792b7678))
+
 ## [1.5.1](https://github.com/vantreeseba/philotes/compare/v1.5.0...v1.5.1) (2026-05-01)
 
 
