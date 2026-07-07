@@ -87,6 +87,15 @@ const UPDATE_MY_PERSON_CONTEXT = graphql(`
   }
 `);
 
+const ATTACH_LABEL_TO_PERSON = graphql(`
+  mutation AttachLabelToNewPerson($personId: String!, $labelId: String!) {
+    createPersonLabel(values: { personId: $personId, labelId: $labelId }) {
+      personId
+      labelId
+    }
+  }
+`);
+
 const DELETE_PERSON = graphql(`
   mutation DeletePerson($id: String!) {
     deletePersons(where: { id: { eq: $id } }) {
@@ -165,7 +174,7 @@ export default function PersonsPage() {
   const orderDirection = sortDir === 'asc' ? OrderDirection.Asc : OrderDirection.Desc;
 
   // ── Data fetching — the whole (searched) list; sorting by name on the server
-  const { data, previousData, loading, error } = useQuery(GET_PERSONS, {
+  const { data, previousData, loading, error, refetch } = useQuery(GET_PERSONS, {
     variables: {
       where,
       orderBy: {
@@ -182,6 +191,7 @@ export default function PersonsPage() {
     refetchQueries: ['GetPersons'],
   });
   const [updateMyPersonContext] = useMutation(UPDATE_MY_PERSON_CONTEXT);
+  const [attachLabel] = useMutation(ATTACH_LABEL_TO_PERSON);
   const [deletePerson] = useMutation(DELETE_PERSON, {
     refetchQueries: ['GetPersons'],
   });
@@ -234,7 +244,7 @@ export default function PersonsPage() {
     await deletePerson({ variables: { id } });
   };
 
-  const handleSubmit = async ({ person, userContext }: PersonFormValue): Promise<void> => {
+  const handleSubmit = async ({ person, userContext, labelIds }: PersonFormValue): Promise<void> => {
     const result = await createPerson({ variables: { values: person } });
     const personId = result.data?.createPerson?.id;
     if (personId && (userContext.contactFrequency || userContext.howWeMet || userContext.firstMetDate)) {
@@ -247,6 +257,11 @@ export default function PersonsPage() {
         },
       });
     }
+    // Persist the labels chosen in the form — createPerson ignores them.
+    if (personId && labelIds.length > 0) {
+      await Promise.all(labelIds.map((labelId) => attachLabel({ variables: { personId, labelId } })));
+      await refetch();
+    }
     setDialogOpen(false);
   };
 
@@ -258,6 +273,12 @@ export default function PersonsPage() {
       next.add(id);
     }
     setUrlState({ labels: [...next] });
+  };
+
+  // Clear all active label filters in one URL update. Looping handleToggleLabel
+  // reads a stale activeLabelIds each call, so only the last toggle would stick.
+  const handleClearLabels = (): void => {
+    setUrlState({ labels: [] });
   };
 
   const handleSortChange = (value: string): void => {
@@ -299,8 +320,10 @@ export default function PersonsPage() {
         grouped={isNameSort}
         onClickAdd={() => setDialogOpen(true)}
         onClickDelete={handleDelete}
+        onClearLabels={handleClearLabels}
         onQuickLog={() => {
-          /* refetch to update lastContactedAt */
+          // Pull fresh interactions so the row's "last contacted" reflects the log.
+          void refetch();
         }}
       />
     </>

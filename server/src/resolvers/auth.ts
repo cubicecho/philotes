@@ -1,9 +1,17 @@
+import { createHash } from 'node:crypto';
 import { schema as dbSchema } from '@philotes/db';
-import { eq } from 'drizzle-orm';
+import { and, eq, isNull } from 'drizzle-orm';
 import { extendSchema, GraphQLError, type GraphQLObjectType, type GraphQLSchema, parse } from 'graphql';
 import jwt from 'jsonwebtoken';
 import { sendMagicLinkEmail } from '../lib/email.ts';
 import type { Context } from '../routes/graphql.ts';
+
+const MAGIC_LINK_TTL_MS = 15 * 60 * 1000;
+
+// Store only a hash of the magic-link token so a leaked DB row can't be replayed.
+function hashToken(token: string): string {
+  return createHash('sha256').update(token).digest('hex');
+}
 
 // ── JWT ──────────────────────────────────────────────────────────────────────
 
@@ -104,15 +112,29 @@ export function applyAuthExtension(schema: GraphQLSchema): GraphQLSchema {
   const mutationType = extendedSchema.getType('Mutation') as GraphQLObjectType;
   const fields = mutationType.getFields();
 
-  fields.requestMagicLink.resolve = async (_parent: unknown, args: { email: string }) => {
+  fields.requestMagicLink.resolve = async (_parent: unknown, args: { email: string }, context: Context) => {
     const email = args.email.toLowerCase().trim();
+    // biome-ignore lint/suspicious/noExplicitAny: drizzle-orm 1.0 column type compat
+    const db = context.db as any;
+
     const token = signMagicToken(email);
     const magicLink = `${APP_URL}/auth/verify?token=${token}`;
-    console.log(`\n[auth] Magic link for ${email}:\n${magicLink}\n`);
 
-    // In dev (no SMTP configured) surface the link in the response; otherwise email it.
+    // Resolve (or create) the user now so the token can be bound to them and
+    // marked single-use. Persist only a hash of the token + its expiry.
+    const userId = await findOrCreateUser(db, email);
+    await db.insert(dbSchema.magicLinkTokens).values({
+      userId,
+      tokenHash: hashToken(token),
+      expiresAt: new Date(Date.now() + MAGIC_LINK_TTL_MS),
+    });
+
+    // In dev (no SMTP configured) surface the link in the response; otherwise
+    // email it. Only log the raw link — a bearer credential — outside production.
     const isDev = !process.env.SMTP_HOST;
-    if (!isDev) {
+    if (isDev) {
+      console.log(`\n[auth] Magic link for ${email}:\n${magicLink}\n`);
+    } else {
       await sendMagicLinkEmail(email, magicLink);
     }
     return { ok: true, magicLink: isDev ? magicLink : null };
@@ -128,8 +150,24 @@ export function applyAuthExtension(schema: GraphQLSchema): GraphQLSchema {
 
     // biome-ignore lint/suspicious/noExplicitAny: drizzle-orm 1.0 column type compat
     const db = context.db as any;
-    const userId = await findOrCreateUser(db, payload.email);
-    return createSession(userId);
+
+    // Atomically consume the token: only the first verify flips usedAt from
+    // null, so a replayed link updates zero rows and is rejected.
+    const [consumed] = await db
+      .update(dbSchema.magicLinkTokens)
+      .set({ usedAt: new Date() })
+      .where(
+        and(eq(dbSchema.magicLinkTokens.tokenHash, hashToken(args.token)), isNull(dbSchema.magicLinkTokens.usedAt)),
+      )
+      .returning({ userId: dbSchema.magicLinkTokens.userId, expiresAt: dbSchema.magicLinkTokens.expiresAt });
+
+    if (!consumed || consumed.expiresAt.getTime() < Date.now()) {
+      throw new GraphQLError('Invalid or expired magic link', {
+        extensions: { code: 'UNAUTHENTICATED' },
+      });
+    }
+
+    return createSession(consumed.userId);
   };
 
   return extendedSchema;

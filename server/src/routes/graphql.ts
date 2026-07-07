@@ -4,6 +4,7 @@ import { ApolloServerPluginDrainHttpServer } from '@apollo/server/plugin/drainHt
 import { expressMiddleware } from '@as-integrations/express5';
 import type { DB } from '@philotes/db';
 import { db } from '@philotes/db';
+import type DataLoader from 'dataloader';
 import type { Request } from 'express';
 import express, { Router } from 'express';
 import { verifyToken } from '../resolvers/auth.ts';
@@ -12,6 +13,12 @@ import { schema } from '../schema.ts';
 export interface Context {
   db: DB;
   userId: string | null;
+  /**
+   * Per-request cache of DataLoaders that batch Person nested-relation reads
+   * (interactions, notes, …) so a list of N persons costs one query per
+   * relation instead of N. Populated lazily by the field resolvers.
+   */
+  relationLoaders?: Map<string, DataLoader<string, unknown[]>>;
 }
 
 function extractUserId(req: Request): string | null {

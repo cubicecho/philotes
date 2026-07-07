@@ -54,6 +54,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Spinner } from '@/components/ui/spinner.tsx';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { getToken } from '@/lib/auth';
+import { parseLocalDate } from '@/lib/date-type-policy';
 
 // ---------------------------------------------------------------------------
 // GraphQL
@@ -841,7 +842,7 @@ export default function PersonDetailPage() {
                   {person.firstMetDate && (
                     <p className="text-xs text-muted-foreground mt-1">
                       First met:{' '}
-                      {new Date(person.firstMetDate).toLocaleDateString('en-US', {
+                      {parseLocalDate(person.firstMetDate).toLocaleDateString('en-US', {
                         year: 'numeric',
                         month: 'long',
                         day: 'numeric',

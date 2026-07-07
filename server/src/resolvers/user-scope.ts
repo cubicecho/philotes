@@ -1,4 +1,5 @@
 import { schema as dbSchema } from '@philotes/db';
+import DataLoader from 'dataloader';
 import {
   and,
   asc,
@@ -20,13 +21,13 @@ import {
   type SQL,
 } from 'drizzle-orm';
 import {
+  extendSchema,
   GraphQLError,
   GraphQLInputObjectType,
   GraphQLNonNull,
-  GraphQLString,
-  extendSchema,
   type GraphQLObjectType,
   type GraphQLSchema,
+  GraphQLString,
   parse,
 } from 'graphql';
 import type { Context } from '../routes/graphql.ts';
@@ -176,6 +177,47 @@ export function buildPersonsOrderBy(orderBy: PersonsOrderBy): SQL[] {
     });
 }
 
+// Generic where/orderBy translators for a nested relation, keyed off the
+// drizzle table's own columns (a column is exposed as table[fieldName]).
+function tableColumn(table: unknown, key: string): Column | undefined {
+  const col = (table as Record<string, unknown>)[key];
+  return col ? (col as Column) : undefined;
+}
+
+function buildTableWhere(table: unknown, where: Record<string, unknown>): SQL | undefined {
+  const parts: SQL[] = [];
+  if (Array.isArray((where as PersonsWhere).OR)) {
+    const orParts = ((where as PersonsWhere).OR as PersonsWhere[])
+      .map((w) => buildTableWhere(table, w))
+      .filter(Boolean) as SQL[];
+    if (orParts.length > 0) parts.push(or(...orParts) as SQL);
+  }
+  if (Array.isArray((where as PersonsWhere).AND)) {
+    const andParts = ((where as PersonsWhere).AND as PersonsWhere[])
+      .map((w) => buildTableWhere(table, w))
+      .filter(Boolean) as SQL[];
+    if (andParts.length > 0) parts.push(and(...andParts) as SQL);
+  }
+  for (const [key, filter] of Object.entries(where)) {
+    if (key === 'OR' || key === 'AND') continue;
+    const col = tableColumn(table, key);
+    if (!col || !filter || typeof filter !== 'object') continue;
+    const cond = buildFieldCondition(col, filter as FieldFilter);
+    if (cond) parts.push(cond);
+  }
+  return parts.length > 0 ? and(...parts) : undefined;
+}
+
+function buildTableOrderBy(table: unknown, orderBy: PersonsOrderBy): SQL[] {
+  return Object.entries(orderBy)
+    .filter(([key]) => tableColumn(table, key))
+    .sort(([, a], [, b]) => (a.priority ?? 0) - (b.priority ?? 0))
+    .map(([key, { direction }]) => {
+      const col = tableColumn(table, key) as Column;
+      return direction === 'desc' ? desc(col) : asc(col);
+    });
+}
+
 function overridePersonsResolvers(schema: GraphQLSchema): void {
   const queryType = schema.getType('Query') as GraphQLObjectType;
   const mutationType = schema.getType('Mutation') as GraphQLObjectType;
@@ -209,7 +251,7 @@ function overridePersonsResolvers(schema: GraphQLSchema): void {
     const whereFilter = args.where ? buildPersonsWhere(args.where as PersonsWhere) : undefined;
     const orderByClauses = args.orderBy ? buildPersonsOrderBy(args.orderBy as PersonsOrderBy) : [];
 
-    return db
+    let query = db
       .select(personSelect)
       .from(dbSchema.persons)
       .innerJoin(dbSchema.userPersons, userJoin)
@@ -218,9 +260,16 @@ function overridePersonsResolvers(schema: GraphQLSchema): void {
         ...(orderByClauses.length > 0
           ? orderByClauses
           : [asc(dbSchema.persons.lastName), asc(dbSchema.persons.firstName)]),
-      )
-      .limit((args.limit as number | undefined) ?? 1000)
-      .offset((args.offset as number | undefined) ?? 0);
+      );
+
+    // Only paginate when the client explicitly asks; otherwise return the
+    // user's full contact list (the UI filters/sorts client-side over it and
+    // has no pagination, so a silent cap would drop contacts).
+    const limit = args.limit as number | undefined;
+    const offset = args.offset as number | undefined;
+    if (limit !== undefined) query = query.limit(limit);
+    if (offset !== undefined) query = query.offset(offset);
+    return query;
   };
 
   // person(where) — single, must be in user's contacts
@@ -252,18 +301,16 @@ function overridePersonsResolvers(schema: GraphQLSchema): void {
       .returning();
     if (!person) throw new GraphQLError('Failed to create person');
 
-    await db
-      .insert(dbSchema.userPersons)
-      .values({ userId, personId: person.id })
-      .onConflictDoNothing();
+    await db.insert(dbSchema.userPersons).values({ userId, personId: person.id }).onConflictDoNothing();
 
     return person;
   };
 
   // updatePersons — only rows the user has in their contacts
+  // NOTE: drizzle-graphql names the update payload arg `set` (not `values`).
   mf.updatePersons.resolve = async (
     _parent: unknown,
-    args: { values: Record<string, unknown>; where?: Record<string, unknown> },
+    args: { set: Record<string, unknown>; where?: Record<string, unknown> },
     ctx: Context,
   ) => {
     const userId = requireAuth(ctx);
@@ -286,11 +333,7 @@ function overridePersonsResolvers(schema: GraphQLSchema): void {
 
     const results = [];
     for (const id of ids) {
-      const [updated] = await db
-        .update(dbSchema.persons)
-        .set(args.values)
-        .where(eq(dbSchema.persons.id, id))
-        .returning();
+      const [updated] = await db.update(dbSchema.persons).set(args.set).where(eq(dbSchema.persons.id, id)).returning();
       if (updated) results.push(updated);
     }
     return results;
@@ -402,7 +445,8 @@ function overrideUserOwnedTable<TTable extends { userId: unknown; id: unknown }>
   if (mf[updateMutationName]) {
     mf[updateMutationName].resolve = async (
       _parent: unknown,
-      args: { values: Record<string, unknown>; where?: Record<string, unknown> },
+      // drizzle-graphql names the update payload arg `set` (not `values`).
+      args: { set: Record<string, unknown>; where?: Record<string, unknown> },
       ctx: Context,
     ) => {
       const userId = requireAuth(ctx);
@@ -413,7 +457,7 @@ function overrideUserOwnedTable<TTable extends { userId: unknown; id: unknown }>
         : eq((table as any).userId, userId);
 
       // Strip userId from update values — callers cannot change ownership
-      const { userId: _uid, ...safeValues } = { ...args.values, userId: undefined };
+      const { userId: _uid, ...safeValues } = { ...args.set, userId: undefined };
       return db.update(table).set(safeValues).where(condition).returning();
     };
   }
@@ -659,43 +703,117 @@ export function applyUserScopeExtensions(schema: GraphQLSchema): GraphQLSchema {
     personFields[field].resolve = (parent: Record<string, unknown>) => parent[field] ?? null;
   }
 
+  // Nested Person relations (interactions, notes, …). These must:
+  //  1. filter by userId (tenant isolation — two users can track one person);
+  //  2. honor the client's where/orderBy/limit/offset args (a list query asks
+  //     for `interactions(limit: 1, orderBy: { occurredAt: desc })` and reads
+  //     [0], so dropping the args returns an arbitrary row); and
+  //  3. batch across all persons in a list via a per-request DataLoader so N
+  //     persons cost one query per relation, not N.
+  type RelationArgs = {
+    where?: Record<string, unknown>;
+    orderBy?: PersonsOrderBy;
+    limit?: number;
+    offset?: number;
+  };
+
   const userScopedPersonRelation =
-    (table: { userId: unknown; personId: unknown }, personIdCol: unknown) =>
-    async (parent: { id: string }, _args: unknown, ctx: Context) => {
-      if (!ctx.userId) return [];
+    (relationName: string, table: { userId: unknown; personId: unknown }, personIdCol: Column) =>
+    (parent: { id: string }, args: RelationArgs, ctx: Context): Promise<unknown[]> => {
+      if (!ctx.userId) return Promise.resolve([]);
       const db = ctx.db as AnyDB;
-      return (
-        db
-          .select()
-          .from(table)
-          // biome-ignore lint/suspicious/noExplicitAny: drizzle-orm 1.0 column type compat
-          .where(and(eq(personIdCol as any, parent.id), eq((table as any).userId, ctx.userId)))
-      );
+      const userId = ctx.userId;
+
+      // One loader per (relation + args signature): all persons in a list share
+      // identical relation args, so they collapse into a single batched query.
+      if (!ctx.relationLoaders) ctx.relationLoaders = new Map();
+      const cache = ctx.relationLoaders;
+      const key = `${relationName}:${JSON.stringify({
+        where: args.where,
+        orderBy: args.orderBy,
+        limit: args.limit,
+        offset: args.offset,
+      })}`;
+
+      let loader = cache.get(key);
+      if (!loader) {
+        loader = new DataLoader<string, unknown[]>(async (personIds) => {
+          const whereFilter = args.where ? buildTableWhere(table, args.where) : undefined;
+          const orderByClauses = args.orderBy ? buildTableOrderBy(table, args.orderBy) : [];
+          const rows: Array<Record<string, unknown>> = await db
+            .select()
+            .from(table)
+            .where(
+              and(
+                inArray(personIdCol as unknown as SQL, personIds as unknown as string[]),
+                eq((table as { userId: unknown }).userId as unknown as SQL, userId),
+                whereFilter,
+              ),
+            )
+            .orderBy(...orderByClauses);
+
+          // Group by personId (input order preserved), then apply per-person
+          // offset/limit — a single SQL LIMIT would cap the whole batch.
+          const byPerson = new Map<string, Array<Record<string, unknown>>>();
+          for (const row of rows) {
+            const pid = row.personId as string;
+            const list = byPerson.get(pid);
+            if (list) list.push(row);
+            else byPerson.set(pid, [row]);
+          }
+          return personIds.map((id) => {
+            let list = byPerson.get(id) ?? [];
+            if (args.offset) list = list.slice(args.offset);
+            if (args.limit !== undefined) list = list.slice(0, args.limit);
+            return list;
+          });
+        });
+        cache.set(key, loader);
+      }
+
+      return loader.load(parent.id);
     };
 
   if (personFields.notes) {
-    personFields.notes.resolve = userScopedPersonRelation(dbSchema.notes, dbSchema.notes.personId);
+    personFields.notes.resolve = userScopedPersonRelation('notes', dbSchema.notes, dbSchema.notes.personId as Column);
   }
   if (personFields.interactions) {
-    personFields.interactions.resolve = userScopedPersonRelation(dbSchema.interactions, dbSchema.interactions.personId);
+    personFields.interactions.resolve = userScopedPersonRelation(
+      'interactions',
+      dbSchema.interactions,
+      dbSchema.interactions.personId as Column,
+    );
   }
   if (personFields.tasks) {
-    personFields.tasks.resolve = userScopedPersonRelation(dbSchema.tasks, dbSchema.tasks.personId);
+    personFields.tasks.resolve = userScopedPersonRelation('tasks', dbSchema.tasks, dbSchema.tasks.personId as Column);
   }
   if (personFields.importantDates) {
     personFields.importantDates.resolve = userScopedPersonRelation(
+      'importantDates',
       dbSchema.importantDates,
-      dbSchema.importantDates.personId,
+      dbSchema.importantDates.personId as Column,
     );
   }
   if (personFields.contactInfos) {
-    personFields.contactInfos.resolve = userScopedPersonRelation(dbSchema.contactInfos, dbSchema.contactInfos.personId);
+    personFields.contactInfos.resolve = userScopedPersonRelation(
+      'contactInfos',
+      dbSchema.contactInfos,
+      dbSchema.contactInfos.personId as Column,
+    );
   }
   if (personFields.addresses) {
-    personFields.addresses.resolve = userScopedPersonRelation(dbSchema.addresses, dbSchema.addresses.personId);
+    personFields.addresses.resolve = userScopedPersonRelation(
+      'addresses',
+      dbSchema.addresses,
+      dbSchema.addresses.personId as Column,
+    );
   }
   if (personFields.gratitudes) {
-    personFields.gratitudes.resolve = userScopedPersonRelation(dbSchema.gratitudes, dbSchema.gratitudes.personId);
+    personFields.gratitudes.resolve = userScopedPersonRelation(
+      'gratitudes',
+      dbSchema.gratitudes,
+      dbSchema.gratitudes.personId as Column,
+    );
   }
 
   // labels on a person — user_persons + person_labels, filtered by userId

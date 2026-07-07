@@ -189,6 +189,8 @@ export interface PersonListProps {
   allLabels: Array<{ id: string; label: string; color: string }>;
   activeLabelIds: string[];
   onToggleLabel: (id: string) => void;
+  /** Clear every active label filter at once (avoids stale-closure toggling). */
+  onClearLabels: () => void;
   q: string;
   onSearchChange: (q: string) => void;
   loading?: boolean;
@@ -206,6 +208,7 @@ export function PersonList({
   allLabels,
   activeLabelIds,
   onToggleLabel,
+  onClearLabels,
   q,
   onSearchChange,
   loading = false,
@@ -221,9 +224,7 @@ export function PersonList({
 
   const handleClearFilters = () => {
     onSearchChange('');
-    for (const id of activeLabelIds) {
-      onToggleLabel(id);
-    }
+    onClearLabels();
   };
 
   // Group under letters (list arrives sorted by name from the caller).

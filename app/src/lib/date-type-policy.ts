@@ -1,6 +1,16 @@
 import type { FieldPolicy } from '@apollo/client';
 
 /**
+ * Parse a date-only string ("YYYY-MM-DD") as local midnight.
+ * `new Date("2026-03-09")` parses as UTC midnight and can render as the
+ * previous day in negative-offset timezones — construct from parts instead.
+ */
+export function parseLocalDate(str: string): Date {
+  const [year, month, day] = str.split('-').map(Number);
+  return new Date(year, month - 1, day);
+}
+
+/**
  * Apollo InMemoryCache FieldPolicy for GraphQL `DateTime` scalar.
  * Incoming value is a full ISO 8601 timestamp string (e.g. "2026-03-09T14:32:00.000Z").
  * new Date() is safe here since the string includes timezone info.
@@ -24,9 +34,6 @@ export const dateTypePolicy: FieldPolicy<Date | null> = {
   merge: (_existing, incoming: unknown) => {
     if (incoming == null) return incoming as null;
     if (incoming instanceof Date) return incoming;
-    const str = incoming as string;
-    // Parse YYYY-MM-DD parts and construct as local time (not UTC)
-    const [year, month, day] = str.split('-').map(Number);
-    return new Date(year, month - 1, day);
+    return parseLocalDate(incoming as string);
   },
 };
