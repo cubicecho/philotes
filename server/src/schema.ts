@@ -11,6 +11,8 @@ if (!dbInstance._.fullSchema) {
 import { GraphQLInputObjectType, GraphQLNonNull, type GraphQLNullableType, type GraphQLSchema } from 'graphql';
 import { applyApiKeysExtension } from './resolvers/api-keys.ts';
 import { applyAuthExtension } from './resolvers/auth.ts';
+import { applyDeduplicateExtension } from './resolvers/deduplicate.ts';
+import { applyImportantDatePersonsExtension } from './resolvers/important-date-persons.ts';
 import { applyImportContactsExtension } from './resolvers/import-contacts.ts';
 import { applyMergeLabelsExtension } from './resolvers/merge-labels.ts';
 import { applyNullListCoercion } from './resolvers/null-lists.ts';
@@ -53,6 +55,8 @@ schema = applyScalarResolvers(schema);
 schema = applyNullListCoercion(schema);
 schema = applyImportContactsExtension(schema);
 schema = applyMergeLabelsExtension(schema);
+schema = applyDeduplicateExtension(schema);
+schema = applyImportantDatePersonsExtension(schema);
 schema = applyApiKeysExtension(schema);
 
 export { schema, entities };

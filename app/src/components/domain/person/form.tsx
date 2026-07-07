@@ -2,7 +2,7 @@ import { createFormHook } from '@tanstack/react-form';
 import { X } from 'lucide-react';
 import { useState } from 'react';
 import { z } from 'zod';
-import type { Label_ListFragment } from '@/__generated__/graphql';
+import type { Label_ListFragment, CreatePersonInput as NewPerson } from '@/__generated__/graphql';
 import { Button } from '@/components/ui/button';
 import { FieldGroup } from '@/components/ui/field';
 import { FormError, fieldContext, formContext, TextField } from '@/components/ui/form-field.tsx';
@@ -26,17 +26,15 @@ const personSchema = z.object({
   firstMetDate: z.string(),
 });
 
-export interface PersonFormPerson {
-  firstName: string;
-  lastName: string;
-  email: string;
+export interface PersonUserContext {
   contactFrequency?: string | null;
   howWeMet?: string | null;
   firstMetDate?: string | null;
 }
 
 export interface PersonFormValue {
-  person: PersonFormPerson;
+  person: Pick<NewPerson, 'firstName' | 'lastName' | 'email'>;
+  userContext: PersonUserContext;
   labelIds: string[];
 }
 
@@ -98,7 +96,11 @@ export function PersonForm({ availableLabels, initialValues, submitLabel, onSubm
       try {
         await onSubmit({
           person: {
-            ...value,
+            firstName: value.firstName,
+            lastName: value.lastName,
+            email: value.email,
+          },
+          userContext: {
             contactFrequency: value.contactFrequency || null,
             howWeMet: value.howWeMet || null,
             firstMetDate: value.firstMetDate || null,

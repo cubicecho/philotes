@@ -77,7 +77,25 @@ export const importantDateTags = pgTable(
   (t) => [primaryKey({ columns: [t.importantDateId, t.labelId] })],
 );
 
+export const importantDatePersons = pgTable(
+  'important_date_persons',
+  {
+    importantDateId: uuid('important_date_id')
+      .notNull()
+      .references(() => importantDates.id, { onDelete: 'cascade' }),
+    personId: uuid('person_id')
+      .notNull()
+      .references(() => persons.id, { onDelete: 'cascade' }),
+  },
+  (t) => [
+    primaryKey({ columns: [t.importantDateId, t.personId] }),
+    index('idx_important_date_persons_person_id').on(t.personId),
+  ],
+);
+
 export type ImportantDate = typeof importantDates.$inferSelect;
 export type NewImportantDate = typeof importantDates.$inferInsert;
 export type ImportantDateTag = typeof importantDateTags.$inferSelect;
 export type NewImportantDateTag = typeof importantDateTags.$inferInsert;
+export type ImportantDatePerson = typeof importantDatePersons.$inferSelect;
+export type NewImportantDatePerson = typeof importantDatePersons.$inferInsert;

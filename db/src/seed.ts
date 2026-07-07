@@ -1,9 +1,5 @@
 import { faker } from '@faker-js/faker';
-import { db as _db } from './index.ts';
-
-// biome-ignore lint/suspicious/noExplicitAny: seed script — union db type is runtime-safe
-const db = _db as any;
-
+import { db } from './index.ts';
 import {
   addresses,
   contactInfos,
@@ -56,6 +52,8 @@ function toIsoDate(d: Date): string {
 
 // ── constants ──────────────────────────────────────────────────────────────
 
+const CONTACT_FREQUENCIES = ['weekly', 'monthly', 'quarterly', 'yearly'] as const;
+
 const INTERACTION_CHANNELS = ['call', 'text', 'email', 'in-person', 'other'] as const;
 
 const INTERACTION_SENTIMENTS = ['great', 'good', 'neutral', 'difficult'] as const;
@@ -81,16 +79,14 @@ const IMPORTANT_DATE_NAMES = [
 // ── seed functions ─────────────────────────────────────────────────────────
 
 async function seedUser() {
-  const [user] = await db
-    .insert(users)
-    .values({
-      email: 'seed@philotes.local',
-      name: 'Seed User',
-      passwordHash: 'seed-placeholder-not-for-auth',
-    })
-    .returning({ id: users.id });
-  console.log(`Inserted seed user (id: ${user.id})`);
-  return user;
+  const userData = {
+    id: randomId(),
+    email: 'demo@philotes.app',
+    name: 'Demo User',
+  };
+  await db.insert(users).values(userData);
+  console.log(`Inserted seed user: ${userData.email}`);
+  return userData;
 }
 
 async function seedLabels(userId: string) {
@@ -141,19 +137,28 @@ async function seedPersons(userId: string) {
   await db.insert(persons).values(personData);
   console.log(`Inserted ${personData.length} persons`);
 
-  await db.insert(userPersons).values(personData.map((p) => ({ userId, personId: p.id })));
-  console.log(`Linked ${personData.length} persons to seed user`);
+  // Create user_persons links (with user-specific context)
+  const userPersonData = personData.map((p) => ({
+    userId,
+    personId: p.id,
+    contactFrequency: Math.random() > 0.3 ? pickRandom([...CONTACT_FREQUENCIES]) : null,
+    howWeMet: Math.random() > 0.5 ? faker.lorem.sentence() : null,
+    firstMetDate: Math.random() > 0.5 ? toIsoDate(randomPastDate(10)) : null,
+  }));
+
+  await db.insert(userPersons).values(userPersonData);
+  console.log(`Inserted ${userPersonData.length} user_persons links`);
 
   return personData;
 }
 
-async function seedPersonLabels(personData: { id: string }[], labelData: { id: string }[], userId: string) {
+async function seedPersonLabels(userId: string, personData: { id: string }[], labelData: { id: string }[]) {
   const personLabelData = personData.flatMap((person) => {
     const assignedLabels = pickRandomSubset(labelData, 1, 3);
     return assignedLabels.map((lbl) => ({
-      userId,
       personId: person.id,
       labelId: lbl.id,
+      userId,
     }));
   });
 
@@ -161,8 +166,8 @@ async function seedPersonLabels(personData: { id: string }[], labelData: { id: s
   console.log(`Inserted ${personLabelData.length} person-label associations`);
 }
 
-async function seedNotes(personData: { id: string }[], labelData: { id: string }[], userId: string) {
-  const noteData: { id: string; userId: string; body: string; personId: string }[] = [];
+async function seedNotes(userId: string, personData: { id: string }[], labelData: { id: string }[]) {
+  const noteData: { id: string; body: string; personId: string; userId: string }[] = [];
   const noteTagData: { noteId: string; labelId: string }[] = [];
   const noteMentionData: { noteId: string; mentionedPersonId: string }[] = [];
 
@@ -173,9 +178,9 @@ async function seedNotes(personData: { id: string }[], labelData: { id: string }
       const noteId = randomId();
       noteData.push({
         id: noteId,
-        userId,
         body: faker.lorem.sentences({ min: 1, max: 4 }),
         personId: person.id,
+        userId,
       });
 
       // ~30% chance of a @mention of another person
@@ -209,11 +214,11 @@ async function seedNotes(personData: { id: string }[], labelData: { id: string }
   }
 }
 
-async function seedImportantDates(personData: { id: string }[], labelData: { id: string }[], userId: string) {
+async function seedImportantDates(userId: string, personData: { id: string }[], labelData: { id: string }[]) {
   const importantDateData: {
     id: string;
-    userId: string;
     personId: string;
+    userId: string;
     name: string;
     description: string;
     date: string;
@@ -234,8 +239,8 @@ async function seedImportantDates(personData: { id: string }[], labelData: { id:
 
       importantDateData.push({
         id: dateId,
-        userId,
         personId: person.id,
+        userId,
         name,
         description: faker.lorem.sentence(),
         date: toIsoDate(randomPastDate(30)),
@@ -261,11 +266,11 @@ async function seedImportantDates(personData: { id: string }[], labelData: { id:
   }
 }
 
-async function seedInteractions(personData: { id: string }[], labelData: { id: string }[], userId: string) {
+async function seedInteractions(userId: string, personData: { id: string }[], labelData: { id: string }[]) {
   const interactionData: {
     id: string;
-    userId: string;
     personId: string;
+    userId: string;
     occurredAt: Date;
     channel: (typeof INTERACTION_CHANNELS)[number];
     sentiment: (typeof INTERACTION_SENTIMENTS)[number];
@@ -282,8 +287,8 @@ async function seedInteractions(personData: { id: string }[], labelData: { id: s
 
       interactionData.push({
         id: interactionId,
-        userId,
         personId: person.id,
+        userId,
         occurredAt: randomPastDate(2),
         channel: pickRandom([...INTERACTION_CHANNELS]),
         sentiment: pickRandom([...INTERACTION_SENTIMENTS]),
@@ -309,14 +314,14 @@ async function seedInteractions(personData: { id: string }[], labelData: { id: s
   }
 }
 
-async function seedPersonRelationships(personData: { id: string }[], userId: string) {
+async function seedPersonRelationships(userId: string, personData: { id: string }[]) {
   const targetCount = 30 + Math.floor(Math.random() * 31); // 30–60
   const usedPairs = new Set<string>();
   const relationshipData: {
     id: string;
-    userId: string;
     fromPersonId: string;
     toPersonId: string;
+    userId: string;
     type: string;
   }[] = [];
 
@@ -336,9 +341,9 @@ async function seedPersonRelationships(personData: { id: string }[], userId: str
     usedPairs.add(pairKey);
     relationshipData.push({
       id: randomId(),
-      userId,
       fromPersonId: from.id,
       toPersonId: to.id,
+      userId,
       type: pickRandom(RELATIONSHIP_TYPES),
     });
   }
@@ -347,11 +352,11 @@ async function seedPersonRelationships(personData: { id: string }[], userId: str
   console.log(`Inserted ${relationshipData.length} person relationships`);
 }
 
-async function seedTasks(personData: { id: string }[], userId: string) {
+async function seedTasks(userId: string, personData: { id: string }[]) {
   const taskData: {
     id: string;
-    userId: string;
     personId: string;
+    userId: string;
     title: string;
     notes: string | null;
     dueAt: Date | null;
@@ -368,8 +373,8 @@ async function seedTasks(personData: { id: string }[], userId: string) {
 
       taskData.push({
         id: randomId(),
-        userId,
         personId: person.id,
+        userId,
         title: faker.company.catchPhrase(),
         notes: hasNotes ? faker.lorem.sentence() : null,
         dueAt: hasDueDate ? randomFutureDate(90) : null,
@@ -384,11 +389,11 @@ async function seedTasks(personData: { id: string }[], userId: string) {
   console.log(`Inserted ${taskData.length} tasks`);
 }
 
-async function seedContactInfos(personData: { id: string }[], userId: string) {
+async function seedContactInfos(userId: string, personData: { id: string }[]) {
   const contactInfoData: {
     id: string;
-    userId: string;
     personId: string;
+    userId: string;
     type: (typeof CONTACT_INFO_TYPES)[number];
     value: string;
     label: string | null;
@@ -425,8 +430,8 @@ async function seedContactInfos(personData: { id: string }[], userId: string) {
 
       contactInfoData.push({
         id: randomId(),
-        userId,
         personId: person.id,
+        userId,
         type,
         value,
         label: Math.random() > 0.6 ? faker.lorem.word() : null,
@@ -441,11 +446,11 @@ async function seedContactInfos(personData: { id: string }[], userId: string) {
   console.log(`Inserted ${contactInfoData.length} contact infos`);
 }
 
-async function seedAddresses(personData: { id: string }[], userId: string) {
+async function seedAddresses(userId: string, personData: { id: string }[]) {
   const addressData: {
     id: string;
-    userId: string;
     personId: string;
+    userId: string;
     type: (typeof ADDRESS_TYPES)[number];
     label: string | null;
     line1: string;
@@ -463,8 +468,8 @@ async function seedAddresses(personData: { id: string }[], userId: string) {
     for (let i = 0; i < count; i++) {
       addressData.push({
         id: randomId(),
-        userId,
         personId: person.id,
+        userId,
         type: pickRandom([...ADDRESS_TYPES]),
         label: Math.random() > 0.6 ? faker.lorem.word() : null,
         line1: faker.location.streetAddress(),
@@ -488,16 +493,18 @@ async function seedAddresses(personData: { id: string }[], userId: string) {
 
 console.log('Starting seed...');
 
-const { id: userId } = await seedUser();
+const userData = await seedUser();
+const userId = userData.id;
 const labelData = await seedLabels(userId);
 const personData = await seedPersons(userId);
-await seedPersonLabels(personData, labelData, userId);
-await seedNotes(personData, labelData, userId);
-await seedImportantDates(personData, labelData, userId);
-await seedInteractions(personData, labelData, userId);
-await seedPersonRelationships(personData, userId);
-await seedTasks(personData, userId);
-await seedContactInfos(personData, userId);
-await seedAddresses(personData, userId);
+await seedPersonLabels(userId, personData, labelData);
+await seedNotes(userId, personData, labelData);
+await seedImportantDates(userId, personData, labelData);
+await seedInteractions(userId, personData, labelData);
+await seedPersonRelationships(userId, personData);
+await seedTasks(userId, personData);
+await seedContactInfos(userId, personData);
+await seedAddresses(userId, personData);
 
 console.log('Seed complete.');
+console.log(`\nDemo user created: ${userData.email}`);

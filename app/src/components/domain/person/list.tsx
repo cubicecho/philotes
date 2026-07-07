@@ -1,5 +1,7 @@
 import { Link } from 'expo-router';
-import { Mail, Phone, Search, Trash2, UserPlus, Users, X } from 'lucide-react';
+import { GitMerge, Mail, MessageSquarePlus, Phone, Search, Trash2, UserPlus, Users, X } from 'lucide-react';
+import { useState } from 'react';
+import { QuickLogModal } from '@/components/domain/person/quick-log';
 import { ListLayout } from '@/components/layouts/list';
 import {
   AlertDialog,
@@ -73,10 +75,13 @@ function groupLetter(person: PersonRowData): string {
 interface PersonRowProps {
   person: PersonRowData;
   onClickDelete?: (id: string) => void;
+  onQuickLog?: () => void;
+  /** Label IDs currently active as filters — highlighted when matched. */
   activeLabelIds: Set<string>;
 }
 
-function PersonRow({ person, onClickDelete, activeLabelIds }: PersonRowProps) {
+function PersonRow({ person, onClickDelete, onQuickLog, activeLabelIds }: PersonRowProps) {
+  const [logOpen, setLogOpen] = useState(false);
   const phone = primaryPhone(person.contactInfos);
 
   return (
@@ -102,6 +107,17 @@ function PersonRow({ person, onClickDelete, activeLabelIds }: PersonRowProps) {
 
       {/* Quick actions */}
       <div className="flex shrink-0 items-center gap-0.5">
+        {onQuickLog && (
+          <Button
+            variant="ghost"
+            size="icon"
+            title="Log interaction"
+            className="h-9 w-9 text-muted-foreground hover:text-primary"
+            onClick={() => setLogOpen(true)}
+          >
+            <MessageSquarePlus className="h-4 w-4" />
+          </Button>
+        )}
         {phone && (
           <Button variant="ghost" size="icon" asChild className="h-9 w-9 text-muted-foreground hover:text-primary">
             <a href={`tel:${phone}`} aria-label={`Call ${person.firstName}`}>
@@ -149,6 +165,15 @@ function PersonRow({ person, onClickDelete, activeLabelIds }: PersonRowProps) {
             </AlertDialogContent>
           </AlertDialog>
         )}
+        {onQuickLog && (
+          <QuickLogModal
+            personId={person.id}
+            personName={`${person.firstName} ${person.lastName}`}
+            open={logOpen}
+            onClose={() => setLogOpen(false)}
+            onLogged={onQuickLog}
+          />
+        )}
       </div>
     </div>
   );
@@ -173,6 +198,7 @@ export interface PersonListProps {
   grouped: boolean;
   onClickAdd?: () => void;
   onClickDelete?: (id: string) => void;
+  onQuickLog?: () => void;
 }
 
 export function PersonList({
@@ -188,6 +214,7 @@ export function PersonList({
   grouped,
   onClickAdd,
   onClickDelete,
+  onQuickLog,
 }: PersonListProps) {
   const activeLabelSet = new Set(activeLabelIds);
   const hasFilters = q.trim().length > 0 || activeLabelIds.length > 0;
@@ -250,12 +277,20 @@ export function PersonList({
         <div className="space-y-3 pt-3">
           <div className="flex items-center justify-between">
             <h1 className="font-bold text-2xl tracking-tight">People</h1>
-            {onClickAdd && (
-              <Button onClick={onClickAdd} className="hidden md:inline-flex">
-                <UserPlus className="mr-2 h-4 w-4" />
-                Add Person
+            <div className="flex items-center gap-2">
+              <Button variant="outline" size="sm" asChild className="hidden md:inline-flex">
+                <Link href="/persons/dedupe">
+                  <GitMerge className="mr-1.5 h-4 w-4" />
+                  Dedupe
+                </Link>
               </Button>
-            )}
+              {onClickAdd && (
+                <Button onClick={onClickAdd} className="hidden md:inline-flex">
+                  <UserPlus className="mr-2 h-4 w-4" />
+                  Add Person
+                </Button>
+              )}
+            </div>
           </div>
           <div className="flex items-center gap-2">
             <div className="relative flex-1">
@@ -319,7 +354,13 @@ export function PersonList({
                 </div>
                 <div className="divide-y divide-border/60">
                   {group.rows.map((p) => (
-                    <PersonRow key={p.id} person={p} onClickDelete={onClickDelete} activeLabelIds={activeLabelSet} />
+                    <PersonRow
+                      key={p.id}
+                      person={p}
+                      onClickDelete={onClickDelete}
+                      onQuickLog={onQuickLog}
+                      activeLabelIds={activeLabelSet}
+                    />
                   ))}
                 </div>
               </div>
@@ -327,7 +368,13 @@ export function PersonList({
           ) : (
             <div className="divide-y divide-border/60">
               {persons.map((p) => (
-                <PersonRow key={p.id} person={p} onClickDelete={onClickDelete} activeLabelIds={activeLabelSet} />
+                <PersonRow
+                  key={p.id}
+                  person={p}
+                  onClickDelete={onClickDelete}
+                  onQuickLog={onQuickLog}
+                  activeLabelIds={activeLabelSet}
+                />
               ))}
             </div>
           )}

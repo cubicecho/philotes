@@ -1,0 +1,1 @@
+ALTER TABLE "persons" DROP CONSTRAINT "persons_email_key";

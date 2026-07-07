@@ -232,22 +232,17 @@ After all schema and resolver changes are done.
 
 ---
 
-## Open Questions (decide before starting Phase 3)
+## Decisions
 
-1. **Shared persons discovery:** Can a user search all persons in the global
-   registry (even ones they haven't added) and then "add" them? Or can they
-   only see persons they've added? The plan above allows global search +
-   add-to-contacts as the flow.
+1. **No global person search** — users only see persons they have added to their
+   contacts. There is no cross-user discovery.
 
-2. **Email as dedup key:** Currently `persons.email` is unique. Is that still
-   the right dedup key for a shared registry, or do we want to allow multiple
-   persons with the same email and resolve conflicts differently?
+2. **Email is not a dedup key** — the unique constraint on `persons.email` has
+   been dropped. Multiple persons with the same email are allowed. Dedup will be
+   handled separately in the future.
 
-3. **Person creation:** When user A creates a new person, we create a `persons`
-   row + a `user_persons` row in the same operation. What happens when user B
-   imports the same person by email? We detect the duplicate by email and just
-   create a `user_persons` row pointing at the existing person.
+3. **No existing-data migration** — any rows without a `userId` should be
+   deleted. The DB starts fresh with the multi-tenant schema.
 
-4. **Existing data migration:** For any existing single-user data, we'll need a
-   migration that creates a default "seed" user and assigns all existing rows
-   to that user.
+4. **`merged` count in importGoogleContacts** — always returns 0 now that dedup
+   is removed. The field is kept in the response type for API compatibility.

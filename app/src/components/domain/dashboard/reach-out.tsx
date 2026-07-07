@@ -27,7 +27,7 @@ export type ReachOutPerson = {
 // ---------------------------------------------------------------------------
 
 const QUICK_LOG_INTERACTION = graphql(`
-  mutation QuickLogInteraction($personId: String!, $occurredAt: DateTime!) {
+  mutation ReachOutQuickLog($personId: String!, $occurredAt: DateTime!) {
     createInteraction(
       values: { personId: $personId, channel: "other", occurredAt: $occurredAt }
     ) {

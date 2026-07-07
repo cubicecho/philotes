@@ -19,15 +19,49 @@ import {
   or,
   type SQL,
 } from 'drizzle-orm';
-import { extendSchema, GraphQLError, type GraphQLObjectType, type GraphQLSchema, parse } from 'graphql';
+import {
+  GraphQLError,
+  GraphQLInputObjectType,
+  GraphQLNonNull,
+  GraphQLString,
+  extendSchema,
+  type GraphQLObjectType,
+  type GraphQLSchema,
+  parse,
+} from 'graphql';
 import type { Context } from '../routes/graphql.ts';
 import { requireAuth } from './auth.ts';
+
+// Make userId optional on all auto-generated insert input types so the client
+// never has to supply it (the resolver always injects it from context).
+function makeUserIdOptionalOnInputs(schema: GraphQLSchema): GraphQLSchema {
+  const typeMap = schema.getTypeMap();
+  for (const type of Object.values(typeMap)) {
+    if (!(type instanceof GraphQLInputObjectType)) continue;
+    const fields = type.getFields();
+    if (!fields.userId) continue;
+    if (fields.userId.type instanceof GraphQLNonNull) {
+      fields.userId.type = GraphQLString;
+    }
+  }
+  return schema;
+}
 
 // ── SDL extensions ───────────────────────────────────────────────────────────
 // Adds user_persons operations and a me query to the existing schema.
 
 const USER_SCOPE_SDL = parse(`
+  type RecentNote {
+    id: String!
+    body: String!
+    createdAt: String!
+    personId: String
+    personFirstName: String
+    personLastName: String
+  }
+
   # Re-expose user-specific fields on Person so frontend queries stay unchanged.
+  # Resolved via the user_persons join.
   extend type Person {
     avatarPath: String
     contactFrequency: String
@@ -38,6 +72,7 @@ const USER_SCOPE_SDL = parse(`
   extend type Query {
     me: User
     myPersonContext(personId: String!): UserPerson
+    recentNotes(limit: Int): [RecentNote!]!
   }
 
   extend type Mutation {
@@ -161,7 +196,8 @@ function overridePersonsResolvers(schema: GraphQLSchema): void {
     firstMetDate: dbSchema.userPersons.firstMetDate,
   };
 
-  // persons() — scoped to persons the user has added to their contacts
+  // persons() — scoped to persons the user has added to their contacts,
+  // with full support for where / orderBy / limit / offset from the client.
   qf.persons.resolve = async (_parent: unknown, args: Record<string, unknown>, ctx: Context) => {
     const userId = requireAuth(ctx);
     const db = ctx.db as AnyDB;
@@ -210,32 +246,17 @@ function overridePersonsResolvers(schema: GraphQLSchema): void {
     const userId = requireAuth(ctx);
     const db = ctx.db as AnyDB;
 
-    let personId: string;
+    const [person] = await db
+      .insert(dbSchema.persons)
+      .values({ ...args.values })
+      .returning();
+    if (!person) throw new GraphQLError('Failed to create person');
 
-    // Attempt insert; on unique-email conflict, reuse existing person
-    try {
-      const [inserted] = await db
-        .insert(dbSchema.persons)
-        .values({ ...args.values })
-        .returning({ id: dbSchema.persons.id });
-      if (!inserted) throw new GraphQLError('Failed to create person');
-      personId = inserted.id;
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : String(err);
-      if (!msg.includes('unique') && !msg.includes('duplicate')) throw err;
-      // Email collision — find the existing person
-      const [existing] = await db
-        .select({ id: dbSchema.persons.id })
-        .from(dbSchema.persons)
-        .where(eq(dbSchema.persons.email, args.values.email as string));
-      if (!existing) throw err;
-      personId = existing.id;
-    }
+    await db
+      .insert(dbSchema.userPersons)
+      .values({ userId, personId: person.id })
+      .onConflictDoNothing();
 
-    // Ensure user_persons link exists (idempotent)
-    await db.insert(dbSchema.userPersons).values({ userId, personId }).onConflictDoNothing();
-
-    const [person] = await db.select().from(dbSchema.persons).where(eq(dbSchema.persons.id, personId));
     return person;
   };
 
@@ -424,6 +445,39 @@ function addUserPersonsResolvers(schema: GraphQLSchema): void {
   const qf = queryType.getFields();
   const mf = mutationType.getFields();
 
+  qf.recentNotes.resolve = async (_parent: unknown, args: { limit?: number | null }, ctx: Context) => {
+    if (!ctx.userId) return [];
+    const db = ctx.db as AnyDB;
+    const limit = args.limit ?? 10;
+
+    const rows: Array<{
+      id: string;
+      body: string;
+      createdAt: Date;
+      personId: string | null;
+      personFirstName: string | null;
+      personLastName: string | null;
+    }> = await db
+      .select({
+        id: dbSchema.notes.id,
+        body: dbSchema.notes.body,
+        createdAt: dbSchema.notes.createdAt,
+        personId: dbSchema.persons.id,
+        personFirstName: dbSchema.persons.firstName,
+        personLastName: dbSchema.persons.lastName,
+      })
+      .from(dbSchema.notes)
+      .leftJoin(dbSchema.persons, eq(dbSchema.notes.personId, dbSchema.persons.id))
+      .where(eq(dbSchema.notes.userId, ctx.userId))
+      .orderBy(desc(dbSchema.notes.createdAt))
+      .limit(limit);
+
+    return rows.map((r) => ({
+      ...r,
+      createdAt: r.createdAt.toISOString(),
+    }));
+  };
+
   qf.me.resolve = async (_parent: unknown, _args: unknown, ctx: Context) => {
     if (!ctx.userId) return null;
     const db = ctx.db as AnyDB;
@@ -509,6 +563,9 @@ function addUserPersonsResolvers(schema: GraphQLSchema): void {
 // ── Main export ──────────────────────────────────────────────────────────────
 
 export function applyUserScopeExtensions(schema: GraphQLSchema): GraphQLSchema {
+  // Must run before extendSchema so the input type map is already mutable.
+  makeUserIdOptionalOnInputs(schema);
+
   const extendedSchema = extendSchema(schema, USER_SCOPE_SDL);
 
   // persons — special: scoped via user_persons join
@@ -573,6 +630,15 @@ export function applyUserScopeExtensions(schema: GraphQLSchema): GraphQLSchema {
   );
   overrideUserOwnedTable(
     extendedSchema,
+    dbSchema.gratitudes,
+    'gratitude',
+    'gratitudes',
+    'createGratitude',
+    'updateGratitudes',
+    'deleteGratitudes',
+  );
+  overrideUserOwnedTable(
+    extendedSchema,
     dbSchema.relationshipTypes,
     'relationshipType',
     'relationshipTypes',
@@ -627,6 +693,9 @@ export function applyUserScopeExtensions(schema: GraphQLSchema): GraphQLSchema {
   }
   if (personFields.addresses) {
     personFields.addresses.resolve = userScopedPersonRelation(dbSchema.addresses, dbSchema.addresses.personId);
+  }
+  if (personFields.gratitudes) {
+    personFields.gratitudes.resolve = userScopedPersonRelation(dbSchema.gratitudes, dbSchema.gratitudes.personId);
   }
 
   // labels on a person — user_persons + person_labels, filtered by userId

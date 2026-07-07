@@ -3,6 +3,14 @@ import * as schema from './schema.ts';
 
 export const relations = defineRelations(schema, (r) => ({
   users: {
+    magicLinkTokens: r.many.magicLinkTokens({
+      from: r.users.id,
+      to: r.magicLinkTokens.userId,
+    }),
+    gratitudes: r.many.gratitudes({
+      from: r.users.id,
+      to: r.gratitudes.userId,
+    }),
     userPersons: r.many.userPersons({
       from: r.users.id,
       to: r.userPersons.userId,
@@ -48,6 +56,16 @@ export const relations = defineRelations(schema, (r) => ({
     person: r.one.persons({
       from: r.userPersons.personId,
       to: r.persons.id,
+    }),
+  },
+  gratitudes: {
+    person: r.one.persons({
+      from: r.gratitudes.personId,
+      to: r.persons.id,
+    }),
+    user: r.one.users({
+      from: r.gratitudes.userId,
+      to: r.users.id,
     }),
   },
   persons: {
@@ -97,6 +115,10 @@ export const relations = defineRelations(schema, (r) => ({
       from: r.persons.id,
       to: r.addresses.personId,
     }),
+    gratitudes: r.many.gratitudes({
+      from: r.persons.id,
+      to: r.gratitudes.personId,
+    }),
   },
   notes: {
     person: r.one.persons({
@@ -130,6 +152,10 @@ export const relations = defineRelations(schema, (r) => ({
     labels: r.many.labels({
       from: r.importantDates.id.through(r.importantDateTags.importantDateId),
       to: r.labels.id.through(r.importantDateTags.labelId),
+    }),
+    taggedPersons: r.many.persons({
+      from: r.importantDates.id.through(r.importantDatePersons.importantDateId),
+      to: r.persons.id.through(r.importantDatePersons.personId),
     }),
   },
   personRelationships: {

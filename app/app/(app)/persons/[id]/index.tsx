@@ -22,6 +22,7 @@ import type { ImportantDatesMilestoneTypeEnum } from '@/__generated__/graphql';
 import { AddressList } from '@/components/domain/address/list';
 import { ContactInfoList, contactHref } from '@/components/domain/contact-info/list';
 import { PersonForm, type PersonFormValue } from '@/components/domain/person/form';
+import { PersonGratitudes } from '@/components/domain/person/gratitudes';
 import {
   ImportantDateForm,
   type ImportantDateFormValue,
@@ -159,6 +160,11 @@ const GET_PERSON_DETAIL = graphql(`
         country
         isPrimary
       }
+      gratitudes {
+        id
+        body
+        createdAt
+      }
     }
   }
 `);
@@ -262,7 +268,7 @@ const UPDATE_PERSON = graphql(`
     $id: String!
     $firstName: String!
     $lastName: String!
-    $email: String!
+    $email: String
   ) {
     updatePersons(
       set: {
@@ -625,7 +631,7 @@ export default function PersonDetailPage() {
     setDateDialogOpen(false);
   };
 
-  const handleEditPerson = async ({ person: fields, labelIds }: PersonFormValue): Promise<void> => {
+  const handleEditPerson = async ({ person: fields, userContext, labelIds }: PersonFormValue): Promise<void> => {
     await updatePerson({
       variables: {
         id,
@@ -638,9 +644,9 @@ export default function PersonDetailPage() {
     await updateMyPersonContext({
       variables: {
         personId: id,
-        contactFrequency: fields.contactFrequency || null,
-        howWeMet: fields.howWeMet || null,
-        firstMetDate: fields.firstMetDate || null,
+        contactFrequency: userContext.contactFrequency || null,
+        howWeMet: userContext.howWeMet || null,
+        firstMetDate: userContext.firstMetDate || null,
       },
     });
 
@@ -930,6 +936,18 @@ export default function PersonDetailPage() {
                   />
                 </div>
               </Section>
+
+              {/* Gratitude */}
+              <Card>
+                <CardContent className="p-4">
+                  <PersonGratitudes
+                    personId={person.id}
+                    entries={person.gratitudes ?? []}
+                    onAdd={() => refetch()}
+                    onDelete={() => refetch()}
+                  />
+                </CardContent>
+              </Card>
             </div>
 
             {/* RIGHT COLUMN */}

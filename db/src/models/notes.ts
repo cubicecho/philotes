@@ -1,4 +1,4 @@
-import { index, pgTable, primaryKey, text, uuid } from 'drizzle-orm/pg-core';
+import { index, pgTable, primaryKey, text, timestamp, uuid } from 'drizzle-orm/pg-core';
 
 import { labels } from './labels.ts';
 import { persons } from './persons.ts';
@@ -13,6 +13,7 @@ export const notes = pgTable(
     userId: uuid('user_id')
       .notNull()
       .references(() => users.id, { onDelete: 'cascade' }),
+    createdAt: timestamp('created_at').notNull().defaultNow(),
   },
   (t) => [index('idx_notes_person_id').on(t.personId), index('idx_notes_user_id').on(t.userId)],
 );

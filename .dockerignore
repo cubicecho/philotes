@@ -7,3 +7,4 @@ db/dist
 .git
 pgdata
 avatars
+.env*

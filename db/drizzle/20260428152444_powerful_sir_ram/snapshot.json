@@ -1,0 +1,2876 @@
+{
+  "version": "8",
+  "dialect": "postgres",
+  "id": "f8d7216d-0a3c-4b40-9295-7d33e36654ce",
+  "prevIds": [
+    "f3590b75-fa6f-488f-a785-1cc06ef1bc0e"
+  ],
+  "ddl": [
+    {
+      "values": [
+        "home",
+        "work",
+        "other"
+      ],
+      "name": "address_type",
+      "entityType": "enums",
+      "schema": "public"
+    },
+    {
+      "values": [
+        "email",
+        "phone",
+        "mobile",
+        "linkedin",
+        "twitter",
+        "instagram",
+        "website",
+        "other"
+      ],
+      "name": "contact_type",
+      "entityType": "enums",
+      "schema": "public"
+    },
+    {
+      "isRlsEnabled": false,
+      "name": "activities",
+      "entityType": "tables",
+      "schema": "public"
+    },
+    {
+      "isRlsEnabled": false,
+      "name": "activity_tags",
+      "entityType": "tables",
+      "schema": "public"
+    },
+    {
+      "isRlsEnabled": false,
+      "name": "addresses",
+      "entityType": "tables",
+      "schema": "public"
+    },
+    {
+      "isRlsEnabled": false,
+      "name": "contact_infos",
+      "entityType": "tables",
+      "schema": "public"
+    },
+    {
+      "isRlsEnabled": false,
+      "name": "important_date_tags",
+      "entityType": "tables",
+      "schema": "public"
+    },
+    {
+      "isRlsEnabled": false,
+      "name": "important_dates",
+      "entityType": "tables",
+      "schema": "public"
+    },
+    {
+      "isRlsEnabled": false,
+      "name": "interaction_tags",
+      "entityType": "tables",
+      "schema": "public"
+    },
+    {
+      "isRlsEnabled": false,
+      "name": "interactions",
+      "entityType": "tables",
+      "schema": "public"
+    },
+    {
+      "isRlsEnabled": false,
+      "name": "labels",
+      "entityType": "tables",
+      "schema": "public"
+    },
+    {
+      "isRlsEnabled": false,
+      "name": "note_mentions",
+      "entityType": "tables",
+      "schema": "public"
+    },
+    {
+      "isRlsEnabled": false,
+      "name": "note_tags",
+      "entityType": "tables",
+      "schema": "public"
+    },
+    {
+      "isRlsEnabled": false,
+      "name": "notes",
+      "entityType": "tables",
+      "schema": "public"
+    },
+    {
+      "isRlsEnabled": false,
+      "name": "person_labels",
+      "entityType": "tables",
+      "schema": "public"
+    },
+    {
+      "isRlsEnabled": false,
+      "name": "person_relationships",
+      "entityType": "tables",
+      "schema": "public"
+    },
+    {
+      "isRlsEnabled": false,
+      "name": "persons",
+      "entityType": "tables",
+      "schema": "public"
+    },
+    {
+      "isRlsEnabled": false,
+      "name": "tasks",
+      "entityType": "tables",
+      "schema": "public"
+    },
+    {
+      "isRlsEnabled": false,
+      "name": "magic_link_tokens",
+      "entityType": "tables",
+      "schema": "public"
+    },
+    {
+      "isRlsEnabled": false,
+      "name": "user_persons",
+      "entityType": "tables",
+      "schema": "public"
+    },
+    {
+      "isRlsEnabled": false,
+      "name": "users",
+      "entityType": "tables",
+      "schema": "public"
+    },
+    {
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "gen_random_uuid()",
+      "generated": null,
+      "identity": null,
+      "name": "id",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "activities"
+    },
+    {
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "person_id",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "activities"
+    },
+    {
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "user_id",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "activities"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "title",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "activities"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "description",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "activities"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "location",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "activities"
+    },
+    {
+      "type": "timestamp",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "occurred_at",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "activities"
+    },
+    {
+      "type": "timestamp",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "now()",
+      "generated": null,
+      "identity": null,
+      "name": "created_at",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "activities"
+    },
+    {
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "activity_id",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "activity_tags"
+    },
+    {
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "label_id",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "activity_tags"
+    },
+    {
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "gen_random_uuid()",
+      "generated": null,
+      "identity": null,
+      "name": "id",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "addresses"
+    },
+    {
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "person_id",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "addresses"
+    },
+    {
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "user_id",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "addresses"
+    },
+    {
+      "type": "address_type",
+      "typeSchema": "public",
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "type",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "addresses"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "label",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "addresses"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "line1",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "addresses"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "line2",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "addresses"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "city",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "addresses"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "state",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "addresses"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "postal_code",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "addresses"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": "'US'",
+      "generated": null,
+      "identity": null,
+      "name": "country",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "addresses"
+    },
+    {
+      "type": "boolean",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "false",
+      "generated": null,
+      "identity": null,
+      "name": "is_primary",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "addresses"
+    },
+    {
+      "type": "timestamp",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "now()",
+      "generated": null,
+      "identity": null,
+      "name": "created_at",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "addresses"
+    },
+    {
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "gen_random_uuid()",
+      "generated": null,
+      "identity": null,
+      "name": "id",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "contact_infos"
+    },
+    {
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "person_id",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "contact_infos"
+    },
+    {
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "user_id",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "contact_infos"
+    },
+    {
+      "type": "contact_type",
+      "typeSchema": "public",
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "type",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "contact_infos"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "value",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "contact_infos"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "label",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "contact_infos"
+    },
+    {
+      "type": "boolean",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "false",
+      "generated": null,
+      "identity": null,
+      "name": "is_primary",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "contact_infos"
+    },
+    {
+      "type": "timestamp",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "now()",
+      "generated": null,
+      "identity": null,
+      "name": "created_at",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "contact_infos"
+    },
+    {
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "important_date_id",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "important_date_tags"
+    },
+    {
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "label_id",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "important_date_tags"
+    },
+    {
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "gen_random_uuid()",
+      "generated": null,
+      "identity": null,
+      "name": "id",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "important_dates"
+    },
+    {
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "person_id",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "important_dates"
+    },
+    {
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "user_id",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "important_dates"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "name",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "important_dates"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "description",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "important_dates"
+    },
+    {
+      "type": "date",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "date",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "important_dates"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "recurrence",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "important_dates"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "milestone_type",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "important_dates"
+    },
+    {
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "interaction_id",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "interaction_tags"
+    },
+    {
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "label_id",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "interaction_tags"
+    },
+    {
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "gen_random_uuid()",
+      "generated": null,
+      "identity": null,
+      "name": "id",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "interactions"
+    },
+    {
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "person_id",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "interactions"
+    },
+    {
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "user_id",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "interactions"
+    },
+    {
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "now()",
+      "generated": null,
+      "identity": null,
+      "name": "occurred_at",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "interactions"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "channel",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "interactions"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "sentiment",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "interactions"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "note",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "interactions"
+    },
+    {
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "gen_random_uuid()",
+      "generated": null,
+      "identity": null,
+      "name": "id",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "labels"
+    },
+    {
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "user_id",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "labels"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "color",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "labels"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "label",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "labels"
+    },
+    {
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "note_id",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "note_mentions"
+    },
+    {
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "mentioned_person_id",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "note_mentions"
+    },
+    {
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "note_id",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "note_tags"
+    },
+    {
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "label_id",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "note_tags"
+    },
+    {
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "gen_random_uuid()",
+      "generated": null,
+      "identity": null,
+      "name": "id",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "notes"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "body",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "notes"
+    },
+    {
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "person_id",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "notes"
+    },
+    {
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "user_id",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "notes"
+    },
+    {
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "person_id",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "person_labels"
+    },
+    {
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "label_id",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "person_labels"
+    },
+    {
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "user_id",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "person_labels"
+    },
+    {
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "gen_random_uuid()",
+      "generated": null,
+      "identity": null,
+      "name": "id",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "person_relationships"
+    },
+    {
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "from_person_id",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "person_relationships"
+    },
+    {
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "to_person_id",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "person_relationships"
+    },
+    {
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "user_id",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "person_relationships"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "type",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "person_relationships"
+    },
+    {
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "gen_random_uuid()",
+      "generated": null,
+      "identity": null,
+      "name": "id",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "persons"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "first_name",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "persons"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "last_name",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "persons"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "email",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "persons"
+    },
+    {
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "now()",
+      "generated": null,
+      "identity": null,
+      "name": "created_at",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "persons"
+    },
+    {
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "now()",
+      "generated": null,
+      "identity": null,
+      "name": "updated_at",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "persons"
+    },
+    {
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "gen_random_uuid()",
+      "generated": null,
+      "identity": null,
+      "name": "id",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "tasks"
+    },
+    {
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "person_id",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "tasks"
+    },
+    {
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "user_id",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "tasks"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "title",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "tasks"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "notes",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "tasks"
+    },
+    {
+      "type": "timestamp",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "due_at",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "tasks"
+    },
+    {
+      "type": "timestamp",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "completed_at",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "tasks"
+    },
+    {
+      "type": "timestamp",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "now()",
+      "generated": null,
+      "identity": null,
+      "name": "created_at",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "tasks"
+    },
+    {
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "gen_random_uuid()",
+      "generated": null,
+      "identity": null,
+      "name": "id",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "magic_link_tokens"
+    },
+    {
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "user_id",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "magic_link_tokens"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "token_hash",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "magic_link_tokens"
+    },
+    {
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "expires_at",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "magic_link_tokens"
+    },
+    {
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "used_at",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "magic_link_tokens"
+    },
+    {
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "now()",
+      "generated": null,
+      "identity": null,
+      "name": "created_at",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "magic_link_tokens"
+    },
+    {
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "user_id",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "user_persons"
+    },
+    {
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "person_id",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "user_persons"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "contact_frequency",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "user_persons"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "how_we_met",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "user_persons"
+    },
+    {
+      "type": "date",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "first_met_date",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "user_persons"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "avatar_path",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "user_persons"
+    },
+    {
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "now()",
+      "generated": null,
+      "identity": null,
+      "name": "created_at",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "user_persons"
+    },
+    {
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "gen_random_uuid()",
+      "generated": null,
+      "identity": null,
+      "name": "id",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "users"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "email",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "users"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "name",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "users"
+    },
+    {
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "now()",
+      "generated": null,
+      "identity": null,
+      "name": "created_at",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "users"
+    },
+    {
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "now()",
+      "generated": null,
+      "identity": null,
+      "name": "updated_at",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "users"
+    },
+    {
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "person_id",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "name": "idx_activities_person_id",
+      "entityType": "indexes",
+      "schema": "public",
+      "table": "activities"
+    },
+    {
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "user_id",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "name": "idx_activities_user_id",
+      "entityType": "indexes",
+      "schema": "public",
+      "table": "activities"
+    },
+    {
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "occurred_at",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "name": "idx_activities_occurred_at",
+      "entityType": "indexes",
+      "schema": "public",
+      "table": "activities"
+    },
+    {
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "person_id",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "name": "idx_addresses_person_id",
+      "entityType": "indexes",
+      "schema": "public",
+      "table": "addresses"
+    },
+    {
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "user_id",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "name": "idx_addresses_user_id",
+      "entityType": "indexes",
+      "schema": "public",
+      "table": "addresses"
+    },
+    {
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "person_id",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "name": "idx_contact_infos_person_id",
+      "entityType": "indexes",
+      "schema": "public",
+      "table": "contact_infos"
+    },
+    {
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "user_id",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "name": "idx_contact_infos_user_id",
+      "entityType": "indexes",
+      "schema": "public",
+      "table": "contact_infos"
+    },
+    {
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "person_id",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "name": "idx_important_dates_person_id",
+      "entityType": "indexes",
+      "schema": "public",
+      "table": "important_dates"
+    },
+    {
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "user_id",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "name": "idx_important_dates_user_id",
+      "entityType": "indexes",
+      "schema": "public",
+      "table": "important_dates"
+    },
+    {
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "date",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "name": "idx_important_dates_date",
+      "entityType": "indexes",
+      "schema": "public",
+      "table": "important_dates"
+    },
+    {
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "person_id",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "name": "idx_interactions_person_id",
+      "entityType": "indexes",
+      "schema": "public",
+      "table": "interactions"
+    },
+    {
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "user_id",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "name": "idx_interactions_user_id",
+      "entityType": "indexes",
+      "schema": "public",
+      "table": "interactions"
+    },
+    {
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "person_id",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        },
+        {
+          "value": "occurred_at",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "name": "idx_interactions_person_id_occurred_at",
+      "entityType": "indexes",
+      "schema": "public",
+      "table": "interactions"
+    },
+    {
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "user_id",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "name": "idx_labels_user_id",
+      "entityType": "indexes",
+      "schema": "public",
+      "table": "labels"
+    },
+    {
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "mentioned_person_id",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "name": "idx_note_mentions_mentioned_person_id",
+      "entityType": "indexes",
+      "schema": "public",
+      "table": "note_mentions"
+    },
+    {
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "person_id",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "name": "idx_notes_person_id",
+      "entityType": "indexes",
+      "schema": "public",
+      "table": "notes"
+    },
+    {
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "user_id",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "name": "idx_notes_user_id",
+      "entityType": "indexes",
+      "schema": "public",
+      "table": "notes"
+    },
+    {
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "label_id",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "name": "idx_person_labels_label_id",
+      "entityType": "indexes",
+      "schema": "public",
+      "table": "person_labels"
+    },
+    {
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "user_id",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "name": "idx_person_labels_user_id",
+      "entityType": "indexes",
+      "schema": "public",
+      "table": "person_labels"
+    },
+    {
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "from_person_id",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "name": "idx_person_relationships_from_person_id",
+      "entityType": "indexes",
+      "schema": "public",
+      "table": "person_relationships"
+    },
+    {
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "to_person_id",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "name": "idx_person_relationships_to_person_id",
+      "entityType": "indexes",
+      "schema": "public",
+      "table": "person_relationships"
+    },
+    {
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "user_id",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "name": "idx_person_relationships_user_id",
+      "entityType": "indexes",
+      "schema": "public",
+      "table": "person_relationships"
+    },
+    {
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "last_name",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        },
+        {
+          "value": "first_name",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "name": "idx_persons_last_name_first_name",
+      "entityType": "indexes",
+      "schema": "public",
+      "table": "persons"
+    },
+    {
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "person_id",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "name": "idx_tasks_person_id",
+      "entityType": "indexes",
+      "schema": "public",
+      "table": "tasks"
+    },
+    {
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "user_id",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "name": "idx_tasks_user_id",
+      "entityType": "indexes",
+      "schema": "public",
+      "table": "tasks"
+    },
+    {
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "due_at",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "name": "idx_tasks_due_at",
+      "entityType": "indexes",
+      "schema": "public",
+      "table": "tasks"
+    },
+    {
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "user_id",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "name": "idx_user_persons_user_id",
+      "entityType": "indexes",
+      "schema": "public",
+      "table": "user_persons"
+    },
+    {
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "person_id",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "name": "idx_user_persons_person_id",
+      "entityType": "indexes",
+      "schema": "public",
+      "table": "user_persons"
+    },
+    {
+      "nameExplicit": false,
+      "columns": [
+        "person_id"
+      ],
+      "schemaTo": "public",
+      "tableTo": "persons",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
+      "name": "activities_person_id_persons_id_fkey",
+      "entityType": "fks",
+      "schema": "public",
+      "table": "activities"
+    },
+    {
+      "nameExplicit": false,
+      "columns": [
+        "user_id"
+      ],
+      "schemaTo": "public",
+      "tableTo": "users",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
+      "name": "activities_user_id_users_id_fkey",
+      "entityType": "fks",
+      "schema": "public",
+      "table": "activities"
+    },
+    {
+      "nameExplicit": false,
+      "columns": [
+        "activity_id"
+      ],
+      "schemaTo": "public",
+      "tableTo": "activities",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
+      "name": "activity_tags_activity_id_activities_id_fkey",
+      "entityType": "fks",
+      "schema": "public",
+      "table": "activity_tags"
+    },
+    {
+      "nameExplicit": false,
+      "columns": [
+        "label_id"
+      ],
+      "schemaTo": "public",
+      "tableTo": "labels",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
+      "name": "activity_tags_label_id_labels_id_fkey",
+      "entityType": "fks",
+      "schema": "public",
+      "table": "activity_tags"
+    },
+    {
+      "nameExplicit": false,
+      "columns": [
+        "person_id"
+      ],
+      "schemaTo": "public",
+      "tableTo": "persons",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
+      "name": "addresses_person_id_persons_id_fkey",
+      "entityType": "fks",
+      "schema": "public",
+      "table": "addresses"
+    },
+    {
+      "nameExplicit": false,
+      "columns": [
+        "user_id"
+      ],
+      "schemaTo": "public",
+      "tableTo": "users",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
+      "name": "addresses_user_id_users_id_fkey",
+      "entityType": "fks",
+      "schema": "public",
+      "table": "addresses"
+    },
+    {
+      "nameExplicit": false,
+      "columns": [
+        "person_id"
+      ],
+      "schemaTo": "public",
+      "tableTo": "persons",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
+      "name": "contact_infos_person_id_persons_id_fkey",
+      "entityType": "fks",
+      "schema": "public",
+      "table": "contact_infos"
+    },
+    {
+      "nameExplicit": false,
+      "columns": [
+        "user_id"
+      ],
+      "schemaTo": "public",
+      "tableTo": "users",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
+      "name": "contact_infos_user_id_users_id_fkey",
+      "entityType": "fks",
+      "schema": "public",
+      "table": "contact_infos"
+    },
+    {
+      "nameExplicit": false,
+      "columns": [
+        "important_date_id"
+      ],
+      "schemaTo": "public",
+      "tableTo": "important_dates",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
+      "name": "important_date_tags_important_date_id_important_dates_id_fkey",
+      "entityType": "fks",
+      "schema": "public",
+      "table": "important_date_tags"
+    },
+    {
+      "nameExplicit": false,
+      "columns": [
+        "label_id"
+      ],
+      "schemaTo": "public",
+      "tableTo": "labels",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
+      "name": "important_date_tags_label_id_labels_id_fkey",
+      "entityType": "fks",
+      "schema": "public",
+      "table": "important_date_tags"
+    },
+    {
+      "nameExplicit": false,
+      "columns": [
+        "person_id"
+      ],
+      "schemaTo": "public",
+      "tableTo": "persons",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
+      "name": "important_dates_person_id_persons_id_fkey",
+      "entityType": "fks",
+      "schema": "public",
+      "table": "important_dates"
+    },
+    {
+      "nameExplicit": false,
+      "columns": [
+        "user_id"
+      ],
+      "schemaTo": "public",
+      "tableTo": "users",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
+      "name": "important_dates_user_id_users_id_fkey",
+      "entityType": "fks",
+      "schema": "public",
+      "table": "important_dates"
+    },
+    {
+      "nameExplicit": false,
+      "columns": [
+        "interaction_id"
+      ],
+      "schemaTo": "public",
+      "tableTo": "interactions",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
+      "name": "interaction_tags_interaction_id_interactions_id_fkey",
+      "entityType": "fks",
+      "schema": "public",
+      "table": "interaction_tags"
+    },
+    {
+      "nameExplicit": false,
+      "columns": [
+        "label_id"
+      ],
+      "schemaTo": "public",
+      "tableTo": "labels",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
+      "name": "interaction_tags_label_id_labels_id_fkey",
+      "entityType": "fks",
+      "schema": "public",
+      "table": "interaction_tags"
+    },
+    {
+      "nameExplicit": false,
+      "columns": [
+        "person_id"
+      ],
+      "schemaTo": "public",
+      "tableTo": "persons",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
+      "name": "interactions_person_id_persons_id_fkey",
+      "entityType": "fks",
+      "schema": "public",
+      "table": "interactions"
+    },
+    {
+      "nameExplicit": false,
+      "columns": [
+        "user_id"
+      ],
+      "schemaTo": "public",
+      "tableTo": "users",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
+      "name": "interactions_user_id_users_id_fkey",
+      "entityType": "fks",
+      "schema": "public",
+      "table": "interactions"
+    },
+    {
+      "nameExplicit": false,
+      "columns": [
+        "user_id"
+      ],
+      "schemaTo": "public",
+      "tableTo": "users",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
+      "name": "labels_user_id_users_id_fkey",
+      "entityType": "fks",
+      "schema": "public",
+      "table": "labels"
+    },
+    {
+      "nameExplicit": false,
+      "columns": [
+        "note_id"
+      ],
+      "schemaTo": "public",
+      "tableTo": "notes",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
+      "name": "note_mentions_note_id_notes_id_fkey",
+      "entityType": "fks",
+      "schema": "public",
+      "table": "note_mentions"
+    },
+    {
+      "nameExplicit": false,
+      "columns": [
+        "mentioned_person_id"
+      ],
+      "schemaTo": "public",
+      "tableTo": "persons",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
+      "name": "note_mentions_mentioned_person_id_persons_id_fkey",
+      "entityType": "fks",
+      "schema": "public",
+      "table": "note_mentions"
+    },
+    {
+      "nameExplicit": false,
+      "columns": [
+        "note_id"
+      ],
+      "schemaTo": "public",
+      "tableTo": "notes",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
+      "name": "note_tags_note_id_notes_id_fkey",
+      "entityType": "fks",
+      "schema": "public",
+      "table": "note_tags"
+    },
+    {
+      "nameExplicit": false,
+      "columns": [
+        "label_id"
+      ],
+      "schemaTo": "public",
+      "tableTo": "labels",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
+      "name": "note_tags_label_id_labels_id_fkey",
+      "entityType": "fks",
+      "schema": "public",
+      "table": "note_tags"
+    },
+    {
+      "nameExplicit": false,
+      "columns": [
+        "person_id"
+      ],
+      "schemaTo": "public",
+      "tableTo": "persons",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "NO ACTION",
+      "name": "notes_person_id_persons_id_fkey",
+      "entityType": "fks",
+      "schema": "public",
+      "table": "notes"
+    },
+    {
+      "nameExplicit": false,
+      "columns": [
+        "user_id"
+      ],
+      "schemaTo": "public",
+      "tableTo": "users",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
+      "name": "notes_user_id_users_id_fkey",
+      "entityType": "fks",
+      "schema": "public",
+      "table": "notes"
+    },
+    {
+      "nameExplicit": false,
+      "columns": [
+        "person_id"
+      ],
+      "schemaTo": "public",
+      "tableTo": "persons",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
+      "name": "person_labels_person_id_persons_id_fkey",
+      "entityType": "fks",
+      "schema": "public",
+      "table": "person_labels"
+    },
+    {
+      "nameExplicit": false,
+      "columns": [
+        "label_id"
+      ],
+      "schemaTo": "public",
+      "tableTo": "labels",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
+      "name": "person_labels_label_id_labels_id_fkey",
+      "entityType": "fks",
+      "schema": "public",
+      "table": "person_labels"
+    },
+    {
+      "nameExplicit": false,
+      "columns": [
+        "user_id"
+      ],
+      "schemaTo": "public",
+      "tableTo": "users",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
+      "name": "person_labels_user_id_users_id_fkey",
+      "entityType": "fks",
+      "schema": "public",
+      "table": "person_labels"
+    },
+    {
+      "nameExplicit": false,
+      "columns": [
+        "from_person_id"
+      ],
+      "schemaTo": "public",
+      "tableTo": "persons",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
+      "name": "person_relationships_from_person_id_persons_id_fkey",
+      "entityType": "fks",
+      "schema": "public",
+      "table": "person_relationships"
+    },
+    {
+      "nameExplicit": false,
+      "columns": [
+        "to_person_id"
+      ],
+      "schemaTo": "public",
+      "tableTo": "persons",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
+      "name": "person_relationships_to_person_id_persons_id_fkey",
+      "entityType": "fks",
+      "schema": "public",
+      "table": "person_relationships"
+    },
+    {
+      "nameExplicit": false,
+      "columns": [
+        "user_id"
+      ],
+      "schemaTo": "public",
+      "tableTo": "users",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
+      "name": "person_relationships_user_id_users_id_fkey",
+      "entityType": "fks",
+      "schema": "public",
+      "table": "person_relationships"
+    },
+    {
+      "nameExplicit": false,
+      "columns": [
+        "person_id"
+      ],
+      "schemaTo": "public",
+      "tableTo": "persons",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
+      "name": "tasks_person_id_persons_id_fkey",
+      "entityType": "fks",
+      "schema": "public",
+      "table": "tasks"
+    },
+    {
+      "nameExplicit": false,
+      "columns": [
+        "user_id"
+      ],
+      "schemaTo": "public",
+      "tableTo": "users",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
+      "name": "tasks_user_id_users_id_fkey",
+      "entityType": "fks",
+      "schema": "public",
+      "table": "tasks"
+    },
+    {
+      "nameExplicit": false,
+      "columns": [
+        "user_id"
+      ],
+      "schemaTo": "public",
+      "tableTo": "users",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
+      "name": "magic_link_tokens_user_id_users_id_fkey",
+      "entityType": "fks",
+      "schema": "public",
+      "table": "magic_link_tokens"
+    },
+    {
+      "nameExplicit": false,
+      "columns": [
+        "user_id"
+      ],
+      "schemaTo": "public",
+      "tableTo": "users",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
+      "name": "user_persons_user_id_users_id_fkey",
+      "entityType": "fks",
+      "schema": "public",
+      "table": "user_persons"
+    },
+    {
+      "nameExplicit": false,
+      "columns": [
+        "person_id"
+      ],
+      "schemaTo": "public",
+      "tableTo": "persons",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
+      "name": "user_persons_person_id_persons_id_fkey",
+      "entityType": "fks",
+      "schema": "public",
+      "table": "user_persons"
+    },
+    {
+      "columns": [
+        "activity_id",
+        "label_id"
+      ],
+      "nameExplicit": false,
+      "name": "activity_tags_pkey",
+      "entityType": "pks",
+      "schema": "public",
+      "table": "activity_tags"
+    },
+    {
+      "columns": [
+        "important_date_id",
+        "label_id"
+      ],
+      "nameExplicit": false,
+      "name": "important_date_tags_pkey",
+      "entityType": "pks",
+      "schema": "public",
+      "table": "important_date_tags"
+    },
+    {
+      "columns": [
+        "interaction_id",
+        "label_id"
+      ],
+      "nameExplicit": false,
+      "name": "interaction_tags_pkey",
+      "entityType": "pks",
+      "schema": "public",
+      "table": "interaction_tags"
+    },
+    {
+      "columns": [
+        "note_id",
+        "mentioned_person_id"
+      ],
+      "nameExplicit": false,
+      "name": "note_mentions_pkey",
+      "entityType": "pks",
+      "schema": "public",
+      "table": "note_mentions"
+    },
+    {
+      "columns": [
+        "note_id",
+        "label_id"
+      ],
+      "nameExplicit": false,
+      "name": "note_tags_pkey",
+      "entityType": "pks",
+      "schema": "public",
+      "table": "note_tags"
+    },
+    {
+      "columns": [
+        "person_id",
+        "label_id",
+        "user_id"
+      ],
+      "nameExplicit": false,
+      "name": "person_labels_pkey",
+      "entityType": "pks",
+      "schema": "public",
+      "table": "person_labels"
+    },
+    {
+      "columns": [
+        "user_id",
+        "person_id"
+      ],
+      "nameExplicit": false,
+      "name": "user_persons_pkey",
+      "entityType": "pks",
+      "schema": "public",
+      "table": "user_persons"
+    },
+    {
+      "columns": [
+        "id"
+      ],
+      "nameExplicit": false,
+      "name": "activities_pkey",
+      "schema": "public",
+      "table": "activities",
+      "entityType": "pks"
+    },
+    {
+      "columns": [
+        "id"
+      ],
+      "nameExplicit": false,
+      "name": "addresses_pkey",
+      "schema": "public",
+      "table": "addresses",
+      "entityType": "pks"
+    },
+    {
+      "columns": [
+        "id"
+      ],
+      "nameExplicit": false,
+      "name": "contact_infos_pkey",
+      "schema": "public",
+      "table": "contact_infos",
+      "entityType": "pks"
+    },
+    {
+      "columns": [
+        "id"
+      ],
+      "nameExplicit": false,
+      "name": "important_dates_pkey",
+      "schema": "public",
+      "table": "important_dates",
+      "entityType": "pks"
+    },
+    {
+      "columns": [
+        "id"
+      ],
+      "nameExplicit": false,
+      "name": "interactions_pkey",
+      "schema": "public",
+      "table": "interactions",
+      "entityType": "pks"
+    },
+    {
+      "columns": [
+        "id"
+      ],
+      "nameExplicit": false,
+      "name": "labels_pkey",
+      "schema": "public",
+      "table": "labels",
+      "entityType": "pks"
+    },
+    {
+      "columns": [
+        "id"
+      ],
+      "nameExplicit": false,
+      "name": "notes_pkey",
+      "schema": "public",
+      "table": "notes",
+      "entityType": "pks"
+    },
+    {
+      "columns": [
+        "id"
+      ],
+      "nameExplicit": false,
+      "name": "person_relationships_pkey",
+      "schema": "public",
+      "table": "person_relationships",
+      "entityType": "pks"
+    },
+    {
+      "columns": [
+        "id"
+      ],
+      "nameExplicit": false,
+      "name": "persons_pkey",
+      "schema": "public",
+      "table": "persons",
+      "entityType": "pks"
+    },
+    {
+      "columns": [
+        "id"
+      ],
+      "nameExplicit": false,
+      "name": "tasks_pkey",
+      "schema": "public",
+      "table": "tasks",
+      "entityType": "pks"
+    },
+    {
+      "columns": [
+        "id"
+      ],
+      "nameExplicit": false,
+      "name": "magic_link_tokens_pkey",
+      "schema": "public",
+      "table": "magic_link_tokens",
+      "entityType": "pks"
+    },
+    {
+      "columns": [
+        "id"
+      ],
+      "nameExplicit": false,
+      "name": "users_pkey",
+      "schema": "public",
+      "table": "users",
+      "entityType": "pks"
+    },
+    {
+      "nameExplicit": false,
+      "columns": [
+        "token_hash"
+      ],
+      "nullsNotDistinct": false,
+      "name": "magic_link_tokens_token_hash_key",
+      "schema": "public",
+      "table": "magic_link_tokens",
+      "entityType": "uniques"
+    },
+    {
+      "nameExplicit": false,
+      "columns": [
+        "email"
+      ],
+      "nullsNotDistinct": false,
+      "name": "users_email_key",
+      "schema": "public",
+      "table": "users",
+      "entityType": "uniques"
+    }
+  ],
+  "renames": []
+}
