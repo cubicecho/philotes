@@ -1,23 +1,18 @@
 {
+  "$schema": "https://json.schemastore.org/tsconfig",
+  "extends": "expo/tsconfig.base",
   "compilerOptions": {
-    "allowImportingTsExtensions": true,
-    "target": "ES2022",
-    "module": "ESNext",
-    "moduleResolution": "bundler",
     "strict": true,
-    "esModuleInterop": true,
     "skipLibCheck": true,
-    "forceConsistentCasingInFileNames": true,
-    "resolveJsonModule": true,
-    "isolatedModules": true,
-    "jsx": "react-jsx",
-    "noEmit": true,
-    "rootDir": "./src",
+    "allowImportingTsExtensions": true,
     "paths": {
       "@/*": ["./src/*"]
-    },
-    "baseUrl": "."
+    }
   },
-  "include": ["src/**/*.ts", "src/**/*.tsx"],
-  "references": []
+  "include": [
+    "**/*.ts",
+    "**/*.tsx",
+    ".expo/types/**/*.d.ts",
+    "nativewind-env.d.ts"
+  ]
 }

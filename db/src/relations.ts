@@ -19,10 +19,6 @@ export const relations = defineRelations(schema, (r) => ({
       from: r.users.id,
       to: r.notes.userId,
     }),
-    activities: r.many.activities({
-      from: r.users.id,
-      to: r.activities.userId,
-    }),
     interactions: r.many.interactions({
       from: r.users.id,
       to: r.interactions.userId,
@@ -93,10 +89,6 @@ export const relations = defineRelations(schema, (r) => ({
     interactions: r.many.interactions({
       from: r.persons.id,
       to: r.interactions.personId,
-    }),
-    activities: r.many.activities({
-      from: r.persons.id,
-      to: r.activities.personId,
     }),
     relationshipsFrom: r.many.personRelationships({
       from: r.persons.id,
@@ -194,28 +186,10 @@ export const relations = defineRelations(schema, (r) => ({
       to: r.labels.id.through(r.interactionTags.labelId),
     }),
   },
-  activities: {
-    person: r.one.persons({
-      from: r.activities.personId,
-      to: r.persons.id,
-    }),
-    user: r.one.users({
-      from: r.activities.userId,
-      to: r.users.id,
-    }),
-    labels: r.many.labels({
-      from: r.activities.id.through(r.activityTags.activityId),
-      to: r.labels.id.through(r.activityTags.labelId),
-    }),
-  },
   labels: {
     user: r.one.users({
       from: r.labels.userId,
       to: r.users.id,
-    }),
-    activities: r.many.activities({
-      from: r.labels.id.through(r.activityTags.labelId),
-      to: r.activities.id.through(r.activityTags.activityId),
     }),
   },
   tasks: {

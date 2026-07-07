@@ -131,7 +131,7 @@ function parseBirthday(raw: string): string | null {
 }
 
 /** Parse a Google Contacts CSV export into typed contacts. */
-function parseGoogleContactsCsv(csvText: string): {
+export function parseGoogleContactsCsv(csvText: string): {
   contacts: ParsedContact[];
   skippedCount: number;
 } {
@@ -161,7 +161,7 @@ function parseGoogleContactsCsv(csvText: string): {
   const hasCol = (name: string): boolean => headerIndex.has(name);
 
   const contacts: ParsedContact[] = [];
-  let skippedCount = 0;
+  const skippedCount = 0;
 
   for (let r = 1; r < rows.length; r++) {
     const row = rows[r];
@@ -436,10 +436,7 @@ export function applyImportContactsExtension(schema: GraphQLSchema): GraphQLSche
       }
 
       // Ensure user_persons link exists (idempotent)
-      await db
-        .insert(dbSchema.userPersons)
-        .values({ userId, personId })
-        .onConflictDoNothing();
+      await db.insert(dbSchema.userPersons).values({ userId, personId }).onConflictDoNothing();
 
       // ── Step 4: Insert related data in parallel ──────────────────────
       // Each helper is isolated with .catch() so a failure in one (e.g. a

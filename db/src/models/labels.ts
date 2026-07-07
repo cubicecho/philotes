@@ -1,6 +1,6 @@
 import { index, pgTable, text, uuid } from 'drizzle-orm/pg-core';
 
-import { users } from './users.js';
+import { users } from './users.ts';
 
 export const labels = pgTable(
   'labels',

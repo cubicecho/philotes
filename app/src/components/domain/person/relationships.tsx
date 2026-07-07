@@ -1,14 +1,14 @@
-import { useMutation } from '@apollo/client';
-import { Link } from '@tanstack/react-router';
+import { useMutation, useQuery } from '@apollo/client';
+import { Link } from 'expo-router';
 import { Pencil, Trash2 } from 'lucide-react';
 import { useState } from 'react';
-import { graphql } from '@/__generated__/gql.js';
-import type { Person_RelationshipsFragment, PersonRelationshipEntry } from '@/__generated__/graphql.js';
-import { Button } from '@/components/ui/button.js';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog.js';
+import { graphql } from '@/__generated__/gql';
+import type { Person_RelationshipsFragment, PersonRelationshipEntry } from '@/__generated__/graphql';
+import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 // ---------------------------------------------------------------------------
-// Fragments
+// Fragments & queries
 // ---------------------------------------------------------------------------
 
 export const PERSON_RELATIONSHIPS = graphql(`
@@ -20,6 +20,15 @@ export const PERSON_RELATIONSHIPS = graphql(`
       relatedPersonId
       relatedPersonFirstName
       relatedPersonLastName
+    }
+  }
+`);
+
+const GET_RELATIONSHIP_TYPES = graphql(`
+  query GetRelationshipTypes {
+    relationshipTypes {
+      id
+      name
     }
   }
 `);
@@ -71,6 +80,23 @@ const DELETE_RELATIONSHIP = graphql(`
   }
 `);
 
+const CREATE_RELATIONSHIP_TYPE = graphql(`
+  mutation CreateRelationshipType($name: String!) {
+    createRelationshipType(values: { name: $name }) {
+      id
+      name
+    }
+  }
+`);
+
+const DELETE_RELATIONSHIP_TYPE = graphql(`
+  mutation DeleteRelationshipType($id: String!) {
+    deleteRelationshipTypes(where: { id: { eq: $id } }) {
+      id
+    }
+  }
+`);
+
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
@@ -86,31 +112,96 @@ export interface RelationshipsProps {
 }
 
 // ---------------------------------------------------------------------------
-// Preset relationship types
+// Relationship type picker (shared between create and edit forms)
 // ---------------------------------------------------------------------------
 
-const COMMON_RELATIONSHIP_TYPES = [
-  'Parent',
-  'Child',
-  'Sibling',
-  'Spouse',
-  'Partner',
-  'Friend',
-  'Colleague',
-  'Mentor',
-  'Mentee',
-  'Acquaintance',
-];
+interface TypePickerProps {
+  value: string;
+  onChange: (v: string) => void;
+  types: Array<{ id: string; name: string }>;
+  onTypeCreated: () => void;
+}
 
-function initialTypeState(type: string): { type: string; customType: string } {
-  if (COMMON_RELATIONSHIP_TYPES.includes(type)) {
-    return { type, customType: '' };
-  }
-  return { type: '__custom__', customType: type };
+function RelationshipTypePicker({ value, onChange, types, onTypeCreated }: TypePickerProps) {
+  const [newTypeName, setNewTypeName] = useState('');
+  const [createType, { loading }] = useMutation(CREATE_RELATIONSHIP_TYPE, {
+    refetchQueries: ['GetRelationshipTypes'],
+  });
+  const [deleteType] = useMutation(DELETE_RELATIONSHIP_TYPE, {
+    refetchQueries: ['GetRelationshipTypes'],
+  });
+
+  const handleAdd = async () => {
+    const name = newTypeName.trim();
+    if (!name) return;
+    const { data } = await createType({ variables: { name } });
+    setNewTypeName('');
+    if (data?.createRelationshipType?.name) {
+      onChange(data.createRelationshipType.name);
+    }
+    onTypeCreated();
+  };
+
+  return (
+    <div className="space-y-2">
+      <select
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="w-full rounded-md border border-border bg-background px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+      >
+        {types.length === 0 && <option value="">No types yet — add one below</option>}
+        {types.map((t) => (
+          <option key={t.id} value={t.name}>
+            {t.name}
+          </option>
+        ))}
+      </select>
+
+      <div className="flex gap-1.5">
+        <input
+          type="text"
+          placeholder="New type…"
+          value={newTypeName}
+          onChange={(e) => setNewTypeName(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              e.preventDefault();
+              handleAdd();
+            }
+          }}
+          className="flex-1 rounded-md border border-border bg-background px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+        />
+        <Button type="button" size="sm" variant="outline" disabled={!newTypeName.trim() || loading} onClick={handleAdd}>
+          Add
+        </Button>
+      </div>
+
+      {types.length > 0 && (
+        <div className="flex flex-wrap gap-1.5 pt-1">
+          {types.map((t) => (
+            <span
+              key={t.id}
+              className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground"
+            >
+              {t.name}
+              <button
+                type="button"
+                onClick={() => deleteType({ variables: { id: t.id } })}
+                className="hover:text-destructive transition-colors"
+                aria-label={`Delete ${t.name}`}
+              >
+                ×
+              </button>
+            </span>
+          ))}
+        </div>
+      )}
+    </div>
+  );
 }
 
 // ---------------------------------------------------------------------------
-// Shared form body (used inside dialogs for both create and edit)
+// Shared form body
 // ---------------------------------------------------------------------------
 
 interface RelationshipFormProps {
@@ -136,11 +227,11 @@ function RelationshipForm({
   onEdit,
 }: RelationshipFormProps) {
   const isEditing = editing !== undefined;
+  const { data: typesData } = useQuery(GET_RELATIONSHIP_TYPES);
+  const types = typesData?.relationshipTypes ?? [];
 
   const [toPersonId, setToPersonId] = useState(isEditing ? editing.relatedPersonId : '');
-  const initial = isEditing ? initialTypeState(editing.type) : { type: COMMON_RELATIONSHIP_TYPES[0], customType: '' };
-  const [type, setType] = useState(initial.type);
-  const [customType, setCustomType] = useState(initial.customType);
+  const [type, setType] = useState(isEditing ? editing.type : (types[0]?.name ?? ''));
   const [error, setError] = useState<string | null>(null);
 
   const [createRelationship, { loading: createLoading }] = useMutation(CREATE_RELATIONSHIP);
@@ -151,30 +242,24 @@ function RelationshipForm({
     ? allPersons.filter((p) => p.id === editing.relatedPersonId)
     : allPersons.filter((p) => p.id !== fromPersonId && !existingRelatedIds.has(p.id));
 
-  const resolvedType = type === '__custom__' ? customType.trim() : type;
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!toPersonId) {
       setError('Please select a person.');
       return;
     }
-    if (!resolvedType) {
-      setError('Please enter a relationship type.');
+    if (!type) {
+      setError('Please select or create a relationship type.');
       return;
     }
     setError(null);
 
     if (isEditing) {
-      await updateRelationship({
-        variables: { id: editing.id, type: resolvedType },
-      });
-      onEdit?.(editing.id, resolvedType);
+      await updateRelationship({ variables: { id: editing.id, type } });
+      onEdit?.(editing.id, type);
     } else {
-      await createRelationship({
-        variables: { fromPersonId, toPersonId, type: resolvedType },
-      });
-      onCreate?.(fromPersonId, toPersonId, resolvedType);
+      await createRelationship({ variables: { fromPersonId, toPersonId, type } });
+      onCreate?.(fromPersonId, toPersonId, type);
     }
     onClose();
   };
@@ -185,12 +270,13 @@ function RelationshipForm({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      <div className="grid grid-cols-2 gap-2">
+      <div>
+        <label className="text-sm font-medium mb-1.5 block">Person</label>
         <select
           value={toPersonId}
           onChange={(e) => setToPersonId(e.target.value)}
           disabled={isEditing}
-          className="rounded-md border border-border bg-background px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-60"
+          className="w-full rounded-md border border-border bg-background px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-60"
         >
           {!isEditing && <option value="">Select person…</option>}
           {availablePersons.map((p) => (
@@ -204,30 +290,12 @@ function RelationshipForm({
             </option>
           )}
         </select>
-
-        <select
-          value={type}
-          onChange={(e) => setType(e.target.value)}
-          className="rounded-md border border-border bg-background px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-        >
-          {COMMON_RELATIONSHIP_TYPES.map((t) => (
-            <option key={t} value={t}>
-              {t}
-            </option>
-          ))}
-          <option value="__custom__">Custom…</option>
-        </select>
       </div>
 
-      {type === '__custom__' && (
-        <input
-          type="text"
-          placeholder="Relationship type"
-          value={customType}
-          onChange={(e) => setCustomType(e.target.value)}
-          className="w-full rounded-md border border-border bg-background px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-        />
-      )}
+      <div>
+        <label className="text-sm font-medium mb-1.5 block">Relationship type</label>
+        <RelationshipTypePicker value={type} onChange={setType} types={types} onTypeCreated={() => {}} />
+      </div>
 
       {error && <p className="text-destructive text-xs">{error}</p>}
 
@@ -269,7 +337,7 @@ function RelationshipRow({ relationship, fromPersonId, allPersons, onDelete, onE
     <>
       <div className="flex items-center justify-between gap-3 rounded-md border border-border px-3 py-2 text-sm">
         <div className="min-w-0 flex-1">
-          <Link to="/persons/$id" params={{ id: relatedPersonId }} className="font-medium hover:underline">
+          <Link href={`/persons/${relatedPersonId}`} className="font-medium text-foreground hover:underline">
             {relatedPersonFirstName} {relatedPersonLastName}
           </Link>
           <span className="ml-2 rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">{type}</span>
@@ -335,21 +403,16 @@ export function PersonRelationships({
   return (
     <>
       <div className="space-y-2">
-        {relationships.length > 0 && (
-          <div className="space-y-2">
-            {relationships.map((r) => (
-              <RelationshipRow
-                key={r.id}
-                relationship={r}
-                fromPersonId={person.id}
-                allPersons={allPersons}
-                onDelete={onDelete}
-                onEdit={onEdit}
-              />
-            ))}
-          </div>
-        )}
-
+        {relationships.map((r) => (
+          <RelationshipRow
+            key={r.id}
+            relationship={r}
+            fromPersonId={person.id}
+            allPersons={allPersons}
+            onDelete={onDelete}
+            onEdit={onEdit}
+          />
+        ))}
         {relationships.length === 0 && !showAdd && (
           <p className="text-muted-foreground text-sm">No relationships yet.</p>
         )}
@@ -365,9 +428,7 @@ export function PersonRelationships({
             allPersons={allPersons}
             existingRelatedIds={existingRelatedIds}
             onClose={() => onShowAdd?.(false)}
-            onCreate={(fromId, toId, type) => {
-              onAdd(fromId, toId, type);
-            }}
+            onCreate={(fromId, toId, t) => onAdd(fromId, toId, t)}
           />
         </DialogContent>
       </Dialog>

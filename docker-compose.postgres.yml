@@ -1,0 +1,37 @@
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: philotes
+      POSTGRES_PASSWORD: philotes
+      POSTGRES_DB: philotes
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U philotes -d philotes"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  philotes:
+    image: vantreeseba/philotes:latest
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      # Required — generate with: openssl rand -hex 32
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required}
+      APP_URL: ${APP_URL:-http://localhost:3001}
+      DATABASE_URL: postgres://philotes:philotes@db:5432/philotes
+      NODE_ENV: production
+      PORT: 3001
+    ports:
+      - "${PORT:-3001}:3001"
+    volumes:
+      - avatars:/avatars
+
+volumes:
+  pgdata:
+  avatars:

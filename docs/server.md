@@ -4,7 +4,7 @@
 
 The GraphQL API is an Apollo Server that auto-generates its schema and
 resolvers directly from the Drizzle ORM schema via a vendored
-`drizzle-graphql` library. There are no hand-written resolvers for standard
+`@vantreeseba/drizzle-graphql` library. There are no hand-written resolvers for standard
 CRUD operations.
 
 - **Entry point**: `server/src/index.ts`
@@ -17,17 +17,17 @@ CRUD operations.
 | --- | --- |
 | `server/src/index.ts` | Starts ApolloServer, injects `db` into context |
 | `server/src/schema.ts` | Calls `buildSchema(db)` to auto-generate the full GraphQL schema |
-| `drizzle-graphql` (npm package) | Local package that converts Drizzle schema → GraphQL schema + resolvers |
+| `@vantreeseba/drizzle-graphql` (npm package) | Local package that converts Drizzle schema → GraphQL schema + resolvers |
 | `server/src/__generated__/schema.graphql` | Auto-generated SDL — do not edit manually |
 | `server/src/__generated__/resolvers.ts` | Auto-generated resolver types — do not edit manually |
 
 ## How the Schema is Built
 
-`server/src/schema.ts` calls `buildSchema` from the `drizzle-graphql` package:
+`server/src/schema.ts` calls `buildSchema` from the `@vantreeseba/drizzle-graphql` package:
 
 ```ts
 import { db } from "@philotes/db";
-import { buildSchema } from "drizzle-graphql";
+import { buildSchema } from "@vantreeseba/drizzle-graphql";
 
 const { schema: drizzleSchema, entities } = buildSchema(db, {
   prefixes: { insert: "create", update: "update", delete: "delete" },

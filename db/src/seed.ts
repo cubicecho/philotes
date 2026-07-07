@@ -1,8 +1,6 @@
 import { faker } from '@faker-js/faker';
 import { db } from './index.ts';
 import {
-  activities,
-  activityTags,
   addresses,
   contactInfos,
   importantDates,
@@ -491,56 +489,6 @@ async function seedAddresses(userId: string, personData: { id: string }[]) {
   console.log(`Inserted ${addressData.length} addresses`);
 }
 
-async function seedActivities(userId: string, personData: { id: string }[], labelData: { id: string }[]) {
-  const activityData: {
-    id: string;
-    personId: string;
-    userId: string;
-    title: string;
-    description: string | null;
-    location: string | null;
-    occurredAt: Date;
-  }[] = [];
-
-  const activityTagData: { activityId: string; labelId: string }[] = [];
-
-  for (const person of personData) {
-    const count = Math.floor(Math.random() * 4); // 0–3
-
-    for (let i = 0; i < count; i++) {
-      const activityId = randomId();
-
-      activityData.push({
-        id: activityId,
-        personId: person.id,
-        userId,
-        title: faker.company.buzzPhrase(),
-        description: Math.random() > 0.4 ? faker.lorem.sentences(2) : null,
-        location: Math.random() > 0.4 ? faker.location.city() : null,
-        occurredAt: randomPastDate(2),
-      });
-
-      // 0–1 label tag per activity
-      if (Math.random() > 0.5) {
-        activityTagData.push({
-          activityId,
-          labelId: pickRandom(labelData).id,
-        });
-      }
-    }
-  }
-
-  if (activityData.length === 0) return;
-
-  await db.insert(activities).values(activityData);
-  console.log(`Inserted ${activityData.length} activities`);
-
-  if (activityTagData.length > 0) {
-    await db.insert(activityTags).values(activityTagData);
-    console.log(`Inserted ${activityTagData.length} activity tags`);
-  }
-}
-
 // ── main ───────────────────────────────────────────────────────────────────
 
 console.log('Starting seed...');
@@ -557,7 +505,6 @@ await seedPersonRelationships(userId, personData);
 await seedTasks(userId, personData);
 await seedContactInfos(userId, personData);
 await seedAddresses(userId, personData);
-await seedActivities(userId, personData, labelData);
 
 console.log('Seed complete.');
 console.log(`\nDemo user created: ${userData.email}`);

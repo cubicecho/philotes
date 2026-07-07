@@ -3,9 +3,316 @@
   "dialect": "postgres",
   "id": "ffea9d6c-222a-4b1d-9e82-5e395be2bb85",
   "prevIds": [
-    "80b82d0d-c309-4469-a547-4cfac5d01fad"
+    "65ffdba1-791b-4860-a32a-47f240c8a1c0"
   ],
   "ddl": [
+    {
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "gen_random_uuid()",
+      "generated": null,
+      "identity": null,
+      "name": "id",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "activities"
+    },
+    {
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "person_id",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "activities"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "title",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "activities"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "description",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "activities"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "location",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "activities"
+    },
+    {
+      "type": "timestamp",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "occurred_at",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "activities"
+    },
+    {
+      "type": "timestamp",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "now()",
+      "generated": null,
+      "identity": null,
+      "name": "created_at",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "activities"
+    },
+    {
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "activity_id",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "activity_tags"
+    },
+    {
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "label_id",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "activity_tags"
+    },
+    {
+      "nameExplicit": false,
+      "columns": [
+        "person_id"
+      ],
+      "schemaTo": "public",
+      "tableTo": "persons",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
+      "name": "activities_person_id_persons_id_fkey",
+      "entityType": "fks",
+      "schema": "public",
+      "table": "activities"
+    },
+    {
+      "nameExplicit": false,
+      "columns": [
+        "activity_id"
+      ],
+      "schemaTo": "public",
+      "tableTo": "activities",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
+      "name": "activity_tags_activity_id_activities_id_fkey",
+      "entityType": "fks",
+      "schema": "public",
+      "table": "activity_tags"
+    },
+    {
+      "nameExplicit": false,
+      "columns": [
+        "label_id"
+      ],
+      "schemaTo": "public",
+      "tableTo": "labels",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
+      "name": "activity_tags_label_id_labels_id_fkey",
+      "entityType": "fks",
+      "schema": "public",
+      "table": "activity_tags"
+    },
+    {
+      "columns": [
+        "activity_id",
+        "label_id"
+      ],
+      "nameExplicit": false,
+      "name": "activity_tags_pkey",
+      "entityType": "pks",
+      "schema": "public",
+      "table": "activity_tags"
+    },
+    {
+      "columns": [
+        "id"
+      ],
+      "nameExplicit": false,
+      "name": "activities_pkey",
+      "schema": "public",
+      "table": "activities",
+      "entityType": "pks"
+    },
+    {
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "gen_random_uuid()",
+      "generated": null,
+      "identity": null,
+      "name": "id",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "tasks"
+    },
+    {
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "person_id",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "tasks"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "title",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "tasks"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "notes",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "tasks"
+    },
+    {
+      "type": "timestamp",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "due_at",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "tasks"
+    },
+    {
+      "type": "timestamp",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "completed_at",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "tasks"
+    },
+    {
+      "type": "timestamp",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "now()",
+      "generated": null,
+      "identity": null,
+      "name": "created_at",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "tasks"
+    },
+    {
+      "nameExplicit": false,
+      "columns": [
+        "person_id"
+      ],
+      "schemaTo": "public",
+      "tableTo": "persons",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
+      "name": "tasks_person_id_persons_id_fkey",
+      "entityType": "fks",
+      "schema": "public",
+      "table": "tasks"
+    },
+    {
+      "columns": [
+        "id"
+      ],
+      "nameExplicit": false,
+      "name": "tasks_pkey",
+      "schema": "public",
+      "table": "tasks",
+      "entityType": "pks"
+    },
     {
       "values": [
         "email",

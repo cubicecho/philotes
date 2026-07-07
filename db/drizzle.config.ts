@@ -9,7 +9,7 @@ const dataDir = process.env.DATABASE_URL ?? path.join(projectRoot, 'pgdata');
 
 export default defineConfig({
   out: './drizzle',
-  schema: './src/schema.ts',
+  schema: ['./src/schema.ts', './src/api-keys.ts'],
   dialect: 'postgresql',
   dbCredentials: {
     url: dataDir,

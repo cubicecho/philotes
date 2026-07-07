@@ -74,5 +74,5 @@ EXPOSE 3001
 
 VOLUME ["/data", "/avatars"]
 
-# Run server directly as TypeScript via Node's built-in strip-types
-CMD ["node", "--experimental-strip-types", "server/src/index.ts"]
+# Run server directly as TypeScript — no compile step needed
+CMD ["node", "--experimental-strip-types", "--preserve-symlinks", "server/src/index.ts"]

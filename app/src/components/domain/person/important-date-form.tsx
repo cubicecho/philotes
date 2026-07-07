@@ -1,8 +1,8 @@
 import { createFormHook } from '@tanstack/react-form';
 import { useState } from 'react';
 import { z } from 'zod';
-import { Button } from '@/components/ui/button.js';
-import { FieldGroup } from '@/components/ui/field.js';
+import { Button } from '@/components/ui/button';
+import { FieldGroup } from '@/components/ui/field';
 import { FormError, fieldContext, formContext, TextField } from '@/components/ui/form-field.tsx';
 
 // ---------------------------------------------------------------------------

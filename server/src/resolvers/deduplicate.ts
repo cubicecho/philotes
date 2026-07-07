@@ -110,11 +110,10 @@ async function mergeDuplicate(
       .where(and(eq(dbSchema.userPersons.userId, userId), eq(dbSchema.userPersons.personId, primaryId)));
   }
 
-  // 2. Move simple child rows (notes, interactions, activities, tasks, importantDates)
+  // 2. Move simple child rows (notes, interactions, tasks, importantDates)
   await Promise.all([
     reassignRows(db, dbSchema.notes, duplicateId, primaryId, userId),
     reassignRows(db, dbSchema.interactions, duplicateId, primaryId, userId),
-    reassignRows(db, dbSchema.activities, duplicateId, primaryId, userId),
     reassignRows(db, dbSchema.tasks, duplicateId, primaryId, userId),
     reassignRows(db, dbSchema.importantDates, duplicateId, primaryId, userId),
     reassignRows(db, dbSchema.addresses, duplicateId, primaryId, userId),

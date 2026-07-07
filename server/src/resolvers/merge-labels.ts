@@ -79,15 +79,6 @@ export function applyMergeLabelsExtension(schema: GraphQLSchema): GraphQLSchema 
       },
       {
         // biome-ignore lint/suspicious/noExplicitAny: cross-table type cast
-        table: dbSchema.activityTags as any,
-        fkColName: 'activityId',
-        // biome-ignore lint/suspicious/noExplicitAny: cross-table type cast
-        fkCol: dbSchema.activityTags.activityId as any,
-        // biome-ignore lint/suspicious/noExplicitAny: cross-table type cast
-        labelCol: dbSchema.activityTags.labelId as any,
-      },
-      {
-        // biome-ignore lint/suspicious/noExplicitAny: cross-table type cast
         table: dbSchema.importantDateTags as any,
         fkColName: 'importantDateId',
         // biome-ignore lint/suspicious/noExplicitAny: cross-table type cast

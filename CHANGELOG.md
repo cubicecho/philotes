@@ -1,3 +1,124 @@
+# [1.9.0](https://github.com/cubicecho/philotes/compare/v1.8.0...v1.9.0) (2026-07-05)
+
+
+### Bug Fixes
+
+* broken reach-out links, duplicated relative-time helpers, pgdata path under --preserve-symlinks ([4c570e9](https://github.com/cubicecho/philotes/commit/4c570e9e7ea0e6f9ca237a72e5e128819bf3b771))
+* dark mode — person names and other links rendered near-black ([51a9239](https://github.com/cubicecho/philotes/commit/51a9239cfbd611790cf8809402b7e080e4f4dc8f))
+
+
+### Features
+
+* dashboard — 4 widgets, one query, quick-log, no per-widget pagination ([37cac78](https://github.com/cubicecho/philotes/commit/37cac78441d129467735fcc90a681b75807814a2))
+* design tokens — Inter variable font, warm accent color, LabelChip component ([43ceac6](https://github.com/cubicecho/philotes/commit/43ceac6635826455636a09f7b4872ad1c554b3de))
+* labels page — chip-preview rows, no pagination ([7fe9874](https://github.com/cubicecho/philotes/commit/7fe9874f022b4c999e9ef4b146013d4e5c21d407))
+* navigation — active states, Network link, mobile bottom tabs + FAB ([8251e0c](https://github.com/cubicecho/philotes/commit/8251e0cda4c2741ef5229a019c382e697000b5d7))
+* people list — alphabetical grouped list replaces pagination ([9790f52](https://github.com/cubicecho/philotes/commit/9790f52cd46a5394a034ad15386e6209373ea345))
+* person detail — profile header with contact actions, auto-height sections ([2929d63](https://github.com/cubicecho/philotes/commit/2929d63785e26344b1daa45bacf25079669b0f87))
+* remove the activities concept — interactions cover it ([86e9e71](https://github.com/cubicecho/philotes/commit/86e9e71fdf1842cedcac732eade601666302f3f5))
+* unify terminology — /tags route becomes /labels, user copy says Label ([f12eb35](https://github.com/cubicecho/philotes/commit/f12eb355134e068598bfa95c46f11eca9c039e4b))
+
+# [1.8.0](https://github.com/cubicecho/philotes/compare/v1.7.0...v1.8.0) (2026-07-05)
+
+
+### Bug Fixes
+
+* add react-native-worklets dep and remove corrupt package.json entry ([d090c2b](https://github.com/cubicecho/philotes/commit/d090c2b1f69c142385994110048c392787935fe0))
+* expose Metro dev server on port 3000 ([4df2290](https://github.com/cubicecho/philotes/commit/4df22909577d42bfe89e63ce2b9c94327952d07d))
+* restore Apollo scalar type policies dropped in Expo migration ([a855b4f](https://github.com/cubicecho/philotes/commit/a855b4f36840547f2a30bffed4f89a3b3fecd451))
+* restore person ID in Link hrefs dropped during Expo Router migration ([cdee65c](https://github.com/cubicecho/philotes/commit/cdee65c5c5ab66bbc7f1e28c368eca3b5766e8e9))
+* strip .js extensions from all internal imports for Metro compatibility ([4eb9110](https://github.com/cubicecho/philotes/commit/4eb9110a3ea99d770e55399476de9347029bdaef))
+
+
+### Features
+
+* migrate app to Expo web (Metro bundler + Expo Router) ([2acbe42](https://github.com/cubicecho/philotes/commit/2acbe42a7d6a758ea5fc57c9ffa6ac4b12f5c3b0))
+
+# [1.7.0](https://github.com/cubicecho/philotes/compare/v1.6.0...v1.7.0) (2026-07-05)
+
+
+### Bug Fixes
+
+* center card headers, bump to text-2xl, align header and body widths ([55f328b](https://github.com/cubicecho/philotes/commit/55f328ba222e026c45d65fd16e38a4d21ac518a6))
+* harden Docker deployment for beta users ([80612ab](https://github.com/cubicecho/philotes/commit/80612ab40d43a624a84b33f970808b22ee38c485))
+* increase card header text to text-lg to match button visual size ([0443789](https://github.com/cubicecho/philotes/commit/0443789eefc07e8a17e8b578a18ec4a4bba2c549))
+* increase card header text to text-xl ([7192e6b](https://github.com/cubicecho/philotes/commit/7192e6b07c65351a0549833b40ad6a8ab649c60d))
+* magic link auth, configurable PORT, and nav re-render on login ([821c4f1](https://github.com/cubicecho/philotes/commit/821c4f1da415d5b4e60aa06f278ca5806c5d8293))
+* move Contact Info add button to card header, match Tags style ([e40afc0](https://github.com/cubicecho/philotes/commit/e40afc0860b44e295b6d616f79a43ae65cd8a85b))
+* omit null expiresAt from api_keys insert to avoid pglite timestamp parse error ([c45e8b1](https://github.com/cubicecho/philotes/commit/c45e8b1aad24133ff4778797a4c843b0d1c15a91))
+* reduce top padding on cards; align card header text size with buttons ([dea29f7](https://github.com/cubicecho/philotes/commit/dea29f715b536e7ef4e1f2b90aea2da620893646))
+* reduce top padding on person detail cards ([85bfc7a](https://github.com/cubicecho/philotes/commit/85bfc7a27c685efe28ed1a9c4863ca1dcf8c35b3))
+* reduce top padding on person detail cards ([d593f01](https://github.com/cubicecho/philotes/commit/d593f0132c679324b180c0ecfbfad2676c49b064))
+* remove Add Date from top action bar ([28ed590](https://github.com/cubicecho/philotes/commit/28ed590542e5ae777c9fb43835fb4ff2dd19c65c))
+* resolve all TypeScript errors; add unit tests for CSV parsing utilities ([c3da941](https://github.com/cubicecho/philotes/commit/c3da941ce4478ff04dc94c97c67417f593aaeaf0))
+* resolve drizzle migration conflicts and linearize snapshot chain ([5fa6767](https://github.com/cubicecho/philotes/commit/5fa6767b495ce1ee0990bffd0478d2ad64eb4c08))
+* restore @vantreeseba/drizzle-graphql dependency (published ^1.0.1) ([7ba94cb](https://github.com/cubicecho/philotes/commit/7ba94cb51537f2445288a97463fbf0f344b742e5))
+* revert to p-4 on cards, align header text to top ([22382f7](https://github.com/cubicecho/philotes/commit/22382f7328c99e7220ade1c1485eba36c3309357))
+* server-side person search + relationship types as user-editable tags ([a5ec3d5](https://github.com/cubicecho/philotes/commit/a5ec3d5d6097d37893f9ca3544c65ceecadf8dc1))
+* set card top padding to pt-3 ([204dee6](https://github.com/cubicecho/philotes/commit/204dee6cff663c9720f15930bc11b43c647e419e))
+
+
+### Features
+
+* add Add Task button to top action bar on person view ([6728c10](https://github.com/cubicecho/philotes/commit/6728c10652a60a81454d168e3d51a2c68bad8031))
+* add tab nav to settings with Import subview; move nav links to right ([61d97fa](https://github.com/cubicecho/philotes/commit/61d97faa70d1b336efbe4d4f70c34867f1eca7f8))
+* reorganize settings into Import/Export and App Settings tabs; move dark mode toggle to settings ([1a88670](https://github.com/cubicecho/philotes/commit/1a88670c9cc69219b89f0fd79ddf3dc23ee2456e))
+
+# [1.6.0](https://github.com/vantreeseba/philotes/compare/v1.5.1...v1.6.0) (2026-05-05)
+
+
+### Bug Fixes
+
+* add padding between scroll content and scrollbar ([985c3ad](https://github.com/vantreeseba/philotes/commit/985c3ad6ebdd527239966dae66dd82c35d83f985))
+* constrain all pages to viewport height with internal scroll ([2111fd6](https://github.com/vantreeseba/philotes/commit/2111fd6838347f45c031a9313b77f62a7e31679b))
+* move Tasks and Address add buttons to card headers, match Tags style ([4df296d](https://github.com/vantreeseba/philotes/commit/4df296d890167435a6360f4953bfeb949be23e9f))
+* person detail view always loaded first contact instead of selected one ([860f27c](https://github.com/vantreeseba/philotes/commit/860f27cce87aa476d1d3f680bcfb8dcb15be45ef))
+* restore per-card add buttons, unify header layout to match Tags card style ([8b26577](https://github.com/vantreeseba/philotes/commit/8b26577423544aa5d2879265d4887f87d9ed1121))
+* style scrollbars to match theme in light and dark mode ([b3f43b4](https://github.com/vantreeseba/philotes/commit/b3f43b453a15ecce65341530dcd9db46e07ea22d))
+* switch to @vantreeseba/drizzle-graphql, resolve duplicate graphql instance ([74f8f62](https://github.com/vantreeseba/philotes/commit/74f8f62ccd069703ede4fffad0623211c5397aa0))
+
+
+### Features
+
+* add action button bar to top of person detail view ([8591895](https://github.com/vantreeseba/philotes/commit/8591895d39e3becf2958e6f0677778f2e6789234))
+* add Dashboard nav link and dark mode toggle to header ([366ff6e](https://github.com/vantreeseba/philotes/commit/366ff6e75ef1772015abef304c40a30c0e426836))
+* magic link auth + import email-less contacts from Google CSV ([a109875](https://github.com/vantreeseba/philotes/commit/a10987597ae6da934ba85031341bf9e4792b7678))
+
+## [1.5.1](https://github.com/vantreeseba/philotes/compare/v1.5.0...v1.5.1) (2026-05-01)
+
+
+### Bug Fixes
+
+* SSL in production for Postgres, fix drizzle-orm 1.0 beta compat, restore correct input type names ([13decb2](https://github.com/vantreeseba/philotes/commit/13decb25867ec66cf494e728093d12e0123f1a4f))
+
+# [1.5.0](https://github.com/vantreeseba/philotes/compare/v1.4.4...v1.5.0) (2026-05-01)
+
+
+### Features
+
+* support full PostgreSQL alongside PGlite via DATABASE_URL ([b985d98](https://github.com/vantreeseba/philotes/commit/b985d981104e56d58058c71f9e6d8479a73a60f9))
+
+## [1.4.4](https://github.com/vantreeseba/philotes/compare/v1.4.3...v1.4.4) (2026-05-01)
+
+
+### Bug Fixes
+
+* revert wrong GraphQL input type renames, add missing radix dep, untrack tsbuildinfo ([e54fa91](https://github.com/vantreeseba/philotes/commit/e54fa91317ccf5936ded72628ed331f4cc3d1362))
+
+## [1.4.3](https://github.com/vantreeseba/philotes/compare/v1.4.2...v1.4.3) (2026-05-01)
+
+
+### Bug Fixes
+
+* repair build after multi-tenant schema migration ([a291416](https://github.com/vantreeseba/philotes/commit/a29141656adad6810d145f9b1fb2951fec737c40))
+
+## [1.4.2](https://github.com/vantreeseba/philotes/compare/v1.4.1...v1.4.2) (2026-05-01)
+
+
+### Bug Fixes
+
+* force release ([82c095d](https://github.com/vantreeseba/philotes/commit/82c095d6351d28ada2bef1f530230c0b9d2463f7))
+
 ## [1.4.1](https://github.com/vantreeseba/philotes/compare/v1.4.0...v1.4.1) (2026-03-12)
 
 

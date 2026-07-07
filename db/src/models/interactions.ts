@@ -1,8 +1,8 @@
 import { index, pgTable, primaryKey, text, timestamp, uuid } from 'drizzle-orm/pg-core';
 
-import { labels } from './labels.js';
-import { persons } from './persons.js';
-import { users } from './users.js';
+import { labels } from './labels.ts';
+import { persons } from './persons.ts';
+import { users } from './users.ts';
 
 export const INTERACTION_CHANNELS = ['call', 'text', 'email', 'in-person', 'other'] as const;
 export type InteractionChannel = (typeof INTERACTION_CHANNELS)[number];

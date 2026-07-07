@@ -193,7 +193,35 @@ Then open [http://localhost:3001](http://localhost:3001).
 | Variable | Default | Description |
 | --- | --- | --- |
 | `PORT` | `3001` | Port the server listens on |
-| `DATABASE_URL` | `/data/pgdata` | Path to the PGlite database directory |
+| `DATABASE_URL` | `/data/pgdata` | PGlite data directory path, or a `postgres://` connection string |
+
+---
+
+## Using Full PostgreSQL
+
+By default Philotes uses **PGlite** — an embedded Postgres that runs inside the
+process with no external server required. If you prefer a standalone PostgreSQL
+server (for multi-container deployments, external backups, or larger datasets),
+set `DATABASE_URL` to a standard connection string and Philotes will switch
+drivers automatically:
+
+```
+DATABASE_URL=postgres://user:password@host:5432/dbname
+```
+
+A ready-to-use Docker Compose file is provided at
+[`docker-compose.postgres.yml`](docker-compose.postgres.yml):
+
+```bash
+docker compose -f docker-compose.postgres.yml up -d
+```
+
+This starts a `postgres:16-alpine` container and the Philotes app wired together.
+Data is persisted in a named Docker volume (`pgdata`). Migrations run
+automatically on startup.
+
+> **Note:** When switching from PGlite to PostgreSQL your existing PGlite data
+> does not migrate automatically. Start fresh or export/import your data manually.
 
 ---
 

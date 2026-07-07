@@ -3,7 +3,7 @@
 ## Overview
 
 The API is a GraphQL schema auto-generated from the Drizzle ORM schema by the
-vendored `drizzle-graphql` library. The full SDL is snapshotted at
+vendored `@vantreeseba/drizzle-graphql` library. The full SDL is snapshotted at
 `server/src/__generated__/schema.graphql` after each codegen run.
 
 Endpoint: `POST /graphql` (served on port 3001; Vite proxies from port 3000).

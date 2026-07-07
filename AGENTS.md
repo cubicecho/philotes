@@ -133,6 +133,16 @@ npm run db:push          # Push schema directly to DB (dev only)
 npm run db:studio        # Open Drizzle Studio
 ```
 
+### Git
+
+Use merge instead of rebase when integrating remote changes:
+
+```bash
+git pull --no-rebase
+```
+
+Do not add `Co-Authored-By` trailers to commit messages.
+
 ### Worktrees
 
 When working in a git worktree, run the following command to install dependencies
@@ -206,7 +216,7 @@ npm ci --prefer-offline --no-audit
 
 ### GraphQL / Server
 - The GraphQL schema is **auto-generated** from the Drizzle schema via the
-  vendored `drizzle-graphql` library — there are no hand-written resolvers
+  vendored `@vantreeseba/drizzle-graphql` library — there are no hand-written resolvers
 - `server/src/schema.ts` calls `buildSchema(db)` and exports the result
 - To add custom mutations/queries, extend the generated schema (see
   [`docs/server.md`](docs/server.md) for the extension pattern)

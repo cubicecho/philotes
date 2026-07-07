@@ -1,4 +1,5 @@
 import { Mail, MessageSquare, MoreHorizontal, Phone, Users } from 'lucide-react';
+import { relativeTime } from '@/lib/relative-time';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -21,30 +22,22 @@ export interface TimelineImportantDate {
   labels: Array<{ id: string; label: string; color: string }>;
 }
 
-export interface TimelineActivity {
-  id: string;
-  occurredAt: Date;
-  title: string;
-  description: string | null | undefined;
-}
-
 export interface PersonTimelineProps {
   interactions: TimelineInteraction[];
   importantDates: TimelineImportantDate[];
-  activities: TimelineActivity[];
 }
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 
-type TimelineItemType = 'interaction' | 'importantDate' | 'activity';
+type TimelineItemType = 'interaction' | 'importantDate';
 
 interface TimelineItem {
   id: string;
   type: TimelineItemType;
   date: Date;
-  data: TimelineInteraction | TimelineImportantDate | TimelineActivity;
+  data: TimelineInteraction | TimelineImportantDate;
 }
 
 const SENTIMENT_EMOJI: Record<string, string> = {
@@ -74,18 +67,6 @@ function formatDate(date: Date): string {
 
 function formatMonthYear(date: Date): string {
   return date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
-}
-
-function relativeTime(date: Date): string {
-  const now = new Date();
-  const diffMs = now.getTime() - date.getTime();
-  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-  if (diffDays === 0) return 'Today';
-  if (diffDays === 1) return 'Yesterday';
-  if (diffDays < 7) return `${diffDays}d ago`;
-  if (diffDays < 30) return `${Math.floor(diffDays / 7)}w ago`;
-  if (diffDays < 365) return `${Math.floor(diffDays / 30)}mo ago`;
-  return `${Math.floor(diffDays / 365)}y ago`;
 }
 
 function monthYearKey(date: Date): string {
@@ -163,28 +144,15 @@ function ImportantDateEntry({ item }: { item: TimelineImportantDate }) {
   );
 }
 
-function ActivityEntry({ item }: { item: TimelineActivity }) {
-  return (
-    <div className="flex items-start gap-2 min-w-0">
-      <span className="text-lg leading-none mt-0.5 shrink-0">📋</span>
-      <div className="min-w-0 flex-1">
-        <p className="text-sm font-medium">{item.title}</p>
-        {item.description && <p className="text-sm text-muted-foreground mt-0.5 line-clamp-3">{item.description}</p>}
-      </div>
-    </div>
-  );
-}
-
 // ---------------------------------------------------------------------------
 // Main export
 // ---------------------------------------------------------------------------
 
-export function PersonTimeline({ interactions, importantDates, activities }: PersonTimelineProps) {
+export function PersonTimeline({ interactions, importantDates }: PersonTimelineProps) {
   // Build unified list
   const items: TimelineItem[] = [
     ...interactions.map((i): TimelineItem => ({ id: `i-${i.id}`, type: 'interaction', date: i.occurredAt, data: i })),
     ...importantDates.map((d): TimelineItem => ({ id: `d-${d.id}`, type: 'importantDate', date: d.date, data: d })),
-    ...activities.map((a): TimelineItem => ({ id: `a-${a.id}`, type: 'activity', date: a.occurredAt, data: a })),
   ];
 
   // Sort descending by date
@@ -230,7 +198,6 @@ export function PersonTimeline({ interactions, importantDates, activities }: Per
                 {/* Entry content */}
                 {item.type === 'interaction' && <InteractionEntry item={item.data as TimelineInteraction} />}
                 {item.type === 'importantDate' && <ImportantDateEntry item={item.data as TimelineImportantDate} />}
-                {item.type === 'activity' && <ActivityEntry item={item.data as TimelineActivity} />}
               </div>
             ))}
           </div>

@@ -5,9 +5,9 @@
   "type": "module",
   "main": "./src/index.ts",
   "scripts": {
-    "dev": "node --experimental-strip-types --env-file=../.env --watch src/index.ts",
+    "dev": "node --experimental-strip-types --preserve-symlinks --env-file=../.env --watch src/index.ts",
     "build": "echo 'no server build needed'",
-    "start": "node --experimental-strip-types src/index.ts",
+    "start": "node --experimental-strip-types --preserve-symlinks src/index.ts",
     "clean": "rm -rf src/__generated__",
     "codegen": "node --experimental-strip-types --import=./src/preload-env.ts src/write_schema.ts && graphql-codegen-esm"
   },
@@ -15,13 +15,14 @@
     "@apollo/server": "^5.x.x",
     "@as-integrations/express5": "^1.1.2",
     "@philotes/db": "*",
+    "@vantreeseba/drizzle-graphql": "^1.0.1",
     "cors": "^2.8.6",
-    "drizzle-graphql": "github:vantreeseba/drizzle-graphql#build_in_repo",
     "express": "^5.2.1",
     "graphql": "^16.10.0",
     "graphql-parse-resolve-info": "^4.14.1",
     "graphql-scalars": "^1.25.0",
     "graphql-tag": "^2.12.6",
+    "ical-generator": "^10.2.0",
     "jsonwebtoken": "^9.0.3",
     "multer": "^2.1.1",
     "nodemailer": "^8.0.7"

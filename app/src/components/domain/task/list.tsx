@@ -1,11 +1,11 @@
 import { useMutation } from '@apollo/client';
 import { CheckSquare, Square, Trash2 } from 'lucide-react';
 import { useState } from 'react';
-import { graphql } from '@/__generated__/gql.js';
+import { graphql } from '@/__generated__/gql';
 import { useAppForm } from '@/components/domain/person/form.tsx';
-import { Button } from '@/components/ui/button.js';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog.js';
-import { FieldGroup } from '@/components/ui/field.js';
+import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { FieldGroup } from '@/components/ui/field';
 import { FormError } from '@/components/ui/form-field.tsx';
 
 // ---------------------------------------------------------------------------
@@ -95,6 +95,8 @@ export interface TaskListProps {
   onAdd: () => void;
   onDelete: () => void;
   onUpdate: () => void;
+  createOpen?: boolean;
+  onCreateOpenChange?: (open: boolean) => void;
 }
 
 // ---------------------------------------------------------------------------
@@ -244,21 +246,24 @@ function AddTaskForm({ personId, onAdded, onCancel }: AddTaskFormProps) {
 // Main export
 // ---------------------------------------------------------------------------
 
-export function TaskList({ personId, tasks, onAdd, onDelete, onUpdate }: TaskListProps) {
-  const [addDialogOpen, setAddDialogOpen] = useState(false);
+export function TaskList({
+  personId,
+  tasks,
+  onAdd,
+  onDelete,
+  onUpdate,
+  createOpen,
+  onCreateOpenChange,
+}: TaskListProps) {
+  const [internalOpen, setInternalOpen] = useState(false);
+  const addDialogOpen = createOpen ?? internalOpen;
+  const setAddDialogOpen = onCreateOpenChange ?? setInternalOpen;
 
   const openTasks = tasks.filter((t) => t.completedAt == null);
   const doneTasks = tasks.filter((t) => t.completedAt != null);
 
   return (
     <div className="space-y-4">
-      {/* Add Task button */}
-      <div className="flex justify-end">
-        <Button size="sm" variant="outline" onClick={() => setAddDialogOpen(true)}>
-          Add Task
-        </Button>
-      </div>
-
       {/* Open tasks */}
       {openTasks.length === 0 && doneTasks.length === 0 && (
         <p className="text-muted-foreground text-sm">No tasks yet.</p>
