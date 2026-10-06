@@ -122,7 +122,7 @@ product, and Philotes isn't a platform. It's a tool. The boundary matters.
 
 ## Getting Started
 
-You'll need **Node.js 22+** and **npm**.
+You'll need **Node.js 26+** and **npm**.
 
 ```bash
 git clone https://github.com/vantreeseba/philotes.git
@@ -148,7 +148,7 @@ mailed.
 | Database | Drizzle ORM, PGlite (embedded Postgres — no server needed)  |
 | Testing  | Vitest                                                      |
 | Linting  | Biome                                                       |
-| Runtime  | Node.js 22+, ESM                                            |
+| Runtime  | Node.js 26+, ESM                                            |
 
 ---
 

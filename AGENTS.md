@@ -16,7 +16,7 @@ structure (npm workspaces) with three packages: `app/` (frontend), `server/`
 | Database | Drizzle ORM, PGlite (embedded Postgres)            |
 | Testing  | Vitest                                             |
 | Linting  | Biome (formatter + linter)                         |
-| Runtime  | Node.js 22+, ESM (`"type": "module"` throughout)  |
+| Runtime  | Node.js 26+, ESM (`"type": "module"` throughout)  |
 
 ## Project Structure
 
@@ -194,7 +194,7 @@ Do not hand-format — run `npm run check:fix`. The settings, from `biome.json`:
   ```
 - Use `@philotes/db` package name when importing from `db/` in `server/`
 - Use **`.ts` extensions** in relative `server/` and `db/` imports. Node runs
-  those packages directly with `--experimental-strip-types`, so the import
+  those packages directly, stripping the types itself, so the import
   specifier names the file that exists:
   ```ts
   import { schema } from './schema.ts';        // server/ and db/

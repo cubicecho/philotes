@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1
 
 # ── Stage 1: build ───────────────────────────────────────────────────────────
-FROM node:24-alpine AS builder
+FROM node:26-alpine AS builder
 
 # Required for PGlite WASM compilation and native addons (sharp, etc.)
 RUN apk add --no-cache python3 make g++
@@ -17,7 +17,7 @@ RUN npm ci
 RUN npm run build -w db && npm run codegen && npm run build -w app
 
 # ── Stage 2: production ───────────────────────────────────────────────────────
-FROM node:22-alpine
+FROM node:26-alpine
 
 WORKDIR /app
 
@@ -39,4 +39,4 @@ EXPOSE 3001
 VOLUME ["/data", "/avatars"]
 
 # Run server directly as TypeScript — no compile step needed
-CMD ["node", "--experimental-strip-types", "--preserve-symlinks", "server/src/index.ts"]
+CMD ["node", "--preserve-symlinks", "server/src/index.ts"]

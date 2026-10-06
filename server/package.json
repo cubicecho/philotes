@@ -5,11 +5,11 @@
   "type": "module",
   "main": "./src/index.ts",
   "scripts": {
-    "dev": "node --experimental-strip-types --preserve-symlinks --env-file=../.env --watch src/index.ts",
+    "dev": "node --preserve-symlinks --env-file=../.env --watch src/index.ts",
     "build": "echo 'no server build needed'",
-    "start": "node --experimental-strip-types --preserve-symlinks src/index.ts",
+    "start": "node --preserve-symlinks src/index.ts",
     "clean": "rm -rf __generated__",
-    "codegen": "node --experimental-strip-types --import=./src/preload-env.ts src/write-schema.ts && graphql-codegen-esm"
+    "codegen": "node --import=./src/preload-env.ts src/write-schema.ts && graphql-codegen-esm"
   },
   "dependencies": {
     "@apollo/server": "^5.5.1",
