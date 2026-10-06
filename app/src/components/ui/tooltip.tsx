@@ -1,27 +1,79 @@
-import * as TooltipPrimitive from '@radix-ui/react-tooltip';
-import * as React from 'react';
+import { cloneElement, createContext, isValidElement, type ReactElement, useContext, useEffect, useState } from 'react';
+import { Pressable, Text, View } from 'react-native';
+import {
+  TOOLTIP_CONTENT_CLASS,
+  TOOLTIP_SIDE_CLASS,
+  TOOLTIP_TEXT_CLASS,
+  type TooltipContentProps,
+  type TooltipProps,
+  type TooltipProviderProps,
+  type TooltipTriggerProps,
+} from '@/components/ui/tooltip-base';
 import { cn } from '@/lib/utils';
 
-const TooltipProvider = TooltipPrimitive.Provider;
-const Tooltip = TooltipPrimitive.Root;
-const TooltipTrigger = TooltipPrimitive.Trigger;
+type TooltipState = { open: boolean; setOpen: (open: boolean) => void };
 
-const TooltipContent = React.forwardRef<
-  React.ComponentRef<typeof TooltipPrimitive.Content>,
-  React.ComponentPropsWithoutRef<typeof TooltipPrimitive.Content>
->(({ className, sideOffset = 4, ...props }, ref) => (
-  <TooltipPrimitive.Portal>
-    <TooltipPrimitive.Content
-      ref={ref}
-      sideOffset={sideOffset}
-      className={cn(
-        'z-50 overflow-hidden rounded-md border bg-popover px-3 py-1.5 text-xs text-popover-foreground shadow-md animate-in fade-in-0 zoom-in-95 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2',
-        className,
-      )}
-      {...props}
-    />
-  </TooltipPrimitive.Portal>
-));
-TooltipContent.displayName = TooltipPrimitive.Content.displayName;
+const TooltipContext = createContext<TooltipState>({
+  open: false,
+  setOpen: () => {},
+});
+
+/**
+ * Nothing to provide on native; kept so call sites need not branch.
+ *
+ * `delayDuration` and `skipDelayDuration` are accepted and ignored. They describe
+ * hover timing, and there is no hover here — the delay a touch user experiences is
+ * the long press itself, which the platform already times.
+ */
+function TooltipProvider({ children }: TooltipProviderProps) {
+  return children;
+}
+
+function Tooltip({ children }: TooltipProps) {
+  const [open, setOpen] = useState(false);
+  return (
+    <TooltipContext.Provider value={{ open, setOpen }}>
+      <View className="relative">{children}</View>
+    </TooltipContext.Provider>
+  );
+}
+
+function TooltipTrigger({ asChild, className, children }: TooltipTriggerProps) {
+  const { setOpen } = useContext(TooltipContext);
+  const show = () => setOpen(true);
+  if (asChild && isValidElement(children)) {
+    return cloneElement(children as ReactElement<{ onLongPress?: () => void }>, {
+      onLongPress: show,
+    });
+  }
+  return (
+    <Pressable onLongPress={show} className={cn(className)}>
+      {children}
+    </Pressable>
+  );
+}
+
+/** How long the bubble stays up before dismissing itself. */
+const VISIBLE_MS = 2500;
+
+function TooltipContent({ side = 'top', className, children }: TooltipContentProps) {
+  const { open, setOpen } = useContext(TooltipContext);
+
+  useEffect(() => {
+    if (!open) return;
+    const timer = setTimeout(() => setOpen(false), VISIBLE_MS);
+    return () => clearTimeout(timer);
+  }, [open, setOpen]);
+
+  if (!open) return null;
+  return (
+    <View
+      className={cn('absolute z-50', TOOLTIP_SIDE_CLASS[side], TOOLTIP_CONTENT_CLASS, className)}
+      pointerEvents="none"
+    >
+      <Text className={TOOLTIP_TEXT_CLASS}>{children}</Text>
+    </View>
+  );
+}
 
 export { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger };
