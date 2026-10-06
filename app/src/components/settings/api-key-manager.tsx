@@ -37,23 +37,39 @@ interface ApiKeyRecord {
 }
 
 function formatRelative(dateVal: string | null): string {
-  if (!dateVal) return 'never';
+  if (!dateVal) {
+    return 'never';
+  }
   const date = new Date(dateVal);
-  if (Number.isNaN(date.getTime())) return 'never';
+  if (Number.isNaN(date.getTime())) {
+    return 'never';
+  }
   const diff = Date.now() - date.getTime();
   const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-  if (days === 0) return 'today';
-  if (days === 1) return 'yesterday';
-  if (days < 30) return `${days}d ago`;
+  if (days === 0) {
+    return 'today';
+  }
+  if (days === 1) {
+    return 'yesterday';
+  }
+  if (days < 30) {
+    return `${days}d ago`;
+  }
   const months = Math.floor(days / 30);
-  if (months < 12) return `${months}mo ago`;
+  if (months < 12) {
+    return `${months}mo ago`;
+  }
   return `${Math.floor(months / 12)}y ago`;
 }
 
 function formatDate(dateVal: string | null): string {
-  if (!dateVal) return '—';
+  if (!dateVal) {
+    return '—';
+  }
   const date = new Date(dateVal);
-  if (Number.isNaN(date.getTime())) return '—';
+  if (Number.isNaN(date.getTime())) {
+    return '—';
+  }
   return date.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
 }
 

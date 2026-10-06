@@ -93,14 +93,18 @@ function computeNextOccurrence(
   if (!recurrence) {
     const stored = new Date(storedYear, month, day);
     const daysUntil = daysBetween(t, stored);
-    if (daysUntil < 0) return null;
+    if (daysUntil < 0) {
+      return null;
+    }
     return { daysUntil, nextDate: stored };
   }
 
   if (recurrence === 'yearly') {
     const thisYear = new Date(t.getFullYear(), month, day);
     const diff = daysBetween(t, thisYear);
-    if (diff >= 0) return { daysUntil: diff, nextDate: thisYear };
+    if (diff >= 0) {
+      return { daysUntil: diff, nextDate: thisYear };
+    }
     const nextYear = new Date(t.getFullYear() + 1, month, day);
     return { daysUntil: daysBetween(t, nextYear), nextDate: nextYear };
   }
@@ -108,7 +112,9 @@ function computeNextOccurrence(
   if (recurrence === 'monthly') {
     const thisMonth = new Date(t.getFullYear(), t.getMonth(), day);
     const diff = daysBetween(t, thisMonth);
-    if (diff >= 0) return { daysUntil: diff, nextDate: thisMonth };
+    if (diff >= 0) {
+      return { daysUntil: diff, nextDate: thisMonth };
+    }
     const nextMonth = new Date(t.getFullYear(), t.getMonth() + 1, day);
     return { daysUntil: daysBetween(t, nextMonth), nextDate: nextMonth };
   }
@@ -136,7 +142,9 @@ export function applyUpcomingDatesExtension(schema: GraphQLSchema): GraphQLSchem
     args: UpcomingDatesArgs,
     context: { db: DB; userId: string | null },
   ) => {
-    if (!context.userId) return [];
+    if (!context.userId) {
+      return [];
+    }
     const lookaheadDays = args.lookaheadDays ?? 30;
     const offset = args.offset ?? 0;
 
@@ -160,7 +168,9 @@ export function applyUpcomingDatesExtension(schema: GraphQLSchema): GraphQLSchem
 
     const entries: UpcomingDateEntry[] = rows.flatMap((row) => {
       const occurrence = computeNextOccurrence(row.date, row.recurrence);
-      if (occurrence === null || occurrence.daysUntil > lookaheadDays) return [];
+      if (occurrence === null || occurrence.daysUntil > lookaheadDays) {
+        return [];
+      }
       return [
         {
           id: row.id,

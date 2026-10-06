@@ -54,7 +54,9 @@ const SORT_OPTIONS: Array<{ value: SortOption; label: string }> = [
 
 function primaryPhone(infos: PersonContactInfo[]): string | null {
   const phones = infos.filter((i) => i.type === 'phone' || i.type === 'mobile');
-  if (phones.length === 0) return null;
+  if (phones.length === 0) {
+    return null;
+  }
   return (phones.find((p) => p.isPrimary) ?? phones[0]).value;
 }
 

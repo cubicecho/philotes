@@ -32,7 +32,9 @@ export function LabelChip({ label, color, active = false, onPress, onRemove, cla
       {label}
     </Badge>
   );
-  if (!onPress) return badge;
+  if (!onPress) {
+    return badge;
+  }
   return (
     <Pressable
       role="button"

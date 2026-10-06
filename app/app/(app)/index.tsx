@@ -115,14 +115,18 @@ function daysUntilNextOccurrence(storedDate: Date, recurrence: string | null | u
   if (recurrence === 'yearly') {
     const thisYear = new Date(t.getFullYear(), month, day);
     const diff = daysBetween(t, thisYear);
-    if (diff >= 0) return diff;
+    if (diff >= 0) {
+      return diff;
+    }
     return daysBetween(t, new Date(t.getFullYear() + 1, month, day));
   }
 
   if (recurrence === 'monthly') {
     const thisMonth = new Date(t.getFullYear(), t.getMonth(), day);
     const diff = daysBetween(t, thisMonth);
-    if (diff >= 0) return diff;
+    if (diff >= 0) {
+      return diff;
+    }
     return daysBetween(t, new Date(t.getFullYear(), t.getMonth() + 1, day));
   }
 
@@ -194,7 +198,9 @@ function computeUpcomingDates(persons: DashboardPerson[]): UpcomingDate[] {
   for (const person of persons) {
     for (const importantDate of person.importantDates) {
       const daysUntil = daysUntilNextOccurrence(importantDate.date, importantDate.recurrence);
-      if (daysUntil === null || daysUntil > UPCOMING_WINDOW_DAYS) continue;
+      if (daysUntil === null || daysUntil > UPCOMING_WINDOW_DAYS) {
+        continue;
+      }
       results.push({
         id: importantDate.id,
         name: importantDate.name,
@@ -216,13 +222,17 @@ function computeOpenTasks(persons: DashboardPerson[]): OpenTask[] {
 
   for (const person of persons) {
     for (const task of person.tasks) {
-      if (task.completedAt) continue;
+      if (task.completedAt) {
+        continue;
+      }
 
       const dueAt = task.dueAt ? task.dueAt.getTime() : null;
       const isOverdue = dueAt !== null && dueAt < now;
       const isDueThisWeek = dueAt !== null && dueAt <= sevenDaysFromNow;
 
-      if (!isOverdue && !isDueThisWeek) continue;
+      if (!isOverdue && !isDueThisWeek) {
+        continue;
+      }
 
       results.push({
         id: task.id,
@@ -238,8 +248,12 @@ function computeOpenTasks(persons: DashboardPerson[]): OpenTask[] {
 
   return results
     .sort((a, b) => {
-      if (a.isOverdue && !b.isOverdue) return -1;
-      if (!a.isOverdue && b.isOverdue) return 1;
+      if (a.isOverdue && !b.isOverdue) {
+        return -1;
+      }
+      if (!a.isOverdue && b.isOverdue) {
+        return 1;
+      }
       const aTime = a.dueAt ? a.dueAt.getTime() : 0;
       const bTime = b.dueAt ? b.dueAt.getTime() : 0;
       return aTime - bTime;

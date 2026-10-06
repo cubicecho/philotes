@@ -7,8 +7,12 @@ import type { FieldPolicy } from '@apollo/client';
  */
 export const dateTimeTypePolicy: FieldPolicy<Date | null> = {
   merge: (_existing, incoming: unknown) => {
-    if (incoming == null) return incoming as null;
-    if (incoming instanceof Date) return incoming;
+    if (incoming == null) {
+      return incoming as null;
+    }
+    if (incoming instanceof Date) {
+      return incoming;
+    }
     return new Date(incoming as string);
   },
 };
@@ -22,8 +26,12 @@ export const dateTimeTypePolicy: FieldPolicy<Date | null> = {
  */
 export const dateTypePolicy: FieldPolicy<Date | null> = {
   merge: (_existing, incoming: unknown) => {
-    if (incoming == null) return incoming as null;
-    if (incoming instanceof Date) return incoming;
+    if (incoming == null) {
+      return incoming as null;
+    }
+    if (incoming instanceof Date) {
+      return incoming;
+    }
     const str = incoming as string;
     // Parse YYYY-MM-DD parts and construct as local time (not UTC)
     const [year, month, day] = str.split('-').map(Number);

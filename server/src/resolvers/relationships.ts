@@ -30,7 +30,9 @@ export function applyRelationshipsExtension(schema: GraphQLSchema): GraphQLSchem
     _args: unknown,
     context: { db: DB; userId: string | null },
   ) => {
-    if (!context.userId) return [];
+    if (!context.userId) {
+      return [];
+    }
     // biome-ignore lint/suspicious/noExplicitAny: drizzle-orm 1.0 column type compat
     const dbCtx = context.db as any;
 
@@ -49,7 +51,9 @@ export function applyRelationshipsExtension(schema: GraphQLSchema): GraphQLSchem
         ),
       );
 
-    if (rows.length === 0) return [];
+    if (rows.length === 0) {
+      return [];
+    }
 
     const relatedPersonIds = [
       ...new Set(rows.map((row) => (row.fromPersonId === parent.id ? row.toPersonId : row.fromPersonId))),
@@ -73,7 +77,9 @@ export function applyRelationshipsExtension(schema: GraphQLSchema): GraphQLSchem
     return rows.flatMap((row) => {
       const relatedId = row.fromPersonId === parent.id ? row.toPersonId : row.fromPersonId;
       const related = personMap.get(relatedId);
-      if (!related) return [];
+      if (!related) {
+        return [];
+      }
       return [
         {
           id: row.id,

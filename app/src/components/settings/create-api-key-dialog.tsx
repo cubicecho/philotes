@@ -65,7 +65,9 @@ export function CreateApiKeyDialog({ open, onOpenChange, onCreated }: CreateApiK
       try {
         const result = await createApiKey({ variables: { input: { name: value.name.trim(), expiresAt } } });
         const token = result.data?.myCreateApiKey?.token;
-        if (token) setState({ phase: 'reveal', token });
+        if (token) {
+          setState({ phase: 'reveal', token });
+        }
       } catch (err) {
         setSubmitError(err instanceof Error ? err.message : 'Could not generate the key.');
       }
@@ -75,7 +77,9 @@ export function CreateApiKeyDialog({ open, onOpenChange, onCreated }: CreateApiK
   function handleClose(value: boolean) {
     if (!value) {
       // The list only needs refreshing once a key was actually made.
-      if (state.phase === 'reveal') onCreated();
+      if (state.phase === 'reveal') {
+        onCreated();
+      }
       setState({ phase: 'form' });
       setSubmitError(null);
       form.reset();

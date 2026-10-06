@@ -126,7 +126,9 @@ function NoteForm({
     defaultValues,
     onSubmit: async ({ value }) => {
       const body = value.body.trim();
-      if (!body) return;
+      if (!body) {
+        return;
+      }
       setFormError(null);
       try {
         await onSubmit({

@@ -14,8 +14,12 @@ export type UpcomingDate = {
 };
 
 function daysLabel(days: number): string {
-  if (days === 0) return 'Today';
-  if (days === 1) return 'Tomorrow';
+  if (days === 0) {
+    return 'Today';
+  }
+  if (days === 1) {
+    return 'Tomorrow';
+  }
   return `In ${days} days`;
 }
 

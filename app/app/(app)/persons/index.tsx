@@ -196,9 +196,15 @@ export default function PersonsPage() {
     : [...rawPersons].sort((a, b) => {
         const aTime = a.lastContactedAt ? a.lastContactedAt.getTime() : null;
         const bTime = b.lastContactedAt ? b.lastContactedAt.getTime() : null;
-        if (aTime === null && bTime === null) return 0;
-        if (aTime === null) return 1;
-        if (bTime === null) return -1;
+        if (aTime === null && bTime === null) {
+          return 0;
+        }
+        if (aTime === null) {
+          return 1;
+        }
+        if (bTime === null) {
+          return -1;
+        }
         return sortDir === 'asc' ? aTime - bTime : bTime - aTime;
       });
 

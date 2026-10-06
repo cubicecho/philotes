@@ -62,7 +62,9 @@ export function GoogleCsvImportCard() {
   }
 
   async function handleImport() {
-    if (importState.stage !== 'preview' || !importState.rawCsv) return;
+    if (importState.stage !== 'preview' || !importState.rawCsv) {
+      return;
+    }
 
     setImportState({ stage: 'importing' });
 

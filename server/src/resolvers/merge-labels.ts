@@ -50,7 +50,9 @@ export function applyMergeLabelsExtension(schema: GraphQLSchema): GraphQLSchema 
   const extended = extendSchema(schema, parse(MERGE_LABELS_SDL));
 
   const mutationType = extended.getMutationType();
-  if (!mutationType) return extended;
+  if (!mutationType) {
+    return extended;
+  }
 
   mutationType.getFields().mergeLabelInto.resolve = async (
     _parent: unknown,
@@ -74,7 +76,9 @@ export function applyMergeLabelsExtension(schema: GraphQLSchema): GraphQLSchema 
       const [kept] = await db.select().from(dbSchema.labels).where(eq(dbSchema.labels.id, keepId));
       return kept ?? null;
     };
-    if (keepId === deleteId) return returnKept();
+    if (keepId === deleteId) {
+      return returnKept();
+    }
 
     const junctions: JunctionDescriptor[] = [
       {

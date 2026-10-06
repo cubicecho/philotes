@@ -38,10 +38,16 @@ type PersonFormFields = z.infer<typeof personSchema>;
 
 /** `YYYY-MM-DD` read as a local day: `new Date(str)` would be UTC midnight, the day before out west. */
 function parseDay(value: string | Date | null | undefined): Date | null {
-  if (!value) return null;
-  if (value instanceof Date) return value;
+  if (!value) {
+    return null;
+  }
+  if (value instanceof Date) {
+    return value;
+  }
   const [year, month, day] = value.split('-').map(Number);
-  if (!year || !month || !day) return null;
+  if (!year || !month || !day) {
+    return null;
+  }
   return new Date(year, month - 1, day);
 }
 

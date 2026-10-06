@@ -29,7 +29,9 @@ export default function LoginPage() {
     onSubmit: async ({ value }) => {
       try {
         const { data } = await requestLink({ variables: { email: value.email } });
-        if (!data) return;
+        if (!data) {
+          return;
+        }
         setMagicLink(data.requestMagicLink.magicLink ?? null);
         setSentTo(value.email);
       } catch {

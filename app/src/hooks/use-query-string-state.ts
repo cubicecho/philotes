@@ -31,9 +31,13 @@ export function parseSearch<T extends object>(search: string, typeMap?: TypeMap<
 export function stringifyState(state: Record<string, unknown>): string {
   const params = new URLSearchParams();
   for (const [key, value] of Object.entries(state)) {
-    if (value === undefined || value === null || value === '') continue;
+    if (value === undefined || value === null || value === '') {
+      continue;
+    }
     if (Array.isArray(value)) {
-      if (value.length === 0) continue;
+      if (value.length === 0) {
+        continue;
+      }
       params.set(key, value.join(','));
     } else {
       params.set(key, String(value));

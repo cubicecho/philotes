@@ -95,7 +95,9 @@ export function applyApiKeysExtension(schema: GraphQLSchema): GraphQLSchema {
         createdAt: apiKeys.createdAt,
       });
 
-    if (!row) throw new GraphQLError('Failed to create API key');
+    if (!row) {
+      throw new GraphQLError('Failed to create API key');
+    }
 
     return { apiKey: row, token };
   };
@@ -110,8 +112,12 @@ export function applyApiKeysExtension(schema: GraphQLSchema): GraphQLSchema {
       .where(eq(apiKeys.id, args.id))
       .limit(1);
 
-    if (!key) throw new GraphQLError(`API key not found`);
-    if (key.userId !== userId) throw new GraphQLError('Forbidden');
+    if (!key) {
+      throw new GraphQLError(`API key not found`);
+    }
+    if (key.userId !== userId) {
+      throw new GraphQLError('Forbidden');
+    }
 
     await db.update(apiKeys).set({ revokedAt: new Date() }).where(eq(apiKeys.id, args.id));
 

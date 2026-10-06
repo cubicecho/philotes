@@ -19,7 +19,9 @@ interface AvatarUpload {
 export function useAvatarUpload(personId: string, onUploaded: () => void): AvatarUpload {
   const upload = async (files: PickedFile[]) => {
     const file = files[0];
-    if (!file?.bytes) return;
+    if (!file?.bytes) {
+      return;
+    }
 
     const formData = new FormData();
     // Copied into a fresh buffer: the picker's view may sit on a shared one, which a Blob part cannot be.

@@ -189,7 +189,9 @@ function RelationshipFormDialog({
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: reset on open only, not when the type list refetches
   useEffect(() => {
-    if (!open) return;
+    if (!open) {
+      return;
+    }
     form.reset({
       toPersonId: editing?.relatedPersonId ?? '',
       type: editing?.type ?? firstType,
@@ -213,12 +215,16 @@ function RelationshipFormDialog({
   // A relationship keeps its type's name after the type is deleted, so the one being edited may
   // no longer be in the list.
   const typeNames = types.map((t) => t.name);
-  if (isEditing && !typeNames.includes(editing.type)) typeNames.push(editing.type);
+  if (isEditing && !typeNames.includes(editing.type)) {
+    typeNames.push(editing.type);
+  }
   const typeOptions = typeNames.map((name) => ({ value: name, label: name }));
 
   const addType = async () => {
     const name = form.state.values.newTypeName.trim();
-    if (!name || creatingType) return;
+    if (!name || creatingType) {
+      return;
+    }
     const { data } = await createType({ variables: { name } });
     form.setFieldValue('newTypeName', '');
     if (data?.createRelationshipType?.name) {

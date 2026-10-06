@@ -78,7 +78,9 @@ const importantDateSchema = z.object({
 const DATE_FORMAT = 'yyyy-MM-dd';
 
 function parseDay(value: string | undefined): Date | null {
-  if (!value) return null;
+  if (!value) {
+    return null;
+  }
   const parsed = parseISO(value.slice(0, 10));
   return Number.isNaN(parsed.getTime()) ? null : parsed;
 }
@@ -117,7 +119,9 @@ export function ImportantDateForm({ onSubmit, onCancel, initialValues }: Importa
       onSubmit: importantDateSchema,
     },
     onSubmit: async ({ value }) => {
-      if (!value.date) return;
+      if (!value.date) {
+        return;
+      }
       setFormError(null);
       try {
         await onSubmit({

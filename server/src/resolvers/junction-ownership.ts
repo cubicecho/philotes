@@ -72,8 +72,12 @@ const FOREIGN_KEYS: Record<string, ForeignKey[]> = {
  * writes nothing and so has nothing to check.
  */
 export function writtenRows(args: { values?: Row | Row[]; set?: Row; updates?: Array<{ set?: Row }> }): Row[] {
-  if (args.values) return Array.isArray(args.values) ? args.values : [args.values];
-  if (args.updates) return args.updates.flatMap((entry) => (entry.set ? [entry.set] : []));
+  if (args.values) {
+    return Array.isArray(args.values) ? args.values : [args.values];
+  }
+  if (args.updates) {
+    return args.updates.flatMap((entry) => (entry.set ? [entry.set] : []));
+  }
   return args.set ? [args.set] : [];
 }
 
@@ -87,7 +91,9 @@ async function assertForeignKeysOwned(
     const referenced = [
       ...new Set(rows.map((row) => row[fk.key]).filter((id): id is string => typeof id === 'string')),
     ];
-    if (referenced.length === 0) continue;
+    if (referenced.length === 0) {
+      continue;
+    }
     const owned = new Set(await fk.owned(tx, userId, referenced));
     const missing = referenced.find((id) => !owned.has(id));
     if (missing !== undefined) {

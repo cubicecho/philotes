@@ -15,7 +15,9 @@ export type OpenTask = {
 };
 
 function dueLabel(task: OpenTask): string {
-  if (!task.dueAt) return '';
+  if (!task.dueAt) {
+    return '';
+  }
   const formatted = task.dueAt.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   return task.isOverdue ? `Overdue · ${formatted}` : formatted;
 }

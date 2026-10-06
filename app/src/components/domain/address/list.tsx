@@ -111,10 +111,16 @@ function cityStateLine(address: AddressData): string {
 
 function formatAddress(address: AddressData): string {
   const parts: string[] = [address.line1];
-  if (address.line2) parts.push(address.line2);
+  if (address.line2) {
+    parts.push(address.line2);
+  }
   const cityStateParts = cityStateLine(address);
-  if (cityStateParts) parts.push(cityStateParts);
-  if (address.country) parts.push(address.country);
+  if (cityStateParts) {
+    parts.push(cityStateParts);
+  }
+  if (address.country) {
+    parts.push(address.country);
+  }
   return parts.join('\n');
 }
 
@@ -227,7 +233,9 @@ function AddAddressDialog({ personId, open, onOpenChange, onAdded }: AddAddressD
   });
 
   useEffect(() => {
-    if (!open) return;
+    if (!open) {
+      return;
+    }
     form.reset(EMPTY_ADDRESS);
     reset();
   }, [open, form, reset]);

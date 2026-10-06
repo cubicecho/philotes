@@ -60,11 +60,19 @@ function daysUntil(date: Date): number {
 
 /** Format relative due date for a task. */
 function dueDateLabel(dueAt: Date | null): string | null {
-  if (!dueAt) return null;
+  if (!dueAt) {
+    return null;
+  }
   const days = daysUntil(dueAt);
-  if (days < 0) return `overdue ${Math.abs(days)} day${Math.abs(days) === 1 ? '' : 's'}`;
-  if (days === 0) return 'due today';
-  if (days === 1) return 'due tomorrow';
+  if (days < 0) {
+    return `overdue ${Math.abs(days)} day${Math.abs(days) === 1 ? '' : 's'}`;
+  }
+  if (days === 0) {
+    return 'due today';
+  }
+  if (days === 1) {
+    return 'due tomorrow';
+  }
   return `due in ${days} days`;
 }
 
@@ -88,7 +96,9 @@ function nextOccurrenceWithin60Days(stored: Date): number | null {
 }
 
 function truncate(text: string, maxLength: number): string {
-  if (text.length <= maxLength) return text;
+  if (text.length <= maxLength) {
+    return text;
+  }
   return `${text.slice(0, maxLength)}…`;
 }
 

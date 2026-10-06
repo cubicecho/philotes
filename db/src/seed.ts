@@ -328,10 +328,14 @@ async function seedPersonRelationships(personData: { id: string }[], userId: str
     const from = pickRandom(personData);
     const to = pickRandom(personData);
 
-    if (from.id === to.id) continue;
+    if (from.id === to.id) {
+      continue;
+    }
 
     const pairKey = `${from.id}:${to.id}`;
-    if (usedPairs.has(pairKey)) continue;
+    if (usedPairs.has(pairKey)) {
+      continue;
+    }
 
     usedPairs.add(pairKey);
     relationshipData.push({
@@ -378,7 +382,9 @@ async function seedTasks(personData: { id: string }[], userId: string) {
     }
   }
 
-  if (taskData.length === 0) return;
+  if (taskData.length === 0) {
+    return;
+  }
 
   await db.insert(tasks).values(taskData);
   console.log(`Inserted ${taskData.length} tasks`);
@@ -435,7 +441,9 @@ async function seedContactInfos(personData: { id: string }[], userId: string) {
     }
   }
 
-  if (contactInfoData.length === 0) return;
+  if (contactInfoData.length === 0) {
+    return;
+  }
 
   await db.insert(contactInfos).values(contactInfoData);
   console.log(`Inserted ${contactInfoData.length} contact infos`);
@@ -478,7 +486,9 @@ async function seedAddresses(personData: { id: string }[], userId: string) {
     }
   }
 
-  if (addressData.length === 0) return;
+  if (addressData.length === 0) {
+    return;
+  }
 
   await db.insert(addresses).values(addressData);
   console.log(`Inserted ${addressData.length} addresses`);

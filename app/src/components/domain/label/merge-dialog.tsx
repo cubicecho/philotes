@@ -22,7 +22,9 @@ export function LabelMergeDialog({ label, targets, onMerge, onClose }: LabelMerg
     <FormDialog
       open={label !== null}
       onOpenChange={(open) => {
-        if (!open) onClose();
+        if (!open) {
+          onClose();
+        }
       }}
       title="Merge label"
       description={
@@ -48,7 +50,9 @@ function MergeForm({ targets, onMerge, onCancel }: MergeFormProps) {
   const form = useAppForm({
     defaultValues: { targetId: '' },
     onSubmit: async ({ value }) => {
-      if (!value.targetId) return;
+      if (!value.targetId) {
+        return;
+      }
       setFormError(null);
       try {
         await onMerge(value.targetId);

@@ -61,14 +61,18 @@ export function NetworkGraph({ persons, onOpenPerson }: NetworkGraphProps) {
 
   useEffect(() => {
     const svgEl = svgRef.current;
-    if (!svgEl || !measured || persons.length === 0) return;
+    if (!svgEl || !measured || persons.length === 0) {
+      return;
+    }
 
     const { width, height } = sizeRef.current;
 
     // Build connection count map
     const connectionCount = new Map<string, number>();
     for (const p of persons) {
-      if (!connectionCount.has(p.id)) connectionCount.set(p.id, 0);
+      if (!connectionCount.has(p.id)) {
+        connectionCount.set(p.id, 0);
+      }
       for (const rel of p.relationshipsFrom) {
         connectionCount.set(p.id, (connectionCount.get(p.id) ?? 0) + 1);
         connectionCount.set(rel.toPersonId, (connectionCount.get(rel.toPersonId) ?? 0) + 1);
@@ -194,7 +198,9 @@ export function NetworkGraph({ persons, onOpenPerson }: NetworkGraphProps) {
     edgeLabelGroups.each(function () {
       const g = d3.select(this);
       const textEl = g.select('text').node() as SVGTextElement | null;
-      if (!textEl) return;
+      if (!textEl) {
+        return;
+      }
       const bbox = textEl.getBBox();
       const pad = { x: 4, y: 2 };
       g.select('rect')
@@ -237,7 +243,9 @@ export function NetworkGraph({ persons, onOpenPerson }: NetworkGraphProps) {
       .drag<SVGGElement, SimNode>()
       .on('start', (event, d) => {
         event.sourceEvent.stopPropagation();
-        if (!event.active) simulation.alphaTarget(0.3).restart();
+        if (!event.active) {
+          simulation.alphaTarget(0.3).restart();
+        }
         d.fx = d.x;
         d.fy = d.y;
       })
@@ -246,7 +254,9 @@ export function NetworkGraph({ persons, onOpenPerson }: NetworkGraphProps) {
         d.fy = event.y;
       })
       .on('end', (event, d) => {
-        if (!event.active) simulation.alphaTarget(0);
+        if (!event.active) {
+          simulation.alphaTarget(0);
+        }
         d.fx = null;
         d.fy = null;
       });
@@ -321,7 +331,9 @@ export function NetworkGraph({ persons, onOpenPerson }: NetworkGraphProps) {
         const my = (sy + ty) / 2;
         // Rotate text to follow edge direction (flip if upside-down)
         let angle = (Math.atan2(ty - sy, tx - sx) * 180) / Math.PI;
-        if (angle > 90 || angle < -90) angle += 180;
+        if (angle > 90 || angle < -90) {
+          angle += 180;
+        }
         return `translate(${mx},${my}) rotate(${angle})`;
       });
 
@@ -338,7 +350,9 @@ export function NetworkGraph({ persons, onOpenPerson }: NetworkGraphProps) {
   // A resized box keeps the laid-out graph and pulls it toward the new middle.
   useEffect(() => {
     const simulation = simulationRef.current;
-    if (!simulation || size.width === 0 || size.height === 0) return;
+    if (!simulation || size.width === 0 || size.height === 0) {
+      return;
+    }
     simulation.force('center', d3.forceCenter(size.width / 2, size.height / 2).strength(0.05));
     simulation.alpha(0.3).restart();
   }, [size.width, size.height]);

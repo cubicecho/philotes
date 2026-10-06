@@ -123,7 +123,9 @@ function AddLabelDialog({ personId, available, open, onOpenChange, onAdd }: AddL
   });
 
   useEffect(() => {
-    if (!open) return;
+    if (!open) {
+      return;
+    }
     form.reset(NO_LABELS);
     setFormError(null);
   }, [open, form]);

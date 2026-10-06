@@ -84,7 +84,9 @@ export function applyImportContactsExtension(schema: GraphQLSchema): GraphQLSche
 
       // Insert any labels not already in the DB (user-scoped)
       for (const name of allLabelNames) {
-        if (labelNameToId.has(name)) continue;
+        if (labelNameToId.has(name)) {
+          continue;
+        }
 
         const [inserted] = await db
           .insert(dbSchema.labels)
@@ -227,7 +229,9 @@ async function insertContactInfos(db: any, personId: string, userId: string, con
     });
   }
 
-  if (rows.length === 0) return;
+  if (rows.length === 0) {
+    return;
+  }
 
   // Pre-filter: skip any incoming entries whose value already exists for this person
   const existingInfos: Array<{ value: string }> = await db
@@ -237,14 +241,18 @@ async function insertContactInfos(db: any, personId: string, userId: string, con
   const existingValues = new Set(existingInfos.map((r: { value: string }) => r.value));
 
   const newRows = rows.filter((r) => !existingValues.has(r.value));
-  if (newRows.length === 0) return;
+  if (newRows.length === 0) {
+    return;
+  }
 
   await db.insert(dbSchema.contactInfos).values(newRows);
 }
 
 // biome-ignore lint/suspicious/noExplicitAny: drizzle-orm 1.0 column type compat
 async function insertAddresses(db: any, personId: string, userId: string, contact: ParsedContact): Promise<void> {
-  if (contact.addresses.length === 0) return;
+  if (contact.addresses.length === 0) {
+    return;
+  }
 
   const rows = contact.addresses.map((addr) => {
     const lower = addr.label.toLowerCase();
@@ -271,14 +279,18 @@ async function insertAddresses(db: any, personId: string, userId: string, contac
   const existingLine1s = new Set(existingAddrs.map((r: { line1: string }) => r.line1));
 
   const newRows = rows.filter((r) => !existingLine1s.has(r.line1));
-  if (newRows.length === 0) return;
+  if (newRows.length === 0) {
+    return;
+  }
 
   await db.insert(dbSchema.addresses).values(newRows);
 }
 
 // biome-ignore lint/suspicious/noExplicitAny: drizzle-orm 1.0 column type compat
 async function insertBirthday(db: any, personId: string, userId: string, contact: ParsedContact): Promise<void> {
-  if (!contact.birthday) return;
+  if (!contact.birthday) {
+    return;
+  }
 
   // DB wins — skip if a Birthday already exists for this person+user
   const existing: Array<{ id: string }> = await db
@@ -292,7 +304,9 @@ async function insertBirthday(db: any, personId: string, userId: string, contact
       ),
     );
 
-  if (existing.length > 0) return;
+  if (existing.length > 0) {
+    return;
+  }
 
   await db.insert(dbSchema.importantDates).values({
     personId,
@@ -311,16 +325,22 @@ async function insertPersonLabels(
   labelNames: string[],
   labelNameToId: Map<string, string>,
 ): Promise<void> {
-  if (labelNames.length === 0) return;
+  if (labelNames.length === 0) {
+    return;
+  }
 
   const rows: Array<{ personId: string; labelId: string; userId: string }> = [];
   for (const name of labelNames) {
     const labelId = labelNameToId.get(name);
-    if (!labelId) continue;
+    if (!labelId) {
+      continue;
+    }
     rows.push({ personId, labelId, userId });
   }
 
-  if (rows.length === 0) return;
+  if (rows.length === 0) {
+    return;
+  }
 
   // Batch insert; .onConflictDoNothing() handles duplicate (personId, labelId) pairs
   // that can arise when a contact is re-imported or two rows share a label.

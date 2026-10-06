@@ -42,14 +42,26 @@ const QUICK_LOG_INTERACTION = graphql(`
 `);
 
 export function formatOverdueLabel(days: number): string {
-  if (days === 0) return 'Due today';
-  if (days === 1) return '1 day overdue';
-  if (days < 7) return `${days} days overdue`;
+  if (days === 0) {
+    return 'Due today';
+  }
+  if (days === 1) {
+    return '1 day overdue';
+  }
+  if (days < 7) {
+    return `${days} days overdue`;
+  }
   const weeks = Math.floor(days / 7);
-  if (weeks === 1) return '1 week overdue';
-  if (weeks < 4) return `${weeks} weeks overdue`;
+  if (weeks === 1) {
+    return '1 week overdue';
+  }
+  if (weeks < 4) {
+    return `${weeks} weeks overdue`;
+  }
   const months = Math.floor(days / 30);
-  if (months === 1) return '1 month overdue';
+  if (months === 1) {
+    return '1 month overdue';
+  }
   return `${months} months overdue`;
 }
 

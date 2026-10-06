@@ -90,7 +90,9 @@ export default function LabelsPage() {
   };
 
   const handleEdit = async (values: CreateLabelInput): Promise<void> => {
-    if (!editingLabel) return;
+    if (!editingLabel) {
+      return;
+    }
     await updateLabel({
       variables: { id: editingLabel.id, label: values.label, color: values.color },
     });
@@ -98,7 +100,9 @@ export default function LabelsPage() {
   };
 
   const handleMerge = async (keepId: string): Promise<void> => {
-    if (!mergingLabel) return;
+    if (!mergingLabel) {
+      return;
+    }
     await mergeLabelInto({
       variables: { keepId, deleteId: mergingLabel.id },
     });
@@ -139,7 +143,9 @@ export default function LabelsPage() {
       <FormDialog
         open={editingLabel !== null}
         onOpenChange={(open) => {
-          if (!open) setEditingLabel(null);
+          if (!open) {
+            setEditingLabel(null);
+          }
         }}
         title="Edit Label"
         description="Rename or recolor this label."

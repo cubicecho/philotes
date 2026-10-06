@@ -80,7 +80,9 @@ function monthYearKey(date: Date): string {
 // ---------------------------------------------------------------------------
 
 function EntryLabels({ labels }: { labels: TimelineLabel[] }) {
-  if (labels.length === 0) return null;
+  if (labels.length === 0) {
+    return null;
+  }
   return (
     <View className="mt-1 flex-row flex-wrap gap-1">
       {labels.map((l) => (

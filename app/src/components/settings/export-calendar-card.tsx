@@ -41,7 +41,9 @@ export function ExportCalendarCard() {
   const totalCount = (data?.interactions?.length ?? 0) + (data?.importantDates?.length ?? 0);
 
   function handleExport() {
-    if (!data) return;
+    if (!data) {
+      return;
+    }
     void downloadBlob(buildIcsContent(data), 'philotes-events.ics', { mimeType: 'text/calendar;charset=utf-8' });
   }
 

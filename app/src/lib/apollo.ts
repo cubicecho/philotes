@@ -22,7 +22,9 @@ const authLink = setContext((_, { headers }) => {
 const errorLink = onError(({ graphQLErrors }) => {
   if (graphQLErrors?.some((e) => e.extensions?.code === 'UNAUTHENTICATED')) {
     clearToken();
-    if (Platform.OS === 'web') window.location.replace('/login');
+    if (Platform.OS === 'web') {
+      window.location.replace('/login');
+    }
   }
 });
 

@@ -106,20 +106,30 @@ function parseCsvRfc4180(input: string): string[][] {
  * Returns null when no year is known (--MM-DD or 0000-MM-DD) or when empty.
  */
 function parseBirthday(raw: string): string | null {
-  if (!raw) return null;
+  if (!raw) {
+    return null;
+  }
 
   // --MM-DD format (no year)
-  if (raw.startsWith('--')) return null;
+  if (raw.startsWith('--')) {
+    return null;
+  }
 
   // 0000-MM-DD format (no year)
-  if (raw.startsWith('0000-')) return null;
+  if (raw.startsWith('0000-')) {
+    return null;
+  }
 
   // YYYY-MM-DD — validate and return as-is
   const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(raw);
-  if (!match) return null;
+  if (!match) {
+    return null;
+  }
 
   const year = Number(match[1]);
-  if (year === 0) return null;
+  if (year === 0) {
+    return null;
+  }
 
   return raw;
 }
@@ -141,14 +151,18 @@ export function parseGoogleContactsCsv(csvText: string): {
   for (let i = 0; i < rawHeaders.length; i++) {
     let h = rawHeaders[i].trim();
     // BOM may survive into first header even after stripping from file start
-    if (i === 0) h = h.replace(/^\uFEFF/, '');
+    if (i === 0) {
+      h = h.replace(/^\uFEFF/, '');
+    }
     h = normalizeHyphens(h);
     headerIndex.set(h, i);
   }
 
   const col = (row: string[], name: string): string => {
     const idx = headerIndex.get(name);
-    if (idx === undefined) return '';
+    if (idx === undefined) {
+      return '';
+    }
     return stripGoogleDuplicate((row[idx] ?? '').trim());
   };
 
@@ -161,37 +175,49 @@ export function parseGoogleContactsCsv(csvText: string): {
     const row = rows[r];
 
     // Skip entirely empty rows
-    if (row.every((cell) => cell.trim() === '')) continue;
+    if (row.every((cell) => cell.trim() === '')) {
+      continue;
+    }
 
     const firstName = col(row, 'First Name');
     const lastName = col(row, 'Last Name');
     const fullName = col(row, 'Name');
 
     // Skip contacts with no name data
-    if (!firstName && !lastName && !fullName) continue;
+    if (!firstName && !lastName && !fullName) {
+      continue;
+    }
 
     // Resolve names with fallback to Name column
     const nameParts = fullName.split(' ').filter(Boolean);
     const resolvedFirstName = firstName || nameParts[0] || '';
     const resolvedLastName = lastName || (nameParts.length > 1 ? nameParts.slice(1).join(' ') : '');
 
-    if (!resolvedFirstName && !resolvedLastName) continue;
+    if (!resolvedFirstName && !resolvedLastName) {
+      continue;
+    }
 
     // Collect emails — stop when the value column doesn't exist
     const rawEmails: Array<{ label: string; value: string }> = [];
     for (let n = 1; ; n++) {
       const valueKey = `E-mail ${n} - Value`;
-      if (!hasCol(valueKey)) break;
+      if (!hasCol(valueKey)) {
+        break;
+      }
       const value = col(row, valueKey);
       const rawLabel = col(row, `E-mail ${n} - Label`);
       const label = rawLabel.startsWith('* ') ? rawLabel.slice(2) : rawLabel;
-      if (value) rawEmails.push({ label, value });
+      if (value) {
+        rawEmails.push({ label, value });
+      }
     }
 
     // Deduplicate emails by value (keep first occurrence)
     const seenEmailValues = new Set<string>();
     const emails = rawEmails.filter((e) => {
-      if (seenEmailValues.has(e.value)) return false;
+      if (seenEmailValues.has(e.value)) {
+        return false;
+      }
       seenEmailValues.add(e.value);
       return true;
     });
@@ -200,32 +226,44 @@ export function parseGoogleContactsCsv(csvText: string): {
     const phones: Array<{ label: string; value: string }> = [];
     for (let n = 1; ; n++) {
       const valueKey = `Phone ${n} - Value`;
-      if (!hasCol(valueKey)) break;
+      if (!hasCol(valueKey)) {
+        break;
+      }
       const value = col(row, valueKey);
       const rawLabel = col(row, `Phone ${n} - Label`);
       const label = rawLabel.startsWith('* ') ? rawLabel.slice(2) : rawLabel;
-      if (value) phones.push({ label, value });
+      if (value) {
+        phones.push({ label, value });
+      }
     }
 
     // Collect websites
     const websites: Array<{ label: string; value: string }> = [];
     for (let n = 1; ; n++) {
       const valueKey = `Website ${n} - Value`;
-      if (!hasCol(valueKey)) break;
+      if (!hasCol(valueKey)) {
+        break;
+      }
       const value = col(row, valueKey);
       const rawLabel = col(row, `Website ${n} - Label`);
       const label = rawLabel.startsWith('* ') ? rawLabel.slice(2) : rawLabel;
-      if (value) websites.push({ label, value });
+      if (value) {
+        websites.push({ label, value });
+      }
     }
 
     // Collect addresses — stop when the street column doesn't exist
     const addressList: ParsedContact['addresses'] = [];
     for (let n = 1; ; n++) {
       const streetKey = `Address ${n} - Street`;
-      if (!hasCol(streetKey)) break;
+      if (!hasCol(streetKey)) {
+        break;
+      }
 
       const line1 = col(row, streetKey);
-      if (!line1) continue;
+      if (!line1) {
+        continue;
+      }
 
       const rawLabel = col(row, `Address ${n} - Label`);
       const label = rawLabel.startsWith('* ') ? rawLabel.slice(2) : rawLabel;
@@ -261,8 +299,12 @@ export function parseGoogleContactsCsv(csvText: string): {
         const stripped = part.startsWith('* ') ? part.slice(2) : part;
         const lower = stripped.toLowerCase();
         // Exclude "my contacts" / "mycontacts" noise labels
-        if (lower === 'my contacts' || lower === 'mycontacts') continue;
-        if (seenLabels.has(lower)) continue;
+        if (lower === 'my contacts' || lower === 'mycontacts') {
+          continue;
+        }
+        if (seenLabels.has(lower)) {
+          continue;
+        }
         seenLabels.add(lower);
         parsedLabels.push(lower);
       }

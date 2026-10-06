@@ -247,7 +247,9 @@ function AddContactInfoDialog({ personId, open, onOpenChange, onAdded }: AddCont
   });
 
   useEffect(() => {
-    if (!open) return;
+    if (!open) {
+      return;
+    }
     form.reset(EMPTY_CONTACT_INFO);
     reset();
   }, [open, form, reset]);

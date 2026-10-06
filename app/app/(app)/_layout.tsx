@@ -13,8 +13,12 @@ export default function AppLayout() {
     setSignedIn(isAuthenticated());
   }, []);
 
-  if (signedIn === null) return <View className="flex-1 bg-background" />;
-  if (!signedIn) return <Redirect href="/login" />;
+  if (signedIn === null) {
+    return <View className="flex-1 bg-background" />;
+  }
+  if (!signedIn) {
+    return <Redirect href="/login" />;
+  }
 
   return <AppShell contentSlot={<Slot />} />;
 }

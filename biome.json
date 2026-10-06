@@ -30,6 +30,7 @@
       "style": {
         "useImportType": "error",
         "useConst": "error",
+        "useBlockStatements": "error",
         "noMagicNumbers": "warn",
         "noCommonJs": "error",
         "noEnum": "error",

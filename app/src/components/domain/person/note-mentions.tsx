@@ -22,7 +22,9 @@ export function MentionDropdown({ query, allPersons, onSelect }: MentionDropdown
     return full.startsWith(lower) || p.firstName.toLowerCase().startsWith(lower);
   });
 
-  if (filtered.length === 0) return null;
+  if (filtered.length === 0) {
+    return null;
+  }
 
   return (
     <View role="list" className="max-h-48 overflow-hidden rounded-md border border-border bg-popover py-1">

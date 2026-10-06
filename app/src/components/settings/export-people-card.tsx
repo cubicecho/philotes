@@ -60,7 +60,9 @@ export function ExportPeopleCard() {
   } = useQuery<ExportPersonsQueryResult>(GET_EXPORT_PERSONS);
 
   function handleExportPeople() {
-    if (!exportData?.persons?.length) return;
+    if (!exportData?.persons?.length) {
+      return;
+    }
     void downloadBlob(buildPersonsCsv(exportData.persons), 'philotes-contacts.csv', {
       mimeType: 'text/csv;charset=utf-8',
     });

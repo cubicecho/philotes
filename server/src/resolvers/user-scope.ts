@@ -63,7 +63,9 @@ const personContextsByRequest = new WeakMap<Context, Promise<Map<string, PersonC
 
 function personContexts(ctx: Context): Promise<Map<string, PersonContext>> {
   const cached = personContextsByRequest.get(ctx);
-  if (cached) return cached;
+  if (cached) {
+    return cached;
+  }
 
   const userId = requireAuth(ctx);
   const loading = (async () => {
@@ -82,7 +84,9 @@ function applyPersonContextFields(schema: GraphQLSchema): void {
   const personFields = (schema.getType('Person') as GraphQLObjectType).getFields();
   for (const field of ['avatarPath', 'contactFrequency', 'howWeMet', 'firstMetDate'] as const) {
     personFields[field].resolve = async (parent: { id?: string }, _args: unknown, ctx: Context) => {
-      if (!parent.id) return null;
+      if (!parent.id) {
+        return null;
+      }
       return (await personContexts(ctx)).get(parent.id)?.[field] ?? null;
     };
   }
@@ -109,17 +113,23 @@ function overridePersonMutations(schema: GraphQLSchema): void {
         .insert(dbSchema.persons)
         .values({ ...args.values })
         .returning({ id: dbSchema.persons.id });
-      if (!inserted) throw new GraphQLError('Failed to create person');
+      if (!inserted) {
+        throw new GraphQLError('Failed to create person');
+      }
       personId = inserted.id;
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
-      if (!msg.includes('unique') && !msg.includes('duplicate')) throw err;
+      if (!msg.includes('unique') && !msg.includes('duplicate')) {
+        throw err;
+      }
       // Email collision — the person already exists; link to that row.
       const [existing] = await db
         .select({ id: dbSchema.persons.id })
         .from(dbSchema.persons)
         .where(eq(dbSchema.persons.email, args.values.email as string));
-      if (!existing) throw err;
+      if (!existing) {
+        throw err;
+      }
       personId = existing.id;
     }
 
@@ -133,13 +143,17 @@ function overridePersonMutations(schema: GraphQLSchema): void {
     const userId = requireAuth(ctx);
     const db = ctx.db as AnyDB;
     const targetId = args.where?.id?.eq;
-    if (!targetId) return [];
+    if (!targetId) {
+      return [];
+    }
 
     const [removed] = await db
       .delete(dbSchema.userPersons)
       .where(and(eq(dbSchema.userPersons.userId, userId), eq(dbSchema.userPersons.personId, targetId)))
       .returning({ personId: dbSchema.userPersons.personId });
-    if (!removed) return [];
+    if (!removed) {
+      return [];
+    }
 
     // Leave the shared person row intact; it belongs to every other user who
     // has it in their contacts.
@@ -155,7 +169,9 @@ function addUserPersonsResolvers(schema: GraphQLSchema): void {
   const mf = (schema.getMutationType() as GraphQLObjectType).getFields();
 
   qf.me.resolve = async (_parent: unknown, _args: unknown, ctx: Context) => {
-    if (!ctx.userId) return null;
+    if (!ctx.userId) {
+      return null;
+    }
     const db = ctx.db as AnyDB;
     const [user] = await db
       .select({
@@ -188,7 +204,9 @@ function addUserPersonsResolvers(schema: GraphQLSchema): void {
       .select({ id: dbSchema.persons.id })
       .from(dbSchema.persons)
       .where(eq(dbSchema.persons.id, args.personId));
-    if (!person) notFound('Person');
+    if (!person) {
+      notFound('Person');
+    }
 
     await db.insert(dbSchema.userPersons).values({ userId, personId: args.personId }).onConflictDoNothing();
 
@@ -222,7 +240,9 @@ function addUserPersonsResolvers(schema: GraphQLSchema): void {
       .where(and(eq(dbSchema.userPersons.userId, userId), eq(dbSchema.userPersons.personId, personId)))
       .returning();
 
-    if (!row) notFound('UserPerson');
+    if (!row) {
+      notFound('UserPerson');
+    }
     return row;
   };
 

@@ -35,7 +35,9 @@ export default function VerifyPage() {
   });
 
   useEffect(() => {
-    if (started.current || !token) return;
+    if (started.current || !token) {
+      return;
+    }
     started.current = true;
     verify({ variables: { token } });
   }, [token, verify]);

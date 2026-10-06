@@ -35,7 +35,9 @@ export interface CalendarEventsData {
 }
 
 function buildCalendarPersonName(person?: CalendarPerson | null): string {
-  if (!person) return 'Unknown';
+  if (!person) {
+    return 'Unknown';
+  }
   return [person.firstName, person.lastName].filter(Boolean).join(' ');
 }
 
