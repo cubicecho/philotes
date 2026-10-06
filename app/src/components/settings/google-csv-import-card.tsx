@@ -1,8 +1,12 @@
 import { gql, useMutation } from '@apollo/client';
-import { Upload } from 'lucide-react';
-import { useRef, useState } from 'react';
+import { useState } from 'react';
+import { Text, View } from 'react-native';
+import { Section } from '@/components/section';
+import { Alert } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { FilePickerButton } from '@/components/ui/file-picker';
+import { Upload } from '@/components/ui/icons';
+import { Spinner } from '@/components/ui/spinner';
 
 const IMPORT_GOOGLE_CONTACTS = gql`
   mutation ImportGoogleContacts($csv: String!) {
@@ -23,26 +27,13 @@ type ImportState =
   | { stage: 'error'; message: string };
 
 export function GoogleCsvImportCard() {
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const [importState, setImportState] = useState<ImportState>({ stage: 'idle' });
 
   const [importContacts] = useMutation<{
     importGoogleContacts: { imported: number; merged: number; skipped: number; errors: string[] };
   }>(IMPORT_GOOGLE_CONTACTS);
 
-  function handleFileButtonClick() {
-    fileInputRef.current?.click();
-  }
-
-  async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    // Reset so the same file can be re-selected
-    e.target.value = '';
-
-    const text = await file.text();
-
+  function handlePick(text: string) {
     // Quick preview: count non-empty non-header lines for an estimate
     const lines = text.split(/\r?\n|\r/).filter((l) => l.trim().length > 0);
     const dataLines = Math.max(0, lines.length - 1); // subtract header row
@@ -86,8 +77,12 @@ export function GoogleCsvImportCard() {
         return;
       }
 
-      const { imported, merged, skipped, errors } = result.data!.importGoogleContacts;
-      setImportState({ stage: 'done', imported, merged, skipped, errors });
+      const summary = result.data?.importGoogleContacts;
+      if (!summary) {
+        setImportState({ stage: 'error', message: 'Unknown error' });
+        return;
+      }
+      setImportState({ stage: 'done', ...summary });
     } catch (err) {
       setImportState({
         stage: 'error',
@@ -97,82 +92,81 @@ export function GoogleCsvImportCard() {
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Import from Google Contacts</CardTitle>
-        <CardDescription>
-          Upload a CSV export from Google Contacts to import your contacts into Philotes. Contacts without an email
-          address will be skipped.
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        {importState.stage === 'idle' && (
-          <>
-            <input ref={fileInputRef} type="file" accept=".csv" className="hidden" onChange={handleFileChange} />
-            <Button onClick={handleFileButtonClick} variant="outline">
-              <Upload className="h-4 w-4 mr-2" />
-              Choose CSV File
-            </Button>
-          </>
-        )}
+    <Section
+      surface="card"
+      title="Import from Google Contacts"
+      description="Upload a CSV export from Google Contacts to import your contacts into Philotes. Contacts without an email address will be skipped."
+      contentSlot={
+        <View className="items-start gap-3">
+          {importState.stage === 'idle' ? (
+            <FilePickerButton variant="outline" label="Choose CSV File" accept=".csv" onPick={handlePick} />
+          ) : null}
 
-        {importState.stage === 'preview' && (
-          <div className="space-y-3">
-            <p className="text-sm text-muted-foreground">
-              Ready to import approximately {importState.contactCount} contacts.
-            </p>
-            {importState.firstFiveNames.length > 0 && (
-              <ul className="text-sm space-y-1">
-                {importState.firstFiveNames.map((name, i) => (
-                  // biome-ignore lint/suspicious/noArrayIndexKey: static preview list
-                  <li key={i} className="text-muted-foreground">
-                    • {name}
-                  </li>
-                ))}
-                {importState.contactCount > 5 && (
-                  <li className="text-muted-foreground">…and {importState.contactCount - 5} more</li>
-                )}
-              </ul>
-            )}
-            <Button onClick={handleImport}>
-              <Upload className="h-4 w-4 mr-2" />
-              Import Contacts
-            </Button>
-          </div>
-        )}
+          {importState.stage === 'preview' ? (
+            <>
+              <Text className="text-muted-foreground text-sm">
+                {`Ready to import approximately ${importState.contactCount} contacts.`}
+              </Text>
+              {importState.firstFiveNames.length > 0 ? (
+                <View className="gap-1">
+                  {importState.firstFiveNames.map((name, i) => (
+                    // biome-ignore lint/suspicious/noArrayIndexKey: static preview list
+                    <Text key={i} className="text-muted-foreground text-sm">{`• ${name}`}</Text>
+                  ))}
+                  {importState.contactCount > 5 ? (
+                    <Text className="text-muted-foreground text-sm">{`…and ${importState.contactCount - 5} more`}</Text>
+                  ) : null}
+                </View>
+              ) : null}
+              <Button iconSlot={<Upload />} content="Import Contacts" onPress={handleImport} />
+            </>
+          ) : null}
 
-        {importState.stage === 'importing' && <p className="text-sm text-muted-foreground">Importing…</p>}
+          {importState.stage === 'importing' ? (
+            <View className="flex-row items-center gap-2">
+              <Spinner label="Importing" />
+              <Text className="text-muted-foreground text-sm">Importing…</Text>
+            </View>
+          ) : null}
 
-        {importState.stage === 'done' && (
-          <div className="space-y-1">
-            <p className="text-sm text-green-600">
-              ✓ {importState.imported} contacts imported
-              {importState.merged > 0 ? `, ${importState.merged} merged` : ''}
-              {importState.skipped > 0 ? `, ${importState.skipped} skipped` : ''}
-            </p>
-            {importState.errors.length > 0 && (
-              <ul className="text-sm text-destructive space-y-0.5">
-                {importState.errors.map((e, i) => (
-                  // biome-ignore lint/suspicious/noArrayIndexKey: static error list
-                  <li key={i}>{e}</li>
-                ))}
-              </ul>
-            )}
-            <Button variant="outline" size="sm" onClick={() => setImportState({ stage: 'idle' })}>
-              Import Another File
-            </Button>
-          </div>
-        )}
+          {importState.stage === 'done' ? (
+            <>
+              <Text className="text-positive text-sm">
+                {`✓ ${importState.imported} contacts imported${
+                  importState.merged > 0 ? `, ${importState.merged} merged` : ''
+                }${importState.skipped > 0 ? `, ${importState.skipped} skipped` : ''}`}
+              </Text>
+              {importState.errors.length > 0 ? (
+                <View className="gap-0.5">
+                  {importState.errors.map((e, i) => (
+                    // biome-ignore lint/suspicious/noArrayIndexKey: static error list
+                    <Text key={i} className="text-destructive text-sm">
+                      {e}
+                    </Text>
+                  ))}
+                </View>
+              ) : null}
+              <Button
+                variant="outline"
+                size="sm"
+                content="Import Another File"
+                onPress={() => setImportState({ stage: 'idle' })}
+              />
+            </>
+          ) : null}
 
-        {importState.stage === 'error' && (
-          <div className="space-y-3">
-            <p className="text-sm text-destructive">Import failed: {importState.message}</p>
-            <Button variant="outline" onClick={() => setImportState({ stage: 'idle' })}>
-              Try Again
-            </Button>
-          </div>
-        )}
-      </CardContent>
-    </Card>
+          {importState.stage === 'error' ? (
+            <Alert
+              className="self-stretch"
+              variant="destructive"
+              title={`Import failed: ${importState.message}`}
+              actionSlot={
+                <Button variant="outline" content="Try Again" onPress={() => setImportState({ stage: 'idle' })} />
+              }
+            />
+          ) : null}
+        </View>
+      }
+    />
   );
 }

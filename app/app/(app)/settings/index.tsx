@@ -1,12 +1,13 @@
-import { Moon, Sun } from 'lucide-react';
 import { useState } from 'react';
+import { View } from 'react-native';
+import { PageLayout } from '@/components/page-layout';
+import { Section } from '@/components/section';
 import { ApiKeyManager } from '@/components/settings/api-key-manager';
 import { ExportCalendarCard } from '@/components/settings/export-calendar-card';
 import { ExportPeopleCard } from '@/components/settings/export-people-card';
 import { GoogleCsvImportCard } from '@/components/settings/google-csv-import-card';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { useDarkMode } from '@/hooks/use-dark-mode';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { ThemePicker } from '@/components/ui/theme-picker';
 
 type SettingsTab = 'import-export' | 'api-keys' | 'app';
 
@@ -16,75 +17,42 @@ const TABS: { id: SettingsTab; label: string }[] = [
   { id: 'app', label: 'App Settings' },
 ];
 
-function ImportExportTab() {
-  return (
-    <div className="space-y-6">
-      <ExportCalendarCard />
-      <ExportPeopleCard />
-      <GoogleCsvImportCard />
-    </div>
-  );
-}
-
-function AppSettingsTab() {
-  const { dark, toggle } = useDarkMode();
-
-  return (
-    <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle>Appearance</CardTitle>
-          <CardDescription>Customize how Philotes looks on your device.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium">Dark mode</p>
-              <p className="text-xs text-muted-foreground mt-0.5">Switch between light and dark theme.</p>
-            </div>
-            <Button variant="outline" size="sm" onClick={toggle}>
-              {dark ? <Sun className="mr-1.5 h-4 w-4" /> : <Moon className="mr-1.5 h-4 w-4" />}
-              {dark ? 'Light mode' : 'Dark mode'}
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-    </div>
-  );
-}
-
 export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState<SettingsTab>('import-export');
 
   return (
-    <div className="h-full overflow-y-auto min-h-0 pr-2">
-      <div className="px-6 py-8 max-w-2xl mx-auto space-y-6">
-        <h1 className="text-2xl font-semibold">Settings</h1>
-
-        <div>
-          <div className="flex border-b border-border">
+    <PageLayout
+      width="prose"
+      title="Settings"
+      contentSlot={
+        <Tabs value={activeTab} onValueChange={(tab) => setActiveTab(tab as SettingsTab)} className="gap-6 py-4">
+          <TabsList aria-label="Settings" className="self-start">
             {TABS.map((tab) => (
-              <button
-                key={tab.id}
-                type="button"
-                onClick={() => setActiveTab(tab.id)}
-                className={`px-4 py-2 text-sm font-medium transition-colors border-b-2 -mb-px ${
-                  activeTab === tab.id
-                    ? 'border-primary text-foreground'
-                    : 'border-transparent text-muted-foreground hover:text-foreground'
-                }`}
-              >
+              <TabsTrigger key={tab.id} value={tab.id}>
                 {tab.label}
-              </button>
+              </TabsTrigger>
             ))}
-          </div>
-          <div className="pt-6">
-            {activeTab === 'import-export' && <ImportExportTab />}
-            {activeTab === 'api-keys' && <ApiKeyManager />}
-            {activeTab === 'app' && <AppSettingsTab />}
-          </div>
-        </div>
-      </div>
-    </div>
+          </TabsList>
+          <TabsContent value="import-export">
+            <View className="gap-6">
+              <ExportCalendarCard />
+              <ExportPeopleCard />
+              <GoogleCsvImportCard />
+            </View>
+          </TabsContent>
+          <TabsContent value="api-keys">
+            <ApiKeyManager />
+          </TabsContent>
+          <TabsContent value="app">
+            <Section
+              surface="card"
+              title="Appearance"
+              description="Customize how Philotes looks on your device."
+              contentSlot={<ThemePicker />}
+            />
+          </TabsContent>
+        </Tabs>
+      }
+    />
   );
 }

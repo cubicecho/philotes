@@ -1,10 +1,13 @@
 import { gql, useMutation } from '@apollo/client';
-import { Check, Copy } from 'lucide-react';
 import { useState } from 'react';
+import { View } from 'react-native';
+import { useAppForm } from '@/components/app-form';
+import { DescriptionList, PropertyRow } from '@/components/description-list';
+import { Alert } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { CopyButton } from '@/components/ui/copy-button';
+import { Form } from '@/components/ui/form';
+import { FormDialog, FormDialogFooter } from '@/components/ui/form-dialog';
 
 const MY_CREATE_API_KEY = gql`
   mutation MyCreateApiKey($input: CreateApiKeyInput!) {
@@ -20,11 +23,14 @@ const MY_CREATE_API_KEY = gql`
   }
 `;
 
+/** Days until the key expires; `never` sends no `expiresAt` at all. */
+const NO_EXPIRY = 'never';
+
 const EXPIRY_OPTIONS = [
   { label: '30 days', value: '30' },
   { label: '90 days', value: '90' },
   { label: '1 year', value: '365' },
-  { label: 'No expiry', value: '' },
+  { label: 'No expiry', value: NO_EXPIRY },
 ] as const;
 
 type Phase = { phase: 'form' } | { phase: 'reveal'; token: string };
@@ -35,188 +41,113 @@ interface CreateApiKeyDialogProps {
   onCreated: () => void;
 }
 
-function copyToClipboard(text: string, onDone: () => void) {
-  if (navigator.clipboard) {
-    navigator.clipboard
-      .writeText(text)
-      .then(onDone)
-      .catch(() => {
-        legacyCopy(text);
-        onDone();
-      });
-  } else {
-    legacyCopy(text);
-    onDone();
-  }
-}
-
-function legacyCopy(text: string) {
-  const el = document.createElement('textarea');
-  el.value = text;
-  el.style.position = 'fixed';
-  el.style.opacity = '0';
-  document.body.appendChild(el);
-  el.select();
-  document.execCommand('copy');
-  document.body.removeChild(el);
-}
-
-function CopyButton({ value, label }: { value: string; label?: string }) {
-  const [copied, setCopied] = useState(false);
-
-  function handleCopy() {
-    copyToClipboard(value, () => {
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    });
-  }
-
-  return (
-    <Button variant="outline" size="sm" onClick={handleCopy} type="button">
-      {copied ? <Check className="h-4 w-4 text-green-600" /> : <Copy className="h-4 w-4" />}
-      {label && <span className="ml-1.5">{copied ? 'Copied!' : label}</span>}
-    </Button>
-  );
+/** Local midnight `days` from now, in the offset-less form the server expects. */
+function expiryDate(days: number): string {
+  const d = new Date();
+  d.setDate(d.getDate() + days);
+  const pad = (n: number) => n.toString().padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T00:00:00`;
 }
 
 export function CreateApiKeyDialog({ open, onOpenChange, onCreated }: CreateApiKeyDialogProps) {
   const [state, setState] = useState<Phase>({ phase: 'form' });
-  const [name, setName] = useState('');
-  const [expiry, setExpiry] = useState('');
-  const [nameError, setNameError] = useState('');
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
-  const [createApiKey, { loading }] = useMutation<{
+  const [createApiKey] = useMutation<{
     myCreateApiKey: { apiKey: { id: string; name: string; keyPrefix: string }; token: string };
   }>(MY_CREATE_API_KEY);
 
+  const form = useAppForm({
+    defaultValues: { name: '', expiry: NO_EXPIRY as string },
+    onSubmit: async ({ value }) => {
+      setSubmitError(null);
+      const expiresAt = value.expiry === NO_EXPIRY ? undefined : expiryDate(Number(value.expiry));
+      try {
+        const result = await createApiKey({ variables: { input: { name: value.name.trim(), expiresAt } } });
+        const token = result.data?.myCreateApiKey?.token;
+        if (token) setState({ phase: 'reveal', token });
+      } catch (err) {
+        setSubmitError(err instanceof Error ? err.message : 'Could not generate the key.');
+      }
+    },
+  });
+
   function handleClose(value: boolean) {
     if (!value) {
+      // The list only needs refreshing once a key was actually made.
       if (state.phase === 'reveal') onCreated();
       setState({ phase: 'form' });
-      setName('');
-      setExpiry('');
-      setNameError('');
+      setSubmitError(null);
+      form.reset();
     }
     onOpenChange(value);
   }
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    if (!name.trim()) {
-      setNameError('Name is required');
-      return;
-    }
+  if (state.phase === 'reveal') {
+    const icalUrl = `${globalThis.location?.origin ?? ''}/ical?key=${state.token}`;
 
-    let expiresAt: string | undefined;
-    if (expiry) {
-      const d = new Date();
-      d.setDate(d.getDate() + Number(expiry));
-      const pad = (n: number) => n.toString().padStart(2, '0');
-      expiresAt = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T00:00:00`;
-    }
-
-    const result = await createApiKey({ variables: { input: { name: name.trim(), expiresAt } } });
-    const token = result.data?.myCreateApiKey?.token;
-    if (token) setState({ phase: 'reveal', token });
+    return (
+      <FormDialog
+        open={open}
+        onOpenChange={handleClose}
+        title="API Key Generated"
+        description="Copy the calendar URL below and paste it into your calendar app. The token will not be shown again."
+      >
+        <View className="gap-4">
+          <Alert variant="warning" title="Store your token securely — it will not be shown again." />
+          <DescriptionList
+            layout="stacked"
+            contentSlot={
+              <>
+                <PropertyRow
+                  label="Calendar Subscription URL"
+                  value={icalUrl}
+                  valueClassName="font-mono text-xs"
+                  hint={
+                    'Paste this URL into Google Calendar → "Other calendars" → "From URL", or Apple Calendar → File → New Calendar Subscription.'
+                  }
+                  actionSlot={<CopyButton value={icalUrl} label="Copy URL" />}
+                />
+                <PropertyRow
+                  label="Raw Token"
+                  value={state.token}
+                  valueClassName="font-mono text-xs"
+                  actionSlot={<CopyButton value={state.token} label="Copy token" />}
+                />
+              </>
+            }
+          />
+          <View className="flex-row justify-end">
+            <Button content="Done" onPress={() => handleClose(false)} />
+          </View>
+        </View>
+      </FormDialog>
+    );
   }
 
-  const icalUrl = state.phase === 'reveal' ? `${window.location.origin}/ical?key=${state.token}` : '';
-
   return (
-    <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-[500px]">
-        {state.phase === 'form' ? (
-          <form onSubmit={handleSubmit}>
-            <DialogHeader>
-              <DialogTitle>Generate API Key</DialogTitle>
-              <DialogDescription>
-                Create an API key to subscribe to your important dates calendar in any calendar app. The full token is
-                shown only once.
-              </DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4 py-4">
-              <div className="space-y-2">
-                <Label htmlFor="api-key-name">Name</Label>
-                <Input
-                  id="api-key-name"
-                  placeholder="e.g. Google Calendar"
-                  value={name}
-                  onChange={(e) => {
-                    setName(e.target.value);
-                    setNameError('');
-                  }}
-                  maxLength={60}
-                />
-                {nameError && <p className="text-xs text-destructive">{nameError}</p>}
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="api-key-expiry">Expiry</Label>
-                <select
-                  id="api-key-expiry"
-                  value={expiry}
-                  onChange={(e) => setExpiry(e.target.value)}
-                  className="flex h-10 w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                >
-                  {EXPIRY_OPTIONS.map((opt) => (
-                    <option key={opt.value} value={opt.value}>
-                      {opt.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-            <div className="flex justify-end gap-2">
-              <Button type="button" variant="outline" onClick={() => handleClose(false)}>
-                Cancel
-              </Button>
-              <Button type="submit" disabled={loading}>
-                {loading ? 'Generating…' : 'Generate Key'}
-              </Button>
-            </div>
-          </form>
-        ) : (
-          <>
-            <DialogHeader>
-              <DialogTitle>API Key Generated</DialogTitle>
-              <DialogDescription>
-                Copy the calendar URL below and paste it into your calendar app. The token will not be shown again.
-              </DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4 py-4">
-              <div className="rounded-md bg-amber-50 border border-amber-200 p-3 dark:bg-amber-950 dark:border-amber-800">
-                <p className="text-sm text-amber-800 dark:text-amber-200 font-medium">
-                  Store your token securely — it will not be shown again.
-                </p>
-              </div>
-
-              <div className="space-y-1">
-                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                  Calendar Subscription URL
-                </p>
-                <div className="flex items-center gap-2">
-                  <code className="flex-1 truncate rounded-md bg-muted px-3 py-2 text-xs font-mono">{icalUrl}</code>
-                  <CopyButton value={icalUrl} label="Copy URL" />
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  Paste this URL into Google Calendar → "Other calendars" → "From URL", or Apple Calendar → File → New
-                  Calendar Subscription.
-                </p>
-              </div>
-
-              <div className="space-y-1">
-                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Raw Token</p>
-                <div className="flex items-center gap-2">
-                  <code className="flex-1 truncate rounded-md bg-muted px-3 py-2 text-xs font-mono">{state.token}</code>
-                  <CopyButton value={state.token} />
-                </div>
-              </div>
-            </div>
-            <div className="flex justify-end">
-              <Button onClick={() => handleClose(false)}>Done</Button>
-            </div>
-          </>
-        )}
-      </DialogContent>
-    </Dialog>
+    <FormDialog
+      open={open}
+      onOpenChange={handleClose}
+      title="Generate API Key"
+      description="Create an API key to subscribe to your important dates calendar in any calendar app. The full token is shown only once."
+    >
+      <form.AppForm>
+        <Form>
+          <form.AppField
+            name="name"
+            validators={{ onSubmit: ({ value }) => (value.trim() ? undefined : 'Name is required') }}
+          >
+            {(field) => <field.InputField label="Name" placeholder="e.g. Google Calendar" maxLength={60} />}
+          </form.AppField>
+          <form.AppField name="expiry">
+            {(field) => <field.SelectField label="Expiry" options={EXPIRY_OPTIONS} />}
+          </form.AppField>
+          <FormDialogFooter onCancel={() => handleClose(false)} error={submitError}>
+            <form.SubmitButton createLabel="Generate Key" savingLabel="Generating…" />
+          </FormDialogFooter>
+        </Form>
+      </form.AppForm>
+    </FormDialog>
   );
 }

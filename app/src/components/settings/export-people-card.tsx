@@ -1,9 +1,10 @@
 import { gql, useQuery } from '@apollo/client';
-import { Download } from 'lucide-react';
+import { Text, View } from 'react-native';
+import { Section } from '@/components/section';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { downloadBlob } from '@/components/ui/download-button';
+import { Download } from '@/components/ui/icons';
 import { buildPersonsCsv, type ExportPerson } from '@/lib/csv-export';
-import { downloadFile } from '@/lib/download';
 
 const GET_EXPORT_PERSONS = gql`
   query ExportPersons {
@@ -60,25 +61,29 @@ export function ExportPeopleCard() {
 
   function handleExportPeople() {
     if (!exportData?.persons?.length) return;
-    downloadFile(buildPersonsCsv(exportData.persons), 'philotes-contacts.csv', 'text/csv;charset=utf-8');
+    void downloadBlob(buildPersonsCsv(exportData.persons), 'philotes-contacts.csv', {
+      mimeType: 'text/csv;charset=utf-8',
+    });
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Export People</CardTitle>
-        <CardDescription>
-          Download all your contacts as a CSV file compatible with Google Contacts, Apple Contacts, and other
-          applications.
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        {exportError && <p className="text-sm text-destructive mb-4">Failed to load people: {exportError.message}</p>}
-        <Button onClick={handleExportPeople} disabled={exportLoading || !!exportError || !exportData?.persons?.length}>
-          <Download className="h-4 w-4 mr-2" />
-          {exportLoading ? 'Loading…' : `Export ${exportData?.persons?.length ?? 0} People as CSV`}
-        </Button>
-      </CardContent>
-    </Card>
+    <Section
+      surface="card"
+      title="Export People"
+      description="Download all your contacts as a CSV file compatible with Google Contacts, Apple Contacts, and other applications."
+      contentSlot={
+        <View className="items-start gap-3">
+          {exportError ? (
+            <Text className="text-destructive text-sm">{`Failed to load people: ${exportError.message}`}</Text>
+          ) : null}
+          <Button
+            iconSlot={<Download />}
+            content={exportLoading ? 'Loading…' : `Export ${exportData?.persons?.length ?? 0} People as CSV`}
+            disabled={exportLoading || !!exportError || !exportData?.persons?.length}
+            onPress={handleExportPeople}
+          />
+        </View>
+      }
+    />
   );
 }
