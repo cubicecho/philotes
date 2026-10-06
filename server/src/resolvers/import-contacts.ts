@@ -125,18 +125,19 @@ export function applyImportContactsExtension(schema: GraphQLSchema): GraphQLSche
         personId = inserted.id;
         importedCount++;
       } catch (err: unknown) {
-        if (!isUniqueViolation(err)) {
+        // A null email never trips the unique constraint, so a duplicate always has one.
+        const { email } = contact;
+        const isOtherFailure = isUniqueViolation(err) === false || email === null;
+        if (isOtherFailure) {
           errors.push(`Failed to import ${contact.firstName} ${contact.lastName}: ${errorMessage(err)}`);
           continue;
         }
 
         // Duplicate email — fetch the existing person's ID and merge their data.
-        // This branch is only reachable when contact.email is non-null (null emails
-        // never trigger a unique constraint violation in Postgres).
         const [existing] = await db
           .select({ id: dbSchema.persons.id })
           .from(dbSchema.persons)
-          .where(eq(dbSchema.persons.email, contact.email!));
+          .where(eq(dbSchema.persons.email, email));
 
         if (!existing) {
           errors.push(`Could not find existing person for email ${contact.email}`);
