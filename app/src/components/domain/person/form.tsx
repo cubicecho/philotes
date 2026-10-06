@@ -1,10 +1,10 @@
-import { X } from 'lucide-react';
 import { useState } from 'react';
 import { z } from 'zod';
 import type { Label_ListFragment } from '@/__generated__/graphql';
-import { Button } from '@/components/ui/button';
-import { FieldGroup } from '@/components/ui/field';
-import { FormError, TextField, useAppForm } from '@/components/ui/form-field.tsx';
+import { useAppForm } from '@/components/app-form';
+import { MultiSelect } from '@/components/multi-select';
+import { FieldRow, FieldWrapper, Form } from '@/components/ui/form';
+import { FormDialogFooter } from '@/components/ui/form-dialog';
 
 const CONTACT_FREQUENCY_OPTIONS = [
   { value: '', label: 'None' },
@@ -16,14 +16,40 @@ const CONTACT_FREQUENCY_OPTIONS = [
 
 export { CONTACT_FREQUENCY_OPTIONS };
 
+/** A select item cannot carry an empty value, so "None" travels as this inside the form. */
+const NO_FREQUENCY = 'none';
+
+const FREQUENCY_SELECT_OPTIONS = CONTACT_FREQUENCY_OPTIONS.map((opt) => ({
+  value: opt.value || NO_FREQUENCY,
+  label: opt.label,
+}));
+
 const personSchema = z.object({
   firstName: z.string().min(1, 'First name is required.'),
   lastName: z.string().min(1, 'Last name is required.'),
   email: z.string().min(1, 'Email is required.').email('Please enter a valid email address.'),
   contactFrequency: z.string(),
   howWeMet: z.string(),
-  firstMetDate: z.string(),
+  firstMetDate: z.date().nullable(),
+  labelIds: z.array(z.string()),
 });
+
+type PersonFormFields = z.infer<typeof personSchema>;
+
+/** `YYYY-MM-DD` read as a local day: `new Date(str)` would be UTC midnight, the day before out west. */
+function parseDay(value: string | Date | null | undefined): Date | null {
+  if (!value) return null;
+  if (value instanceof Date) return value;
+  const [year, month, day] = value.split('-').map(Number);
+  if (!year || !month || !day) return null;
+  return new Date(year, month - 1, day);
+}
+
+function formatDay(date: Date): string {
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${date.getFullYear()}-${month}-${day}`;
+}
 
 export interface PersonFormPerson {
   firstName: string;
@@ -46,7 +72,8 @@ export interface PersonFormInitialValues {
   labelIds?: string[];
   contactFrequency?: string | null;
   howWeMet?: string | null;
-  firstMetDate?: string | null;
+  /** A `YYYY-MM-DD` string, or the `Date` the cache's type policy has already made of it. */
+  firstMetDate?: string | Date | null;
 }
 
 interface PersonFormProps {
@@ -57,31 +84,22 @@ interface PersonFormProps {
   onCancel: () => void;
 }
 
+/** The person fields and their footer. It draws no dialog of its own: render it inside a `FormDialog`. */
 export function PersonForm({ availableLabels, initialValues, submitLabel, onSubmit, onCancel }: PersonFormProps) {
   const [formError, setFormError] = useState<string | null>(null);
-  const [selectedLabelIds, setSelectedLabelIds] = useState<Set<string>>(new Set(initialValues?.labelIds ?? []));
 
-  const toggleLabel = (id: string) => {
-    setSelectedLabelIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) {
-        next.delete(id);
-      } else {
-        next.add(id);
-      }
-      return next;
-    });
+  const defaultValues: PersonFormFields = {
+    firstName: initialValues?.firstName ?? '',
+    lastName: initialValues?.lastName ?? '',
+    email: initialValues?.email ?? '',
+    contactFrequency: initialValues?.contactFrequency || NO_FREQUENCY,
+    howWeMet: initialValues?.howWeMet ?? '',
+    firstMetDate: parseDay(initialValues?.firstMetDate),
+    labelIds: initialValues?.labelIds ?? [],
   };
 
   const form = useAppForm({
-    defaultValues: {
-      firstName: initialValues?.firstName ?? '',
-      lastName: initialValues?.lastName ?? '',
-      email: initialValues?.email ?? '',
-      contactFrequency: initialValues?.contactFrequency ?? '',
-      howWeMet: initialValues?.howWeMet ?? '',
-      firstMetDate: initialValues?.firstMetDate ?? '',
-    },
+    defaultValues,
     validators: {
       onSubmit: personSchema,
     },
@@ -90,16 +108,17 @@ export function PersonForm({ availableLabels, initialValues, submitLabel, onSubm
       try {
         await onSubmit({
           person: {
-            ...value,
-            contactFrequency: value.contactFrequency || null,
+            firstName: value.firstName,
+            lastName: value.lastName,
+            email: value.email,
+            contactFrequency: value.contactFrequency === NO_FREQUENCY ? null : value.contactFrequency,
             howWeMet: value.howWeMet || null,
-            firstMetDate: value.firstMetDate || null,
+            firstMetDate: value.firstMetDate ? formatDay(value.firstMetDate) : null,
           },
-          labelIds: Array.from(selectedLabelIds),
+          labelIds: value.labelIds,
         });
         if (!initialValues) {
           form.reset();
-          setSelectedLabelIds(new Set());
         }
       } catch (err: unknown) {
         if (err instanceof Error) {
@@ -111,142 +130,62 @@ export function PersonForm({ availableLabels, initialValues, submitLabel, onSubm
     },
   });
 
-  const defaultSubmitLabel = initialValues ? 'Save' : 'Create';
-  const submittingLabel = initialValues ? 'Saving...' : 'Creating...';
+  const isEdit = initialValues !== undefined;
+  const label = submitLabel ?? (isEdit ? 'Save' : 'Create');
 
   return (
-    <form
-      onSubmit={(e) => {
-        e.preventDefault();
-        form.handleSubmit();
-      }}
-    >
-      <FieldGroup className="gap-4">
-        <div className="grid grid-cols-2 gap-4">
-          <form.AppField name="firstName">{() => <TextField label="First Name" />}</form.AppField>
-          <form.AppField name="lastName">{() => <TextField label="Last Name" />}</form.AppField>
-        </div>
-        <form.AppField name="email">{() => <TextField label="Email" />}</form.AppField>
+    <form.AppForm>
+      <Form className="gap-4">
+        <FieldRow>
+          <form.AppField name="firstName">{(field) => <field.InputField label="First Name" />}</form.AppField>
+          <form.AppField name="lastName">{(field) => <field.InputField label="Last Name" />}</form.AppField>
+        </FieldRow>
+        <form.AppField name="email">
+          {(field) => <field.InputField label="Email" type="email" autoCapitalize="none" />}
+        </form.AppField>
         <form.AppField name="contactFrequency">
-          {(field) => (
-            <div className="space-y-1.5">
-              <label htmlFor="contact-frequency" className="text-sm font-medium">
-                Contact Frequency
-              </label>
-              <select
-                id="contact-frequency"
-                value={field.state.value}
-                onChange={(e) => field.handleChange(e.target.value)}
-                className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-              >
-                {CONTACT_FREQUENCY_OPTIONS.map((opt) => (
-                  <option key={opt.value} value={opt.value}>
-                    {opt.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-          )}
+          {(field) => <field.SelectField label="Contact Frequency" options={FREQUENCY_SELECT_OPTIONS} />}
         </form.AppField>
         <form.AppField name="howWeMet">
           {(field) => (
-            <div className="space-y-1.5">
-              <label htmlFor="how-we-met" className="text-sm font-medium">
-                How We Met (optional)
-              </label>
-              <textarea
-                id="how-we-met"
-                value={field.state.value}
-                onChange={(e) => field.handleChange(e.target.value)}
-                rows={3}
-                placeholder="Share the story of how you met…"
-                className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring resize-none"
-              />
-            </div>
+            <field.TextareaField label="How We Met (optional)" rows={3} placeholder="Share the story of how you met…" />
           )}
         </form.AppField>
         <form.AppField name="firstMetDate">
           {(field) => (
-            <div className="space-y-1.5">
-              <label htmlFor="first-met-date" className="text-sm font-medium">
-                First Met Date (optional)
-              </label>
-              <input
-                id="first-met-date"
-                type="date"
-                value={field.state.value}
-                onChange={(e) => field.handleChange(e.target.value)}
-                className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-              />
-            </div>
+            <field.DateTimeField label="First Met Date (optional)" mode="date" clearable placeholder="Pick a date" />
           )}
         </form.AppField>
         {availableLabels.length > 0 && (
-          <div className="space-y-2">
-            <p className="font-medium text-sm">Labels</p>
-            {/* Selected label chips */}
-            {selectedLabelIds.size > 0 && (
-              <div className="flex flex-wrap gap-1.5">
-                {availableLabels
-                  .filter((l) => selectedLabelIds.has(l.id))
-                  .map((l) => (
-                    <span key={l.id} className="inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs">
-                      <span
-                        className="inline-block h-2 w-2 rounded-full shrink-0"
-                        style={{ backgroundColor: l.color }}
-                        aria-hidden="true"
-                      />
-                      {l.label}
-                      <button
-                        type="button"
-                        onClick={() => toggleLabel(l.id)}
-                        className="ml-0.5 text-muted-foreground hover:text-destructive transition-colors"
-                        aria-label={`Remove label ${l.label}`}
-                      >
-                        <X className="h-3 w-3" />
-                      </button>
-                    </span>
-                  ))}
-              </div>
+          <form.AppField name="labelIds">
+            {(field) => (
+              <FieldWrapper
+                label="Labels"
+                asGroup
+                controlSlot={
+                  <MultiSelect
+                    options={availableLabels.map((l) => ({ value: l.id, label: l.label, color: l.color }))}
+                    value={field.state.value}
+                    onValueChange={(next) => field.handleChange(next)}
+                    onBlur={field.handleBlur}
+                    placeholder="Add labels…"
+                    searchLabel="Search labels"
+                    popoverLabel="Labels"
+                  />
+                }
+              />
             )}
-            {/* Available label picker */}
-            {availableLabels.some((l) => !selectedLabelIds.has(l.id)) && (
-              <div className="flex flex-wrap gap-1.5 rounded-md border border-border p-3">
-                {availableLabels
-                  .filter((l) => !selectedLabelIds.has(l.id))
-                  .map((l) => (
-                    <button
-                      key={l.id}
-                      type="button"
-                      onClick={() => toggleLabel(l.id)}
-                      className="inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs hover:bg-muted transition-colors cursor-pointer"
-                    >
-                      <span
-                        className="inline-block h-2 w-2 rounded-full shrink-0"
-                        style={{ backgroundColor: l.color }}
-                        aria-hidden="true"
-                      />
-                      {l.label}
-                    </button>
-                  ))}
-              </div>
-            )}
-          </div>
+          </form.AppField>
         )}
-        <FormError formError={formError} />
-        <div className="flex gap-2">
-          <form.Subscribe selector={(state) => [state.canSubmit, state.isSubmitting]}>
-            {([canSubmit, isSubmitting]) => (
-              <Button type="submit" disabled={!canSubmit || isSubmitting}>
-                {isSubmitting ? submittingLabel : (submitLabel ?? defaultSubmitLabel)}
-              </Button>
-            )}
-          </form.Subscribe>
-          <Button type="button" variant="outline" onClick={onCancel}>
-            Cancel
-          </Button>
-        </div>
-      </FieldGroup>
-    </form>
+        <FormDialogFooter onCancel={onCancel} error={formError}>
+          <form.SubmitButton
+            isEdit={isEdit}
+            createLabel={label}
+            editLabel={label}
+            savingLabel={isEdit ? 'Saving...' : 'Creating...'}
+          />
+        </FormDialogFooter>
+      </Form>
+    </form.AppForm>
   );
 }

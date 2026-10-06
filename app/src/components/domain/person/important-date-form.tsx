@@ -1,8 +1,9 @@
+import { format, parseISO } from 'date-fns';
 import { useState } from 'react';
 import { z } from 'zod';
-import { Button } from '@/components/ui/button';
-import { FieldGroup } from '@/components/ui/field';
-import { FormError, TextField, useAppForm } from '@/components/ui/form-field.tsx';
+import { useAppForm } from '@/components/app-form';
+import { Form } from '@/components/ui/form';
+import { FormDialogFooter } from '@/components/ui/form-dialog';
 
 // ---------------------------------------------------------------------------
 // Recurrence
@@ -54,26 +55,33 @@ export type MilestoneTypeValue =
 // Schema & types
 // ---------------------------------------------------------------------------
 
+// The select cannot hold an empty-string value, so "no recurrence" and "no
+// milestone" travel through the form as this and are stripped on the way out.
+const NONE = 'none';
+
+function selectOptions(options: ReadonlyArray<{ value: string; label: string }>) {
+  return options.map((opt) => ({ value: opt.value || NONE, label: opt.label }));
+}
+
+const RECURRENCE_SELECT_OPTIONS = selectOptions(RECURRENCE_OPTIONS);
+const MILESTONE_TYPE_SELECT_OPTIONS = selectOptions(MILESTONE_TYPE_OPTIONS);
+
 const importantDateSchema = z.object({
   name: z.string().min(1, 'Name is required.'),
-  date: z.string().min(1, 'Date is required.'),
+  date: z.custom<Date | null>((value) => value instanceof Date, 'Date is required.'),
   description: z.string(),
-  recurrence: z.enum(['', 'yearly', 'monthly', 'weekly']),
-  milestoneType: z.enum([
-    '',
-    'new_job',
-    'promotion',
-    'moved',
-    'new_baby',
-    'married',
-    'divorced',
-    'retired',
-    'health_event',
-    'graduation',
-    'loss',
-    'other',
-  ]),
+  recurrence: z.string(),
+  milestoneType: z.string(),
 });
+
+/** An important date is a calendar day with no time: `yyyy-MM-dd`, read and written in local time. */
+const DATE_FORMAT = 'yyyy-MM-dd';
+
+function parseDay(value: string | undefined): Date | null {
+  if (!value) return null;
+  const parsed = parseISO(value.slice(0, 10));
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+}
 
 export interface ImportantDateFormValue {
   name: string;
@@ -95,27 +103,29 @@ interface ImportantDateFormProps {
 
 export function ImportantDateForm({ onSubmit, onCancel, initialValues }: ImportantDateFormProps) {
   const [formError, setFormError] = useState<string | null>(null);
+  const defaultValues: z.input<typeof importantDateSchema> = {
+    name: initialValues?.name ?? '',
+    date: parseDay(initialValues?.date),
+    description: initialValues?.description ?? '',
+    recurrence: initialValues?.recurrence || NONE,
+    milestoneType: initialValues?.milestoneType || NONE,
+  };
 
   const form = useAppForm({
-    defaultValues: {
-      name: initialValues?.name ?? '',
-      date: initialValues?.date ?? '',
-      description: initialValues?.description ?? '',
-      recurrence: (initialValues?.recurrence ?? '') as RecurrenceValue,
-      milestoneType: (initialValues?.milestoneType ?? '') as MilestoneTypeValue,
-    },
+    defaultValues,
     validators: {
       onSubmit: importantDateSchema,
     },
     onSubmit: async ({ value }) => {
+      if (!value.date) return;
       setFormError(null);
       try {
         await onSubmit({
           name: value.name,
-          date: value.date,
+          date: format(value.date, DATE_FORMAT),
           description: value.description || undefined,
-          recurrence: value.recurrence || undefined,
-          milestoneType: value.milestoneType || undefined,
+          recurrence: value.recurrence === NONE ? undefined : value.recurrence,
+          milestoneType: value.milestoneType === NONE ? undefined : value.milestoneType,
         });
         form.reset();
       } catch (err: unknown) {
@@ -129,76 +139,24 @@ export function ImportantDateForm({ onSubmit, onCancel, initialValues }: Importa
   });
 
   return (
-    <form
-      onSubmit={(e) => {
-        e.preventDefault();
-        form.handleSubmit();
-      }}
-    >
-      <FieldGroup className="gap-4">
-        <form.AppField name="name">{() => <TextField label="Name" />}</form.AppField>
-        <form.AppField name="date">{() => <TextField label="Date" type="date" />}</form.AppField>
-        <form.AppField name="description">{() => <TextField label="Description (optional)" />}</form.AppField>
+    <form.AppForm>
+      <Form className="gap-4">
+        <form.AppField name="name">{(field) => <field.InputField label="Name" />}</form.AppField>
+        <form.AppField name="date">{(field) => <field.DateTimeField label="Date" mode="date" />}</form.AppField>
+        <form.AppField name="description">
+          {(field) => <field.InputField label="Description (optional)" />}
+        </form.AppField>
+        <form.AppField name="recurrence">
+          {(field) => <field.SelectField label="Recurrence" options={RECURRENCE_SELECT_OPTIONS} />}
+        </form.AppField>
+        <form.AppField name="milestoneType">
+          {(field) => <field.SelectField label="Milestone Type (optional)" options={MILESTONE_TYPE_SELECT_OPTIONS} />}
+        </form.AppField>
 
-        <form.Subscribe selector={(state) => state.values.recurrence}>
-          {(recurrence) => (
-            <div className="flex flex-col gap-1.5">
-              <label htmlFor="recurrence-select" className="text-sm font-medium">
-                Recurrence
-              </label>
-              <select
-                id="recurrence-select"
-                value={recurrence}
-                onChange={(e) => form.setFieldValue('recurrence', e.target.value as RecurrenceValue)}
-                className="rounded-md border border-border bg-background px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-              >
-                {RECURRENCE_OPTIONS.map((opt) => (
-                  <option key={opt.value} value={opt.value}>
-                    {opt.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-          )}
-        </form.Subscribe>
-
-        <form.Subscribe selector={(state) => state.values.milestoneType}>
-          {(milestoneType) => (
-            <div className="flex flex-col gap-1.5">
-              <label htmlFor="milestone-type-select" className="text-sm font-medium">
-                Milestone Type (optional)
-              </label>
-              <select
-                id="milestone-type-select"
-                value={milestoneType}
-                onChange={(e) => form.setFieldValue('milestoneType', e.target.value as MilestoneTypeValue)}
-                className="rounded-md border border-border bg-background px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-              >
-                {MILESTONE_TYPE_OPTIONS.map((opt) => (
-                  <option key={opt.value} value={opt.value}>
-                    {opt.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-          )}
-        </form.Subscribe>
-
-        <FormError formError={formError} />
-
-        <div className="flex gap-2">
-          <form.Subscribe selector={(state) => [state.canSubmit, state.isSubmitting]}>
-            {([canSubmit, isSubmitting]) => (
-              <Button type="submit" disabled={!canSubmit || isSubmitting}>
-                {isSubmitting ? 'Saving...' : 'Save'}
-              </Button>
-            )}
-          </form.Subscribe>
-          <Button type="button" variant="outline" onClick={onCancel}>
-            Cancel
-          </Button>
-        </div>
-      </FieldGroup>
-    </form>
+        <FormDialogFooter onCancel={onCancel} error={formError}>
+          <form.SubmitButton createLabel="Save" savingLabel="Saving..." />
+        </FormDialogFooter>
+      </Form>
+    </form.AppForm>
   );
 }
