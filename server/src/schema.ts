@@ -35,4 +35,4 @@ schema = applyImportContactsExtension(schema);
 schema = applyMergeLabelsExtension(schema);
 schema = applyApiKeysExtension(schema);
 
-export { schema, entities };
+export { entities, schema };

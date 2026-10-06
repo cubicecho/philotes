@@ -3,9 +3,7 @@ const Module = require('node:module');
 
 const localModules = path.resolve(__dirname, 'node_modules');
 if (!process.env.NODE_PATH?.split(path.delimiter).includes(localModules)) {
-  process.env.NODE_PATH = [localModules, process.env.NODE_PATH]
-    .filter(Boolean)
-    .join(path.delimiter);
+  process.env.NODE_PATH = [localModules, process.env.NODE_PATH].filter(Boolean).join(path.delimiter);
   Module._initPaths();
 }
 
@@ -16,10 +14,7 @@ const config = getDefaultConfig(__dirname);
 
 const workspaceRoot = path.resolve(__dirname, '../..');
 config.watchFolders = [workspaceRoot];
-config.resolver.nodeModulesPaths = [
-  localModules,
-  path.resolve(workspaceRoot, 'node_modules'),
-];
+config.resolver.nodeModulesPaths = [localModules, path.resolve(workspaceRoot, 'node_modules')];
 
 const nativeWindConfig = withNativewind(config);
 

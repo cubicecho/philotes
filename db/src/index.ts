@@ -37,6 +37,6 @@ if (isPostgres) {
   db = drizzle({ client, relations });
 }
 
-export { schema };
 export * from './api-keys.ts';
 export * from './schema.ts';
+export { schema };
