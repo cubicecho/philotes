@@ -1,6 +1,8 @@
-import { Link } from 'expo-router';
-import { CheckSquare } from 'lucide-react';
-import { AllCaughtUp, Widget } from './widget';
+import { useRouter } from 'expo-router';
+import { Text } from 'react-native';
+import { SquareCheck } from '@/components/app-icons';
+import { ListItem } from '@/components/list-item';
+import { Widget } from './widget';
 
 export type OpenTask = {
   id: string;
@@ -19,36 +21,23 @@ function dueLabel(task: OpenTask): string {
 }
 
 export function OpenTasks({ tasks }: { tasks: OpenTask[] }) {
+  const router = useRouter();
+
   return (
-    <Widget icon={<CheckSquare />} title="Open Tasks" subtitle="due this week or overdue">
-      {tasks.length === 0 ? (
-        <AllCaughtUp message="No tasks due" />
-      ) : (
-        <ul className="space-y-1">
-          {tasks.map((t) => (
-            <li key={t.id} className="flex items-center gap-3 rounded-md px-2 py-1.5 hover:bg-muted/60">
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-medium">{t.title}</p>
-                <Link
-                  href={`/persons/${t.personId}`}
-                  className="block truncate text-xs text-muted-foreground hover:text-foreground hover:underline"
-                >
-                  {t.personFirstName} {t.personLastName}
-                </Link>
-              </div>
-              {t.dueAt && (
-                <span
-                  className={`shrink-0 text-xs ${
-                    t.isOverdue ? 'font-medium text-destructive' : 'text-muted-foreground'
-                  }`}
-                >
-                  {dueLabel(t)}
-                </span>
-              )}
-            </li>
-          ))}
-        </ul>
-      )}
-    </Widget>
+    <Widget
+      iconSlot={<SquareCheck />}
+      title="Open Tasks"
+      subtitle="due this week or overdue"
+      emptyMessage="No tasks due"
+      contentSlot={tasks.map((t) => (
+        <ListItem
+          key={t.id}
+          title={t.title}
+          description={`${t.personFirstName} ${t.personLastName}`}
+          meta={t.isOverdue ? <Text className="font-medium text-destructive text-xs">{dueLabel(t)}</Text> : dueLabel(t)}
+          onPress={() => router.push(`/persons/${t.personId}`)}
+        />
+      ))}
+    />
   );
 }

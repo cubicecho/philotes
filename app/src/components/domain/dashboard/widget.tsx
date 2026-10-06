@@ -1,42 +1,36 @@
 import { Link } from 'expo-router';
-import type { ReactNode } from 'react';
-import { Card, CardContent } from '@/components/ui/card';
+import { CardLayout } from '@/components/card-layout';
+import { EmptyState } from '@/components/page';
+import { Button } from '@/components/ui/button';
+import type { SlotNode } from '@/lib/utils';
 
 interface WidgetProps {
-  icon: ReactNode;
+  iconSlot: SlotNode;
   title: string;
   subtitle?: string;
   viewAllHref?: string;
-  children: ReactNode;
+  /** What the card says when `contentSlot` has no rows. The tick is added here. */
+  emptyMessage: string;
+  /** The rows. An empty array shows `emptyMessage` instead. */
+  contentSlot: SlotNode;
 }
 
 /** Shared dashboard card shell: quiet header, no per-widget pagination. */
-export function Widget({ icon, title, subtitle, viewAllHref, children }: WidgetProps) {
+export function Widget({ iconSlot, title, subtitle, viewAllHref, emptyMessage, contentSlot }: WidgetProps) {
   return (
-    <Card className="h-full">
-      <CardContent className="p-4 space-y-3">
-        <div className="flex items-center justify-between gap-2">
-          <div className="flex items-center gap-2 min-w-0">
-            <span className="text-muted-foreground [&>svg]:h-4 [&>svg]:w-4">{icon}</span>
-            <h2 className="font-semibold text-sm">{title}</h2>
-            {subtitle && <span className="truncate text-xs text-muted-foreground">· {subtitle}</span>}
-          </div>
-          {viewAllHref && (
-            <Link href={viewAllHref} className="shrink-0 text-xs text-primary hover:underline">
-              View all
-            </Link>
-          )}
-        </div>
-        {children}
-      </CardContent>
-    </Card>
-  );
-}
-
-export function AllCaughtUp({ message }: { message: string }) {
-  return (
-    <p className="py-1 text-sm text-muted-foreground italic">
-      {message} <span className="not-italic">✓</span>
-    </p>
+    <CardLayout
+      className="h-full"
+      level={2}
+      iconSlot={iconSlot}
+      title={title}
+      description={subtitle}
+      actionSlot={
+        viewAllHref ? (
+          <Button size="xs" variant="outline" linkSlot={<Link href={viewAllHref} />} content="View all" />
+        ) : null
+      }
+      contentSlot={contentSlot}
+      emptySlot={<EmptyState compact title={`${emptyMessage} ✓`} />}
+    />
   );
 }
