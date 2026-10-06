@@ -4,9 +4,10 @@ import { graphql } from '@/__generated__/gql';
 import type { CreateLabelInput, Label_ListFragment } from '@/__generated__/graphql';
 import { LabelForm } from '@/components/domain/label/form';
 import { LabelList } from '@/components/domain/label/list';
-import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Spinner } from '@/components/ui/spinner.tsx';
+import { LabelMergeDialog } from '@/components/domain/label/merge-dialog';
+import { PageLayout } from '@/components/page-layout';
+import { QueryState } from '@/components/query-state';
+import { FormDialog } from '@/components/ui/form-dialog';
 
 const GET_LABELS = graphql(`
   query GetLabels {
@@ -78,7 +79,6 @@ export default function LabelsPage() {
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [editingLabel, setEditingLabel] = useState<Label_ListFragment | null>(null);
   const [mergingLabel, setMergingLabel] = useState<Label_ListFragment | null>(null);
-  const [mergeTargetId, setMergeTargetId] = useState<string>('');
 
   const handleDelete = async (id: string) => {
     await deleteLabel({ variables: { id } });
@@ -97,123 +97,77 @@ export default function LabelsPage() {
     setEditingLabel(null);
   };
 
-  const handleMergeConfirm = async (): Promise<void> => {
-    if (!mergingLabel || !mergeTargetId) return;
+  const handleMerge = async (keepId: string): Promise<void> => {
+    if (!mergingLabel) return;
     await mergeLabelInto({
-      variables: { keepId: mergeTargetId, deleteId: mergingLabel.id },
+      variables: { keepId, deleteId: mergingLabel.id },
     });
     setMergingLabel(null);
-    setMergeTargetId('');
     await refetch();
   };
 
   const otherLabels = (data?.labels ?? []).filter((l) => l.id !== mergingLabel?.id);
 
-  if (loading) return <Spinner />;
-  if (error) return <p>Error loading labels: {error.message}</p>;
+  // Only the first load: a refetch after a mutation keeps the list (and any open dialog) on screen.
+  const pending = loading && !data;
+  if (pending || error) {
+    return (
+      <PageLayout
+        title="Labels"
+        contentSlot={
+          <QueryState
+            query={{ isPending: pending, isError: error !== undefined, error, refetch }}
+            what="your labels"
+            count={data?.labels.length ?? 0}
+          />
+        }
+      />
+    );
+  }
 
   return (
     <>
-      {/* Create dialog */}
-      <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>New Label</DialogTitle>
-            <DialogDescription>Add a new label to your CRM.</DialogDescription>
-          </DialogHeader>
-          <LabelForm onSubmit={handleCreate} onCancel={() => setCreateDialogOpen(false)} />
-        </DialogContent>
-      </Dialog>
+      <FormDialog
+        open={createDialogOpen}
+        onOpenChange={setCreateDialogOpen}
+        title="New Label"
+        description="Add a new label to your CRM."
+      >
+        <LabelForm onSubmit={handleCreate} onCancel={() => setCreateDialogOpen(false)} />
+      </FormDialog>
 
-      {/* Edit dialog */}
-      <Dialog
+      <FormDialog
         open={editingLabel !== null}
         onOpenChange={(open) => {
           if (!open) setEditingLabel(null);
         }}
+        title="Edit Label"
+        description="Rename or recolor this label."
       >
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>Edit Label</DialogTitle>
-            <DialogDescription>Rename or recolor this label.</DialogDescription>
-          </DialogHeader>
-          {editingLabel && (
-            <LabelForm
-              key={editingLabel.id}
-              initialValues={{ label: editingLabel.label, color: editingLabel.color }}
-              onSubmit={handleEdit}
-              onCancel={() => setEditingLabel(null)}
-              submitLabel="Save"
-            />
-          )}
-        </DialogContent>
-      </Dialog>
+        {editingLabel && (
+          <LabelForm
+            key={editingLabel.id}
+            initialValues={{ label: editingLabel.label, color: editingLabel.color }}
+            onSubmit={handleEdit}
+            onCancel={() => setEditingLabel(null)}
+            submitLabel="Save"
+          />
+        )}
+      </FormDialog>
 
-      {/* Merge dialog */}
-      <Dialog
-        open={mergingLabel !== null}
-        onOpenChange={(open) => {
-          if (!open) {
-            setMergingLabel(null);
-            setMergeTargetId('');
-          }
-        }}
-      >
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>Merge label</DialogTitle>
-            <DialogDescription>
-              Choose the label to merge &ldquo;{mergingLabel?.label}&rdquo; into. All items labeled with &ldquo;
-              {mergingLabel?.label}&rdquo; will be re-labeled with the chosen label, and &ldquo;{mergingLabel?.label}
-              &rdquo; will be deleted.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="grid gap-4 py-2">
-            <div className="grid gap-1.5">
-              <label htmlFor="merge-target" className="text-sm font-medium leading-none">
-                Merge into
-              </label>
-              <select
-                id="merge-target"
-                value={mergeTargetId}
-                onChange={(e) => setMergeTargetId(e.target.value)}
-                className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-              >
-                <option value="">Select a label…</option>
-                {otherLabels.map((l) => (
-                  <option key={l.id} value={l.id}>
-                    {l.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="flex gap-2 justify-end">
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setMergingLabel(null);
-                  setMergeTargetId('');
-                }}
-              >
-                Cancel
-              </Button>
-              <Button disabled={!mergeTargetId} onClick={handleMergeConfirm}>
-                Merge
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
+      <LabelMergeDialog
+        label={mergingLabel}
+        targets={otherLabels}
+        onMerge={handleMerge}
+        onClose={() => setMergingLabel(null)}
+      />
 
       <LabelList
         labels={data?.labels ?? []}
         onClickAdd={() => setCreateDialogOpen(true)}
         onClickDelete={handleDelete}
         onClickEdit={setEditingLabel}
-        onClickMerge={(label) => {
-          setMergingLabel(label);
-          setMergeTargetId('');
-        }}
+        onClickMerge={setMergingLabel}
       />
     </>
   );

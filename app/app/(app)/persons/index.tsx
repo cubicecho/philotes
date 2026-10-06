@@ -5,8 +5,9 @@ import { graphql } from '@/__generated__/gql';
 import { OrderDirection, type PersonFilters } from '@/__generated__/graphql';
 import { PersonForm, type PersonFormValue } from '@/components/domain/person/form';
 import { PersonList, type PersonRowData } from '@/components/domain/person/list';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Spinner } from '@/components/ui/spinner.tsx';
+import { PageLayout } from '@/components/page-layout';
+import { QueryState } from '@/components/query-state';
+import { FormDialog } from '@/components/ui/form-dialog';
 import { useQueryStringState } from '@/hooks/use-query-string-state';
 
 // ---------------------------------------------------------------------------
@@ -147,7 +148,7 @@ export default function PersonsPage() {
   const orderDirection = sortDir === 'asc' ? OrderDirection.Asc : OrderDirection.Desc;
 
   // ── Data fetching — the whole (searched) list; sorting by name on the server
-  const { data, previousData, loading, error } = useQuery(GET_PERSONS, {
+  const { data, previousData, loading, error, refetch } = useQuery(GET_PERSONS, {
     variables: {
       where,
       orderBy: {
@@ -238,39 +239,52 @@ export default function PersonsPage() {
     setUrlState({ sortField: field, sortDir: dir });
   };
 
-  if (!displayData && loading) return <Spinner />;
-  if (error) return <p>Error loading people: {error.message}</p>;
+  const pending = !displayData && loading;
 
   return (
     <>
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-xl">
-          <DialogHeader>
-            <DialogTitle>New Person</DialogTitle>
-            <DialogDescription>Add a new person to your CRM.</DialogDescription>
-          </DialogHeader>
-          <PersonForm
-            availableLabels={labelsData?.labels ?? []}
-            onSubmit={handleSubmit}
-            onCancel={() => setDialogOpen(false)}
-          />
-        </DialogContent>
-      </Dialog>
+      {/* Above the load guard, so /persons?new=1 opens the form while the list is still arriving. */}
+      <FormDialog
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+        title="New Person"
+        description="Add a new person to your CRM."
+        className="sm:max-w-xl"
+      >
+        <PersonForm
+          availableLabels={labelsData?.labels ?? []}
+          onSubmit={handleSubmit}
+          onCancel={() => setDialogOpen(false)}
+        />
+      </FormDialog>
 
-      <PersonList
-        persons={filteredPersons}
-        allLabels={allLabels}
-        activeLabelIds={activeLabelIds}
-        onToggleLabel={handleToggleLabel}
-        q={searchValue}
-        onSearchChange={handleSearchChange}
-        loading={loading}
-        sortValue={`${sortField}-${sortDir}`}
-        onSortChange={handleSortChange}
-        grouped={isNameSort}
-        onClickAdd={() => setDialogOpen(true)}
-        onClickDelete={handleDelete}
-      />
+      {pending || error ? (
+        <PageLayout
+          title="People"
+          contentSlot={
+            <QueryState
+              query={{ isPending: pending, isError: error !== undefined, error, refetch }}
+              what="your people"
+              count={filteredPersons.length}
+            />
+          }
+        />
+      ) : (
+        <PersonList
+          persons={filteredPersons}
+          allLabels={allLabels}
+          activeLabelIds={activeLabelIds}
+          onToggleLabel={handleToggleLabel}
+          q={searchValue}
+          onSearchChange={handleSearchChange}
+          loading={loading}
+          sortValue={`${sortField}-${sortDir}`}
+          onSortChange={handleSortChange}
+          grouped={isNameSort}
+          onClickAdd={() => setDialogOpen(true)}
+          onClickDelete={handleDelete}
+        />
+      )}
     </>
   );
 }

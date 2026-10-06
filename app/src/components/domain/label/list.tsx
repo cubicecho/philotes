@@ -1,11 +1,16 @@
 import { useFragment } from '@apollo/client';
-import { GitMerge, Pencil, Tag, Trash2 } from 'lucide-react';
+import { View } from 'react-native';
 import { graphql } from '@/__generated__/gql';
 import type { Label_ListFragment } from '@/__generated__/graphql.ts';
-import { ListLayout } from '@/components/layouts/list';
+import { ActionButton } from '@/components/action-button';
+import { GitMerge } from '@/components/app-icons';
+import { LabelChip } from '@/components/domain/label/label-chip';
+import { ListItem } from '@/components/list-item';
+import { EmptyState } from '@/components/page';
+import { PageLayout } from '@/components/page-layout';
 import { Button } from '@/components/ui/button';
-import { LabelChip } from '@/components/ui/label-chip';
-import { Spinner } from '@/components/ui/spinner.tsx';
+import { Pencil, Tag, Trash2 } from '@/components/ui/icons';
+import { Spinner } from '@/components/ui/spinner';
 
 const LABEL_LIST = graphql(`
   fragment Label_List on Label {
@@ -17,12 +22,13 @@ const LABEL_LIST = graphql(`
 
 interface LabelRowProps {
   label: Label_ListFragment;
+  divided: boolean;
   onClickDelete: (id: string) => void;
   onClickEdit?: (label: Label_ListFragment) => void;
   onClickMerge?: (label: Label_ListFragment) => void;
 }
 
-function LabelRow({ label: from, onClickDelete, onClickEdit, onClickMerge }: LabelRowProps) {
+function LabelRow({ label: from, divided, onClickDelete, onClickEdit, onClickMerge }: LabelRowProps) {
   const { data: label, complete } = useFragment({
     fragment: LABEL_LIST,
     from,
@@ -33,45 +39,41 @@ function LabelRow({ label: from, onClickDelete, onClickEdit, onClickMerge }: Lab
   }
 
   return (
-    <div className="flex items-center justify-between gap-3 px-2 py-2 rounded-md hover:bg-muted/60 transition-colors">
-      <div className="flex items-center gap-3 min-w-0">
-        <LabelChip label={label.label} color={label.color} />
-        <p className="text-muted-foreground text-xs font-mono">{label.color}</p>
-      </div>
-      <div className="flex items-center">
-        {onClickEdit && (
-          <Button
+    <ListItem
+      className={divided ? 'rounded-none border-border/60 border-t' : undefined}
+      leadingSlot={<LabelChip label={label.label} color={label.color} />}
+      title={label.color}
+      titleClassName="font-mono font-normal text-muted-foreground text-xs"
+      actionSlot={
+        <>
+          {onClickEdit && (
+            <ActionButton
+              variant="ghost"
+              size="icon-sm"
+              label={`Edit ${label.label}`}
+              iconSlot={<Pencil />}
+              onPress={() => onClickEdit(label)}
+            />
+          )}
+          {onClickMerge && (
+            <ActionButton
+              variant="ghost"
+              size="icon-sm"
+              label={`Merge ${label.label}`}
+              iconSlot={<GitMerge />}
+              onPress={() => onClickMerge(label)}
+            />
+          )}
+          <ActionButton
             variant="ghost"
-            size="icon"
-            className="h-8 w-8 text-muted-foreground"
-            onClick={() => onClickEdit(label)}
-            aria-label={`Edit ${label.label}`}
-          >
-            <Pencil className="h-4 w-4" />
-          </Button>
-        )}
-        {onClickMerge && (
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8 text-muted-foreground"
-            onClick={() => onClickMerge(label)}
-            aria-label={`Merge ${label.label}`}
-          >
-            <GitMerge className="h-4 w-4" />
-          </Button>
-        )}
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-8 w-8 text-muted-foreground/50 hover:text-destructive"
-          onClick={() => onClickDelete(label.id)}
-          aria-label={`Delete ${label.label}`}
-        >
-          <Trash2 className="h-4 w-4" />
-        </Button>
-      </div>
-    </div>
+            size="icon-sm"
+            label={`Delete ${label.label}`}
+            iconSlot={<Trash2 />}
+            onPress={() => onClickDelete(label.id)}
+          />
+        </>
+      }
+    />
   );
 }
 
@@ -83,36 +85,33 @@ interface LabelListProps {
   onClickMerge?: (label: Label_ListFragment) => void;
 }
 
+/** The labels screen: it is its own `PageLayout`, so a route renders it as the whole page. */
 export function LabelList({ labels, onClickAdd, onClickDelete, onClickEdit, onClickMerge }: LabelListProps) {
   return (
-    <ListLayout
-      spacing={false}
-      header={
-        <div className="flex items-center justify-between pt-3">
-          <h1 className="font-bold text-2xl tracking-tight">Labels</h1>
-          <Button onClick={onClickAdd}>
-            <Tag className="mr-2 h-4 w-4" />
-            Add Label
-          </Button>
-        </div>
-      }
-      body={
+    <PageLayout
+      title="Labels"
+      actionSlot={<Button content="Add Label" iconSlot={<Tag />} onPress={onClickAdd} />}
+      contentSlot={
         labels.length === 0 ? (
-          <div className="py-16 text-center text-sm text-muted-foreground">
-            <p>No labels yet. Labels help you group people — Friends, Work, Book Club…</p>
-          </div>
+          <EmptyState
+            icon={Tag}
+            title="No labels yet"
+            description="Labels help you group people — Friends, Work, Book Club…"
+          />
         ) : (
-          <div className="divide-y divide-border/60">
-            {labels.map((label) => (
-              <LabelRow
-                key={label.id}
-                label={label}
-                onClickDelete={onClickDelete}
-                onClickEdit={onClickEdit}
-                onClickMerge={onClickMerge}
-              />
+          <View role="list">
+            {labels.map((label, index) => (
+              <View key={label.id} role="listitem">
+                <LabelRow
+                  label={label}
+                  divided={index > 0}
+                  onClickDelete={onClickDelete}
+                  onClickEdit={onClickEdit}
+                  onClickMerge={onClickMerge}
+                />
+              </View>
             ))}
-          </div>
+          </View>
         )
       }
     />
