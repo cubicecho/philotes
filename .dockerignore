@@ -7,3 +7,9 @@ db/dist
 .git
 pgdata
 avatars
+.env
+.env.*
+!.env.example
+dist
+**/.expo
+**/__generated__
