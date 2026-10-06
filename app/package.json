@@ -8,8 +8,7 @@
     "build": "expo export --platform web",
     "preview": "npx serve dist",
     "clean": "rm -rf src/__generated__ node_modules .expo",
-    "codegen": "graphql-codegen-esm",
-    "typecheck": "tsc --noEmit"
+    "codegen": "graphql-codegen-esm"
   },
   "dependencies": {
     "@apollo/client": "^3.12.6",

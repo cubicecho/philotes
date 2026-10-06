@@ -129,12 +129,8 @@ npx vitest run -t "covers every table in the schema"
 ### Linting & Formatting (Biome)
 ```bash
 npm run check            # Run codegen, then check:biome and check:types
-npm run check:biome      # Run Biome linter + formatter check (all-in-one)
-npm run check:fix        # Run Biome linter + formatter with auto-fix
-npm run lint             # Run Biome linter only
-npm run lint:fix         # Run Biome linter with auto-fix
-npm run format           # Format all files with Biome
-npm run format:check     # Check formatting without writing
+npm run check:biome      # Biome format, lint and import order, with fixes applied
+npx biome ci .           # The same checks without writing (what CI should run)
 npm run check:types      # Run tsc --noEmit across all packages (app, server, db)
 ```
 
@@ -168,7 +164,7 @@ npm ci --prefer-offline --no-audit
 ## Code Style Guidelines
 
 ### Formatting (Biome)
-Do not hand-format — run `npm run check:fix`. The settings, from `biome.json`:
+Do not hand-format — run `npm run check:biome`. The settings, from `biome.json`:
 
 - **Semicolons**: always
 - **Quotes**: single quotes (`'`)
@@ -212,7 +208,16 @@ Do not hand-format — run `npm run check:fix`. The settings, from `biome.json`:
   ```
 - Use `interface` for object shapes, `type` for unions/intersections/utilities
 - Export types alongside runtime values from shared packages (`db/`)
-- Use `unknown` over `any` — `suspicious/noExplicitAny` is a warning
+- Use `unknown` over `any` — `suspicious/noExplicitAny` is an error; an
+  unavoidable one carries `// biome-ignore lint/suspicious/noExplicitAny: <reason>`
+- Every package extends `tsconfig.base.json`. It sets `erasableSyntaxOnly`
+  (no `enum`, `namespace` or parameter properties — Node has to be able to strip
+  the types), `verbatimModuleSyntax`, `noUnusedLocals` and `noUnusedParameters`
+- No non-null assertions (`value!`) — narrow the value instead
+- Every `if`, `else` and loop body is a braced block on its own lines
+- A logic check is negated by comparing with `false`, in a positively named
+  const (`const isMissing = ids.has(id) === false;`), not with `!`. A null guard
+  (`if (!value)`) may keep the `!`. `no-negation.grit` enforces it
 
 ### Naming Conventions
 - **Files**: `kebab-case.ts` / `kebab-case.tsx`
