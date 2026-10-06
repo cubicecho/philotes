@@ -1,5 +1,8 @@
 import { Link } from 'expo-router';
-import { Avatar } from '@/components/ui/avatar';
+import { Text, View } from 'react-native';
+import { LabelChip } from '@/components/domain/label/label-chip';
+import { Avatar } from '@/components/domain/person/avatar';
+import { EmptyState } from '@/components/page';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -51,28 +54,6 @@ function computeSuggestions(
 }
 
 // ---------------------------------------------------------------------------
-// Label chip (read-only)
-// ---------------------------------------------------------------------------
-
-interface SharedLabelChipProps {
-  label: string;
-  color: string;
-}
-
-function SharedLabelChip({ label, color }: SharedLabelChipProps) {
-  return (
-    <span className="inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs">
-      <span
-        className="inline-block h-2 w-2 rounded-full shrink-0"
-        style={{ backgroundColor: color }}
-        aria-hidden="true"
-      />
-      {label}
-    </span>
-  );
-}
-
-// ---------------------------------------------------------------------------
 // Suggestion row
 // ---------------------------------------------------------------------------
 
@@ -83,22 +64,22 @@ interface SuggestionRowProps {
 function SuggestionRow({ suggestion }: SuggestionRowProps) {
   const { person, sharedLabels } = suggestion;
   return (
-    <div className="flex items-start gap-3 rounded-md border border-border px-3 py-2 text-sm">
+    <View className="flex-row items-start gap-3 rounded-md border border-border px-3 py-2">
       <Avatar firstName={person.firstName} lastName={person.lastName} avatarPath={person.avatarPath} size="sm" />
-      <div className="min-w-0 flex-1">
-        <Link href={`/persons/${person.id}`} className="font-medium text-foreground hover:underline">
+      <View className="min-w-0 flex-1 gap-1">
+        <Link href={`/persons/${person.id}`} className="font-medium text-foreground text-sm">
           {person.firstName} {person.lastName}
         </Link>
-        {person.email && <p className="text-muted-foreground text-xs mt-0.5">{person.email}</p>}
-        {sharedLabels.length > 0 && (
-          <div className="mt-1 flex flex-wrap gap-1">
+        {person.email ? <Text className="text-muted-foreground text-xs">{person.email}</Text> : null}
+        {sharedLabels.length > 0 ? (
+          <View className="flex-row flex-wrap gap-1">
             {sharedLabels.map((l) => (
-              <SharedLabelChip key={l.id} label={l.label} color={l.color} />
+              <LabelChip key={l.id} label={l.label} color={l.color} />
             ))}
-          </div>
-        )}
-      </div>
-    </div>
+          </View>
+        ) : null}
+      </View>
+    </View>
   );
 }
 
@@ -115,14 +96,14 @@ export function PersonIntroductions({
   const suggestions = computeSuggestions(currentPersonId, currentPersonLabels, allPersons, linkedPersonIds);
 
   if (suggestions.length === 0) {
-    return <p className="text-muted-foreground text-sm">No label-based suggestions yet.</p>;
+    return <EmptyState compact title="No label-based suggestions yet." />;
   }
 
   return (
-    <div className="space-y-2">
+    <View className="gap-2">
       {suggestions.map((s) => (
         <SuggestionRow key={s.person.id} suggestion={s} />
       ))}
-    </div>
+    </View>
   );
 }

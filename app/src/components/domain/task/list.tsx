@@ -1,11 +1,16 @@
 import { useMutation } from '@apollo/client';
-import { CheckSquare, Square, Trash2 } from 'lucide-react';
 import { useState } from 'react';
+import { View } from 'react-native';
 import { graphql } from '@/__generated__/gql';
-import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { FieldGroup } from '@/components/ui/field';
-import { FormError, useAppForm } from '@/components/ui/form-field.tsx';
+import { ActionButton } from '@/components/action-button';
+import { useAppForm } from '@/components/app-form';
+import { ListItem } from '@/components/list-item';
+import { EmptyState } from '@/components/page';
+import { SectionHeading } from '@/components/section-heading';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Form } from '@/components/ui/form';
+import { FormDialog, FormDialogFooter } from '@/components/ui/form-dialog';
+import { Trash2 } from '@/components/ui/icons';
 
 // ---------------------------------------------------------------------------
 // Fragment
@@ -137,32 +142,25 @@ function TaskRow({ task, onDelete, onUpdate }: TaskRowProps) {
     onDelete();
   };
 
+  const details = [task.notes, task.dueAt ? `Due: ${formatDueDate(task.dueAt)}` : null].filter(Boolean).join('\n');
+
   return (
-    <div className="flex items-start gap-2 rounded-md border border-border px-3 py-2 text-sm">
-      <button
-        type="button"
-        onClick={handleToggle}
-        className="mt-0.5 shrink-0 text-muted-foreground hover:text-foreground transition-colors"
-        aria-label={isCompleted ? 'Mark incomplete' : 'Mark complete'}
-      >
-        {isCompleted ? <CheckSquare className="h-4 w-4 text-primary" /> : <Square className="h-4 w-4" />}
-      </button>
-
-      <div className="min-w-0 flex-1">
-        <p className={isCompleted ? 'line-through text-muted-foreground' : 'font-medium'}>{task.title}</p>
-        {task.notes && <p className="text-xs text-muted-foreground mt-0.5 whitespace-pre-wrap">{task.notes}</p>}
-        {task.dueAt && <p className="text-xs text-muted-foreground mt-0.5">Due: {formatDueDate(task.dueAt)}</p>}
-      </div>
-
-      <button
-        type="button"
-        onClick={handleDelete}
-        className="shrink-0 text-muted-foreground hover:text-destructive transition-colors"
-        aria-label="Delete task"
-      >
-        <Trash2 className="h-3.5 w-3.5" />
-      </button>
-    </div>
+    <ListItem
+      className="rounded-md border border-border"
+      leadingSlot={
+        <Checkbox
+          checked={isCompleted}
+          onCheckedChange={handleToggle}
+          accessibilityLabel={isCompleted ? 'Mark incomplete' : 'Mark complete'}
+        />
+      }
+      title={task.title}
+      titleClassName={isCompleted ? 'font-normal text-muted-foreground line-through' : undefined}
+      description={details || undefined}
+      actionSlot={
+        <ActionButton variant="ghost" size="icon-sm" label="Delete task" iconSlot={<Trash2 />} onPress={handleDelete} />
+      }
+    />
   );
 }
 
@@ -176,16 +174,20 @@ interface AddTaskFormProps {
   onCancel: () => void;
 }
 
+interface AddTaskFields {
+  title: string;
+  notes: string;
+  dueAt: Date | null;
+}
+
 function AddTaskForm({ personId, onAdded, onCancel }: AddTaskFormProps) {
   const [formError, setFormError] = useState<string | null>(null);
   const [createTask] = useMutation(CREATE_TASK);
 
+  const defaultValues: AddTaskFields = { title: '', notes: '', dueAt: null };
+
   const form = useAppForm({
-    defaultValues: {
-      title: '',
-      notes: '',
-      dueAt: '',
-    },
+    defaultValues,
     onSubmit: async ({ value }) => {
       setFormError(null);
       try {
@@ -194,7 +196,8 @@ function AddTaskForm({ personId, onAdded, onCancel }: AddTaskFormProps) {
             personId,
             title: value.title,
             notes: value.notes || null,
-            dueAt: value.dueAt ? new Date(value.dueAt) : null,
+            // Omitted rather than null: the server stores an explicit null DateTime as the epoch.
+            dueAt: value.dueAt ?? undefined,
           },
         });
         form.reset();
@@ -210,34 +213,18 @@ function AddTaskForm({ personId, onAdded, onCancel }: AddTaskFormProps) {
   });
 
   return (
-    <form
-      onSubmit={(e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        form.handleSubmit();
-      }}
-    >
-      <FieldGroup className="gap-4">
-        <form.AppField name="title">{(field) => <field.TextField label="Title" />}</form.AppField>
-        <form.AppField name="notes">{(field) => <field.TextField label="Notes" />}</form.AppField>
+    <form.AppForm>
+      <Form className="gap-4">
+        <form.AppField name="title">{(field) => <field.InputField label="Title" />}</form.AppField>
+        <form.AppField name="notes">{(field) => <field.InputField label="Notes" />}</form.AppField>
         <form.AppField name="dueAt">
-          {(field) => <field.TextField label="Due Date" type="datetime-local" />}
+          {(field) => <field.DateTimeField label="Due Date" mode="datetime" clearable />}
         </form.AppField>
-        <FormError formError={formError} />
-      </FieldGroup>
-      <form.Subscribe selector={(s) => [s.canSubmit, s.isSubmitting]}>
-        {([canSubmit, isSubmitting]) => (
-          <div className="flex gap-2 mt-4">
-            <Button type="submit" disabled={!canSubmit || isSubmitting}>
-              {isSubmitting ? 'Adding...' : 'Add Task'}
-            </Button>
-            <Button type="button" variant="outline" onClick={onCancel}>
-              Cancel
-            </Button>
-          </div>
-        )}
-      </form.Subscribe>
-    </form>
+        <FormDialogFooter onCancel={onCancel} error={formError}>
+          <form.SubmitButton createLabel="Add Task" savingLabel="Adding..." />
+        </FormDialogFooter>
+      </Form>
+    </form.AppForm>
   );
 }
 
@@ -262,47 +249,41 @@ export function TaskList({
   const doneTasks = tasks.filter((t) => t.completedAt != null);
 
   return (
-    <div className="space-y-4">
-      {/* Open tasks */}
-      {openTasks.length === 0 && doneTasks.length === 0 && (
-        <p className="text-muted-foreground text-sm">No tasks yet.</p>
-      )}
+    <View className="gap-4">
+      {openTasks.length === 0 && doneTasks.length === 0 && <EmptyState compact title="No tasks yet." />}
 
       {openTasks.length > 0 && (
-        <div className="space-y-2">
-          <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Open</h3>
+        <View className="gap-2">
+          <SectionHeading variant="overline" level={3}>
+            Open
+          </SectionHeading>
           {openTasks.map((task) => (
             <TaskRow key={task.id} task={task} onDelete={onDelete} onUpdate={onUpdate} />
           ))}
-        </div>
+        </View>
       )}
 
-      {/* Done tasks */}
       {doneTasks.length > 0 && (
-        <div className="space-y-2">
-          <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Done</h3>
+        <View className="gap-2">
+          <SectionHeading variant="overline" level={3}>
+            Done
+          </SectionHeading>
           {doneTasks.map((task) => (
             <TaskRow key={task.id} task={task} onDelete={onDelete} onUpdate={onUpdate} />
           ))}
-        </div>
+        </View>
       )}
 
-      {/* Add Task dialog */}
-      <Dialog open={addDialogOpen} onOpenChange={setAddDialogOpen}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>Add Task</DialogTitle>
-          </DialogHeader>
-          <AddTaskForm
-            personId={personId}
-            onAdded={() => {
-              setAddDialogOpen(false);
-              onAdd();
-            }}
-            onCancel={() => setAddDialogOpen(false)}
-          />
-        </DialogContent>
-      </Dialog>
-    </div>
+      <FormDialog open={addDialogOpen} onOpenChange={setAddDialogOpen} title="Add Task">
+        <AddTaskForm
+          personId={personId}
+          onAdded={() => {
+            setAddDialogOpen(false);
+            onAdd();
+          }}
+          onCancel={() => setAddDialogOpen(false)}
+        />
+      </FormDialog>
+    </View>
   );
 }

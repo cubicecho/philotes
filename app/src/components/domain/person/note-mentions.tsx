@@ -1,5 +1,8 @@
 import { useRef, useState } from 'react';
-import { type MentionablePerson, parseMentionedPersonIds } from '@/lib/mentions';
+import { Pressable, Text, View } from 'react-native';
+import { type FieldProps, FieldWrapper, splitProps, useFieldContext } from '@/components/ui/form';
+import { Textarea, type TextareaHandle } from '@/components/ui/textarea';
+import type { MentionablePerson } from '@/lib/mentions';
 
 // ---------------------------------------------------------------------------
 // @-Mention dropdown
@@ -9,10 +12,10 @@ interface MentionDropdownProps {
   query: string;
   allPersons: MentionablePerson[];
   onSelect: (person: MentionablePerson) => void;
-  anchorRef: React.RefObject<HTMLTextAreaElement | null>;
 }
 
-export function MentionDropdown({ query, allPersons, onSelect, anchorRef }: MentionDropdownProps) {
+/** The people an `@query` could mean, listed in flow beneath the textarea. */
+export function MentionDropdown({ query, allPersons, onSelect }: MentionDropdownProps) {
   const lower = query.toLowerCase();
   const filtered = allPersons.filter((p) => {
     const full = `${p.firstName} ${p.lastName}`.toLowerCase();
@@ -21,107 +24,84 @@ export function MentionDropdown({ query, allPersons, onSelect, anchorRef }: Ment
 
   if (filtered.length === 0) return null;
 
-  // Position beneath the textarea
-  const rect = anchorRef.current?.getBoundingClientRect();
-  const style: React.CSSProperties = rect
-    ? {
-        position: 'fixed',
-        top: rect.bottom + 4,
-        left: rect.left,
-        zIndex: 50,
-        minWidth: 180,
-      }
-    : { position: 'absolute', zIndex: 50, minWidth: 180 };
-
   return (
-    <div style={style} className="rounded-md border border-border bg-popover shadow-md py-1 max-h-48 overflow-y-auto">
+    <View role="list" className="max-h-48 overflow-hidden rounded-md border border-border bg-popover py-1">
       {filtered.map((p) => (
-        <button
+        <Pressable
           key={p.id}
-          type="button"
-          onMouseDown={(e) => {
-            // Prevent textarea blur before click registers
-            e.preventDefault();
-            onSelect(p);
-          }}
-          className="w-full px-3 py-1.5 text-left text-sm hover:bg-muted transition-colors"
+          role="button"
+          onPress={() => onSelect(p)}
+          className="px-3 py-1.5 hover:bg-hover active:bg-hover"
         >
-          {p.firstName} {p.lastName}
-        </button>
+          <Text className="text-sm text-popover-foreground">
+            {p.firstName} {p.lastName}
+          </Text>
+        </Pressable>
       ))}
-    </div>
+    </View>
   );
 }
 
 // ---------------------------------------------------------------------------
-// Mention-aware textarea hook
+// Mention-aware textarea field
 // ---------------------------------------------------------------------------
 
-interface UseMentionTextareaOptions {
-  allPersons: MentionablePerson[];
+// The textarea reports its text but not its caret, so a mention is the `@word`
+// the text currently ends with.
+const TRAILING_MENTION = /@([\w']*)$/;
+
+/** The partial name after a trailing `@`, or `null` when the text does not end in one. */
+export function trailingMentionQuery(text: string): string | null {
+  return TRAILING_MENTION.exec(text)?.[1] ?? null;
 }
 
-export function useMentionTextarea({ allPersons }: UseMentionTextareaOptions, initialBody = '') {
-  const [body, setBody] = useState(initialBody);
+/** Replace the trailing partial `@query` with `@FirstName LastName`. */
+export function completeMention(text: string, person: MentionablePerson): string {
+  return text.replace(TRAILING_MENTION, `@${person.firstName} ${person.lastName}`);
+}
+
+type MentionTextareaFieldProps = FieldProps & {
+  allPersons: MentionablePerson[];
+  placeholder?: string | undefined;
+  rows?: number | undefined;
+};
+
+/** A note body bound to a `string` field, offering people to mention as `@` is typed. Render inside `form.AppField`. */
+export function MentionTextareaField(props: MentionTextareaFieldProps) {
+  const [fieldProps, { allPersons, placeholder, rows }] = splitProps(props);
+  const field = useFieldContext<string>();
   const [mentionQuery, setMentionQuery] = useState<string | null>(null);
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
-
-  const detectMention = (value: string, cursorPos: number) => {
-    const textUpToCursor = value.slice(0, cursorPos);
-    // Match an @ followed by non-whitespace chars at the end of text
-    const match = /@([\w']*)$/.exec(textUpToCursor);
-    if (match) {
-      setMentionQuery(match[1]);
-    } else {
-      setMentionQuery(null);
-    }
-  };
-
-  const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    const val = e.target.value;
-    setBody(val);
-    detectMention(val, e.target.selectionStart ?? val.length);
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === 'Escape' && mentionQuery !== null) {
-      setMentionQuery(null);
-    }
-  };
+  const textareaRef = useRef<TextareaHandle>(null);
 
   const handleSelect = (person: MentionablePerson) => {
-    if (!textareaRef.current) return;
-    const cursorPos = textareaRef.current.selectionStart ?? body.length;
-    const textUpToCursor = body.slice(0, cursorPos);
-    // Replace the partial @query with @FirstName LastName
-    const replaced = textUpToCursor.replace(/@[\w']*$/, `@${person.firstName} ${person.lastName}`);
-    const newBody = replaced + body.slice(cursorPos);
-    setBody(newBody);
+    field.handleChange(completeMention(field.state.value, person));
     setMentionQuery(null);
-    // Restore focus + move cursor to end of inserted mention
-    setTimeout(() => {
-      textareaRef.current?.focus();
-      const newPos = replaced.length;
-      textareaRef.current?.setSelectionRange(newPos, newPos);
-    }, 0);
+    // Pressing a row took focus from the textarea.
+    textareaRef.current?.focus();
   };
 
-  const reset = () => {
-    setBody('');
-    setMentionQuery(null);
-  };
-
-  const mentionedPersonIds = parseMentionedPersonIds(body, allPersons);
-
-  return {
-    body,
-    setBody,
-    mentionQuery,
-    mentionedPersonIds,
-    textareaRef,
-    handleChange,
-    handleKeyDown,
-    handleSelect,
-    reset,
-  };
+  return (
+    <View className="gap-1">
+      <FieldWrapper
+        {...fieldProps}
+        controlSlot={
+          <Textarea
+            ref={textareaRef}
+            value={field.state.value}
+            onChangeText={(text) => {
+              field.handleChange(text);
+              setMentionQuery(trailingMentionQuery(text));
+            }}
+            onBlur={field.handleBlur}
+            onEscape={() => setMentionQuery(null)}
+            rows={rows}
+            placeholder={placeholder}
+          />
+        }
+      />
+      {mentionQuery !== null && (
+        <MentionDropdown query={mentionQuery} allPersons={allPersons} onSelect={handleSelect} />
+      )}
+    </View>
+  );
 }

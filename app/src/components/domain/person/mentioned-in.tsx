@@ -1,0 +1,35 @@
+import { Link } from 'expo-router';
+import { Text, View } from 'react-native';
+
+export interface MentionedInNote {
+  id: string;
+  body: string;
+  person?: { id: string; firstName: string; lastName: string } | null;
+}
+
+export interface PersonMentionedInProps {
+  notes: MentionedInNote[];
+}
+
+/** Notes on other people that mention this one, each linking back to whose note it is. */
+export function PersonMentionedIn({ notes }: PersonMentionedInProps) {
+  return (
+    <View className="gap-2">
+      {notes.map((n) => (
+        <View key={n.id} className="gap-0.5 rounded-md border border-border px-3 py-2">
+          <Text numberOfLines={3} className="text-foreground text-sm">
+            {n.body.length > 120 ? `${n.body.slice(0, 120)}…` : n.body}
+          </Text>
+          {n.person ? (
+            <Text className="text-muted-foreground text-xs">
+              by{' '}
+              <Link href={`/persons/${n.person.id}`} className="text-foreground/80 underline">
+                {n.person.firstName} {n.person.lastName}
+              </Link>
+            </Text>
+          ) : null}
+        </View>
+      ))}
+    </View>
+  );
+}

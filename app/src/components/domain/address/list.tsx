@@ -1,11 +1,18 @@
 import { useMutation } from '@apollo/client';
-import { Clipboard, MapPin, Trash2 } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { Text, View } from 'react-native';
 import { graphql } from '@/__generated__/gql';
 import type { AddressListFragment } from '@/__generated__/graphql';
 import { AddressTypeEnum } from '@/__generated__/graphql';
-import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { useAppForm } from '@/components/app-form';
+import { MapPin } from '@/components/app-icons';
+import { ConfirmButton } from '@/components/confirm-button';
+import { ListItem } from '@/components/list-item';
+import { Badge } from '@/components/ui/badge';
+import { CopyButton } from '@/components/ui/copy-button';
+import { FieldRow, Form } from '@/components/ui/form';
+import { FormDialog, FormDialogFooter } from '@/components/ui/form-dialog';
+import { Trash2 } from '@/components/ui/icons';
 
 // ---------------------------------------------------------------------------
 // Fragment
@@ -93,10 +100,19 @@ const TYPE_LABELS: Record<AddressTypeEnum, string> = {
   [AddressTypeEnum.Other]: 'Other',
 };
 
+const TYPE_OPTIONS = [AddressTypeEnum.Home, AddressTypeEnum.Work, AddressTypeEnum.Other].map((value) => ({
+  value,
+  label: TYPE_LABELS[value],
+}));
+
+function cityStateLine(address: AddressData): string {
+  return [address.city, address.state, address.postalCode].filter(Boolean).join(', ');
+}
+
 function formatAddress(address: AddressData): string {
   const parts: string[] = [address.line1];
   if (address.line2) parts.push(address.line2);
-  const cityStateParts = [address.city, address.state, address.postalCode].filter(Boolean).join(', ');
+  const cityStateParts = cityStateLine(address);
   if (cityStateParts) parts.push(cityStateParts);
   if (address.country) parts.push(address.country);
   return parts.join('\n');
@@ -119,276 +135,143 @@ function AddressRow({ address, onDelete }: AddressRowProps) {
     onDelete();
   };
 
-  const handleCopy = () => {
-    navigator.clipboard.writeText(formatAddress(address));
-  };
-
-  const cityStateLine = [address.city, address.state, address.postalCode].filter(Boolean).join(', ');
+  // Everything under line 1, on the row's one description line.
+  const rest = [address.line2, cityStateLine(address), address.country].filter(Boolean).join(' · ');
 
   return (
-    <div className="rounded-md border border-border px-3 py-2 text-sm space-y-1">
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0 flex-1 space-y-0.5">
-          {/* Type badge + label + primary badge */}
-          <div className="flex flex-wrap items-center gap-1.5">
-            <span className="rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground capitalize">
-              {TYPE_LABELS[address.type]}
-            </span>
-            {address.label && <span className="text-xs text-muted-foreground">{address.label}</span>}
-            {address.isPrimary && (
-              <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs text-primary font-medium">Primary</span>
-            )}
-          </div>
-
-          {/* Address lines */}
-          <p className="font-medium">{address.line1}</p>
-          {address.line2 && <p className="text-muted-foreground text-xs">{address.line2}</p>}
-          {cityStateLine && <p className="text-muted-foreground text-xs">{cityStateLine}</p>}
-          {address.country && <p className="text-muted-foreground text-xs">{address.country}</p>}
-        </div>
-
-        {/* Actions */}
-        <div className="flex shrink-0 gap-1 text-muted-foreground">
-          <button
-            type="button"
-            onClick={handleCopy}
-            className="hover:text-foreground transition-colors"
-            aria-label="Copy address to clipboard"
-          >
-            <Clipboard className="h-3.5 w-3.5" />
-          </button>
-          <button
-            type="button"
-            onClick={handleDelete}
-            className="hover:text-destructive transition-colors"
-            aria-label="Delete address"
-          >
-            <Trash2 className="h-3.5 w-3.5" />
-          </button>
-        </div>
-      </div>
-    </div>
+    <ListItem
+      className="border border-border"
+      leadingSlot={<MapPin className="h-4 w-4 text-muted-foreground" />}
+      title={address.line1}
+      description={rest || undefined}
+      meta={
+        <>
+          {address.label ? <Text className="text-muted-foreground text-xs">{address.label}</Text> : null}
+          <Badge variant="secondary">{TYPE_LABELS[address.type]}</Badge>
+          {address.isPrimary ? <Badge variant="info">Primary</Badge> : null}
+        </>
+      }
+      actionSlot={
+        <>
+          <CopyButton variant="ghost" value={formatAddress(address)} label="Copy address to clipboard" />
+          <ConfirmButton
+            variant="ghost"
+            size="icon-sm"
+            label="Delete address"
+            title="Delete this address?"
+            description={`${address.line1} is removed from this person.`}
+            onConfirm={handleDelete}
+            iconSlot={<Trash2 className="h-4 w-4" />}
+          />
+        </>
+      }
+    />
   );
 }
 
 // ---------------------------------------------------------------------------
-// Add address form
+// Add address dialog
 // ---------------------------------------------------------------------------
 
-interface AddressFormValues {
-  type: AddressTypeEnum;
-  label: string;
-  line1: string;
-  line2: string;
-  city: string;
-  state: string;
-  postalCode: string;
-  country: string;
-  isPrimary: boolean;
-}
+const EMPTY_ADDRESS = {
+  type: AddressTypeEnum.Home as string,
+  label: '',
+  line1: '',
+  line2: '',
+  city: '',
+  state: '',
+  postalCode: '',
+  country: 'US',
+  isPrimary: false,
+};
 
-interface AddAddressFormProps {
+interface AddAddressDialogProps {
   personId: string;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
   onAdded: () => void;
-  onCancel: () => void;
 }
 
-function AddAddressForm({ personId, onAdded, onCancel }: AddAddressFormProps) {
-  const [createAddresses, { loading }] = useMutation(CREATE_ADDRESSES);
-  const [values, setValues] = useState<AddressFormValues>({
-    type: AddressTypeEnum.Home,
-    label: '',
-    line1: '',
-    line2: '',
-    city: '',
-    state: '',
-    postalCode: '',
-    country: 'US',
-    isPrimary: false,
+function AddAddressDialog({ personId, open, onOpenChange, onAdded }: AddAddressDialogProps) {
+  const [createAddresses, { error, reset }] = useMutation(CREATE_ADDRESSES);
+
+  const form = useAppForm({
+    defaultValues: EMPTY_ADDRESS,
+    onSubmit: async ({ value }) => {
+      try {
+        await createAddresses({
+          variables: {
+            values: [
+              {
+                personId,
+                type: value.type as AddressTypeEnum,
+                label: value.label.trim() || null,
+                line1: value.line1.trim(),
+                line2: value.line2.trim() || null,
+                city: value.city.trim() || null,
+                state: value.state.trim() || null,
+                postalCode: value.postalCode.trim() || null,
+                country: value.country.trim() || null,
+                isPrimary: value.isPrimary,
+              },
+            ],
+          },
+        });
+      } catch {
+        // Stay open with what was typed; the footer shows the mutation's error.
+        return;
+      }
+      onOpenChange(false);
+      onAdded();
+    },
   });
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!values.line1.trim()) return;
-
-    await createAddresses({
-      variables: {
-        values: [
-          {
-            personId,
-            type: values.type,
-            label: values.label.trim() || null,
-            line1: values.line1.trim(),
-            line2: values.line2.trim() || null,
-            city: values.city.trim() || null,
-            state: values.state.trim() || null,
-            postalCode: values.postalCode.trim() || null,
-            country: values.country.trim() || null,
-            isPrimary: values.isPrimary,
-          },
-        ],
-      },
-    });
-    onAdded();
-  };
-
-  const fieldClass =
-    'w-full rounded-md border border-border bg-background px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring';
-  const labelClass = 'block text-sm font-medium mb-1';
+  useEffect(() => {
+    if (!open) return;
+    form.reset(EMPTY_ADDRESS);
+    reset();
+  }, [open, form, reset]);
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-3">
-      {/* Type */}
-      <div>
-        <label htmlFor="addr-type" className={labelClass}>
-          Type
-        </label>
-        <select
-          id="addr-type"
-          value={values.type}
-          onChange={(e) =>
-            setValues((v) => ({
-              ...v,
-              type: e.target.value as AddressTypeEnum,
-            }))
-          }
-          className={fieldClass}
-        >
-          <option value={AddressTypeEnum.Home}>Home</option>
-          <option value={AddressTypeEnum.Work}>Work</option>
-          <option value={AddressTypeEnum.Other}>Other</option>
-        </select>
-      </div>
-
-      {/* Label */}
-      <div>
-        <label htmlFor="addr-label" className={labelClass}>
-          Label <span className="text-muted-foreground font-normal">(optional)</span>
-        </label>
-        <input
-          id="addr-label"
-          type="text"
-          placeholder="e.g. Parents' house"
-          value={values.label}
-          onChange={(e) => setValues((v) => ({ ...v, label: e.target.value }))}
-          className={fieldClass}
-        />
-      </div>
-
-      {/* Line 1 */}
-      <div>
-        <label htmlFor="addr-line1" className={labelClass}>
-          Address Line 1
-        </label>
-        <input
-          id="addr-line1"
-          type="text"
-          placeholder="123 Main St"
-          value={values.line1}
-          onChange={(e) => setValues((v) => ({ ...v, line1: e.target.value }))}
-          className={fieldClass}
-          required
-          // biome-ignore lint/a11y/noAutofocus: intentional for modal forms
-          autoFocus
-        />
-      </div>
-
-      {/* Line 2 */}
-      <div>
-        <label htmlFor="addr-line2" className={labelClass}>
-          Address Line 2 <span className="text-muted-foreground font-normal">(optional)</span>
-        </label>
-        <input
-          id="addr-line2"
-          type="text"
-          placeholder="Apt 4B"
-          value={values.line2}
-          onChange={(e) => setValues((v) => ({ ...v, line2: e.target.value }))}
-          className={fieldClass}
-        />
-      </div>
-
-      {/* City / State / Postal */}
-      <div className="grid grid-cols-3 gap-2">
-        <div>
-          <label htmlFor="addr-city" className={labelClass}>
-            City
-          </label>
-          <input
-            id="addr-city"
-            type="text"
-            placeholder="City"
-            value={values.city}
-            onChange={(e) => setValues((v) => ({ ...v, city: e.target.value }))}
-            className={fieldClass}
-          />
-        </div>
-        <div>
-          <label htmlFor="addr-state" className={labelClass}>
-            State
-          </label>
-          <input
-            id="addr-state"
-            type="text"
-            placeholder="State"
-            value={values.state}
-            onChange={(e) => setValues((v) => ({ ...v, state: e.target.value }))}
-            className={fieldClass}
-          />
-        </div>
-        <div>
-          <label htmlFor="addr-postal" className={labelClass}>
-            Postal Code
-          </label>
-          <input
-            id="addr-postal"
-            type="text"
-            placeholder="12345"
-            value={values.postalCode}
-            onChange={(e) => setValues((v) => ({ ...v, postalCode: e.target.value }))}
-            className={fieldClass}
-          />
-        </div>
-      </div>
-
-      {/* Country */}
-      <div>
-        <label htmlFor="addr-country" className={labelClass}>
-          Country
-        </label>
-        <input
-          id="addr-country"
-          type="text"
-          placeholder="US"
-          value={values.country}
-          onChange={(e) => setValues((v) => ({ ...v, country: e.target.value }))}
-          className={fieldClass}
-        />
-      </div>
-
-      {/* Is Primary */}
-      <div className="flex items-center gap-2">
-        <input
-          id="addr-primary"
-          type="checkbox"
-          checked={values.isPrimary}
-          onChange={(e) => setValues((v) => ({ ...v, isPrimary: e.target.checked }))}
-          className="h-4 w-4 rounded border-border"
-        />
-        <label htmlFor="addr-primary" className="text-sm">
-          Set as primary address
-        </label>
-      </div>
-
-      <div className="flex gap-2 pt-1">
-        <Button type="submit" size="sm" disabled={!values.line1.trim() || loading}>
-          {loading ? 'Saving…' : 'Add Address'}
-        </Button>
-        <Button type="button" size="sm" variant="outline" onClick={onCancel}>
-          Cancel
-        </Button>
-      </div>
-    </form>
+    <FormDialog open={open} onOpenChange={onOpenChange} title="Add Address">
+      <form.AppForm>
+        <Form className="gap-4">
+          <form.AppField name="type">
+            {(field) => <field.SelectField label="Type" options={TYPE_OPTIONS} />}
+          </form.AppField>
+          <form.AppField name="label">
+            {(field) => <field.InputField label="Label" description="Optional" placeholder="e.g. Parents' house" />}
+          </form.AppField>
+          <form.AppField
+            name="line1"
+            validators={{ onChange: ({ value }) => (value.trim() ? undefined : 'Address line 1 is required.') }}
+          >
+            {(field) => <field.InputField label="Address Line 1" required autoFocus placeholder="123 Main St" />}
+          </form.AppField>
+          <form.AppField name="line2">
+            {(field) => <field.InputField label="Address Line 2" description="Optional" placeholder="Apt 4B" />}
+          </form.AppField>
+          <FieldRow>
+            <form.AppField name="city">{(field) => <field.InputField label="City" placeholder="City" />}</form.AppField>
+            <form.AppField name="state">
+              {(field) => <field.InputField label="State" placeholder="State" />}
+            </form.AppField>
+            <form.AppField name="postalCode">
+              {(field) => <field.InputField label="Postal Code" placeholder="12345" />}
+            </form.AppField>
+          </FieldRow>
+          <form.AppField name="country">
+            {(field) => <field.InputField label="Country" placeholder="US" />}
+          </form.AppField>
+          <form.AppField name="isPrimary">
+            {(field) => <field.CheckboxField label="Set as primary address" />}
+          </form.AppField>
+          <FormDialogFooter onCancel={() => onOpenChange(false)} error={error?.message ?? null}>
+            <form.SubmitButton createLabel="Add Address" />
+          </FormDialogFooter>
+        </Form>
+      </form.AppForm>
+    </FormDialog>
   );
 }
 
@@ -405,34 +288,15 @@ export function AddressList({ fragmentRef, onAdd, onDelete, createOpen, onCreate
 
   return (
     <>
-      <div className="space-y-2">
-        {addresses.length === 0 && (
-          <div className="flex items-center gap-2 text-muted-foreground text-sm">
-            <MapPin className="h-4 w-4" />
-            <span>No addresses yet.</span>
-          </div>
-        )}
+      <View className="gap-2">
+        {addresses.length === 0 ? <Text className="text-muted-foreground text-sm">No addresses yet.</Text> : null}
 
         {addresses.map((address) => (
           <AddressRow key={address.id} address={address} onDelete={onDelete} />
         ))}
-      </div>
+      </View>
 
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>Add Address</DialogTitle>
-          </DialogHeader>
-          <AddAddressForm
-            personId={person.id}
-            onAdded={() => {
-              setDialogOpen(false);
-              onAdd();
-            }}
-            onCancel={() => setDialogOpen(false)}
-          />
-        </DialogContent>
-      </Dialog>
+      <AddAddressDialog personId={person.id} open={dialogOpen} onOpenChange={setDialogOpen} onAdded={onAdd} />
     </>
   );
 }
