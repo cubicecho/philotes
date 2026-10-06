@@ -168,7 +168,7 @@ function computeReachOut(persons: DashboardPerson[]): ReachOutPerson[] {
   const overdueIds = new Set(overdue.map((p) => p.id));
 
   const dormant = persons
-    .filter((p) => !overdueIds.has(p.id))
+    .filter((p) => overdueIds.has(p.id) === false)
     .map((p) => ({
       person: p,
       daysSince: p.interactions[0]?.occurredAt
@@ -230,7 +230,8 @@ function computeOpenTasks(persons: DashboardPerson[]): OpenTask[] {
       const isOverdue = dueAt !== null && dueAt < now;
       const isDueThisWeek = dueAt !== null && dueAt <= sevenDaysFromNow;
 
-      if (!isOverdue && !isDueThisWeek) {
+      const isBeyondThisWeek = isOverdue === false && isDueThisWeek === false;
+      if (isBeyondThisWeek) {
         continue;
       }
 
@@ -248,10 +249,12 @@ function computeOpenTasks(persons: DashboardPerson[]): OpenTask[] {
 
   return results
     .sort((a, b) => {
-      if (a.isOverdue && !b.isOverdue) {
+      const isOnlyFirstOverdue = a.isOverdue && b.isOverdue === false;
+      if (isOnlyFirstOverdue) {
         return -1;
       }
-      if (!a.isOverdue && b.isOverdue) {
+      const isOnlySecondOverdue = a.isOverdue === false && b.isOverdue;
+      if (isOnlySecondOverdue) {
         return 1;
       }
       const aTime = a.dueAt ? a.dueAt.getTime() : 0;

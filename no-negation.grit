@@ -1,0 +1,10 @@
+language js
+
+`!$value` where {
+  $value <: or {
+    r"^(?:await\s+)?(?:[\w$]+(?:\?\.|\.))*(?:is|has|should|can|did|was|will|does|are)(?:[A-Z_][\w$]*)?(?:\([\s\S]*\))?$",
+    r"^[\s\S]*\.(?:includes|startsWith|endsWith|test|some|every)\([\s\S]*\)$",
+    r"^[(!][\s\S]*$"
+  },
+  register_diagnostic(span=$value, message="Negate a logic check with a comparison: `x === false`, in a positively named const. `!` is for null guards only.", severity="error")
+}

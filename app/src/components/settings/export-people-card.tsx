@@ -81,7 +81,7 @@ export function ExportPeopleCard() {
           <Button
             iconSlot={<Download />}
             content={exportLoading ? 'Loading…' : `Export ${exportData?.persons?.length ?? 0} People as CSV`}
-            disabled={exportLoading || !!exportError || !exportData?.persons?.length}
+            disabled={exportLoading || exportError !== undefined || !exportData?.persons?.length}
             onPress={handleExportPeople}
           />
         </View>

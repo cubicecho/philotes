@@ -58,7 +58,7 @@ export function ExportCalendarCard() {
           <Button
             iconSlot={<Download />}
             content={loading ? 'Loading…' : `Export ${totalCount} Events as ICS`}
-            disabled={loading || !!error || totalCount === 0}
+            disabled={loading || error !== undefined || totalCount === 0}
             onPress={handleExport}
           />
           {!loading && !error && totalCount > 0 ? (

@@ -68,7 +68,8 @@ export function applyMergeLabelsExtension(schema: GraphQLSchema): GraphQLSchema 
       .from(dbSchema.labels)
       .where(and(inArray(dbSchema.labels.id, [keepId, deleteId]), eq(dbSchema.labels.userId, userId)));
     const ownedIds = new Set(owned.map((l) => l.id));
-    if (!ownedIds.has(keepId) || !ownedIds.has(deleteId)) {
+    const isForeignLabel = ownedIds.has(keepId) === false || ownedIds.has(deleteId) === false;
+    if (isForeignLabel) {
       throw new GraphQLError('Label not found');
     }
 

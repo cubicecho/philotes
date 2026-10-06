@@ -70,7 +70,8 @@ export function NetworkGraph({ persons, onOpenPerson }: NetworkGraphProps) {
     // Build connection count map
     const connectionCount = new Map<string, number>();
     for (const p of persons) {
-      if (!connectionCount.has(p.id)) {
+      const isUncounted = connectionCount.has(p.id) === false;
+      if (isUncounted) {
         connectionCount.set(p.id, 0);
       }
       for (const rel of p.relationshipsFrom) {
@@ -87,7 +88,8 @@ export function NetworkGraph({ persons, onOpenPerson }: NetworkGraphProps) {
     for (const p of persons) {
       for (const rel of p.relationshipsFrom) {
         const edgeKey = [p.id, rel.toPersonId].sort().join('--');
-        if (!seenEdges.has(edgeKey) && nodeIndex.has(rel.toPersonId)) {
+        const isNewEdge = seenEdges.has(edgeKey) === false && nodeIndex.has(rel.toPersonId);
+        if (isNewEdge) {
           seenEdges.add(edgeKey);
           links.push({
             source: p.id,

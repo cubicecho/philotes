@@ -209,13 +209,14 @@ function RelationshipFormDialog({
         },
       ]
     : allPersons
-        .filter((p) => p.id !== fromPersonId && !existingRelatedIds.has(p.id))
+        .filter((p) => p.id !== fromPersonId && existingRelatedIds.has(p.id) === false)
         .map((p) => ({ value: p.id, label: `${p.firstName} ${p.lastName}` }));
 
   // A relationship keeps its type's name after the type is deleted, so the one being edited may
   // no longer be in the list.
   const typeNames = types.map((t) => t.name);
-  if (isEditing && !typeNames.includes(editing.type)) {
+  const isDeletedType = isEditing && typeNames.includes(editing.type) === false;
+  if (isDeletedType) {
     typeNames.push(editing.type);
   }
   const typeOptions = typeNames.map((name) => ({ value: name, label: name }));
@@ -233,10 +234,11 @@ function RelationshipFormDialog({
   };
 
   const error = createError ?? updateError;
+  const hasNobodyToLink = isEditing === false && personOptions.length === 0;
 
   return (
     <FormDialog open={open} onOpenChange={onOpenChange} title={isEditing ? 'Edit Relationship' : 'Add Relationship'}>
-      {!isEditing && personOptions.length === 0 ? (
+      {hasNobodyToLink ? (
         <Text className="text-muted-foreground text-sm">No other persons available to link.</Text>
       ) : (
         <form.AppForm>

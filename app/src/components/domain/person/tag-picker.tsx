@@ -27,7 +27,7 @@ interface TagPickerPanelProps {
 
 /** The inline panel a row opens to attach one more tag: every tag not yet attached, and a way out. */
 export function TagPickerPanel({ allTags, attachedTagIds, onSelect, onClose }: TagPickerPanelProps) {
-  const available = allTags.filter((t) => !attachedTagIds.has(t.id));
+  const available = allTags.filter((t) => attachedTagIds.has(t.id) === false);
 
   return (
     <View className="flex-row flex-wrap items-center gap-1.5 rounded-md border border-border p-2">

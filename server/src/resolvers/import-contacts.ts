@@ -241,7 +241,7 @@ async function insertContactInfos(db: any, personId: string, userId: string, con
     .where(eq(dbSchema.contactInfos.personId, personId));
   const existingValues = new Set(existingInfos.map((r: { value: string }) => r.value));
 
-  const newRows = rows.filter((r) => !existingValues.has(r.value));
+  const newRows = rows.filter((r) => existingValues.has(r.value) === false);
   if (newRows.length === 0) {
     return;
   }
@@ -279,7 +279,7 @@ async function insertAddresses(db: any, personId: string, userId: string, contac
     .where(eq(dbSchema.addresses.personId, personId));
   const existingLine1s = new Set(existingAddrs.map((r: { line1: string }) => r.line1));
 
-  const newRows = rows.filter((r) => !existingLine1s.has(r.line1));
+  const newRows = rows.filter((r) => existingLine1s.has(r.line1) === false);
   if (newRows.length === 0) {
     return;
   }

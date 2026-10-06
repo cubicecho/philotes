@@ -441,12 +441,14 @@ export default function PersonDetailPage() {
     const currentLabelIds = new Set(person.labels.map((l) => l.id));
     const nextLabelIds = new Set(labelIds);
     for (const labelId of currentLabelIds) {
-      if (!nextLabelIds.has(labelId)) {
+      const isRemoved = nextLabelIds.has(labelId) === false;
+      if (isRemoved) {
         await detachLabel({ variables: { personId: id, labelId } });
       }
     }
     for (const labelId of nextLabelIds) {
-      if (!currentLabelIds.has(labelId)) {
+      const isAdded = currentLabelIds.has(labelId) === false;
+      if (isAdded) {
         await attachLabel({ variables: { personId: id, labelId } });
       }
     }
@@ -461,8 +463,9 @@ export default function PersonDetailPage() {
   };
 
   const allPersonsLinked =
-    allPersonStubs.filter((p) => p.id !== person.id && !person.relationships.some((r) => r.relatedPersonId === p.id))
-      .length === 0;
+    allPersonStubs.filter(
+      (p) => p.id !== person.id && person.relationships.some((r) => r.relatedPersonId === p.id) === false,
+    ).length === 0;
 
   const phones = (person.contactInfos ?? []).filter((ci) => ci.type === 'phone' || ci.type === 'mobile');
   const primaryPhone = (phones.find((p) => p.isPrimary) ?? phones[0])?.value ?? null;

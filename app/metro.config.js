@@ -2,7 +2,9 @@ const path = require('node:path');
 const Module = require('node:module');
 
 const localModules = path.resolve(__dirname, 'node_modules');
-if (!process.env.NODE_PATH?.split(path.delimiter).includes(localModules)) {
+const nodePaths = process.env.NODE_PATH?.split(path.delimiter) ?? [];
+const isUnlisted = nodePaths.includes(localModules) === false;
+if (isUnlisted) {
   process.env.NODE_PATH = [localModules, process.env.NODE_PATH].filter(Boolean).join(path.delimiter);
   Module._initPaths();
 }

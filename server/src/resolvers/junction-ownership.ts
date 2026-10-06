@@ -95,7 +95,7 @@ async function assertForeignKeysOwned(
       continue;
     }
     const owned = new Set(await fk.owned(tx, userId, referenced));
-    const missing = referenced.find((id) => !owned.has(id));
+    const missing = referenced.find((id) => owned.has(id) === false);
     if (missing !== undefined) {
       throw new GraphQLError(`${fk.entity} not found`, { extensions: { code: 'NOT_FOUND' } });
     }

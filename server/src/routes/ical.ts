@@ -7,7 +7,7 @@ import { hashApiKey, isApiKey } from '../api-keys.ts';
 export async function icalHandler(req: Request, res: Response): Promise<void> {
   const { key } = req.query;
 
-  if (!key || typeof key !== 'string' || !isApiKey(key)) {
+  if (!key || typeof key !== 'string' || isApiKey(key) === false) {
     res.status(400).send('Missing or invalid API key. Use ?key=phlt_...');
     return;
   }

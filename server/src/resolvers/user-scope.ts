@@ -119,7 +119,8 @@ function overridePersonMutations(schema: GraphQLSchema): void {
       personId = inserted.id;
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
-      if (!msg.includes('unique') && !msg.includes('duplicate')) {
+      const isOtherFailure = msg.includes('unique') === false && msg.includes('duplicate') === false;
+      if (isOtherFailure) {
         throw err;
       }
       // Email collision — the person already exists; link to that row.

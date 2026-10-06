@@ -34,11 +34,11 @@ describe('scope', () => {
   it('covers every table in the schema', () => {
     // A table with no scope entry is readable and writable across tenants, so
     // adding one to the schema must fail here until it is scoped.
-    expect(TABLES.filter((name) => !(name in scope))).toEqual([]);
+    expect(TABLES.filter((name) => name in scope === false)).toEqual([]);
   });
 
   it('names no table the schema does not have', () => {
-    expect(Object.keys(scope).filter((name) => !TABLES.includes(name))).toEqual([]);
+    expect(Object.keys(scope).filter((name) => TABLES.includes(name) === false)).toEqual([]);
   });
 
   it('scopes a user-owned table by its own userId', () => {
@@ -72,7 +72,7 @@ describe('contextValues', () => {
 
   it('claims userId on every table that has one', () => {
     // Any table left out would take userId from the client instead.
-    expect(userOwned.filter((name) => !(name in contextValues))).toEqual([]);
+    expect(userOwned.filter((name) => name in contextValues === false)).toEqual([]);
   });
 
   it('stamps the authenticated user', () => {

@@ -171,7 +171,7 @@ function AddLabelDialog({ personId, available, open, onOpenChange, onAdd }: AddL
 
 export function PersonLabels({ person, allLabels, onDelete, onAdd, showAdd = false, onShowAdd }: PersonLabelsProps) {
   const attachedIds = new Set(person.labels.map((l) => l.id));
-  const available = allLabels.filter((l) => !attachedIds.has(l.id));
+  const available = allLabels.filter((l) => attachedIds.has(l.id) === false);
 
   return (
     <View className="flex-row flex-wrap items-center gap-1.5">

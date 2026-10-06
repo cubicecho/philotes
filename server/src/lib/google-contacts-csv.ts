@@ -201,7 +201,8 @@ export function parseGoogleContactsCsv(csvText: string): {
     const rawEmails: Array<{ label: string; value: string }> = [];
     for (let n = 1; ; n++) {
       const valueKey = `E-mail ${n} - Value`;
-      if (!hasCol(valueKey)) {
+      const isPastLastColumn = hasCol(valueKey) === false;
+      if (isPastLastColumn) {
         break;
       }
       const value = col(row, valueKey);
@@ -226,7 +227,8 @@ export function parseGoogleContactsCsv(csvText: string): {
     const phones: Array<{ label: string; value: string }> = [];
     for (let n = 1; ; n++) {
       const valueKey = `Phone ${n} - Value`;
-      if (!hasCol(valueKey)) {
+      const isPastLastColumn = hasCol(valueKey) === false;
+      if (isPastLastColumn) {
         break;
       }
       const value = col(row, valueKey);
@@ -241,7 +243,8 @@ export function parseGoogleContactsCsv(csvText: string): {
     const websites: Array<{ label: string; value: string }> = [];
     for (let n = 1; ; n++) {
       const valueKey = `Website ${n} - Value`;
-      if (!hasCol(valueKey)) {
+      const isPastLastColumn = hasCol(valueKey) === false;
+      if (isPastLastColumn) {
         break;
       }
       const value = col(row, valueKey);
@@ -256,7 +259,8 @@ export function parseGoogleContactsCsv(csvText: string): {
     const addressList: ParsedContact['addresses'] = [];
     for (let n = 1; ; n++) {
       const streetKey = `Address ${n} - Street`;
-      if (!hasCol(streetKey)) {
+      const isPastLastColumn = hasCol(streetKey) === false;
+      if (isPastLastColumn) {
         break;
       }
 
