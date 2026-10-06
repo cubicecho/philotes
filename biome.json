@@ -36,7 +36,8 @@
         "noEnum": "error",
         "noNamespace": "error",
         "noParameterProperties": "error",
-        "noNonNullAssertion": "off"
+        "noNonNullAssertion": "error",
+        "useFilenamingConvention": { "level": "error", "options": { "filenameCases": ["kebab-case"] } }
       },
       "suspicious": { "noExplicitAny": "error" }
     }
