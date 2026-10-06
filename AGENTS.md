@@ -11,7 +11,7 @@ structure (npm workspaces) with three packages: `app/` (frontend), `server/`
 | Layer    | Technology                                        |
 | -------- | ------------------------------------------------- |
 | Frontend | React 19, Expo Router (web target), Apollo Client |
-| UI       | Tailwind CSS via NativeWind, shadcn/ui, Radix UI |
+| UI       | React Native primitives, Tailwind 4 via NativeWind 5, [cubeui](https://github.com/cubicecho/cubeui) (native registry) |
 | API      | Apollo Server 5 on Express, GraphQL              |
 | Database | Drizzle ORM, PGlite (embedded Postgres)            |
 | Testing  | Vitest                                             |
@@ -24,21 +24,23 @@ structure (npm workspaces) with three packages: `app/` (frontend), `server/`
 philotes/
 ├── app/                     # Frontend (Expo Router, web target)
 │   ├── app/                 # File-based routes — the router reads THIS directory
-│   │   ├── _layout.tsx      # Root layout (ApolloProvider + Stack)
+│   │   ├── _layout.tsx      # Root layout (theme, ApolloProvider, Stack)
 │   │   ├── login.tsx        # Unauthenticated routes live at the top level
 │   │   └── (app)/           # Authenticated group (redirects to /login)
 │   ├── src/
 │   │   ├── __generated__/   # Generated GraphQL types (do not edit)
 │   │   ├── components/
-│   │   │   ├── ui/          # shadcn/ui primitives (Button, Dialog, Input, …)
+│   │   │   ├── ui/          # cubeui primitives, vendored (Button, Dialog, Input, …)
+│   │   │   ├── *.tsx        # cubeui layout shells, vendored (PageLayout, Section, Sidebar, …)
 │   │   │   ├── domain/      # Feature components (person/, label/, task/, …)
-│   │   │   ├── layouts/     # Structural wrappers (Header, ListLayout, …)
-│   │   │   └── settings/    # API key management
-│   │   ├── hooks/           # useDarkMode, useQueryStringState
-│   │   └── lib/             # auth, cn(), date type policies, relative time
+│   │   │   ├── layouts/     # The app shell (sidebar rail + phone bar)
+│   │   │   └── settings/    # API keys, imports and exports
+│   │   ├── hooks/           # useQueryStringState, useAvatarUpload
+│   │   └── lib/             # auth, apollo, cn(), date type policies, relative time
 │   ├── app.json             # Expo config
-│   ├── metro.config.js      # Metro bundler config
-│   └── tailwind.config.js
+│   ├── components.json      # shadcn CLI config — points at the cubeui native registry
+│   ├── global.css           # Imports cubeui-tokens.css (generated — do not edit)
+│   └── metro.config.js      # Metro bundler config
 ├── server/                  # GraphQL API (Apollo Server 5 on Express)
 │   ├── __generated__/       # Generated SDL + resolver types (do not edit)
 │   └── src/
@@ -226,17 +228,26 @@ Do not hand-format — run `npm run check:fix`. The settings, from `biome.json`:
 
 ### React / Frontend
 - Use **function components** exclusively (no class components)
-- shadcn/ui components live in `app/src/components/ui/` — no app logic here
+- UI comes from **cubeui**, vendored with the shadcn CLI from its *native*
+  registry: primitives in `app/src/components/ui/`, layout shells directly in
+  `app/src/components/`. Do not hand-edit them — fix it upstream in
+  `cubicecho/cubeui` and re-run `npx shadcn@latest add @cubeui/<item> --overwrite`
+  from `app/`
 - Custom app components go in `app/src/components/domain/`, `components/layouts/`
   or `components/settings/`
 - Routes are file-based via **Expo Router** in `app/app/` — note that this is
   `app/app/`, not `app/src/`, which holds everything that is not a route.
   A directory in parentheses is a layout group: `(app)/` is the authenticated
   area, whose `_layout.tsx` redirects to `/login` when there is no token
-- The root layout is `app/app/_layout.tsx`; it also constructs the ApolloClient
-- **This is a web-only Expo app.** Write DOM elements (`<div>`, `<main>`) and
-  Tailwind classes, not React Native primitives (`<View>`, `<Text>`).
-  `react-native` is imported only for `Platform`
+- The root layout is `app/app/_layout.tsx`; the ApolloClient is built in
+  `app/src/lib/apollo.ts`
+- **Write React Native primitives, not DOM elements.** `View`, `Text`,
+  `Pressable`, `ScrollView` and `Image` with Tailwind classes; `onPress`, not
+  `onClick`. The web is the only target shipped today, through
+  react-native-web, but nothing is written against the DOM. The rules that
+  follow from that are in [`docs/frontend.md`](docs/frontend.md#react-native-rules)
+- Icons come from `@/components/ui/icons` (cubeui's set) or
+  `@/components/app-icons` (the app's extras) — never from `lucide-react` directly
 - Use Apollo Client hooks (`useQuery`, `useMutation`) for data fetching
 - Always pass `refetchQueries` on mutations that modify lists
 - See [`docs/frontend.md`](docs/frontend.md) and [`docs/components.md`](docs/components.md)
