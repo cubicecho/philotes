@@ -28,8 +28,9 @@ describe('parseGoogleContactsCsv', () => {
 
   it('skips rows with no name data', () => {
     const csv = 'First Name,Last Name,E-mail 1 - Value\n,,nobody@example.com';
-    const { contacts } = parseGoogleContactsCsv(csv);
+    const { contacts, skippedCount } = parseGoogleContactsCsv(csv);
     expect(contacts).toHaveLength(0);
+    expect(skippedCount).toBe(1);
   });
 
   it('falls back to the Name column when First/Last are absent', () => {

@@ -3,7 +3,8 @@ import * as dbSchema from '@cubicecho/philotes-db/schema';
 import { and, eq } from 'drizzle-orm';
 import { extendSchema, type GraphQLSchema, parse } from 'graphql';
 import type { Context } from '../core/context.ts';
-import { errorMessage, requireAuth } from '../core/errors.ts';
+import { requireAuth } from '../core/errors.ts';
+import { violatedUniqueConstraint } from '../core/pg-errors.ts';
 import { objectType } from '../graphql/object-type.ts';
 import { type ParsedContact, parseGoogleContactsCsv } from './google-contacts-csv.ts';
 
@@ -19,21 +20,6 @@ import { type ParsedContact, parseGoogleContactsCsv } from './google-contacts-cs
 function reportFailure(errors: string[], summary: string, err: unknown): void {
   console.error(`[import] ${summary}`, err);
   errors.push(summary);
-}
-
-/**
- * Whether an insert failed on a unique constraint, judged by the words in the error's message.
- *
- * @param err - What the insert threw.
- * @returns true when the message, or its cause's, holds "unique" or "duplicate".
- */
-function isUniqueViolation(err: unknown): boolean {
-  const msg = errorMessage(err);
-  const cause = err instanceof Error ? err.cause : undefined;
-  const causeMsg = cause instanceof Error ? cause.message : '';
-  return (
-    msg.includes('unique') || msg.includes('duplicate') || causeMsg.includes('unique') || causeMsg.includes('duplicate')
-  );
 }
 
 const { AddressType, ContactType, Recurrence } = dbSchema;
@@ -170,7 +156,7 @@ export function applyImportContactsExtension(schema: GraphQLSchema): GraphQLSche
       } catch (err: unknown) {
         // A null email never trips the unique constraint, so a duplicate always has one.
         const { email } = contact;
-        const isOtherFailure = isUniqueViolation(err) === false || email === null;
+        const isOtherFailure = violatedUniqueConstraint(err) === null || email === null;
         if (isOtherFailure) {
           reportFailure(errors, `Failed to import ${contact.firstName} ${contact.lastName}`, err);
           continue;

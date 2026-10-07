@@ -3,7 +3,7 @@ import * as dbSchema from '@cubicecho/philotes-db/schema';
 import { and, eq } from 'drizzle-orm';
 import { extendSchema, type GraphQLSchema, parse } from 'graphql';
 import type { Context } from '../core/context.ts';
-import { notFound, requireAuth } from '../core/errors.ts';
+import { badInput, notFound, requireAuth } from '../core/errors.ts';
 import { violatedUniqueConstraint } from '../core/pg-errors.ts';
 import { parseOrThrow } from '../core/validation.ts';
 import { objectType } from '../graphql/object-type.ts';
@@ -171,21 +171,21 @@ function overridePersonMutations(schema: GraphQLSchema): void {
 
   /**
    * Resolves `Mutation.deletePerson`. Takes a person out of the signed-in caller's contacts. The shared
-   * row stays for the other users who have it. Only a filter of the form `{ id: { eq } }` is honoured.
+   * row stays for the other users who have it. The filter must be of the form `{ id: { eq } }`.
    *
    * @param _parent - Unused.
    * @param [args.where] - The filter naming the person by id.
    * @param ctx - Request context.
-   * @returns The person in a list of one. An empty list when the filter names no id, or the person was not
-   * in the caller's contacts.
+   * @returns The person, or null when they were not in the caller's contacts.
    * @throws UNAUTHENTICATED when nobody is signed in.
+   * @throws BAD_USER_INPUT when the filter names no single id.
    */
   mf.deletePerson.resolve = async (_parent: unknown, args: { where?: { id?: { eq?: string } } }, ctx: Context) => {
     const userId = requireAuth(ctx);
     const { db } = ctx;
     const targetId = args.where?.id?.eq;
     if (!targetId) {
-      return [];
+      throw badInput('deletePerson takes one person at a time: where: { id: { eq: … } }.');
     }
 
     const [removed] = await db
@@ -193,13 +193,13 @@ function overridePersonMutations(schema: GraphQLSchema): void {
       .where(and(eq(dbSchema.userPersons.userId, userId), eq(dbSchema.userPersons.personId, targetId)))
       .returning({ personId: dbSchema.userPersons.personId });
     if (!removed) {
-      return [];
+      return null;
     }
 
     // Leave the shared person row intact; it belongs to every other user who
     // has it in their contacts.
     const [person] = await db.select().from(dbSchema.persons).where(eq(dbSchema.persons.id, targetId));
-    return person ? [person] : [];
+    return person ?? null;
   };
 }
 
@@ -298,11 +298,12 @@ function addUserPersonsResolvers(schema: GraphQLSchema): void {
     const defined = Object.fromEntries(Object.entries(updates).filter(([, v]) => v !== undefined));
     parseOrThrow(userPersonInput, defined);
 
-    const [row] = await db
-      .update(dbSchema.userPersons)
-      .set(defined)
-      .where(and(eq(dbSchema.userPersons.userId, userId), eq(dbSchema.userPersons.personId, personId)))
-      .returning();
+    const isCallersRow = and(eq(dbSchema.userPersons.userId, userId), eq(dbSchema.userPersons.personId, personId));
+    // An update that sets nothing is not valid SQL, so a call naming no field reads the row as it stands.
+    const hasNothingToSet = Object.keys(defined).length === 0;
+    const [row] = hasNothingToSet
+      ? await db.select().from(dbSchema.userPersons).where(isCallersRow)
+      : await db.update(dbSchema.userPersons).set(defined).where(isCallersRow).returning();
 
     if (!row) {
       throw notFound('Person not found');

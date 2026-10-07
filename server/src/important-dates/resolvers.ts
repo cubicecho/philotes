@@ -85,18 +85,35 @@ function toLocalDateString(d: Date): string {
 }
 
 /**
+ * Builds a date in a month that may be too short for the day. The 31st in a 30-day month, and 29 February
+ * outside a leap year, fall on the month's last day and do not spill into the next.
+ *
+ * @param year - The full year.
+ * @param month - The month, 0 for January. Past 11 it runs into the following year.
+ * @param day - The day of the month wanted, from 1.
+ * @returns Local midnight on that day, or on the month's last day when it has no such day.
+ */
+function dateInMonth(year: number, month: number, day: number): Date {
+  // Day 0 of the following month is the last day of this one.
+  const lastDay = new Date(year, month + 1, 0).getDate();
+  return new Date(year, month, Math.min(day, lastDay));
+}
+
+/**
  * Finds when a date next falls, counting from today in the server's time zone.
  *
  * @param dateStr - The stored date, as `YYYY-MM-DD`.
  * @param recurrence - How the date repeats, or null for a one-time date.
+ * @param [today] - Local midnight of the day counted from. Defaults to today.
  * @returns The next occurrence and the days until it, 0 for today. null for a one-time date that has passed,
  * or a recurrence outside the vocabulary.
  */
-function computeNextOccurrence(
+export function computeNextOccurrence(
   dateStr: string,
   recurrence: Recurrence | null,
+  today: Date = todayMidnight(),
 ): { daysUntil: number; nextDate: Date } | null {
-  const t = todayMidnight();
+  const t = today;
   const [yearStr, monthStr, dayStr] = dateStr.split('-');
   const storedYear = Number(yearStr);
   const month = Number(monthStr) - 1; // 0-indexed for Date constructor
@@ -113,24 +130,24 @@ function computeNextOccurrence(
   }
 
   if (recurrence === Recurrence.Yearly) {
-    const thisYear = new Date(t.getFullYear(), month, day);
+    const thisYear = dateInMonth(t.getFullYear(), month, day);
     const diff = daysBetween(t, thisYear);
     const isStillAhead = diff >= 0;
     if (isStillAhead) {
       return { daysUntil: diff, nextDate: thisYear };
     }
-    const nextYear = new Date(t.getFullYear() + 1, month, day);
+    const nextYear = dateInMonth(t.getFullYear() + 1, month, day);
     return { daysUntil: daysBetween(t, nextYear), nextDate: nextYear };
   }
 
   if (recurrence === Recurrence.Monthly) {
-    const thisMonth = new Date(t.getFullYear(), t.getMonth(), day);
+    const thisMonth = dateInMonth(t.getFullYear(), t.getMonth(), day);
     const diff = daysBetween(t, thisMonth);
     const isStillAhead = diff >= 0;
     if (isStillAhead) {
       return { daysUntil: diff, nextDate: thisMonth };
     }
-    const nextMonth = new Date(t.getFullYear(), t.getMonth() + 1, day);
+    const nextMonth = dateInMonth(t.getFullYear(), t.getMonth() + 1, day);
     return { daysUntil: daysBetween(t, nextMonth), nextDate: nextMonth };
   }
 
@@ -164,8 +181,8 @@ export function applyUpcomingDatesExtension(schema: GraphQLSchema): GraphQLSchem
    * soonest first. An anonymous caller gets an empty list, not an error.
    *
    * @param _parent - Unused.
-   * @param [args.limit] - Most entries to return, capped at the largest page size.
-   * @param [args.offset] - Entries to pass over first.
+   * @param [args.limit] - Most entries to return, capped at the largest page size. Below 0 counts as 0.
+   * @param [args.offset] - Entries to pass over first. Below 0 counts as 0.
    * @param [args.lookaheadDays] - How many days ahead to look, counting today as day 0.
    * @param context - Request context.
    * @returns The entries, each with its next date and the days until it.
@@ -175,7 +192,8 @@ export function applyUpcomingDatesExtension(schema: GraphQLSchema): GraphQLSchem
       return [];
     }
     const lookaheadDays = args.lookaheadDays ?? IMPORTANT_DATE_DEFAULTS.lookaheadDays;
-    const offset = args.offset ?? 0;
+    // A negative offset or limit would slice from the end of the list.
+    const offset = Math.max(args.offset ?? 0, 0);
 
     const dbCtx = context.db;
 
@@ -222,7 +240,7 @@ export function applyUpcomingDatesExtension(schema: GraphQLSchema): GraphQLSchem
     entries.sort((a, b) => a.daysUntil - b.daysUntil);
 
     // Hand-written lists don't inherit drizzle-graphql's page size, so this one applies the same two bounds.
-    const pageSize = Math.min(args.limit ?? defaultPageSize, maxPageSize);
+    const pageSize = Math.max(Math.min(args.limit ?? defaultPageSize, maxPageSize), 0);
     return entries.slice(offset, offset + pageSize);
   };
   // The cost hint the generated lists carry: a page of rows, each priced by its selection.

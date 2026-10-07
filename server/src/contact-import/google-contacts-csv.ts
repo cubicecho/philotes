@@ -185,7 +185,7 @@ function parseBirthday(raw: string): string | null {
  * with no name, is left out.
  *
  * @param csvText - The export file's text.
- * @returns The contacts, and `skippedCount`, which nothing increments: it is always 0.
+ * @returns The contacts, and how many rows were left out for having no name. A blank row is not counted.
  */
 export function parseGoogleContactsCsv(csvText: string): {
   contacts: ParsedContact[];
@@ -223,7 +223,7 @@ export function parseGoogleContactsCsv(csvText: string): {
   const hasCol = (name: string): boolean => headerIndex.has(name);
 
   const contacts: ParsedContact[] = [];
-  const skippedCount = 0;
+  let skippedCount = 0;
 
   for (let r = 1; r < rows.length; r++) {
     const row = rows[r];
@@ -241,6 +241,7 @@ export function parseGoogleContactsCsv(csvText: string): {
     // Skip contacts with no name data
     const hasNoName = firstName === '' && lastName === '' && fullName === '';
     if (hasNoName) {
+      skippedCount++;
       continue;
     }
 
@@ -251,6 +252,7 @@ export function parseGoogleContactsCsv(csvText: string): {
 
     const hasNoResolvedName = resolvedFirstName === '' && resolvedLastName === '';
     if (hasNoResolvedName) {
+      skippedCount++;
       continue;
     }
 
