@@ -11,7 +11,7 @@ const config: CodegenConfig = {
         useTypeImports: true,
         enumsAsConst: true,
         //         useIndexSignature: true,
-        contextType: '../src/graphql/handler.ts#Context',
+        contextType: '../src/core/context.ts#Context',
         scalars: {
           UUID: 'string',
         },
@@ -27,7 +27,7 @@ const config: CodegenConfig = {
     //       plugins: ['schema-ast'],
     //       config: {
     //         inputMaybeValue: 'T | undefined',
-    //         contextType: '../src/graphql/handler.ts#Context',
+    //         contextType: '../src/core/context.ts#Context',
     //         includeDirectives: true,
     //         avoidOptionals: {
     //           // Use `null` for nullable fields instead of optionals

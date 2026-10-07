@@ -1,19 +1,10 @@
+import * as dbSchema from '@philotes/db/schema';
 import type { FeatureSwitch } from '@vantreeseba/drizzle-graphql';
 import { getTableColumns, is, Table } from 'drizzle-orm';
-import { describe, expect, it, vi } from 'vitest';
-import * as dbSchema from '../../../../db/src/schema.ts';
-import type { Context } from '../../graphql/handler.ts';
+import { describe, expect, it } from 'vitest';
+import type { Context } from '../../core/context.ts';
 import { contextValues, exclude, features, scope } from '../../graphql/tenancy.ts';
 import { onWrite, writtenRows } from '../../graphql/write-guards.ts';
-
-// The tenancy config is imported for its shape, not to run queries, so the db
-// package is stubbed: importing it for real boots a PGlite instance against the
-// repo's pgdata directory. The schema is the genuine one, read straight from
-// source, so the coverage assertions below are about the real tables.
-vi.mock('@philotes/db', async () => ({
-  schema: await import('../../../../db/src/schema.ts'),
-  db: { select: () => ({ from: () => ({ where: () => ({}) }) }) },
-}));
 
 const TABLES = Object.entries(dbSchema)
   // biome-ignore lint/suspicious/noExplicitAny: drizzle-orm 1.0 table type compat

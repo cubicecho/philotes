@@ -1,7 +1,7 @@
-import type { DB } from '@philotes/db';
-import { schema as dbSchema } from '@philotes/db';
+import * as dbSchema from '@philotes/db/schema';
 import { eq } from 'drizzle-orm';
 import { extendSchema, type GraphQLObjectType, type GraphQLSchema, parse } from 'graphql';
+import type { Context } from '../core/context.ts';
 
 const { persons, importantDates } = dbSchema;
 
@@ -137,11 +137,7 @@ export function applyUpcomingDatesExtension(schema: GraphQLSchema): GraphQLSchem
 
   const queryType = extendedSchema.getType('Query') as GraphQLObjectType;
 
-  queryType.getFields().upcomingDates.resolve = async (
-    _parent: unknown,
-    args: UpcomingDatesArgs,
-    context: { db: DB; userId: string | null },
-  ) => {
+  queryType.getFields().upcomingDates.resolve = async (_parent: unknown, args: UpcomingDatesArgs, context: Context) => {
     if (!context.userId) {
       return [];
     }

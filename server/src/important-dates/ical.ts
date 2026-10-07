@@ -1,10 +1,21 @@
-import { apiKeys, db, importantDates, persons } from '@philotes/db';
+import type { DB } from '@philotes/db';
+import { apiKeys } from '@philotes/db/api-keys';
+import { importantDates, persons } from '@philotes/db/schema';
 import { and, eq, isNull } from 'drizzle-orm';
-import type { Request, Response } from 'express';
+import type { Request, RequestHandler, Response } from 'express';
 import ical, { ICalEventRepeatingFreq } from 'ical-generator';
 import { hashApiKey, isApiKey } from '../api-keys/tokens.ts';
 
-export async function icalHandler(req: Request, res: Response): Promise<void> {
+/**
+ * Writes the caller's important dates as an iCalendar feed. The caller is identified by the API
+ * key in `?key=`, because a calendar client cannot send a header.
+ *
+ * @param db - Drizzle client.
+ * @param req - The request, with the API key in its query.
+ * @param res - The response the feed is written to.
+ * @returns Nothing.
+ */
+async function sendCalendar(db: DB, req: Request, res: Response): Promise<void> {
   const { key } = req.query;
 
   if (!key || typeof key !== 'string' || isApiKey(key) === false) {
@@ -15,10 +26,7 @@ export async function icalHandler(req: Request, res: Response): Promise<void> {
   const hash = hashApiKey(key);
   const now = new Date();
 
-  // biome-ignore lint/suspicious/noExplicitAny: drizzle-orm 1.0 union type compat
-  const anyDb = db as any;
-
-  const [apiKey] = await anyDb
+  const [apiKey] = await db
     .select()
     .from(apiKeys)
     .where(and(eq(apiKeys.keyHash, hash), isNull(apiKeys.revokedAt)))
@@ -29,9 +37,9 @@ export async function icalHandler(req: Request, res: Response): Promise<void> {
     return;
   }
 
-  anyDb.update(apiKeys).set({ lastUsedAt: now }).where(eq(apiKeys.id, apiKey.id)).catch(console.error);
+  db.update(apiKeys).set({ lastUsedAt: now }).where(eq(apiKeys.id, apiKey.id)).catch(console.error);
 
-  const rows = await anyDb
+  const rows = await db
     .select({
       id: importantDates.id,
       name: importantDates.name,
@@ -76,4 +84,14 @@ export async function icalHandler(req: Request, res: Response): Promise<void> {
   res.setHeader('Content-Type', 'text/calendar; charset=utf-8');
   res.setHeader('Content-Disposition', 'inline; filename="philotes-important-dates.ics"');
   res.send(cal.toString());
+}
+
+/**
+ * Builds the `/ical` handler over one database.
+ *
+ * @param db - Drizzle client.
+ * @returns The handler.
+ */
+export function createIcalHandler(db: DB): RequestHandler {
+  return (req, res) => sendCalendar(db, req, res);
 }

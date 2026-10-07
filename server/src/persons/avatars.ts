@@ -1,7 +1,8 @@
 import { randomUUID } from 'node:crypto';
 import { unlink } from 'node:fs/promises';
 import { basename, join } from 'node:path';
-import { db, schema as dbSchema } from '@philotes/db';
+import type { DB } from '@philotes/db';
+import * as dbSchema from '@philotes/db/schema';
 import { and, eq } from 'drizzle-orm';
 import { type NextFunction, type Request, type Response, Router } from 'express';
 import multer from 'multer';
@@ -29,17 +30,26 @@ interface AvatarLocals {
   avatarPath: string | null;
 }
 
+/** What the avatar routes are built from. */
+export interface AvatarRouterDeps {
+  /** Drizzle client. */
+  db: DB;
+  /** The directory avatars are stored in. */
+  avatarDir: string;
+}
+
 /**
  * Lets a request through only when the caller is signed in and has the person in their own list.
  * It runs before the upload is parsed, so nothing is written to disk for anyone else. A person
  * that belongs to another user answers "not found", as the resolvers do.
  *
+ * @param db - Drizzle client.
  * @param req - The request, with `personId` in its path.
  * @param res - The response; `res.locals` receives the {@link AvatarLocals}.
  * @param next - Continues to the handler.
  * @returns Nothing.
  */
-async function requireOwnPerson(req: Request, res: Response, next: NextFunction): Promise<void> {
+async function requireOwnPerson(db: DB, req: Request, res: Response, next: NextFunction): Promise<void> {
   const userId = extractUserId(req);
   if (!userId) {
     res.status(401).json({ error: 'Unauthenticated' });
@@ -82,11 +92,12 @@ async function removeAvatarFile(avatarDir: string, avatarPath: string): Promise<
 /**
  * Stores the avatar path on the caller's own link to the person.
  *
+ * @param db - Drizzle client.
  * @param locals - Who is asking, and about which person.
  * @param avatarPath - The new path, or `null` to clear it.
  * @returns Nothing.
  */
-async function saveAvatarPath(locals: AvatarLocals, avatarPath: string | null): Promise<void> {
+async function saveAvatarPath(db: DB, locals: AvatarLocals, avatarPath: string | null): Promise<void> {
   await db
     .update(dbSchema.userPersons)
     .set({ avatarPath })
@@ -99,10 +110,12 @@ async function saveAvatarPath(locals: AvatarLocals, avatarPath: string | null): 
  * Each file gets a random name, so two users who share a person never overwrite each other's
  * picture and a name cannot be guessed from a person id.
  *
- * @param avatarDir - The directory avatars are stored in.
+ * @param deps - The database and the avatar directory.
  * @returns The router, to mount at `/avatars`.
  */
-export function createAvatarRouter(avatarDir: string): Router {
+export function createAvatarRouter(deps: AvatarRouterDeps): Router {
+  const { db, avatarDir } = deps;
+  const guard = (req: Request, res: Response, next: NextFunction) => requireOwnPerson(db, req, res, next);
   const storage = multer.diskStorage({
     destination: avatarDir,
     filename: (_req, file, cb) => {
@@ -120,7 +133,7 @@ export function createAvatarRouter(avatarDir: string): Router {
 
   const router = Router();
 
-  router.post('/:personId', requireOwnPerson, (req, res) => {
+  router.post('/:personId', guard, (req, res) => {
     upload(req, res, async (uploadError: unknown) => {
       if (uploadError) {
         res.status(400).json({ error: 'The file could not be uploaded' });
@@ -134,7 +147,7 @@ export function createAvatarRouter(avatarDir: string): Router {
 
       const locals = res.locals as AvatarLocals;
       const avatarUrl = `${AVATAR_URL_PREFIX}${req.file.filename}`;
-      await saveAvatarPath(locals, avatarUrl);
+      await saveAvatarPath(db, locals, avatarUrl);
       if (locals.avatarPath) {
         await removeAvatarFile(avatarDir, locals.avatarPath);
       }
@@ -143,12 +156,12 @@ export function createAvatarRouter(avatarDir: string): Router {
     });
   });
 
-  router.delete('/:personId', requireOwnPerson, async (_req, res) => {
+  router.delete('/:personId', guard, async (_req, res) => {
     const locals = res.locals as AvatarLocals;
 
     if (locals.avatarPath) {
       await removeAvatarFile(avatarDir, locals.avatarPath);
-      await saveAvatarPath(locals, null);
+      await saveAvatarPath(db, locals, null);
     }
 
     res.json({ success: true });

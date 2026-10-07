@@ -1,7 +1,7 @@
-import { db, schema as dbSchema } from '@philotes/db';
+import * as dbSchema from '@philotes/db/schema';
 import { eq } from 'drizzle-orm';
 import { beforeAll, describe, expect, it } from 'vitest';
-import { createUser, migrateTestDatabase, run } from '../helpers.ts';
+import { createClient, createTestDb, createUser, type TestDb } from '../helpers.ts';
 
 const IMPORT = 'mutation ($csv: String!) { importGoogleContacts(csv: $csv) { imported merged errors } }';
 const SHARED_PHONE = '555-0100';
@@ -14,19 +14,20 @@ const CSV = [
 ].join('\n');
 
 describe('importGoogleContacts', () => {
+  let db: TestDb;
   let firstUserId: string;
   let secondUserId: string;
 
   beforeAll(async () => {
-    await migrateTestDatabase();
-    firstUserId = await createUser('first@example.com');
-    secondUserId = await createUser('second@example.com');
+    db = await createTestDb();
+    firstUserId = await createUser(db, 'first@example.com');
+    secondUserId = await createUser(db, 'second@example.com');
   });
 
   it('gives each user their own contact details for a person they share', async () => {
-    await run(firstUserId, IMPORT, { csv: CSV });
+    await createClient(db, firstUserId).run(IMPORT, { csv: CSV });
 
-    const result = await run(secondUserId, IMPORT, { csv: CSV });
+    const result = await createClient(db, secondUserId).run(IMPORT, { csv: CSV });
 
     expect(result.errors).toBeUndefined();
     expect(result.data?.importGoogleContacts).toEqual({ imported: 0, merged: 1, errors: [] });
@@ -43,7 +44,7 @@ describe('importGoogleContacts', () => {
   });
 
   it('does not duplicate details when the same user imports twice', async () => {
-    await run(firstUserId, IMPORT, { csv: CSV });
+    await createClient(db, firstUserId).run(IMPORT, { csv: CSV });
 
     const details: Array<{ value: string }> = await db
       .select({ value: dbSchema.contactInfos.value })

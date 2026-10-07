@@ -1,8 +1,8 @@
-import { apiKeys } from '@philotes/db';
+import { apiKeys } from '@philotes/db/api-keys';
 import { and, desc, eq, isNull } from 'drizzle-orm';
 import { extendSchema, type GraphQLObjectType, type GraphQLSchema, parse } from 'graphql';
+import type { Context } from '../core/context.ts';
 import { badInput, notFound, requireAuth } from '../core/errors.ts';
-import type { Context } from '../graphql/handler.ts';
 import { generateApiKey } from './tokens.ts';
 
 const API_KEYS_SDL = parse(`

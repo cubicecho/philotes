@@ -1,8 +1,8 @@
-import { schema as dbSchema } from '@philotes/db';
+import * as dbSchema from '@philotes/db/schema';
 import { and, eq, inArray } from 'drizzle-orm';
 import { extendSchema, type GraphQLSchema, parse } from 'graphql';
+import type { Context } from '../core/context.ts';
 import { notFound, requireAuth } from '../core/errors.ts';
-import type { Context } from '../graphql/handler.ts';
 
 const MERGE_LABELS_SDL = `
   extend type Mutation {

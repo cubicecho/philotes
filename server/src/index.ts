@@ -5,10 +5,10 @@ import { DATABASE_URL, db, runMigrations } from '@philotes/db';
 import cors from 'cors';
 import express from 'express';
 import { createGraphQLRouter } from './graphql/handler.ts';
-import { icalHandler } from './important-dates/ical.ts';
+import { createIcalHandler } from './important-dates/ical.ts';
 import { createAvatarRouter } from './persons/avatars.ts';
 
-export type { Context } from './graphql/handler.ts';
+export type { Context } from './core/context.ts';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const PORT = process.env.PORT ?? 3001;
@@ -29,10 +29,10 @@ const app = express();
 const httpServer = createServer(app);
 
 app.use(cors());
-app.use('/graphql', await createGraphQLRouter(httpServer));
-app.get('/ical', icalHandler);
+app.use('/graphql', await createGraphQLRouter(httpServer, db));
+app.get('/ical', createIcalHandler(db));
 app.use('/avatars', express.static(avatarDir));
-app.use('/avatars', createAvatarRouter(avatarDir));
+app.use('/avatars', createAvatarRouter({ db, avatarDir }));
 app.use(express.static(staticDir));
 app.get('/{*path}', (_req, res) => {
   res.sendFile(join(staticDir, 'index.html'));

@@ -1,8 +1,8 @@
-import { db, schema as dbSchema } from '@philotes/db';
+import * as dbSchema from '@philotes/db/schema';
 import type { BuildSchemaConfig, RowScope } from '@vantreeseba/drizzle-graphql';
 import { eq, inArray } from 'drizzle-orm';
+import type { Context } from '../core/context.ts';
 import { requireAuth } from '../core/errors.ts';
-import type { Context } from './handler.ts';
 
 // Multi-tenancy, expressed as drizzle-graphql configuration rather than as
 // resolver wrappers. `scope` is ANDed into the SQL of every read, update and
@@ -53,7 +53,7 @@ const scopeByParent =
   (context, table) =>
     inArray(
       (table as AnyTable)[fk],
-      db
+      context.db
         .select({ id: parent.id })
         .from(parent)
         .where(eq(parent.userId, requireAuth(context))),

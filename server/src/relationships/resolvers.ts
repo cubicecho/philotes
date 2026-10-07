@@ -1,7 +1,7 @@
-import type { DB } from '@philotes/db';
-import { schema as dbSchema } from '@philotes/db';
+import * as dbSchema from '@philotes/db/schema';
 import { and, eq, or } from 'drizzle-orm';
 import { extendSchema, type GraphQLObjectType, type GraphQLSchema, parse } from 'graphql';
+import type { Context } from '../core/context.ts';
 
 const { persons, personRelationships } = dbSchema;
 
@@ -25,11 +25,7 @@ export function applyRelationshipsExtension(schema: GraphQLSchema): GraphQLSchem
   const personType = extendedSchema.getType('Person') as GraphQLObjectType;
   const personFields = personType.getFields();
 
-  personFields.relationships.resolve = async (
-    parent: { id: string },
-    _args: unknown,
-    context: { db: DB; userId: string | null },
-  ) => {
+  personFields.relationships.resolve = async (parent: { id: string }, _args: unknown, context: Context) => {
     if (!context.userId) {
       return [];
     }

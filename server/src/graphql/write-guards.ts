@@ -1,8 +1,8 @@
-import { schema as dbSchema } from '@philotes/db';
+import * as dbSchema from '@philotes/db/schema';
 import type { BuildSchemaConfig } from '@vantreeseba/drizzle-graphql';
 import { and, eq, inArray } from 'drizzle-orm';
+import type { Context } from '../core/context.ts';
 import { notFound, requireAuth } from '../core/errors.ts';
-import type { Context } from './handler.ts';
 
 // A row scope confines reads, updates and deletes, but it cannot reach a plain
 // insert, and it says nothing about the rows a foreign key *points at*. These

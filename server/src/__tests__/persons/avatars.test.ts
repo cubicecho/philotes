@@ -1,15 +1,14 @@
 import { mkdtemp, readdir, rm } from 'node:fs/promises';
 import type { Server } from 'node:http';
-import type { AddressInfo } from 'node:net';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { db, schema as dbSchema } from '@philotes/db';
+import * as dbSchema from '@philotes/db/schema';
 import { and, eq } from 'drizzle-orm';
 import express from 'express';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { signToken } from '../../auth/resolvers.ts';
 import { createAvatarRouter } from '../../persons/avatars.ts';
-import { createPerson, createUser, migrateTestDatabase } from '../helpers.ts';
+import { createPerson, createTestDb, createUser, portOf, type TestDb } from '../helpers.ts';
 
 const HTTP_OK = 200;
 const HTTP_UNAUTHENTICATED = 401;
@@ -17,6 +16,7 @@ const HTTP_NOT_FOUND = 404;
 const HTTP_BAD_REQUEST = 400;
 
 describe('avatar routes', () => {
+  let db: TestDb;
   let avatarDir: string;
   let server: Server;
   let baseUrl: string;
@@ -53,17 +53,17 @@ describe('avatar routes', () => {
   }
 
   beforeAll(async () => {
-    await migrateTestDatabase();
-    ownerId = await createUser('avatar-owner@example.com');
-    strangerId = await createUser('avatar-stranger@example.com');
-    personId = await createPerson(ownerId, 'Grace');
+    db = await createTestDb();
+    ownerId = await createUser(db, 'avatar-owner@example.com');
+    strangerId = await createUser(db, 'avatar-stranger@example.com');
+    personId = await createPerson(db, ownerId, 'Grace');
     avatarDir = await mkdtemp(join(tmpdir(), 'philotes-avatars-'));
 
     const app = express();
-    app.use('/avatars', createAvatarRouter(avatarDir));
+    app.use('/avatars', createAvatarRouter({ db, avatarDir }));
     server = app.listen(0, '127.0.0.1');
     await new Promise((resolve) => server.once('listening', resolve));
-    baseUrl = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
+    baseUrl = `http://127.0.0.1:${portOf(server)}`;
   });
 
   beforeEach(async () => {

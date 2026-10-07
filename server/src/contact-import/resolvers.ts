@@ -1,8 +1,8 @@
-import { schema as dbSchema } from '@philotes/db';
+import * as dbSchema from '@philotes/db/schema';
 import { and, eq } from 'drizzle-orm';
 import { extendSchema, type GraphQLObjectType, type GraphQLSchema, parse } from 'graphql';
+import type { Context } from '../core/context.ts';
 import { errorMessage, requireAuth } from '../core/errors.ts';
-import type { Context } from '../graphql/handler.ts';
 import { type ParsedContact, parseGoogleContactsCsv } from './google-contacts-csv.ts';
 
 // ── Error utilities ──────────────────────────────────────────────────────────
