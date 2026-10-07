@@ -1,3 +1,10 @@
+## [3.2.1](https://github.com/cubicecho/philotes/compare/v3.2.0...v3.2.1) (2026-10-07)
+
+
+### Bug Fixes
+
+* **db:** close the connection so the seed and cleanup scripts exit ([54a354d](https://github.com/cubicecho/philotes/commit/54a354dbdfb7aa330c296308da453ff8b848e1c2))
+
 # [3.2.0](https://github.com/cubicecho/philotes/compare/v3.1.5...v3.2.0) (2026-10-07)
 
 
