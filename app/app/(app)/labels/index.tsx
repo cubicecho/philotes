@@ -8,6 +8,7 @@ import { LabelMergeDialog } from '@/components/domain/label/merge-dialog';
 import { PageLayout } from '@/components/page-layout';
 import { QueryState } from '@/components/query-state';
 import { FormDialog } from '@/components/ui/form-dialog';
+import { invalidateQueryFields } from '@/lib/invalidate';
 
 const GET_LABELS = graphql(`
   query GetLabels {
@@ -68,13 +69,16 @@ export default function LabelsPage() {
   const [createLabel] = useMutation(CREATE_LABEL, {
     refetchQueries: [{ query: GET_LABELS }],
   });
+  // A person carries their labels, so every list of people is stale once a label goes.
   const [deleteLabel] = useMutation(DELETE_LABEL, {
-    refetchQueries: [{ query: GET_LABELS }],
+    update: (cache) => invalidateQueryFields(cache, ['persons', 'labels']),
   });
   const [updateLabel] = useMutation(UPDATE_LABEL, {
     refetchQueries: [{ query: GET_LABELS }],
   });
-  const [mergeLabelInto] = useMutation(MERGE_LABEL_INTO);
+  const [mergeLabelInto] = useMutation(MERGE_LABEL_INTO, {
+    update: (cache) => invalidateQueryFields(cache, ['persons', 'labels']),
+  });
 
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [editingLabel, setEditingLabel] = useState<Label_ListFragment | null>(null);
@@ -107,7 +111,6 @@ export default function LabelsPage() {
       variables: { keepId, deleteId: mergingLabel.id },
     });
     setMergingLabel(null);
-    await refetch();
   };
 
   const otherLabels = (data?.labels ?? []).filter((l) => l.id !== mergingLabel?.id);

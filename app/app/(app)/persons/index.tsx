@@ -9,6 +9,7 @@ import { PageLayout } from '@/components/page-layout';
 import { QueryState } from '@/components/query-state';
 import { FormDialog } from '@/components/ui/form-dialog';
 import { useQueryStringState } from '@/hooks/use-query-string-state';
+import { invalidateQueryFields } from '@/lib/invalidate';
 
 // ---------------------------------------------------------------------------
 // Utilities
@@ -161,11 +162,12 @@ export default function PersonsPage() {
   const displayData = data ?? previousData;
   const { data: labelsData } = useQuery(GET_LABELS);
 
+  // The dashboard and the network graph list people too, so the field goes, not one query.
   const [createPerson] = useMutation(CREATE_PERSON, {
-    refetchQueries: ['GetPersons'],
+    update: (cache) => invalidateQueryFields(cache, ['persons']),
   });
   const [deletePerson] = useMutation(DELETE_PERSON, {
-    refetchQueries: ['GetPersons'],
+    update: (cache) => invalidateQueryFields(cache, ['persons']),
   });
 
   const [dialogOpen, setDialogOpen] = useState(false);

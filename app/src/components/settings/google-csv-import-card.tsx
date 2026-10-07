@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { FilePickerButton } from '@/components/ui/file-picker';
 import { Upload } from '@/components/ui/icons';
 import { Spinner } from '@/components/ui/spinner';
+import { invalidateQueryFields } from '@/lib/invalidate';
 
 const IMPORT_GOOGLE_CONTACTS = gql`
   mutation ImportGoogleContacts($csv: String!) {
@@ -31,7 +32,9 @@ export function GoogleCsvImportCard() {
 
   const [importContacts] = useMutation<{
     importGoogleContacts: { imported: number; merged: number; skipped: number; errors: string[] };
-  }>(IMPORT_GOOGLE_CONTACTS);
+  }>(IMPORT_GOOGLE_CONTACTS, {
+    update: (cache) => invalidateQueryFields(cache, ['persons', 'labels']),
+  });
 
   function handlePick(text: string) {
     // Quick preview: count non-empty non-header lines for an estimate

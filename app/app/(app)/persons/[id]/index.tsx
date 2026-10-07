@@ -40,6 +40,7 @@ import { FormDialog } from '@/components/ui/form-dialog';
 import { ArrowLeft, Clock, Pencil, Trash2 } from '@/components/ui/icons';
 import { Spinner } from '@/components/ui/spinner';
 import { useAvatarUpload } from '@/hooks/use-avatar-upload';
+import { invalidateQueryFields } from '@/lib/invalidate';
 import type { SlotNode } from '@/lib/utils';
 
 // ---------------------------------------------------------------------------
@@ -335,7 +336,9 @@ export default function PersonDetailPage() {
   const [updateMyPersonContext] = useMutation(UPDATE_MY_PERSON_CONTEXT);
   const [attachLabel] = useMutation(ATTACH_LABEL_TO_PERSON);
   const [detachLabel] = useMutation(DETACH_LABEL_FROM_PERSON);
-  const [deletePerson, { loading: deleting }] = useMutation(DELETE_PERSON);
+  const [deletePerson, { loading: deleting }] = useMutation(DELETE_PERSON, {
+    update: (cache) => invalidateQueryFields(cache, ['persons']),
+  });
 
   const [dateDialogOpen, setDateDialogOpen] = useState(false);
   const [noteDialogOpen, setNoteDialogOpen] = useState(false);
