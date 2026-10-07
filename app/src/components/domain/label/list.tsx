@@ -4,6 +4,7 @@ import { graphql } from '@/__generated__/gql';
 import type { Label_ListFragment } from '@/__generated__/graphql.ts';
 import { ActionButton } from '@/components/action-button';
 import { GitMerge } from '@/components/app-icons';
+import { ConfirmButton } from '@/components/confirm-button';
 import { LabelChip } from '@/components/domain/label/label-chip';
 import { ListItem } from '@/components/list-item';
 import { EmptyState } from '@/components/page';
@@ -64,12 +65,14 @@ function LabelRow({ label: from, divided, onClickDelete, onClickEdit, onClickMer
               onPress={() => onClickMerge(label)}
             />
           )}
-          <ActionButton
+          <ConfirmButton
             variant="ghost"
             size="icon-sm"
             label={`Delete ${label.label}`}
             iconSlot={<Trash2 />}
-            onPress={() => onClickDelete(label.id)}
+            title={`Delete ${label.label}?`}
+            description="The label comes off every person, note, interaction and date that carries it. To keep those, merge it into another label instead."
+            onConfirm={() => onClickDelete(label.id)}
           />
         </>
       }

@@ -5,6 +5,7 @@ import { Text, View } from 'react-native';
 import { graphql } from '@/__generated__/gql';
 import { ActionButton } from '@/components/action-button';
 import { useAppForm } from '@/components/app-form';
+import { ConfirmButton } from '@/components/confirm-button';
 import { MentionTextareaField } from '@/components/domain/person/note-mentions';
 import { ATTACH_NOTE_TAG, NoteTagChip, NoteTagPicker } from '@/components/domain/person/note-tags';
 import { AddTagButton, type TagOption, TagsField } from '@/components/domain/person/tag-picker';
@@ -213,12 +214,14 @@ function NoteRow({ note, allTags, allPersons, onChanged }: NoteRowProps) {
               iconSlot={<Pencil />}
               onPress={() => setEditOpen(true)}
             />
-            <ActionButton
+            <ConfirmButton
               label="Delete note"
               variant="ghost"
               size="icon-xs"
               iconSlot={<Trash2 />}
-              onPress={handleDelete}
+              title="Delete this note?"
+              description="The note goes, with its tags and the people it mentions. It cannot be brought back."
+              onConfirm={handleDelete}
             />
           </View>
         </View>

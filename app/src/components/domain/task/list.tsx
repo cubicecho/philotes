@@ -2,8 +2,8 @@ import { useMutation } from '@apollo/client';
 import { useState } from 'react';
 import { View } from 'react-native';
 import { graphql } from '@/__generated__/gql';
-import { ActionButton } from '@/components/action-button';
 import { useAppForm } from '@/components/app-form';
+import { ConfirmButton } from '@/components/confirm-button';
 import { ListItem } from '@/components/list-item';
 import { EmptyState } from '@/components/page';
 import { SectionHeading } from '@/components/section-heading';
@@ -158,7 +158,15 @@ function TaskRow({ task, onDelete, onUpdate }: TaskRowProps) {
       titleClassName={isCompleted ? 'font-normal text-muted-foreground line-through' : undefined}
       description={details || undefined}
       actionSlot={
-        <ActionButton variant="ghost" size="icon-sm" label="Delete task" iconSlot={<Trash2 />} onPress={handleDelete} />
+        <ConfirmButton
+          variant="ghost"
+          size="icon-sm"
+          label="Delete task"
+          iconSlot={<Trash2 />}
+          title="Delete this task?"
+          description={`"${task.title}" is removed whether or not it is done. It cannot be brought back.`}
+          onConfirm={handleDelete}
+        />
       }
     />
   );

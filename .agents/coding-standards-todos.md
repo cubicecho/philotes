@@ -28,7 +28,7 @@ confirmed in code. Nothing here is implemented until approved.
 | B7 | Bug | Makes the avatar upload in the app check the response and use the configured API URL | A failed upload is reported, and works off-origin | B3 | done |
 | B8 | Bug | Refetches the lists that import, person delete, label merge and label delete change | No stale rows after a mutation | — | done |
 | B9 | Bug | Shows loading and error states in the API key and export cards, which today show "empty" while loading | Honest states | — | done |
-| F1 | Feature | Asks for confirmation before each of the seven one-click deletes | No accidental data loss | — | approved |
+| F1 | Feature | Asks for confirmation before each of the seven one-click deletes | No accidental data loss | — | done |
 | A1 | API change | Moves the server to graphql-yoga on Express 5 with `createApp(deps)`, the `core/ http/ graphql/ auth/` layout, `/healthz`, graceful shutdown, body cap and operation limits | The cubicecho backend shape; injection replaces `vi.mock` of own modules | — | approved |
 | A2 | API change | Replaces the hand-rolled JWT magic link and API keys with better-auth, and puts `/avatars` behind the session cookie; every user signs in again and existing API keys stop working | One audited auth stack, with rate limiting | A1 | approved |
 | A3 | API change | Makes Postgres the only production database (PGlite for tests), loads the db package from source, and adds `waitForDatabase`; a deployment now needs a Postgres | Production runs what CI tests | A1 | approved |

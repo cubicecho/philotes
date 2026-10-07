@@ -5,6 +5,7 @@ import { Text, View } from 'react-native';
 import { graphql } from '@/__generated__/gql';
 import type { ImportantDatesMilestoneTypeEnum } from '@/__generated__/graphql';
 import { ActionButton } from '@/components/action-button';
+import { ConfirmButton } from '@/components/confirm-button';
 import {
   ImportantDateForm,
   type ImportantDateFormValue,
@@ -126,12 +127,15 @@ export function ImportantDateRow({
               iconSlot={<Pencil />}
               onPress={() => setEditOpen(true)}
             />
-            <ActionButton
+            <ConfirmButton
               label="Remove important date"
               variant="ghost"
               size="icon-sm"
               iconSlot={<Trash2 />}
-              onPress={() => onDelete(id)}
+              title={`Remove ${name}?`}
+              description="The date leaves the timeline, the dashboard and the calendar feed, with its tags and description."
+              confirmLabel="Remove"
+              onConfirm={() => onDelete(id)}
             />
           </View>
         </View>

@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { Text, View } from 'react-native';
 import { graphql } from '@/__generated__/gql';
 import { ActionButton } from '@/components/action-button';
+import { ConfirmButton } from '@/components/confirm-button';
 import { ChannelIcon } from '@/components/domain/person/channel-icon';
 import {
   CHANNEL_OPTIONS,
@@ -193,12 +194,14 @@ function InteractionRow({ interaction, allTags, onChanged }: InteractionRowProps
               iconSlot={<Pencil />}
               onPress={() => setEditOpen(true)}
             />
-            <ActionButton
+            <ConfirmButton
               label="Delete interaction"
               variant="ghost"
               size="icon-xs"
               iconSlot={<Trash2 />}
-              onPress={handleDelete}
+              title="Delete this interaction?"
+              description="Its note and tags go with it, and the person's last contact falls back to the one before."
+              onConfirm={handleDelete}
             />
           </View>
         </View>

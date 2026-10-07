@@ -11,6 +11,7 @@ import { ListItem } from '@/components/list-item';
 import { OptionSelect } from '@/components/option-select';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { FieldWrapper, Form } from '@/components/ui/form';
 import { FormDialog, FormDialogFooter } from '@/components/ui/form-dialog';
 import { Pencil, Trash2 } from '@/components/ui/icons';
@@ -155,6 +156,8 @@ function RelationshipFormDialog({
   const { data: typesData } = useQuery(GET_RELATIONSHIP_TYPES);
   const types = typesData?.relationshipTypes ?? [];
   const firstType = types[0]?.name ?? '';
+  /** The type whose delete is waiting on the confirm question, if one is. */
+  const [typeToDelete, setTypeToDelete] = useState<{ id: string; name: string } | null>(null);
 
   const [createRelationship, { error: createError, reset: resetCreate }] = useMutation(CREATE_RELATIONSHIP);
   const [updateRelationship, { error: updateError, reset: resetUpdate }] = useMutation(UPDATE_RELATIONSHIP);
@@ -318,13 +321,32 @@ function RelationshipFormDialog({
                     key={t.id}
                     variant="secondary"
                     removeLabel={`Delete ${t.name}`}
-                    onRemove={() => void deleteType({ variables: { id: t.id } })}
+                    onRemove={() => setTypeToDelete(t)}
                   >
                     {t.name}
                   </Badge>
                 ))}
               </View>
             ) : null}
+
+            <ConfirmDialog
+              open={typeToDelete !== null}
+              onOpenChange={(open) => {
+                if (open === false) {
+                  setTypeToDelete(null);
+                }
+              }}
+              title={`Delete ${typeToDelete?.name ?? 'this type'}?`}
+              description="It is no longer offered when you link two people. Relationships that already use it keep it."
+              confirmLabel="Delete"
+              cancelLabel="Cancel"
+              onConfirm={() => {
+                if (typeToDelete) {
+                  void deleteType({ variables: { id: typeToDelete.id } });
+                }
+                setTypeToDelete(null);
+              }}
+            />
 
             <FormDialogFooter onCancel={() => onOpenChange(false)} error={error?.message ?? null}>
               <form.SubmitButton isEdit={isEditing} createLabel="Add" editLabel="Save" />

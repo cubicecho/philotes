@@ -1,6 +1,7 @@
 import { gql, useMutation, useQuery } from '@apollo/client';
 import { useState } from 'react';
 import { Text } from 'react-native';
+import { ConfirmButton } from '@/components/confirm-button';
 import { ListItem } from '@/components/list-item';
 import { EmptyState } from '@/components/page';
 import { QueryState } from '@/components/query-state';
@@ -98,12 +99,16 @@ export function ApiKeyManager() {
                 description={keyDetails(key)}
                 meta={<Text className="font-mono text-muted-foreground text-xs">{`phlt_${key.keyPrefix}…`}</Text>}
                 actionSlot={
-                  <Button
+                  <ConfirmButton
                     size="sm"
                     variant="destructive"
                     disabled={revoking}
+                    label={`Revoke ${key.name}`}
                     content="Revoke"
-                    onPress={() => revokeApiKey({ variables: { id: key.id } })}
+                    title={`Revoke ${key.name}?`}
+                    description="Every calendar subscribed with this key stops updating, and the key cannot be restored. A new key gives a new URL."
+                    confirmLabel="Revoke"
+                    onConfirm={() => void revokeApiKey({ variables: { id: key.id } })}
                   />
                 }
               />
