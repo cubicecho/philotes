@@ -39,7 +39,7 @@ export const GET_PERSON_DETAIL = graphql(`
         id
         body
       }
-      importantDates(limit: 100) {
+      importantDates(limit: 50) {
         id
         name
         description

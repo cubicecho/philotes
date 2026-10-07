@@ -1,7 +1,12 @@
 import { maxAliasesRule } from '@escape.tech/graphql-armor-max-aliases';
 import { maxDepthRule } from '@escape.tech/graphql-armor-max-depth';
 import type { ExecutionArgs, GraphQLError, ValidationContext } from 'graphql';
-import { fieldExtensionsEstimator, getComplexity, simpleEstimator } from 'graphql-query-complexity';
+import {
+  type ComplexityEstimator,
+  fieldExtensionsEstimator,
+  getComplexity,
+  simpleEstimator,
+} from 'graphql-query-complexity';
 import type { Plugin } from 'graphql-yoga';
 import { OPERATION_LIMIT_DEFAULTS } from '../core/defaults.ts';
 import { tooComplex } from '../core/errors.ts';
@@ -21,6 +26,23 @@ function reportCoded(context: ValidationContext | null, error: GraphQLError): vo
 /** Armor rules report through reportCoded instead of throwing. */
 const armor = { propagateOnRejection: false, onReject: [reportCoded] };
 
+/** The field every type answers with its own name. */
+const TYPE_NAME_FIELD = '__typename';
+
+/**
+ * Prices `__typename` at nothing: it reads no column, and Apollo Client adds it to every selection
+ * set, so charging for it would bill a client for a field it never asked for.
+ *
+ * @param options - The field being priced.
+ * @returns Zero for `__typename`, and nothing for any other field, which leaves it to the next estimator.
+ */
+const typeNameEstimator: ComplexityEstimator = ({ field }) => {
+  if (field.name === TYPE_NAME_FIELD) {
+    return 0;
+  }
+  return undefined;
+};
+
 /**
  * Prices an operation with its own variables (`limit: $n`).
  *
@@ -33,8 +55,12 @@ function costOf(args: ExecutionArgs): number {
     query: args.document,
     operationName: args.operationName ?? undefined,
     variables: args.variableValues ?? {},
-    // drizzle-graphql's hints first. Any other field costs `defaultFieldCost`.
-    estimators: [fieldExtensionsEstimator(), simpleEstimator({ defaultComplexity: defaultFieldCost })],
+    // `__typename` is free, then drizzle-graphql's hints. Any other field costs `defaultFieldCost`.
+    estimators: [
+      typeNameEstimator,
+      fieldExtensionsEstimator(),
+      simpleEstimator({ defaultComplexity: defaultFieldCost }),
+    ],
   });
 }
 

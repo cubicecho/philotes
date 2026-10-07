@@ -129,7 +129,8 @@ value)` from `core/validation.ts`.
 A list returns `defaultPageSize` rows when the request passes no `limit`, and
 refuses a `limit` above `maxPageSize`. `graphql/operation-limits.ts` refuses an
 operation that nests too deep, uses too many aliases or costs more than
-`maxCost`, where a list costs its page size times one row. The numbers are
+`maxCost`, where a list costs its page size times one row. `__typename` is
+free, since Apollo Client adds it to every selection set. The numbers are
 `OPERATION_LIMIT_DEFAULTS` in `core/defaults.ts`. A client that needs every row
 pages through them — see `useAllRows` in [frontend.md](./frontend.md#data-fetching).
 
