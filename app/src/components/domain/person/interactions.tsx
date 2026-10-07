@@ -22,7 +22,8 @@ import { Pencil, Trash2 } from '@/components/ui/icons';
 import { EXCERPT_DEFAULTS } from '@/lib/defaults';
 import { relativeTime } from '@/lib/relative-time';
 
-const CREATE_INTERACTION = graphql(`
+/** Logs an interaction. Shared with the quick log on the people list. */
+export const CREATE_INTERACTION = graphql(`
   mutation CreateInteraction(
     $personId: UUID!
     $channel: String!
