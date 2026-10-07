@@ -1,5 +1,6 @@
 // Fills the database with a made-up user and their people. Run with `npm run db:seed`.
 
+import { closeDatabase } from './index.ts';
 import { seedImportantDates, seedInteractions, seedNotes, seedTasks } from './seed/activity.ts';
 import {
   seedAddresses,
@@ -26,3 +27,6 @@ await seedContactInfos(personData, userId);
 await seedAddresses(personData, userId);
 
 console.log('Seed complete.');
+
+// The open connection would keep the process alive after the last query.
+await closeDatabase();
