@@ -11,10 +11,6 @@ import { FieldWrapper, Form } from '@/components/ui/form';
 import { FormDialog, FormDialogFooter } from '@/components/ui/form-dialog';
 import { Plus } from '@/components/ui/icons';
 
-// ---------------------------------------------------------------------------
-// Fragment
-// ---------------------------------------------------------------------------
-
 export const PERSON_LABELS = graphql(`
   fragment Person_Labels on Person {
     id
@@ -25,10 +21,6 @@ export const PERSON_LABELS = graphql(`
     }
   }
 `);
-
-// ---------------------------------------------------------------------------
-// Mutations
-// ---------------------------------------------------------------------------
 
 const ATTACH_LABEL = graphql(`
   mutation AttachLabelToPerson($personId: UUID!, $labelId: UUID!) {
@@ -50,33 +42,33 @@ const DETACH_LABEL = graphql(`
   }
 `);
 
-// ---------------------------------------------------------------------------
-// Types
-// ---------------------------------------------------------------------------
-
+/** A label as a chip or a picker option needs it. */
 type LabelOption = { id: string; label: string; color: string };
 
 export interface PersonLabelsProps {
   person: Person_LabelsFragment;
+  /** Every label the user has; the ones not yet on the person are offered. */
   allLabels: LabelOption[];
+  /** Called with a label's id after it is taken off the person. */
   onDelete: (labelId: string) => void;
+  /** Called with a label's id after it is put on the person. */
   onAdd: (labelId: string) => void;
+  /** Whether the Add Label dialog is open. */
   showAdd?: boolean;
+  /** Receives the dialog's open state. Without it the Label button is not drawn. */
   onShowAdd?: (show: boolean) => void;
 }
-
-// ---------------------------------------------------------------------------
-// Attached label chip (detaches on remove)
-// ---------------------------------------------------------------------------
 
 interface AttachedLabelChipProps {
   personId: string;
   labelId: string;
   label: string;
   color: string;
+  /** Called with the label's id after it is taken off the person. */
   onDelete: (labelId: string) => void;
 }
 
+/** One of a person's labels, with the ✕ that takes it off them. */
 function AttachedLabelChip({ personId, labelId, label, color, onDelete }: AttachedLabelChipProps) {
   const [detachLabel] = useMutation(DETACH_LABEL);
 
@@ -88,20 +80,20 @@ function AttachedLabelChip({ personId, labelId, label, color, onDelete }: Attach
   return <LabelChip label={label} color={color} onRemove={handleDetach} />;
 }
 
-// ---------------------------------------------------------------------------
-// Add-label dialog
-// ---------------------------------------------------------------------------
-
 interface AddLabelDialogProps {
   personId: string;
+  /** The labels not yet on the person. */
   available: LabelOption[];
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  /** Called with each label's id as it is put on the person. */
   onAdd: (labelId: string) => void;
 }
 
+/** The Add Label form's starting values: nothing chosen. */
 const NO_LABELS: { labelIds: string[] } = { labelIds: [] };
 
+/** The dialog that puts one or more labels on a person, one mutation per label. */
 function AddLabelDialog({ personId, available, open, onOpenChange, onAdd }: AddLabelDialogProps) {
   const [attachLabel] = useMutation(ATTACH_LABEL);
   const [formError, setFormError] = useState<string | null>(null);
@@ -123,7 +115,10 @@ function AddLabelDialog({ personId, available, open, onOpenChange, onAdd }: AddL
   });
 
   useEffect(() => {
-    if (!open) return;
+    const isClosed = open === false;
+    if (isClosed) {
+      return;
+    }
     form.reset(NO_LABELS);
     setFormError(null);
   }, [open, form]);
@@ -163,13 +158,11 @@ function AddLabelDialog({ personId, available, open, onOpenChange, onAdd }: AddL
   );
 }
 
-// ---------------------------------------------------------------------------
-// Main export
-// ---------------------------------------------------------------------------
-
+/** A person's labels as removable chips, the button that offers the rest, and its dialog. */
 export function PersonLabels({ person, allLabels, onDelete, onAdd, showAdd = false, onShowAdd }: PersonLabelsProps) {
   const attachedIds = new Set(person.labels.map((l) => l.id));
-  const available = allLabels.filter((l) => !attachedIds.has(l.id));
+  const available = allLabels.filter((l) => attachedIds.has(l.id) === false);
+  const hasAvailable = available.length > 0;
 
   return (
     <View className="flex-row flex-wrap items-center gap-1.5">
@@ -183,7 +176,7 @@ export function PersonLabels({ person, allLabels, onDelete, onAdd, showAdd = fal
           onDelete={onDelete}
         />
       ))}
-      {available.length > 0 && onShowAdd ? (
+      {hasAvailable && onShowAdd ? (
         <Button variant="outline" size="xs" iconSlot={<Plus />} content="Label" onPress={() => onShowAdd(true)} />
       ) : null}
 

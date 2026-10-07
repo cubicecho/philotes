@@ -1,4 +1,4 @@
-import { useMutation, useQuery } from '@apollo/client';
+import { useMutation } from '@apollo/client';
 import { useState } from 'react';
 import { graphql } from '@/__generated__/gql';
 import type { CreateLabelInput, Label_ListFragment } from '@/__generated__/graphql';
@@ -8,10 +8,12 @@ import { LabelMergeDialog } from '@/components/domain/label/merge-dialog';
 import { PageLayout } from '@/components/page-layout';
 import { QueryState } from '@/components/query-state';
 import { FormDialog } from '@/components/ui/form-dialog';
+import { invalidateQueryFields } from '@/lib/invalidate';
+import { useAllRows } from '@/lib/use-all-rows';
 
 const GET_LABELS = graphql(`
-  query GetLabels {
-    labels {
+  query GetLabels($limit: Int!, $offset: Int!) {
+    labels(limit: $limit, offset: $offset, orderBy: { label: { direction: asc, priority: 1 }, id: { direction: asc, priority: 2 } }) {
       __typename
       id
       ...Label_List
@@ -63,18 +65,22 @@ const MERGE_LABEL_INTO = graphql(`
   }
 `);
 
+/** The labels page: the list of labels, and the dialogs that create, edit and merge them. */
 export default function LabelsPage() {
-  const { data, loading, error, refetch } = useQuery(GET_LABELS);
+  const { data, loading, error, refetch } = useAllRows(GET_LABELS, { field: 'labels' });
   const [createLabel] = useMutation(CREATE_LABEL, {
-    refetchQueries: [{ query: GET_LABELS }],
+    refetchQueries: ['GetLabels'],
   });
+  // A person carries their labels, so every list of people is stale once a label goes.
   const [deleteLabel] = useMutation(DELETE_LABEL, {
-    refetchQueries: [{ query: GET_LABELS }],
+    update: (cache) => invalidateQueryFields(cache, ['persons', 'labels']),
   });
   const [updateLabel] = useMutation(UPDATE_LABEL, {
-    refetchQueries: [{ query: GET_LABELS }],
+    refetchQueries: ['GetLabels'],
   });
-  const [mergeLabelInto] = useMutation(MERGE_LABEL_INTO);
+  const [mergeLabelInto] = useMutation(MERGE_LABEL_INTO, {
+    update: (cache) => invalidateQueryFields(cache, ['persons', 'labels']),
+  });
 
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [editingLabel, setEditingLabel] = useState<Label_ListFragment | null>(null);
@@ -90,7 +96,9 @@ export default function LabelsPage() {
   };
 
   const handleEdit = async (values: CreateLabelInput): Promise<void> => {
-    if (!editingLabel) return;
+    if (!editingLabel) {
+      return;
+    }
     await updateLabel({
       variables: { id: editingLabel.id, label: values.label, color: values.color },
     });
@@ -98,19 +106,21 @@ export default function LabelsPage() {
   };
 
   const handleMerge = async (keepId: string): Promise<void> => {
-    if (!mergingLabel) return;
+    if (!mergingLabel) {
+      return;
+    }
     await mergeLabelInto({
       variables: { keepId, deleteId: mergingLabel.id },
     });
     setMergingLabel(null);
-    await refetch();
   };
 
   const otherLabels = (data?.labels ?? []).filter((l) => l.id !== mergingLabel?.id);
 
   // Only the first load: a refetch after a mutation keeps the list (and any open dialog) on screen.
   const pending = loading && !data;
-  if (pending || error) {
+  const showsQueryState = pending || error !== undefined;
+  if (showsQueryState) {
     return (
       <PageLayout
         title="Labels"
@@ -139,7 +149,10 @@ export default function LabelsPage() {
       <FormDialog
         open={editingLabel !== null}
         onOpenChange={(open) => {
-          if (!open) setEditingLabel(null);
+          const isClosing = open === false;
+          if (isClosing) {
+            setEditingLabel(null);
+          }
         }}
         title="Edit Label"
         description="Rename or recolor this label."
@@ -164,10 +177,10 @@ export default function LabelsPage() {
 
       <LabelList
         labels={data?.labels ?? []}
-        onClickAdd={() => setCreateDialogOpen(true)}
-        onClickDelete={handleDelete}
-        onClickEdit={setEditingLabel}
-        onClickMerge={setMergingLabel}
+        onAddPress={() => setCreateDialogOpen(true)}
+        onDeletePress={handleDelete}
+        onEditPress={setEditingLabel}
+        onMergePress={setMergingLabel}
       />
     </>
   );

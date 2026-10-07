@@ -3,37 +3,76 @@ import { useEffect, useRef, useState } from 'react';
 import { Text, View } from 'react-native';
 import { LabelChip } from '@/components/domain/label/label-chip';
 import { Button } from '@/components/ui/button';
+import { NETWORK_GRAPH_DEFAULTS } from '@/lib/defaults';
+import { nameToColor } from '@/lib/name-color';
+import { fullName } from '@/lib/person-name';
 import type { NetworkGraphProps, NetworkPerson } from './types';
 
-// djb2 hash → hsl color
-function nameToColor(name: string): string {
-  let hash = 5381;
-  for (let i = 0; i < name.length; i++) {
-    hash = (hash * 33) ^ name.charCodeAt(i);
-  }
-  const hue = Math.abs(hash) % 360;
-  return `hsl(${hue}, 60%, 55%)`;
-}
-
+/** A person as a node of the d3 simulation, which adds the position and velocity. */
 type SimNode = d3.SimulationNodeDatum & NetworkPerson;
 
+/** A relationship as a link of the simulation; `type` is the relationship's name, drawn on the edge. */
 type SimLink = d3.SimulationLinkDatum<SimNode> & {
   type: string;
 };
 
+/** The person under the pointer and where the pointer is in the graph's box; `null` over no one. */
 type TooltipState = {
   x: number;
   y: number;
   person: NetworkPerson;
 } | null;
 
-function getNodeRadius(connections: number): number {
-  const min = 18;
-  const max = 32;
-  const clamped = Math.min(connections, 10);
-  return min + ((max - min) * clamped) / 10;
+const GRAPH = NETWORK_GRAPH_DEFAULTS;
+
+const HALF_TURN_DEGREES = 180;
+const QUARTER_TURN_DEGREES = 90;
+
+/** The stroke the edge lines and the hub rings share. */
+const FAINT_STROKE = { width: 1.5, opacity: 0.4 };
+/** The pill behind a relationship label. */
+const EDGE_PILL = { cornerRadius: 3, strokeWidth: 0.5, strokeOpacity: 0.1, opacity: 0.9 };
+
+/**
+ * A link's end as a node. d3 holds the id the link was built with until the simulation swaps in the node.
+ *
+ * @param end - One end of a link.
+ * @returns The node, or `null` while the end is still an id.
+ */
+function resolvedNode(end: SimLink['source']): SimNode | null {
+  const isResolved = typeof end === 'object';
+  return isResolved ? end : null;
 }
 
+/**
+ * The node id at a link's end, whether or not the simulation has swapped the node in yet.
+ *
+ * @param end - One end of a link.
+ * @returns The id of the person at that end.
+ */
+function linkEndId(end: SimLink['source']): string {
+  return resolvedNode(end)?.id ?? String(end);
+}
+
+/**
+ * A node's radius, which grows with the person's connections up to a ceiling.
+ *
+ * @param connections - How many relationships the person is part of, on either side.
+ * @returns The radius in svg units, from `minNodeRadius` up to `maxNodeRadius` at `nodeRadiusFullAt` connections.
+ */
+function getNodeRadius(connections: number): number {
+  const { minNodeRadius, maxNodeRadius, nodeRadiusFullAt } = GRAPH;
+  const counted = Math.min(connections, nodeRadiusFullAt);
+  return minNodeRadius + ((maxNodeRadius - minNodeRadius) * counted) / nodeRadiusFullAt;
+}
+
+/**
+ * The two letters drawn inside a person's node.
+ *
+ * @param firstName - The person's first name.
+ * @param lastName - The person's last name.
+ * @returns The first character of each name, uppercased; an empty name adds nothing.
+ */
 function getInitials(firstName: string, lastName: string): string {
   return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
 }
@@ -61,14 +100,20 @@ export function NetworkGraph({ persons, onOpenPerson }: NetworkGraphProps) {
 
   useEffect(() => {
     const svgEl = svgRef.current;
-    if (!svgEl || !measured || persons.length === 0) return;
+    const hasNothingToDraw = measured === false || persons.length === 0;
+    if (!svgEl || hasNothingToDraw) {
+      return;
+    }
 
     const { width, height } = sizeRef.current;
 
     // Build connection count map
     const connectionCount = new Map<string, number>();
     for (const p of persons) {
-      if (!connectionCount.has(p.id)) connectionCount.set(p.id, 0);
+      const isUncounted = connectionCount.has(p.id) === false;
+      if (isUncounted) {
+        connectionCount.set(p.id, 0);
+      }
       for (const rel of p.relationshipsFrom) {
         connectionCount.set(p.id, (connectionCount.get(p.id) ?? 0) + 1);
         connectionCount.set(rel.toPersonId, (connectionCount.get(rel.toPersonId) ?? 0) + 1);
@@ -83,7 +128,8 @@ export function NetworkGraph({ persons, onOpenPerson }: NetworkGraphProps) {
     for (const p of persons) {
       for (const rel of p.relationshipsFrom) {
         const edgeKey = [p.id, rel.toPersonId].sort().join('--');
-        if (!seenEdges.has(edgeKey) && nodeIndex.has(rel.toPersonId)) {
+        const isNewEdge = seenEdges.has(edgeKey) === false && nodeIndex.has(rel.toPersonId);
+        if (isNewEdge) {
           seenEdges.add(edgeKey);
           links.push({
             source: p.id,
@@ -105,7 +151,7 @@ export function NetworkGraph({ persons, onOpenPerson }: NetworkGraphProps) {
     // Zoom + pan behaviour
     const zoom = d3
       .zoom<SVGSVGElement, unknown>()
-      .scaleExtent([0.1, 4])
+      .scaleExtent([GRAPH.minZoom, GRAPH.maxZoom])
       .on('zoom', (event: d3.D3ZoomEvent<SVGSVGElement, unknown>) => {
         container.attr('transform', event.transform.toString());
       });
@@ -118,11 +164,11 @@ export function NetworkGraph({ persons, onOpenPerson }: NetworkGraphProps) {
       zoom.transform,
       d3.zoomIdentity
         .translate(width / 2, height / 2)
-        .scale(0.5)
+        .scale(GRAPH.initialZoom)
         .translate(-width / 2, -height / 2),
     );
 
-    // ── Force simulation ────────────────────────────────────────────────────
+    // Force simulation
     // Longer link distances for well-connected nodes so clusters breathe
     const simulation = d3
       .forceSimulation<SimNode, SimLink>(nodes)
@@ -132,36 +178,43 @@ export function NetworkGraph({ persons, onOpenPerson }: NetworkGraphProps) {
           .forceLink<SimNode, SimLink>(links)
           .id((d) => d.id)
           .distance((d) => {
-            const sc = connectionCount.get((d.source as SimNode).id) ?? 0;
-            const tc = connectionCount.get((d.target as SimNode).id) ?? 0;
-            return 120 + (sc + tc) * 8;
+            const sc = connectionCount.get(linkEndId(d.source)) ?? 0;
+            const tc = connectionCount.get(linkEndId(d.target)) ?? 0;
+            return GRAPH.linkDistance + (sc + tc) * GRAPH.linkDistancePerConnection;
           })
-          .strength(0.5),
+          .strength(GRAPH.linkStrength),
       )
       .force(
         'charge',
-        d3.forceManyBody<SimNode>().strength((d) => -300 - (connectionCount.get(d.id) ?? 0) * 30),
+        d3
+          .forceManyBody<SimNode>()
+          .strength((d) => GRAPH.chargeStrength + (connectionCount.get(d.id) ?? 0) * GRAPH.chargeStrengthPerConnection),
       )
-      .force('center', d3.forceCenter(width / 2, height / 2).strength(0.05))
-      .force('collide', d3.forceCollide<SimNode>((d) => getNodeRadius(connectionCount.get(d.id) ?? 0) + 50).strength(1))
-      .alphaDecay(0.02) // slower cooling = better final layout
-      .velocityDecay(0.4);
+      .force('center', d3.forceCenter(width / 2, height / 2).strength(GRAPH.centerStrength))
+      .force(
+        'collide',
+        d3
+          .forceCollide<SimNode>((d) => getNodeRadius(connectionCount.get(d.id) ?? 0) + GRAPH.collidePadding)
+          .strength(1),
+      )
+      .alphaDecay(GRAPH.alphaDecay)
+      .velocityDecay(GRAPH.velocityDecay);
 
     simulationRef.current = simulation;
 
-    // ── Edge lines ──────────────────────────────────────────────────────────
+    // Edge lines
     const link = container
       .append('g')
       .attr('class', 'links')
       .selectAll<SVGLineElement, SimLink>('line')
       .data(links)
       .join('line')
-      .attr('stroke', 'var(--muted-foreground)')
-      .attr('stroke-width', 1.5)
-      .attr('stroke-opacity', 0.6)
+      .attr('stroke', 'var(--foreground)')
+      .attr('stroke-width', FAINT_STROKE.width)
+      .attr('stroke-opacity', FAINT_STROKE.opacity)
       .style('cursor', 'default');
 
-    // ── Edge label groups (pill background + rotated text) ──────────────────
+    // Edge label groups (pill background + rotated text)
     const edgeLabelGroups = container
       .append('g')
       .attr('class', 'edge-labels')
@@ -173,12 +226,13 @@ export function NetworkGraph({ persons, onOpenPerson }: NetworkGraphProps) {
     // Background pill
     edgeLabelGroups
       .append('rect')
-      .attr('rx', 3)
-      .attr('ry', 3)
-      .attr('fill', 'var(--popover)')
-      .attr('stroke', 'var(--border)')
-      .attr('stroke-width', 0.5)
-      .attr('opacity', 0.9);
+      .attr('rx', EDGE_PILL.cornerRadius)
+      .attr('ry', EDGE_PILL.cornerRadius)
+      .attr('fill', 'var(--secondary)')
+      .attr('stroke', 'var(--foreground)')
+      .attr('stroke-opacity', EDGE_PILL.strokeOpacity)
+      .attr('stroke-width', EDGE_PILL.strokeWidth)
+      .attr('opacity', EDGE_PILL.opacity);
 
     // Label text
     edgeLabelGroups
@@ -186,17 +240,19 @@ export function NetworkGraph({ persons, onOpenPerson }: NetworkGraphProps) {
       .text((d) => d.type)
       .attr('text-anchor', 'middle')
       .attr('dominant-baseline', 'central')
-      .attr('fill', 'var(--popover-foreground)')
+      .attr('fill', 'var(--foreground)')
       .attr('font-size', '9px')
       .style('user-select', 'none');
 
     // Size each pill rect to fit its text (approximate via getBBox)
     edgeLabelGroups.each(function () {
       const g = d3.select(this);
-      const textEl = g.select('text').node() as SVGTextElement | null;
-      if (!textEl) return;
+      const textEl = g.select<SVGTextElement>('text').node();
+      if (!textEl) {
+        return;
+      }
       const bbox = textEl.getBBox();
-      const pad = { x: 4, y: 2 };
+      const pad = { x: GRAPH.edgeLabelPaddingX, y: GRAPH.edgeLabelPaddingY };
       g.select('rect')
         .attr('x', -bbox.width / 2 - pad.x)
         .attr('y', -bbox.height / 2 - pad.y)
@@ -210,7 +266,7 @@ export function NetworkGraph({ persons, onOpenPerson }: NetworkGraphProps) {
       return { x, y };
     };
 
-    // ── Node groups ─────────────────────────────────────────────────────────
+    // Node groups
     const nodeGroup = container
       .append('g')
       .attr('class', 'nodes')
@@ -237,7 +293,10 @@ export function NetworkGraph({ persons, onOpenPerson }: NetworkGraphProps) {
       .drag<SVGGElement, SimNode>()
       .on('start', (event, d) => {
         event.sourceEvent.stopPropagation();
-        if (!event.active) simulation.alphaTarget(0.3).restart();
+        const isOnlyDrag = event.active === 0;
+        if (isOnlyDrag) {
+          simulation.alphaTarget(GRAPH.reheatAlpha).restart();
+        }
         d.fx = d.x;
         d.fy = d.y;
       })
@@ -246,24 +305,27 @@ export function NetworkGraph({ persons, onOpenPerson }: NetworkGraphProps) {
         d.fy = event.y;
       })
       .on('end', (event, d) => {
-        if (!event.active) simulation.alphaTarget(0);
+        const isOnlyDrag = event.active === 0;
+        if (isOnlyDrag) {
+          simulation.alphaTarget(0);
+        }
         d.fx = null;
         d.fy = null;
       });
 
     nodeGroup.call(drag);
 
-    const nodeColor = (d: SimNode) => d.labels[0]?.color ?? nameToColor(`${d.firstName} ${d.lastName}`);
+    const nodeColor = (d: SimNode) => d.labels[0]?.color ?? nameToColor(fullName(d));
 
     // Outer ring for well-connected hub nodes (drawn before main circle so it sits underneath)
     nodeGroup
-      .filter((d) => (connectionCount.get(d.id) ?? 0) > 3)
+      .filter((d) => (connectionCount.get(d.id) ?? 0) > GRAPH.hubAboveConnections)
       .append('circle')
-      .attr('r', (d) => getNodeRadius(connectionCount.get(d.id) ?? 0) + 4)
+      .attr('r', (d) => getNodeRadius(connectionCount.get(d.id) ?? 0) + GRAPH.hubRingGap)
       .attr('fill', 'none')
       .attr('stroke', nodeColor)
-      .attr('stroke-width', 1.5)
-      .attr('stroke-opacity', 0.4)
+      .attr('stroke-width', FAINT_STROKE.width)
+      .attr('stroke-opacity', FAINT_STROKE.opacity)
       .attr('pointer-events', 'none');
 
     // Main filled circle
@@ -283,20 +345,20 @@ export function NetworkGraph({ persons, onOpenPerson }: NetworkGraphProps) {
       .attr('fill', '#fff')
       .attr('font-size', (d) => {
         const r = getNodeRadius(connectionCount.get(d.id) ?? 0);
-        return `${Math.floor(r * 0.6)}px`;
+        return `${Math.floor(r * GRAPH.initialsSizeRatio)}px`;
       })
       .attr('pointer-events', 'none');
 
     // Full name label below node — paint-order halo keeps it readable over any bg
     nodeGroup
       .append('text')
-      .text((d) => `${d.firstName} ${d.lastName}`)
+      .text((d) => fullName(d))
       .attr('text-anchor', 'middle')
       .attr('dominant-baseline', 'hanging')
       .attr('fill', 'var(--foreground)')
       .attr('font-size', '11px')
       .attr('font-weight', '500')
-      .attr('y', (d) => getNodeRadius(connectionCount.get(d.id) ?? 0) + 6)
+      .attr('y', (d) => getNodeRadius(connectionCount.get(d.id) ?? 0) + GRAPH.nameGap)
       .attr('pointer-events', 'none')
       .style('user-select', 'none')
       .style('paint-order', 'stroke')
@@ -304,24 +366,27 @@ export function NetworkGraph({ persons, onOpenPerson }: NetworkGraphProps) {
       .style('stroke-width', '3px')
       .style('stroke-linejoin', 'round');
 
-    // ── Tick handler ────────────────────────────────────────────────────────
+    // Tick handler
     simulation.on('tick', () => {
       link
-        .attr('x1', (d) => (d.source as SimNode).x ?? 0)
-        .attr('y1', (d) => (d.source as SimNode).y ?? 0)
-        .attr('x2', (d) => (d.target as SimNode).x ?? 0)
-        .attr('y2', (d) => (d.target as SimNode).y ?? 0);
+        .attr('x1', (d) => resolvedNode(d.source)?.x ?? 0)
+        .attr('y1', (d) => resolvedNode(d.source)?.y ?? 0)
+        .attr('x2', (d) => resolvedNode(d.target)?.x ?? 0)
+        .attr('y2', (d) => resolvedNode(d.target)?.y ?? 0);
 
       edgeLabelGroups.attr('transform', (d) => {
-        const sx = (d.source as SimNode).x ?? 0;
-        const sy = (d.source as SimNode).y ?? 0;
-        const tx = (d.target as SimNode).x ?? 0;
-        const ty = (d.target as SimNode).y ?? 0;
+        const source = resolvedNode(d.source);
+        const target = resolvedNode(d.target);
+        const sx = source?.x ?? 0;
+        const sy = source?.y ?? 0;
+        const tx = target?.x ?? 0;
+        const ty = target?.y ?? 0;
         const mx = (sx + tx) / 2;
         const my = (sy + ty) / 2;
-        // Rotate text to follow edge direction (flip if upside-down)
-        let angle = (Math.atan2(ty - sy, tx - sx) * 180) / Math.PI;
-        if (angle > 90 || angle < -90) angle += 180;
+        // The label follows the edge's direction, turned over when that would leave it upside down.
+        const edgeAngle = (Math.atan2(ty - sy, tx - sx) * HALF_TURN_DEGREES) / Math.PI;
+        const isUpsideDown = Math.abs(edgeAngle) > QUARTER_TURN_DEGREES;
+        const angle = isUpsideDown ? edgeAngle + HALF_TURN_DEGREES : edgeAngle;
         return `translate(${mx},${my}) rotate(${angle})`;
       });
 
@@ -338,14 +403,20 @@ export function NetworkGraph({ persons, onOpenPerson }: NetworkGraphProps) {
   // A resized box keeps the laid-out graph and pulls it toward the new middle.
   useEffect(() => {
     const simulation = simulationRef.current;
-    if (!simulation || size.width === 0 || size.height === 0) return;
-    simulation.force('center', d3.forceCenter(size.width / 2, size.height / 2).strength(0.05));
-    simulation.alpha(0.3).restart();
+    const isUnmeasured = size.width === 0 || size.height === 0;
+    if (!simulation || isUnmeasured) {
+      return;
+    }
+    simulation.force('center', d3.forceCenter(size.width / 2, size.height / 2).strength(GRAPH.centerStrength));
+    simulation.alpha(GRAPH.reheatAlpha).restart();
   }, [size.width, size.height]);
 
   const handleResetZoom = () => {
     if (svgRef.current && zoomRef.current) {
-      d3.select(svgRef.current).transition().duration(400).call(zoomRef.current.transform, d3.zoomIdentity);
+      d3.select(svgRef.current)
+        .transition()
+        .duration(GRAPH.resetZoomMs)
+        .call(zoomRef.current.transform, d3.zoomIdentity);
     }
   };
 
@@ -354,7 +425,10 @@ export function NetworkGraph({ persons, onOpenPerson }: NetworkGraphProps) {
       className="relative min-h-96 flex-1 overflow-hidden"
       onLayout={(event) => {
         const { width, height } = event.nativeEvent.layout;
-        setSize((prev) => (prev.width === width && prev.height === height ? prev : { width, height }));
+        setSize((prev) => {
+          const isSameSize = prev.width === width && prev.height === height;
+          return isSameSize ? prev : { width, height };
+        });
       }}
     >
       {/* Sized from the measured box: an svg has no intrinsic size for flex to work from. */}
@@ -374,14 +448,14 @@ export function NetworkGraph({ persons, onOpenPerson }: NetworkGraphProps) {
       {tooltip && (
         <View
           pointerEvents="none"
-          className="absolute min-w-40 rounded-lg border border-border bg-popover px-3 py-2 shadow-lg"
-          style={{ left: tooltip.x + 16, top: tooltip.y - 8 }}
+          className="absolute min-w-40 rounded-lg border border-foreground/10 bg-secondary px-3 py-2 shadow-lg"
+          style={{ left: tooltip.x + GRAPH.tooltipOffsetX, top: tooltip.y - GRAPH.tooltipOffsetY }}
         >
-          <Text className="font-semibold text-popover-foreground text-sm">
+          <Text className="font-semibold text-foreground text-sm">
             {tooltip.person.firstName} {tooltip.person.lastName}
           </Text>
           {tooltip.person.email ? (
-            <Text className="mt-0.5 text-muted-foreground text-xs">{tooltip.person.email}</Text>
+            <Text className="mt-0.5 text-foreground/60 text-xs">{tooltip.person.email}</Text>
           ) : null}
           {tooltip.person.labels.length > 0 && (
             <View className="mt-1.5 flex-row flex-wrap gap-1">

@@ -1,16 +1,17 @@
 import { useRef, useState } from 'react';
-import { Pressable, Text, View } from 'react-native';
+import { View } from 'react-native';
+import { ListItem } from '@/components/list-item';
 import { type FieldProps, FieldWrapper, splitProps, useFieldContext } from '@/components/ui/form';
 import { Textarea, type TextareaHandle } from '@/components/ui/textarea';
 import type { MentionablePerson } from '@/lib/mentions';
-
-// ---------------------------------------------------------------------------
-// @-Mention dropdown
-// ---------------------------------------------------------------------------
+import { fullName } from '@/lib/person-name';
 
 interface MentionDropdownProps {
+  /** What has been typed after the `@`; matched against the start of a full or first name, ignoring case. */
   query: string;
+  /** Everyone who can be mentioned. */
   allPersons: MentionablePerson[];
+  /** Called with the person whose row is pressed. */
   onSelect: (person: MentionablePerson) => void;
 }
 
@@ -18,51 +19,53 @@ interface MentionDropdownProps {
 export function MentionDropdown({ query, allPersons, onSelect }: MentionDropdownProps) {
   const lower = query.toLowerCase();
   const filtered = allPersons.filter((p) => {
-    const full = `${p.firstName} ${p.lastName}`.toLowerCase();
+    const full = fullName(p).toLowerCase();
     return full.startsWith(lower) || p.firstName.toLowerCase().startsWith(lower);
   });
 
-  if (filtered.length === 0) return null;
+  if (filtered.length === 0) {
+    return null;
+  }
 
   return (
-    <View role="list" className="max-h-48 overflow-hidden rounded-md border border-border bg-popover py-1">
+    <View role="list" className="max-h-48 overflow-hidden rounded-md border border-foreground/10 bg-secondary py-1">
       {filtered.map((p) => (
-        <Pressable
-          key={p.id}
-          role="button"
-          onPress={() => onSelect(p)}
-          className="px-3 py-1.5 hover:bg-hover active:bg-hover"
-        >
-          <Text className="text-sm text-popover-foreground">
-            {p.firstName} {p.lastName}
-          </Text>
-        </Pressable>
+        <ListItem key={p.id} title={fullName(p)} onPress={() => onSelect(p)} />
       ))}
     </View>
   );
 }
 
-// ---------------------------------------------------------------------------
-// Mention-aware textarea field
-// ---------------------------------------------------------------------------
-
 // The textarea reports its text but not its caret, so a mention is the `@word`
 // the text currently ends with.
 const TRAILING_MENTION = /@([\w']*)$/;
 
-/** The partial name after a trailing `@`, or `null` when the text does not end in one. */
+/**
+ * The partial name after a trailing `@`, or `null` when the text does not end in one.
+ *
+ * @param text - The whole text of the textarea.
+ * @returns What follows the last `@` when the text ends in `@word`, which may be empty; otherwise `null`.
+ */
 export function trailingMentionQuery(text: string): string | null {
   return TRAILING_MENTION.exec(text)?.[1] ?? null;
 }
 
-/** Replace the trailing partial `@query` with `@FirstName LastName`. */
+/**
+ * Replace the trailing partial `@query` with `@FirstName LastName`.
+ *
+ * @param text - The whole text of the textarea, ending in the partial mention.
+ * @param person - The person chosen.
+ * @returns The text with the mention completed; unchanged when it does not end in one.
+ */
 export function completeMention(text: string, person: MentionablePerson): string {
-  return text.replace(TRAILING_MENTION, `@${person.firstName} ${person.lastName}`);
+  return text.replace(TRAILING_MENTION, `@${fullName(person)}`);
 }
 
 type MentionTextareaFieldProps = FieldProps & {
+  /** Everyone who can be mentioned. */
   allPersons: MentionablePerson[];
   placeholder?: string | undefined;
+  /** The textarea's height in lines of text. */
   rows?: number | undefined;
 };
 

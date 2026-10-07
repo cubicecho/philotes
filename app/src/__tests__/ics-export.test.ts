@@ -19,7 +19,13 @@ describe('buildIcsContent', () => {
     const ics = buildIcsContent(
       events({
         interactions: [
-          { id: 'i1', channel: 'call', occurredAt: '2024-03-01T10:00:00.000Z', note: 'Caught up', person: ada },
+          {
+            id: 'i1',
+            channel: 'call',
+            occurredAt: new Date('2024-03-01T10:00:00.000Z'),
+            note: 'Caught up',
+            person: ada,
+          },
         ],
       }),
     );
@@ -33,7 +39,9 @@ describe('buildIcsContent', () => {
   it('omits DESCRIPTION when there is no note', () => {
     const ics = buildIcsContent(
       events({
-        interactions: [{ id: 'i1', channel: 'email', occurredAt: '2024-03-01T10:00:00.000Z', note: null, person: ada }],
+        interactions: [
+          { id: 'i1', channel: 'email', occurredAt: new Date('2024-03-01T10:00:00.000Z'), note: null, person: ada },
+        ],
       }),
     );
     expect(ics).not.toContain('DESCRIPTION:');
@@ -42,7 +50,7 @@ describe('buildIcsContent', () => {
   it('falls back to "Unknown" when the interaction has no person', () => {
     const ics = buildIcsContent(
       events({
-        interactions: [{ id: 'i1', channel: 'text', occurredAt: '2024-03-01T10:00:00.000Z', person: null }],
+        interactions: [{ id: 'i1', channel: 'text', occurredAt: new Date('2024-03-01T10:00:00.000Z'), person: null }],
       }),
     );
     expect(ics).toContain('SUMMARY:Text with Unknown');
@@ -52,7 +60,7 @@ describe('buildIcsContent', () => {
     const ics = buildIcsContent(
       events({
         importantDates: [
-          { id: 'd1', name: 'Birthday', date: '1815-12-10T00:00:00.000Z', recurrence: 'yearly', person: ada },
+          { id: 'd1', name: 'Birthday', date: new Date(1815, 11, 10), recurrence: 'yearly', person: ada },
         ],
       }),
     );
@@ -65,12 +73,32 @@ describe('buildIcsContent', () => {
   it('only recurs a date whose recurrence is yearly', () => {
     const ics = buildIcsContent(
       events({
-        importantDates: [
-          { id: 'd1', name: 'Move-in', date: '2020-01-01T00:00:00.000Z', recurrence: null, person: ada },
-        ],
+        importantDates: [{ id: 'd1', name: 'Move-in', date: new Date(2020, 0, 1), recurrence: null, person: ada }],
       }),
     );
     expect(ics).not.toContain('RRULE');
+  });
+
+  it('repeats a monthly and a weekly date', () => {
+    const ics = buildIcsContent(
+      events({
+        importantDates: [
+          { id: 'd1', name: 'Rent', date: new Date(2020, 0, 5), recurrence: 'monthly', person: ada },
+          { id: 'd2', name: 'Call', date: new Date(2020, 0, 6), recurrence: 'weekly', person: ada },
+        ],
+      }),
+    );
+    expect(ics).toContain('RRULE:FREQ=MONTHLY\r\n');
+    expect(ics).toContain('RRULE:FREQ=WEEKLY\r\n');
+  });
+
+  it('keeps a monthly 31st on the last day of a shorter month', () => {
+    const ics = buildIcsContent(
+      events({
+        importantDates: [{ id: 'd1', name: 'Close', date: new Date(2020, 0, 31), recurrence: 'monthly', person: ada }],
+      }),
+    );
+    expect(ics).toContain('RRULE:FREQ=MONTHLY;BYMONTHDAY=28,29,30,31;BYSETPOS=-1');
   });
 
   it('escapes the characters RFC 5545 reserves', () => {
@@ -81,7 +109,7 @@ describe('buildIcsContent', () => {
             id: 'd1',
             name: 'Party',
             description: 'Cake; balloons, and\na card',
-            date: '2020-01-01T00:00:00.000Z',
+            date: new Date(2020, 0, 1),
             person: ada,
           },
         ],
@@ -93,8 +121,8 @@ describe('buildIcsContent', () => {
   it('includes both kinds of event', () => {
     const ics = buildIcsContent(
       events({
-        interactions: [{ id: 'i1', channel: 'call', occurredAt: '2024-03-01T10:00:00.000Z', person: ada }],
-        importantDates: [{ id: 'd1', name: 'Birthday', date: '1815-12-10T00:00:00.000Z', person: ada }],
+        interactions: [{ id: 'i1', channel: 'call', occurredAt: new Date('2024-03-01T10:00:00.000Z'), person: ada }],
+        importantDates: [{ id: 'd1', name: 'Birthday', date: new Date(1815, 11, 10), person: ada }],
       }),
     );
     expect(ics.match(/BEGIN:VEVENT/g)).toHaveLength(2);

@@ -2,8 +2,8 @@ import { useMutation } from '@apollo/client';
 import { useState } from 'react';
 import { View } from 'react-native';
 import { graphql } from '@/__generated__/gql';
-import { ActionButton } from '@/components/action-button';
 import { useAppForm } from '@/components/app-form';
+import { ConfirmButton } from '@/components/confirm-button';
 import { ListItem } from '@/components/list-item';
 import { EmptyState } from '@/components/page';
 import { SectionHeading } from '@/components/section-heading';
@@ -11,10 +11,6 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Form } from '@/components/ui/form';
 import { FormDialog, FormDialogFooter } from '@/components/ui/form-dialog';
 import { Trash2 } from '@/components/ui/icons';
-
-// ---------------------------------------------------------------------------
-// Fragment
-// ---------------------------------------------------------------------------
 
 export const TASK_LIST = graphql(`
   fragment Person_Tasks on Person {
@@ -29,10 +25,6 @@ export const TASK_LIST = graphql(`
     }
   }
 `);
-
-// ---------------------------------------------------------------------------
-// Mutations
-// ---------------------------------------------------------------------------
 
 const CREATE_TASK = graphql(`
   mutation CreateTask(
@@ -80,33 +72,39 @@ const DELETE_TASK = graphql(`
   }
 `);
 
-// ---------------------------------------------------------------------------
-// Types
-// ---------------------------------------------------------------------------
-
+/** A task as its row shows it. */
 export interface TaskData {
   id: string;
   title: string;
   notes: string | null | undefined;
   dueAt: Date | null | undefined;
+  /** When the task was ticked off; `null` or `undefined` while it is open. */
   completedAt: Date | null | undefined;
   createdAt: Date | null | undefined;
 }
 
 export interface TaskListProps {
+  /** The person new tasks are added to. */
   personId: string;
   tasks: TaskData[];
+  /** Called after a task is added. */
   onAdd: () => void;
+  /** Called after a task is deleted. */
   onDelete: () => void;
+  /** Called after a task is ticked off or reopened. */
   onUpdate: () => void;
+  /** Whether the Add Task dialog is open, when the owner holds that state; left out, the list holds it. */
   createOpen?: boolean;
+  /** Receives the Add Task dialog's open state when the owner holds it. */
   onCreateOpenChange?: (open: boolean) => void;
 }
 
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
+/**
+ * A task's due day, as its row words it.
+ *
+ * @param dueAt - When the task is due.
+ * @returns The day with a short month and the year, in the device's locale.
+ */
 function formatDueDate(dueAt: Date): string {
   return dueAt.toLocaleDateString(undefined, {
     month: 'short',
@@ -115,16 +113,15 @@ function formatDueDate(dueAt: Date): string {
   });
 }
 
-// ---------------------------------------------------------------------------
-// Task row
-// ---------------------------------------------------------------------------
-
 interface TaskRowProps {
   task: TaskData;
+  /** Called after the task is deleted. */
   onDelete: () => void;
+  /** Called after the task is ticked off or reopened. */
   onUpdate: () => void;
 }
 
+/** One task: the checkbox that completes or reopens it, its title, notes and due day, and its delete. */
 function TaskRow({ task, onDelete, onUpdate }: TaskRowProps) {
   const [updateTask] = useMutation(UPDATE_TASK);
   const [deleteTask] = useMutation(DELETE_TASK);
@@ -146,7 +143,7 @@ function TaskRow({ task, onDelete, onUpdate }: TaskRowProps) {
 
   return (
     <ListItem
-      className="rounded-md border border-border"
+      className="rounded-md border border-foreground/10"
       leadingSlot={
         <Checkbox
           checked={isCompleted}
@@ -155,31 +152,40 @@ function TaskRow({ task, onDelete, onUpdate }: TaskRowProps) {
         />
       }
       title={task.title}
-      titleClassName={isCompleted ? 'font-normal text-muted-foreground line-through' : undefined}
+      titleClassName={isCompleted ? 'font-normal text-foreground/60 line-through' : undefined}
       description={details || undefined}
       actionSlot={
-        <ActionButton variant="ghost" size="icon-sm" label="Delete task" iconSlot={<Trash2 />} onPress={handleDelete} />
+        <ConfirmButton
+          variant="ghost"
+          size="icon-sm"
+          label="Delete task"
+          iconSlot={<Trash2 />}
+          title="Delete this task?"
+          description={`"${task.title}" is removed whether or not it is done. It cannot be brought back.`}
+          onConfirm={handleDelete}
+        />
       }
     />
   );
 }
 
-// ---------------------------------------------------------------------------
-// Add task form
-// ---------------------------------------------------------------------------
-
 interface AddTaskFormProps {
+  /** The person the task is added to. */
   personId: string;
+  /** Called after the task is saved. */
   onAdded: () => void;
   onCancel: () => void;
 }
 
+/** The add-task form's values. */
 interface AddTaskFields {
   title: string;
   notes: string;
+  /** `null` for a task with no due date. */
   dueAt: Date | null;
 }
 
+/** The add-task fields and their footer. It draws no dialog of its own: render it inside a `FormDialog`. */
 function AddTaskForm({ personId, onAdded, onCancel }: AddTaskFormProps) {
   const [formError, setFormError] = useState<string | null>(null);
   const [createTask] = useMutation(CREATE_TASK);
@@ -228,10 +234,7 @@ function AddTaskForm({ personId, onAdded, onCancel }: AddTaskFormProps) {
   );
 }
 
-// ---------------------------------------------------------------------------
-// Main export
-// ---------------------------------------------------------------------------
-
+/** A person's tasks, the open ones above the done ones, and the dialog that adds one. */
 export function TaskList({
   personId,
   tasks,
@@ -247,10 +250,11 @@ export function TaskList({
 
   const openTasks = tasks.filter((t) => t.completedAt == null);
   const doneTasks = tasks.filter((t) => t.completedAt != null);
+  const hasNoTasks = openTasks.length === 0 && doneTasks.length === 0;
 
   return (
     <View className="gap-4">
-      {openTasks.length === 0 && doneTasks.length === 0 && <EmptyState compact title="No tasks yet." />}
+      {hasNoTasks && <EmptyState compact title="No tasks yet." />}
 
       {openTasks.length > 0 && (
         <View className="gap-2">

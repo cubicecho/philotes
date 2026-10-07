@@ -1,67 +1,107 @@
-// RFC 5545 calendar export for interactions and important dates.
-//
-// The shapes below are what the exporter reads, not the GraphQL schema — the
-// `GetAllEventsForExport` query in
-// `components/settings/export-calendar-card.tsx` must select every field named
-// here.
+// RFC 5545 calendar export. The `GetAllEventsForExport` query in export-calendar-card.tsx must select
+// every field these shapes name. Dates arrive as `Date` objects, made by the Apollo cache's scalar policies.
 
+import { CALENDAR_EXPORT_DEFAULTS } from '@/lib/defaults';
+import { localIsoDate } from '@/lib/local-date';
+import { MS_PER_MINUTE } from '@/lib/time';
+import { Recurrence } from '@/lib/vocabulary';
+
+/** The person an exported event is about. */
 export interface CalendarPerson {
   id: string;
   firstName: string;
   lastName?: string | null;
 }
 
+/** An interaction, as the calendar export reads it. */
 export interface CalendarInteraction {
   id: string;
   channel: string;
-  occurredAt: string;
+  occurredAt: Date;
   note?: string | null;
   person?: CalendarPerson | null;
 }
 
+/** An important date, as the calendar export reads it. */
 export interface CalendarImportantDate {
   id: string;
   name: string;
   description?: string | null;
-  date: string;
+  /** Local midnight of the calendar day. */
+  date: Date;
   recurrence?: string | null;
   milestoneType?: string | null;
   person?: CalendarPerson | null;
 }
 
+/** Everything one calendar file holds. */
 export interface CalendarEventsData {
   interactions: CalendarInteraction[];
   importantDates: CalendarImportantDate[];
 }
 
+/**
+ * Writes the name an event shows for its person.
+ *
+ * @param [person] - The person, when the event has one.
+ * @returns First and last name, or "Unknown" when there is no person.
+ */
 function buildCalendarPersonName(person?: CalendarPerson | null): string {
-  if (!person) return 'Unknown';
+  if (!person) {
+    return 'Unknown';
+  }
   return [person.firstName, person.lastName].filter(Boolean).join(' ');
 }
 
-function formatIcsDateTime(dateStr: string): string {
-  return new Date(dateStr)
+/**
+ * Writes a moment as an iCalendar DATE-TIME in UTC.
+ *
+ * @param date - The moment.
+ * @returns The form `YYYYMMDDTHHMMSSZ`.
+ */
+function formatIcsDateTime(date: Date): string {
+  return date
     .toISOString()
     .replace(/[-:]/g, '')
     .replace(/\.\d{3}/, '');
 }
 
-/** Format a date-only value as a DATE (not DATE-TIME) for all-day events */
-function formatIcsDateOnly(dateStr: string): string {
-  return new Date(dateStr).toISOString().slice(0, 10).replace(/-/g, '');
+/**
+ * Writes a day as an iCalendar DATE, the form an all-day event takes.
+ *
+ * @param date - Local midnight of the day.
+ * @returns The form `YYYYMMDD`.
+ */
+function formatIcsDateOnly(date: Date): string {
+  return localIsoDate(date).replace(/-/g, '');
 }
 
+/**
+ * Escapes text for an iCalendar property value.
+ *
+ * @param text - The text as the user wrote it.
+ * @returns The text with backslashes, semicolons, commas and newlines escaped.
+ */
 function escapeIcsText(text: string): string {
   return text.replace(/\\/g, '\\\\').replace(/;/g, '\\;').replace(/,/g, '\\,').replace(/\n/g, '\\n');
 }
 
+/**
+ * Builds the VEVENT for an interaction. It lasts `interactionMinutes`, since no length is recorded.
+ *
+ * @param interaction - The interaction to write.
+ * @param now - The export's time as an iCalendar DATE-TIME, for DTSTAMP.
+ * @returns The event's lines, joined by CRLF.
+ */
 function buildInteractionEvent(interaction: CalendarInteraction, now: string): string {
   const personName = buildCalendarPersonName(interaction.person);
   const summary = escapeIcsText(
     `${interaction.channel.charAt(0).toUpperCase()}${interaction.channel.slice(1)} with ${personName}`,
   );
   const dtStart = formatIcsDateTime(interaction.occurredAt);
-  const dtEnd = formatIcsDateTime(new Date(new Date(interaction.occurredAt).getTime() + 30 * 60 * 1000).toISOString());
+  const dtEnd = formatIcsDateTime(
+    new Date(interaction.occurredAt.getTime() + CALENDAR_EXPORT_DEFAULTS.interactionMinutes * MS_PER_MINUTE),
+  );
   const lines = [
     'BEGIN:VEVENT',
     `UID:interaction-${interaction.id}@philotes`,
@@ -77,6 +117,46 @@ function buildInteractionEvent(interaction: CalendarInteraction, now: string): s
   return lines.join('\r\n');
 }
 
+/** The iCalendar frequency each recurrence repeats at. */
+const RRULE_FREQUENCY: Record<Recurrence, string> = {
+  [Recurrence.Yearly]: 'YEARLY',
+  [Recurrence.Monthly]: 'MONTHLY',
+  [Recurrence.Weekly]: 'WEEKLY',
+};
+
+/** The last day of the month every month has; a monthly date after it needs a rule for the shorter months. */
+const LAST_DAY_IN_EVERY_MONTH = 28;
+
+/**
+ * Writes the RRULE for an important date. A monthly date past the 28th names every day from the 28th to
+ * its own and takes the last one each month has, so the 31st falls on the 30th in April rather than
+ * skipping the month, which is what a bare `FREQ=MONTHLY` does.
+ *
+ * @param date - The date as recorded, at local midnight.
+ * @param [recurrence] - How the date repeats.
+ * @returns The RRULE line, or `null` for a date that happens once or a recurrence the file cannot express.
+ */
+function recurrenceRule(date: Date, recurrence: string | null | undefined): string | null {
+  const frequency = Object.entries(RRULE_FREQUENCY).find(([known]) => known === recurrence)?.[1];
+  if (!frequency) {
+    return null;
+  }
+  const day = date.getDate();
+  const isShortMonthProne = recurrence === Recurrence.Monthly && day > LAST_DAY_IN_EVERY_MONTH;
+  if (isShortMonthProne) {
+    const days = Array.from({ length: day - LAST_DAY_IN_EVERY_MONTH + 1 }, (_, i) => LAST_DAY_IN_EVERY_MONTH + i);
+    return `RRULE:FREQ=${frequency};BYMONTHDAY=${days.join(',')};BYSETPOS=-1`;
+  }
+  return `RRULE:FREQ=${frequency}`;
+}
+
+/**
+ * Builds the all-day VEVENT for an important date, repeating as the date does.
+ *
+ * @param importantDate - The date to write.
+ * @param now - The export's time as an iCalendar DATE-TIME, for DTSTAMP.
+ * @returns The event's lines, joined by CRLF.
+ */
 function buildImportantDateEvent(importantDate: CalendarImportantDate, now: string): string {
   const personName = buildCalendarPersonName(importantDate.person);
   const summary = escapeIcsText(`${importantDate.name} (${personName})`);
@@ -91,15 +171,22 @@ function buildImportantDateEvent(importantDate: CalendarImportantDate, now: stri
   if (importantDate.description) {
     lines.push(`DESCRIPTION:${escapeIcsText(importantDate.description)}`);
   }
-  if (importantDate.recurrence === 'yearly') {
-    lines.push('RRULE:FREQ=YEARLY');
+  const rule = recurrenceRule(importantDate.date, importantDate.recurrence);
+  if (rule) {
+    lines.push(rule);
   }
   lines.push('END:VEVENT');
   return lines.join('\r\n');
 }
 
+/**
+ * Builds an iCalendar (RFC 5545) file of interactions and important dates.
+ *
+ * @param data - The events to write.
+ * @returns The file's text, with CRLF line endings.
+ */
 export function buildIcsContent(data: CalendarEventsData): string {
-  const now = formatIcsDateTime(new Date().toISOString());
+  const now = formatIcsDateTime(new Date());
 
   const events = [
     ...data.interactions.map((i) => buildInteractionEvent(i, now)),

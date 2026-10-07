@@ -12,11 +12,11 @@ structure (npm workspaces) with three packages: `app/` (frontend), `server/`
 | -------- | ------------------------------------------------- |
 | Frontend | React 19, Expo Router (web target), Apollo Client |
 | UI       | React Native primitives, Tailwind 4 via NativeWind 5, [cubeui](https://github.com/cubicecho/cubeui) (native registry) |
-| API      | Apollo Server 5 on Express, GraphQL              |
-| Database | Drizzle ORM, PGlite (embedded Postgres)            |
+| API      | GraphQL Yoga on Express 5, better-auth, zod       |
+| Database | Drizzle ORM on PostgreSQL (PGlite in tests)        |
 | Testing  | Vitest                                             |
 | Linting  | Biome (formatter + linter)                         |
-| Runtime  | Node.js 22+, ESM (`"type": "module"` throughout)  |
+| Runtime  | Node.js 26+, ESM (`"type": "module"` throughout)  |
 
 ## Project Structure
 
@@ -36,27 +36,29 @@ philotes/
 │   │   │   ├── layouts/     # The app shell (sidebar rail + phone bar)
 │   │   │   └── settings/    # API keys, imports and exports
 │   │   ├── hooks/           # useQueryStringState, useAvatarUpload
-│   │   └── lib/             # auth, apollo, cn(), date type policies, relative time
+│   │   └── lib/             # auth, apollo, defaults.ts, vocabulary.ts, time.ts, useAllRows, exports
 │   ├── app.json             # Expo config
 │   ├── components.json      # shadcn CLI config — points at the cubeui native registry
 │   ├── global.css           # Imports cubeui-tokens.css (generated — do not edit)
 │   └── metro.config.js      # Metro bundler config
-├── server/                  # GraphQL API (Apollo Server 5 on Express)
+├── server/                  # GraphQL API (GraphQL Yoga on Express 5)
 │   ├── __generated__/       # Generated SDL + resolver types (do not edit)
 │   └── src/
-│       ├── index.ts         # Server entry point (port 3001)
-│       ├── routes/          # graphql, avatars, ical
-│       ├── schema.ts        # Calls buildSchema(db), then applies each extension
-│       ├── tenancy.ts       # Row scope + server-owned columns, as buildSchema config
-│       ├── resolvers/       # SDL extensions for what CRUD cannot express
+│       ├── index.ts         # Server entry point (port 3000)
+│       ├── core/            # config (env), defaults (tunables), wire, context, errors, validation
+│       ├── graphql/         # build-schema, tenancy, write-guards, operation-limits, handler
+│       ├── http/            # createApp, health, static files, shutdown
+│       ├── auth/            # better-auth, sign-in resolvers, rate limit, email
+│       ├── <domain>/        # persons, notes, tasks, …: input.ts, hooks.ts, resolvers.ts
 │       └── __tests__/       # Server tests
-├── db/                      # Database layer (Drizzle ORM + PGlite)
+├── db/                      # Database layer (Drizzle ORM on Postgres)
 │   ├── drizzle/             # Generated migrations
 │   └── src/
 │       ├── models/          # One file per table — the actual definitions
 │       ├── schema.ts        # Barrel re-exporting models/
 │       ├── relations.ts     # defineRelations config (drives the GraphQL schema)
-│       ├── api-keys.ts      # api_keys table (deliberately outside the GraphQL schema)
+│       ├── defaults.ts      # Every tunable: connection timings, seed counts
+│       ├── wait.ts          # waitForDatabase: retries the first connection at boot
 │       └── index.ts         # DB singleton + re-exports
 ├── docs/                    # Technical documentation for AI agents
 ├── vitest.config.ts         # Root config — runs every workspace's tests
@@ -71,7 +73,7 @@ Consult these docs before making changes to the corresponding area:
 | Topic | Document |
 | ----- | -------- |
 | Database tables, migrations, Drizzle patterns | [`docs/database.md`](docs/database.md) |
-| Apollo Server, schema generation, custom resolvers | [`docs/server.md`](docs/server.md) |
+| Server layout, schema generation, validation, custom resolvers | [`docs/server.md`](docs/server.md) |
 | GraphQL queries, mutations, types, filtering | [`docs/graphql.md`](docs/graphql.md) |
 | React app, routing, Apollo Client, form pattern | [`docs/frontend.md`](docs/frontend.md) |
 | UI primitives, domain components, layout pattern | [`docs/components.md`](docs/components.md) |
@@ -86,15 +88,14 @@ All commands run from the **project root**.
 ### Development
 ```bash
 npm run dev              # Start both server and app concurrently
-npm run dev:app          # Start only the Expo dev server (port 3000)
-npm run dev:server       # Start only the Apollo Server (port 3001, with watch)
+npm run dev:app          # Start only the Expo dev server (port 8081)
+npm run dev:server       # Start only the API server (port 3000, with watch)
 ```
 
 ### Building
 ```bash
-npm run build            # Build all workspaces (db → server → app)
+npm run build            # Codegen, then the web export
 npm run build:app        # Build only the frontend
-npm run build:server     # Build only the server
 ```
 
 ### GraphQL Codegen
@@ -109,10 +110,6 @@ npm run codegen:server   # Generate server resolver types (server/__generated__/
 > documents in `app/src/` and `app/app/` (queries, mutations, fragments). The
 > generated files in `app/src/__generated__/` and `server/__generated__/` must
 > be up to date before running type checks, tests, or builds.
->
-> After editing `db/src`, run `npm run build -w db` **first** — codegen reads
-> `@philotes/db` through `db/dist`, so without it you regenerate against the
-> previous schema.
 
 ### Testing
 ```bash
@@ -129,12 +126,8 @@ npx vitest run -t "covers every table in the schema"
 ### Linting & Formatting (Biome)
 ```bash
 npm run check            # Run codegen, then check:biome and check:types
-npm run check:biome      # Run Biome linter + formatter check (all-in-one)
-npm run check:fix        # Run Biome linter + formatter with auto-fix
-npm run lint             # Run Biome linter only
-npm run lint:fix         # Run Biome linter with auto-fix
-npm run format           # Format all files with Biome
-npm run format:check     # Check formatting without writing
+npm run check:biome      # Biome format, lint and import order, with fixes applied
+npx biome ci .           # The same checks without writing (what CI should run)
 npm run check:types      # Run tsc --noEmit across all packages (app, server, db)
 ```
 
@@ -168,7 +161,7 @@ npm ci --prefer-offline --no-audit
 ## Code Style Guidelines
 
 ### Formatting (Biome)
-Do not hand-format — run `npm run check:fix`. The settings, from `biome.json`:
+Do not hand-format — run `npm run check:biome`. The settings, from `biome.json`:
 
 - **Semicolons**: always
 - **Quotes**: single quotes (`'`)
@@ -183,18 +176,18 @@ Do not hand-format — run `npm run check:fix`. The settings, from `biome.json`:
 - Use **`type` imports** for type-only imports — enforced by Biome rule
   `style/useImportType`:
   ```ts
-  import type { Person } from '@philotes/db';   // correct
-  import { type Person } from '@philotes/db';   // also acceptable
-  import { Person } from '@philotes/db';        // ERROR if Person is only used as a type
+  import type { Person } from '@cubicecho/philotes-db';   // correct
+  import { type Person } from '@cubicecho/philotes-db';   // also acceptable
+  import { Person } from '@cubicecho/philotes-db';        // ERROR if Person is only used as a type
   ```
 - Use `@/` path alias for imports within `app/` (maps to `app/src/`):
   ```ts
   import { Button } from '@/components/ui/button';
   import { cn } from '@/lib/utils';
   ```
-- Use `@philotes/db` package name when importing from `db/` in `server/`
+- Use `@cubicecho/philotes-db` package name when importing from `db/` in `server/`
 - Use **`.ts` extensions** in relative `server/` and `db/` imports. Node runs
-  those packages directly with `--experimental-strip-types`, so the import
+  those packages directly, stripping the types itself, so the import
   specifier names the file that exists:
   ```ts
   import { schema } from './schema.ts';        // server/ and db/
@@ -212,7 +205,34 @@ Do not hand-format — run `npm run check:fix`. The settings, from `biome.json`:
   ```
 - Use `interface` for object shapes, `type` for unions/intersections/utilities
 - Export types alongside runtime values from shared packages (`db/`)
-- Use `unknown` over `any` — `suspicious/noExplicitAny` is a warning
+- Use `unknown` over `any` — `suspicious/noExplicitAny` is an error; an
+  unavoidable one carries `// biome-ignore lint/suspicious/noExplicitAny: <reason>`
+- Every package extends `tsconfig.base.json`. It sets `erasableSyntaxOnly`
+  (no `enum`, `namespace` or parameter properties — Node has to be able to strip
+  the types), `verbatimModuleSyntax`, `noUnusedLocals` and `noUnusedParameters`
+- No non-null assertions (`value!`) — narrow the value instead
+- Every `if`, `else` and loop body is a braced block on its own lines
+- A logic check is negated by comparing with `false`, in a positively named
+  const (`const isMissing = ids.has(id) === false;`), not with `!`. A null guard
+  (`if (!value)`) may keep the `!`. `no-negation.grit` enforces it
+
+### Values
+- **No magic values.** A number or string that could be tuned lives in the
+  package's `defaults.ts` (`db/src/defaults.ts`, `server/src/core/defaults.ts`,
+  `app/src/lib/defaults.ts`) as a member of a frozen `<CONCEPT>_DEFAULTS`
+  object whose interface documents each member, with the unit in the name
+  (`debounceMs`, `upcomingWindowDays`). Those files hold values only and import
+  nothing. Unit conversions and protocol words live in `server/src/core/wire.ts`
+  and `app/src/lib/time.ts`
+- **A closed set of values is a named vocabulary**, never bare strings:
+  `export const Recurrence = { Yearly: 'yearly', … } as const;` with a type of
+  the same name. The db package's models own them (`ContactType`,
+  `AddressType`, `Recurrence`, `MilestoneType`, `InteractionChannel`,
+  `InteractionSentiment`, `ContactFrequency`); the server imports them from
+  `@cubicecho/philotes-db/schema`, and the app uses the generated GraphQL enums
+  or `app/src/lib/vocabulary.ts`, which a test holds in step with the db's
+- A value-to-value mapping is a named `Record` keyed by the vocabulary, not a
+  `switch`
 
 ### Naming Conventions
 - **Files**: `kebab-case.ts` / `kebab-case.tsx`
@@ -255,16 +275,23 @@ Do not hand-format — run `npm run check:fix`. The settings, from `biome.json`:
 ### GraphQL / Server
 - The GraphQL schema is **generated** from the Drizzle schema by
   `@vantreeseba/drizzle-graphql` — there are no hand-written CRUD resolvers
-- `server/src/schema.ts` calls `buildSchema(db, ...)` and applies the extensions
-- Multi-tenancy is **configuration, not resolver code**: `server/src/tenancy.ts`
+- `server/src/graphql/build-schema.ts` calls `buildSchema(db, ...)` and applies the extensions
+- Multi-tenancy is **configuration, not resolver code**: `server/src/graphql/tenancy.ts`
   declares the row scope and the server-owned `userId`. Prefer adding to that
   config over overriding a generated resolver, which loses the scope, filter
   compilation and batching that come with it
 - A new table needs a `scope` entry or it is visible across tenants —
-  `server/src/__tests__/tenancy.test.ts` fails until it has one
+  `server/src/__tests__/graphql/tenancy.test.ts` fails until it has one
+- Server code is grouped by subject: a domain folder holds `input.ts` (zod
+  schemas), `hooks.ts` (`onWrite` validation and ownership checks) and
+  `resolvers.ts` (extensions). A new table needs an entry in `WRITE_HOOKS` or
+  its generated writes go unchecked
+- Every list is paged and every operation has a cost ceiling
+  (`OPERATION_LIMIT_DEFAULTS`). A client that needs every row pages with
+  `useAllRows`
 - To add custom mutations/queries, extend the generated schema (see
   [`docs/server.md`](docs/server.md) for the extension pattern)
-- Server runs on port **3001**; the app reaches it via `EXPO_PUBLIC_API_URL`
+- Server runs on port **3000**; the app reaches it via `EXPO_PUBLIC_API_URL`
 - See [`docs/server.md`](docs/server.md) and [`docs/graphql.md`](docs/graphql.md)
 
 ### Database / Drizzle
@@ -277,19 +304,21 @@ Do not hand-format — run `npm run check:fix`. The settings, from `biome.json`:
   config — not the table list — is what drizzle-graphql reads, so a table with
   no relations entry gets no relation fields in the API
 - Nearly every table carries a `user_id`. A new one almost certainly needs it,
-  plus a `scope` entry in `server/src/tenancy.ts` (see above)
-- `db/src/index.ts` is a **singleton** — it creates one database connection at
-  import time (not a factory). `DATABASE_URL` selects the driver: a
-  `postgres://` URL uses postgres-js, anything else is a PGlite data directory,
-  defaulting to `<repo>/pgdata`
-- `@philotes/db` resolves through `db/dist`, so **run `npm run build -w db`
-  after editing `db/src`** — otherwise the server, codegen and tests all read
-  the previous build
-- PGlite is embedded Postgres via WASM — no external DB server needed in dev
+  plus a `scope` entry in `server/src/graphql/tenancy.ts` (see above)
+- `db/src/index.ts` is a **singleton**: one postgres-js client, created at
+  import time, which throws when `DATABASE_URL` is empty. Only
+  `server/src/index.ts` and `server/src/graphql/schema.ts` import it. Everything
+  else takes `db` as an argument and imports tables from
+  `@cubicecho/philotes-db/schema`
+- `@cubicecho/philotes-db` exports its TypeScript sources, which Node runs directly, so
+  there is no build step between editing `db/src` and using it
+- Development needs a Postgres: `npm run db:up` starts one in Docker on port
+  5439, and the server applies the migrations at boot
 
 ### Error Handling
-- Server resolvers let Apollo Server handle GraphQL errors naturally. Throw a
-  `GraphQLError` with an `extensions.code` when a client needs to branch on it
+- Server resolvers throw or let errors propagate; Yoga masks anything that is
+  not a `GraphQLError`. Use the helpers in `server/src/core/errors.ts`
+  (`badInput`, `notFound`, `requireAuth`) when a client needs to branch on the code
 - Never let an error message reveal a row the caller is not allowed to see —
   report "not found" rather than "forbidden"
 - Frontend: use Apollo Client error states from `useQuery`/`useMutation`. The
@@ -301,9 +330,10 @@ Do not hand-format — run `npm run check:fix`. The settings, from `biome.json`:
   `*.test.ts` / `*.test.tsx` files. One root `vitest.config.ts` picks up every
   workspace, so run tests from the repo root
 - Tests use `describe`/`it`/`expect` from Vitest (globals enabled)
-- **Do not import `@philotes/db` from a test.** It opens a real PGlite instance
-  against the repo's `pgdata` on import. Stub it with `vi.mock('@philotes/db')`
-  and import table definitions from `db/src/schema.ts` directly when you need
-  the real ones — see `server/src/__tests__/tenancy.test.ts`
-- Prefer testing pure functions and configuration shape. Anything needing a
-  live database should use its own throwaway `DATABASE_URL`
+- **Do not import the root of `@cubicecho/philotes-db` from a test.** It is the
+  real client and throws without `DATABASE_URL`. Import tables from
+  `@cubicecho/philotes-db/schema`, and get a database from `createTestDb()` in
+  `server/src/__tests__/helpers.ts`: a fresh in-memory PGlite with the current
+  tables pushed from the models
+- Do not `vi.mock` this repo's own modules. Pass the test database to
+  `createClient(db, userId)` or `createApp({ db })` instead

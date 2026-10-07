@@ -1,4 +1,4 @@
-import { useMutation, useQuery } from '@apollo/client';
+import { useMutation } from '@apollo/client';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { graphql } from '@/__generated__/gql';
@@ -9,11 +9,18 @@ import { PageLayout } from '@/components/page-layout';
 import { QueryState } from '@/components/query-state';
 import { FormDialog } from '@/components/ui/form-dialog';
 import { useQueryStringState } from '@/hooks/use-query-string-state';
+import { SEARCH_DEFAULTS } from '@/lib/defaults';
+import { invalidateQueryFields } from '@/lib/invalidate';
+import { useAllRows } from '@/lib/use-all-rows';
 
-// ---------------------------------------------------------------------------
-// Utilities
-// ---------------------------------------------------------------------------
-
+/**
+ * Delays a function until its calls have stopped for a while.
+ *
+ * @typeParam T - The function being delayed.
+ * @param fn - What to call once the calls stop.
+ * @param delay - How long the calls must pause, in milliseconds.
+ * @returns A function that restarts the wait on every call and hands its last arguments to `fn`.
+ */
 function debounce<T extends (...args: Parameters<T>) => void>(fn: T, delay: number): (...args: Parameters<T>) => void {
   let timer: ReturnType<typeof setTimeout>;
   return (...args) => {
@@ -22,24 +29,20 @@ function debounce<T extends (...args: Parameters<T>) => void>(fn: T, delay: numb
   };
 }
 
-// ---------------------------------------------------------------------------
-// GraphQL documents
-// ---------------------------------------------------------------------------
-
 const GET_PERSONS = graphql(`
-  query GetPersons($where: PersonFilters, $orderBy: PersonOrderBy) {
-    persons(where: $where, orderBy: $orderBy) {
+  query GetPersons($where: PersonFilters, $orderBy: PersonOrderBy, $limit: Int!, $offset: Int!) {
+    persons(where: $where, orderBy: $orderBy, limit: $limit, offset: $offset) {
       id
       firstName
       lastName
       email
       avatarPath
-      labels {
+      labels(limit: 20) {
         id
         label
         color
       }
-      contactInfos {
+      contactInfos(limit: 10) {
         id
         type
         value
@@ -53,8 +56,8 @@ const GET_PERSONS = graphql(`
 `);
 
 const GET_LABELS = graphql(`
-  query GetLabelsForPersonForm {
-    labels {
+  query GetLabelsForPersonForm($limit: Int!, $offset: Int!) {
+    labels(limit: $limit, offset: $offset, orderBy: { label: { direction: asc, priority: 1 }, id: { direction: asc, priority: 2 } }) {
       id
       color
       label
@@ -78,29 +81,30 @@ const DELETE_PERSON = graphql(`
   }
 `);
 
-// ---------------------------------------------------------------------------
-// URL state types
-// ---------------------------------------------------------------------------
+/** What the list can be ordered by, as the sort picker and the URL spell it. */
+const SORT_FIELDS = ['name', 'lastContacted'] as const;
+type SortField = (typeof SORT_FIELDS)[number];
 
-type SortField = 'name' | 'lastContacted';
-type SortDir = 'asc' | 'desc';
+/** The two directions of a sort, as the sort picker and the URL spell them. */
+const SORT_DIRS = ['asc', 'desc'] as const;
+type SortDir = (typeof SORT_DIRS)[number];
 
+/** What the people list keeps in the URL's query string. */
 interface PersonsUrlState {
+  /** The search text. */
   q: string;
+  /** Ids of the labels a person must carry, all of them, to be listed. */
   labels: string[];
   sortField: SortField;
   sortDir: SortDir;
 }
 
-// ---------------------------------------------------------------------------
-// Page
-// ---------------------------------------------------------------------------
-
+/** The people page: the list with its search, label filter and sort, and the dialog that adds a person. */
 export default function PersonsPage() {
   const router = useRouter();
   const { new: newParam } = useLocalSearchParams<{ new?: string }>();
 
-  // ── URL state ──────────────────────────────────────────────────────────────
+  // URL state
   const [urlState, setUrlState] = useQueryStringState<PersonsUrlState>(
     {
       q: '',
@@ -116,13 +120,12 @@ export default function PersonsPage() {
   const sortField: SortField = urlState.sortField ?? 'name';
   const sortDir: SortDir = urlState.sortDir ?? 'asc';
 
-  // ── Local search state — instant input feedback, debounced URL/query update
+  // Local search state — instant input feedback, debounced URL/query update
   const [searchValue, setSearchValue] = useState(urlQ);
 
   const debouncedSetUrlQ = useCallback(
-    debounce((q: string) => setUrlState({ q }), 300),
+    debounce((q: string) => setUrlState({ q }), SEARCH_DEFAULTS.debounceMs),
     // debounce returns a new function only once; setUrlState is stable
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     [],
   );
 
@@ -131,7 +134,7 @@ export default function PersonsPage() {
     debouncedSetUrlQ(value);
   };
 
-  // ── Build GraphQL query variables ─────────────────────────────────────────
+  // Build GraphQL query variables
   const trimmedQ = urlQ.trim();
 
   const where: PersonFilters | undefined = trimmedQ
@@ -147,25 +150,29 @@ export default function PersonsPage() {
   const isNameSort = sortField === 'name';
   const orderDirection = sortDir === 'asc' ? OrderDirection.Asc : OrderDirection.Desc;
 
-  // ── Data fetching — the whole (searched) list; sorting by name on the server
-  const { data, previousData, loading, error, refetch } = useQuery(GET_PERSONS, {
+  // Data fetching — the whole (searched) list; sorting by name on the server
+  const { data, previousData, loading, error, refetch } = useAllRows(GET_PERSONS, {
+    field: 'persons',
     variables: {
       where,
       orderBy: {
         lastName: { direction: isNameSort ? orderDirection : OrderDirection.Asc, priority: 1 },
         firstName: { direction: isNameSort ? orderDirection : OrderDirection.Asc, priority: 2 },
+        // Paging needs one fixed order, and two people can share a name.
+        id: { direction: OrderDirection.Asc, priority: 3 },
       },
     },
   });
 
   const displayData = data ?? previousData;
-  const { data: labelsData } = useQuery(GET_LABELS);
+  const { data: labelsData } = useAllRows(GET_LABELS, { field: 'labels' });
 
+  // The dashboard and the network graph list people too, so the field goes, not one query.
   const [createPerson] = useMutation(CREATE_PERSON, {
-    refetchQueries: ['GetPersons'],
+    update: (cache) => invalidateQueryFields(cache, ['persons']),
   });
   const [deletePerson] = useMutation(DELETE_PERSON, {
-    refetchQueries: ['GetPersons'],
+    update: (cache) => invalidateQueryFields(cache, ['persons']),
   });
 
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -178,7 +185,7 @@ export default function PersonsPage() {
     }
   }, [newParam, router]);
 
-  // ── Shape raw data ─────────────────────────────────────────────────────────
+  // Shape raw data
   const rawPersons: PersonRowData[] = (displayData?.persons ?? []).map((p) => ({
     id: p.id,
     firstName: p.firstName,
@@ -190,27 +197,34 @@ export default function PersonsPage() {
     lastContactedAt: p.interactions[0]?.occurredAt ?? null,
   }));
 
-  // ── Client-side sort for lastContacted (server can't sort by relation) ────
+  // Client-side sort for lastContacted (server can't sort by relation)
   const sortedPersons = isNameSort
     ? rawPersons
     : [...rawPersons].sort((a, b) => {
         const aTime = a.lastContactedAt ? a.lastContactedAt.getTime() : null;
         const bTime = b.lastContactedAt ? b.lastContactedAt.getTime() : null;
-        if (aTime === null && bTime === null) return 0;
-        if (aTime === null) return 1;
-        if (bTime === null) return -1;
+        const isNeitherContacted = aTime === null && bTime === null;
+        if (isNeitherContacted) {
+          return 0;
+        }
+        if (aTime === null) {
+          return 1;
+        }
+        if (bTime === null) {
+          return -1;
+        }
         return sortDir === 'asc' ? aTime - bTime : bTime - aTime;
       });
 
-  // ── Label filtering (client-side — server cannot filter by nested relation)
-  const filteredPersons =
-    activeLabelIds.length > 0
-      ? sortedPersons.filter((p) => activeLabelIds.every((id) => p.labels.some((l) => l.id === id)))
-      : sortedPersons;
+  // Label filtering (client-side — server cannot filter by nested relation)
+  const hasLabelFilter = activeLabelIds.length > 0;
+  const filteredPersons = hasLabelFilter
+    ? sortedPersons.filter((p) => activeLabelIds.every((id) => p.labels.some((l) => l.id === id)))
+    : sortedPersons;
 
   const allLabels = (labelsData?.labels ?? []).map((l) => ({ id: l.id, label: l.label, color: l.color }));
 
-  // ── Handlers ───────────────────────────────────────────────────────────────
+  // Handlers
 
   const handleDelete = async (id: string): Promise<void> => {
     await deletePerson({ variables: { id } });
@@ -234,12 +248,18 @@ export default function PersonsPage() {
 
   const handleSortChange = (value: string): void => {
     const dashIndex = value.lastIndexOf('-');
-    const field = value.slice(0, dashIndex) as SortField;
-    const dir = value.slice(dashIndex + 1) as SortDir;
+    const field = SORT_FIELDS.find((known) => known === value.slice(0, dashIndex));
+    const dir = SORT_DIRS.find((known) => known === value.slice(dashIndex + 1));
+    // The picker only offers pairs of the two lists above, so anything else is not a sort to apply.
+    const isUnknownSort = field === undefined || dir === undefined;
+    if (isUnknownSort) {
+      return;
+    }
     setUrlState({ sortField: field, sortDir: dir });
   };
 
   const pending = !displayData && loading;
+  const showsQueryState = pending || error !== undefined;
 
   return (
     <>
@@ -258,7 +278,7 @@ export default function PersonsPage() {
         />
       </FormDialog>
 
-      {pending || error ? (
+      {showsQueryState ? (
         <PageLayout
           title="People"
           contentSlot={
@@ -281,8 +301,8 @@ export default function PersonsPage() {
           sortValue={`${sortField}-${sortDir}`}
           onSortChange={handleSortChange}
           grouped={isNameSort}
-          onClickAdd={() => setDialogOpen(true)}
-          onClickDelete={handleDelete}
+          onAddPress={() => setDialogOpen(true)}
+          onDeletePress={handleDelete}
         />
       )}
     </>

@@ -9,7 +9,7 @@ SDL is written to `server/__generated__/schema.graphql` on every codegen run —
 **that file, not this page, is the reference for exact names and arguments.**
 What follows is the shape of it.
 
-Endpoint: `POST /graphql` (port 3001).
+Endpoint: `POST /graphql` (port 3000).
 
 ## Naming
 
@@ -46,8 +46,9 @@ for a caller:
   a row other users still have.
 - Referencing another user's row by id — tagging your note with their label —
   fails with `<Entity> not found`, never a leak of whether it exists.
-- `users` has no generated mutations; accounts come from the magic-link flow.
-  `passwordHash` is not in the schema at all.
+- `users` has no generated mutations; accounts come from `signUp`, `signIn`,
+  `requestSignIn` and `verifyMagicLink`. Sessions, password hashes and API key
+  hashes are not in the schema at all.
 
 ## Filtering
 

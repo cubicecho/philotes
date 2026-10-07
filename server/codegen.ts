@@ -8,8 +8,10 @@ const config: CodegenConfig = {
       plugins: ['typescript', 'typescript-resolvers'],
       config: {
         inputMaybeValue: 'T | undefined',
+        useTypeImports: true,
+        enumsAsConst: true,
         //         useIndexSignature: true,
-        contextType: '../index.ts#Context',
+        contextType: '../src/core/context.ts#Context',
         scalars: {
           UUID: 'string',
         },
@@ -21,20 +23,6 @@ const config: CodegenConfig = {
         },
       },
     },
-    //     'server/src/__generated__/schema.graphql': {
-    //       plugins: ['schema-ast'],
-    //       config: {
-    //         inputMaybeValue: 'T | undefined',
-    //         contextType: '../index.ts#Context',
-    //         includeDirectives: true,
-    //         avoidOptionals: {
-    //           // Use `null` for nullable fields instead of optionals
-    //           field: true,
-    //           // Allow nullable input fields to remain unspecified
-    //           inputValue: false,
-    //         },
-    //       },
-    //     },
   },
 };
 

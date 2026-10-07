@@ -36,6 +36,21 @@ describe('parseMentionedPersonIds', () => {
     expect(parseMentionedPersonIds('@Alan Turing', people)).toEqual([]);
   });
 
+  it('matches accented names', () => {
+    const accented = [{ id: 'j', firstName: 'José', lastName: 'Núñez' }];
+    expect(parseMentionedPersonIds('Lunch with @josé núñez.', accented)).toEqual(['j']);
+  });
+
+  it('matches names of several words', () => {
+    const several = [{ id: 'm', firstName: 'Mary Ann', lastName: 'van der Berg' }];
+    expect(parseMentionedPersonIds('Saw @Mary Ann van der Berg, briefly', several)).toEqual(['m']);
+  });
+
+  it('does not find a name inside a longer one', () => {
+    const short = [{ id: 's', firstName: 'Ada', lastName: 'Love' }];
+    expect(parseMentionedPersonIds('@Ada Lovelace', short)).toEqual([]);
+  });
+
   it('needs both names — a first name alone is not a mention', () => {
     expect(parseMentionedPersonIds('@Ada', people)).toEqual([]);
   });

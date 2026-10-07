@@ -1,6 +1,7 @@
-import { gql, useMutation } from '@apollo/client';
+import { useMutation } from '@apollo/client';
 import { useState } from 'react';
 import { View } from 'react-native';
+import { graphql } from '@/__generated__/gql';
 import { useAppForm } from '@/components/app-form';
 import { DescriptionList, PropertyRow } from '@/components/description-list';
 import { Alert } from '@/components/ui/alert';
@@ -9,7 +10,7 @@ import { CopyButton } from '@/components/ui/copy-button';
 import { Form } from '@/components/ui/form';
 import { FormDialog, FormDialogFooter } from '@/components/ui/form-dialog';
 
-const MY_CREATE_API_KEY = gql`
+const MY_CREATE_API_KEY = graphql(`
   mutation MyCreateApiKey($input: CreateApiKeyInput!) {
     myCreateApiKey(input: $input) {
       apiKey {
@@ -21,11 +22,12 @@ const MY_CREATE_API_KEY = gql`
       token
     }
   }
-`;
+`);
 
-/** Days until the key expires; `never` sends no `expiresAt` at all. */
+/** The expiry choice for a key that never expires; it sends no `expiresAt` at all. */
 const NO_EXPIRY = 'never';
 
+/** How long a key lasts, as options; each value is a number of days, or `NO_EXPIRY`. */
 const EXPIRY_OPTIONS = [
   { label: '30 days', value: '30' },
   { label: '90 days', value: '90' },
@@ -33,15 +35,32 @@ const EXPIRY_OPTIONS = [
   { label: 'No expiry', value: NO_EXPIRY },
 ] as const;
 
+/** The new-key form's values. */
+interface ApiKeyFields {
+  name: string;
+  /** Days until the key expires, as a string, or `NO_EXPIRY`. */
+  expiry: string;
+}
+
+/** A blank new-key form: no name, no expiry. */
+const EMPTY_API_KEY: ApiKeyFields = { name: '', expiry: NO_EXPIRY };
+
+/** Where the dialog stands: asking for the key's details, or showing the token just made. */
 type Phase = { phase: 'form' } | { phase: 'reveal'; token: string };
 
 interface CreateApiKeyDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  /** Called as the dialog closes, and only when a key was made. */
   onCreated: () => void;
 }
 
-/** Local midnight `days` from now, in the offset-less form the server expects. */
+/**
+ * Local midnight `days` from now, in the offset-less form the server expects.
+ *
+ * @param days - How many days from today the key expires.
+ * @returns The moment as `YYYY-MM-DDT00:00:00`, with no offset.
+ */
 function expiryDate(days: number): string {
   const d = new Date();
   d.setDate(d.getDate() + days);
@@ -49,23 +68,27 @@ function expiryDate(days: number): string {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T00:00:00`;
 }
 
+/**
+ * The dialog that generates an API key: first its name and expiry, then the token and its calendar URL, shown this
+ * once.
+ */
 export function CreateApiKeyDialog({ open, onOpenChange, onCreated }: CreateApiKeyDialogProps) {
   const [state, setState] = useState<Phase>({ phase: 'form' });
   const [submitError, setSubmitError] = useState<string | null>(null);
 
-  const [createApiKey] = useMutation<{
-    myCreateApiKey: { apiKey: { id: string; name: string; keyPrefix: string }; token: string };
-  }>(MY_CREATE_API_KEY);
+  const [createApiKey] = useMutation(MY_CREATE_API_KEY);
 
   const form = useAppForm({
-    defaultValues: { name: '', expiry: NO_EXPIRY as string },
+    defaultValues: EMPTY_API_KEY,
     onSubmit: async ({ value }) => {
       setSubmitError(null);
       const expiresAt = value.expiry === NO_EXPIRY ? undefined : expiryDate(Number(value.expiry));
       try {
         const result = await createApiKey({ variables: { input: { name: value.name.trim(), expiresAt } } });
         const token = result.data?.myCreateApiKey?.token;
-        if (token) setState({ phase: 'reveal', token });
+        if (token) {
+          setState({ phase: 'reveal', token });
+        }
       } catch (err) {
         setSubmitError(err instanceof Error ? err.message : 'Could not generate the key.');
       }
@@ -73,9 +96,12 @@ export function CreateApiKeyDialog({ open, onOpenChange, onCreated }: CreateApiK
   });
 
   function handleClose(value: boolean) {
-    if (!value) {
+    const isClosing = value === false;
+    if (isClosing) {
       // The list only needs refreshing once a key was actually made.
-      if (state.phase === 'reveal') onCreated();
+      if (state.phase === 'reveal') {
+        onCreated();
+      }
       setState({ phase: 'form' });
       setSubmitError(null);
       form.reset();

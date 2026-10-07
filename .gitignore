@@ -8,3 +8,6 @@ pgdata/
 **/tsconfig.tsbuildinfo
 __generated__
 .expo/
+coverage
+storybook-static
+/avatars/

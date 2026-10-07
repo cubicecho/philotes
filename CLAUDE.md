@@ -1,1 +1,1 @@
-Use AGENTS.md instead.
+AGENTS.md

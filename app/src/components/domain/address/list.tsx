@@ -8,15 +8,12 @@ import { useAppForm } from '@/components/app-form';
 import { MapPin } from '@/components/app-icons';
 import { ConfirmButton } from '@/components/confirm-button';
 import { ListItem } from '@/components/list-item';
+import { EmptyState } from '@/components/page';
 import { Badge } from '@/components/ui/badge';
 import { CopyButton } from '@/components/ui/copy-button';
 import { FieldRow, Form } from '@/components/ui/form';
 import { FormDialog, FormDialogFooter } from '@/components/ui/form-dialog';
 import { Trash2 } from '@/components/ui/icons';
-
-// ---------------------------------------------------------------------------
-// Fragment
-// ---------------------------------------------------------------------------
 
 export const ADDRESS_LIST_FRAGMENT = graphql(`
   fragment AddressList on Person {
@@ -35,10 +32,6 @@ export const ADDRESS_LIST_FRAGMENT = graphql(`
     }
   }
 `);
-
-// ---------------------------------------------------------------------------
-// Mutations
-// ---------------------------------------------------------------------------
 
 const CREATE_ADDRESSES = graphql(`
   mutation CreateAddresses($values: [CreateAddressInput!]!) {
@@ -65,68 +58,73 @@ const DELETE_ADDRESSES = graphql(`
   }
 `);
 
-// ---------------------------------------------------------------------------
-// Types
-// ---------------------------------------------------------------------------
-
 export interface AddressListProps {
+  /** The person whose addresses are listed. */
   fragmentRef: AddressListFragment;
+  /** Called after an address is added. */
   onAdd: () => void;
+  /** Called after an address is deleted. */
   onDelete: () => void;
+  /** Whether the add dialog is open, when the owner holds that state; left out, the list holds it. */
   createOpen?: boolean;
+  /** Receives the add dialog's open state when the owner holds it. */
   onCreateOpenChange?: (open: boolean) => void;
 }
 
-interface AddressData {
-  id: string;
-  type: AddressTypeEnum;
-  label: string | null;
-  line1: string;
-  line2: string | null;
-  city: string | null;
-  state: string | null;
-  postalCode: string | null;
-  country: string | null;
-  isPrimary: boolean;
-}
+/** One address of the fragment. */
+type AddressData = AddressListFragment['addresses'][number];
 
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
+/** What each address type is called on screen. */
 const TYPE_LABELS: Record<AddressTypeEnum, string> = {
   [AddressTypeEnum.Home]: 'Home',
   [AddressTypeEnum.Work]: 'Work',
   [AddressTypeEnum.Other]: 'Other',
 };
 
+/** The address types as select options. */
 const TYPE_OPTIONS = [AddressTypeEnum.Home, AddressTypeEnum.Work, AddressTypeEnum.Other].map((value) => ({
   value,
   label: TYPE_LABELS[value],
 }));
 
+/**
+ * The city, state and postal code on one line.
+ *
+ * @param address - The address.
+ * @returns The parts that are set, joined by `, `; empty when none is.
+ */
 function cityStateLine(address: AddressData): string {
   return [address.city, address.state, address.postalCode].filter(Boolean).join(', ');
 }
 
+/**
+ * An address as the lines of a postal address, for the clipboard.
+ *
+ * @param address - The address.
+ * @returns Line 1, then line 2, the city line and the country where set, one per line.
+ */
 function formatAddress(address: AddressData): string {
   const parts: string[] = [address.line1];
-  if (address.line2) parts.push(address.line2);
+  if (address.line2) {
+    parts.push(address.line2);
+  }
   const cityStateParts = cityStateLine(address);
-  if (cityStateParts) parts.push(cityStateParts);
-  if (address.country) parts.push(address.country);
+  if (cityStateParts) {
+    parts.push(cityStateParts);
+  }
+  if (address.country) {
+    parts.push(address.country);
+  }
   return parts.join('\n');
 }
 
-// ---------------------------------------------------------------------------
-// Address row
-// ---------------------------------------------------------------------------
-
 interface AddressRowProps {
   address: AddressData;
+  /** Called after the address is deleted. */
   onDelete: () => void;
 }
 
+/** One address: its lines, its type and primary badges, and its copy and delete buttons. */
 function AddressRow({ address, onDelete }: AddressRowProps) {
   const [deleteAddress] = useMutation(DELETE_ADDRESSES);
 
@@ -140,13 +138,13 @@ function AddressRow({ address, onDelete }: AddressRowProps) {
 
   return (
     <ListItem
-      className="border border-border"
-      leadingSlot={<MapPin className="h-4 w-4 text-muted-foreground" />}
+      className="border border-foreground/10"
+      leadingSlot={<MapPin className="h-4 w-4 text-foreground/60" />}
       title={address.line1}
       description={rest || undefined}
       meta={
         <>
-          {address.label ? <Text className="text-muted-foreground text-xs">{address.label}</Text> : null}
+          {address.label ? <Text className="text-foreground/60 text-xs">{address.label}</Text> : null}
           <Badge variant="secondary">{TYPE_LABELS[address.type]}</Badge>
           {address.isPrimary ? <Badge variant="info">Primary</Badge> : null}
         </>
@@ -169,12 +167,22 @@ function AddressRow({ address, onDelete }: AddressRowProps) {
   );
 }
 
-// ---------------------------------------------------------------------------
-// Add address dialog
-// ---------------------------------------------------------------------------
+/** The add-address form's values. */
+interface AddressFields {
+  type: AddressTypeEnum;
+  label: string;
+  line1: string;
+  line2: string;
+  city: string;
+  state: string;
+  postalCode: string;
+  country: string;
+  isPrimary: boolean;
+}
 
-const EMPTY_ADDRESS = {
-  type: AddressTypeEnum.Home as string,
+/** A blank address form; the country starts as `US`. */
+const EMPTY_ADDRESS: AddressFields = {
+  type: AddressTypeEnum.Home,
   label: '',
   line1: '',
   line2: '',
@@ -186,12 +194,15 @@ const EMPTY_ADDRESS = {
 };
 
 interface AddAddressDialogProps {
+  /** The person the address is added to. */
   personId: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  /** Called after the address is saved. */
   onAdded: () => void;
 }
 
+/** The dialog that adds one address to a person. */
 function AddAddressDialog({ personId, open, onOpenChange, onAdded }: AddAddressDialogProps) {
   const [createAddresses, { error, reset }] = useMutation(CREATE_ADDRESSES);
 
@@ -204,7 +215,7 @@ function AddAddressDialog({ personId, open, onOpenChange, onAdded }: AddAddressD
             values: [
               {
                 personId,
-                type: value.type as AddressTypeEnum,
+                type: value.type,
                 label: value.label.trim() || null,
                 line1: value.line1.trim(),
                 line2: value.line2.trim() || null,
@@ -227,7 +238,10 @@ function AddAddressDialog({ personId, open, onOpenChange, onAdded }: AddAddressD
   });
 
   useEffect(() => {
-    if (!open) return;
+    const isClosed = open === false;
+    if (isClosed) {
+      return;
+    }
     form.reset(EMPTY_ADDRESS);
     reset();
   }, [open, form, reset]);
@@ -275,21 +289,18 @@ function AddAddressDialog({ personId, open, onOpenChange, onAdded }: AddAddressD
   );
 }
 
-// ---------------------------------------------------------------------------
-// Main export
-// ---------------------------------------------------------------------------
-
+/** A person's addresses and the dialog that adds one. */
 export function AddressList({ fragmentRef, onAdd, onDelete, createOpen, onCreateOpenChange }: AddressListProps) {
   const [internalOpen, setInternalOpen] = useState(false);
   const dialogOpen = createOpen ?? internalOpen;
   const setDialogOpen = onCreateOpenChange ?? setInternalOpen;
   const person = fragmentRef;
-  const addresses = (person.addresses ?? []) as AddressData[];
+  const addresses = person.addresses ?? [];
 
   return (
     <>
       <View className="gap-2">
-        {addresses.length === 0 ? <Text className="text-muted-foreground text-sm">No addresses yet.</Text> : null}
+        {addresses.length === 0 ? <EmptyState compact title="No addresses yet." /> : null}
 
         {addresses.map((address) => (
           <AddressRow key={address.id} address={address} onDelete={onDelete} />

@@ -2,8 +2,13 @@ node_modules
 **/node_modules
 app/dist
 server/dist
-db/dist
 *.log
 .git
 pgdata
 avatars
+.env
+.env.*
+!.env.example
+dist
+**/.expo
+**/__generated__

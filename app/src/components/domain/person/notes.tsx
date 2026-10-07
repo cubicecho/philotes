@@ -5,18 +5,17 @@ import { Text, View } from 'react-native';
 import { graphql } from '@/__generated__/gql';
 import { ActionButton } from '@/components/action-button';
 import { useAppForm } from '@/components/app-form';
+import { ConfirmButton } from '@/components/confirm-button';
 import { MentionTextareaField } from '@/components/domain/person/note-mentions';
-import { ATTACH_NOTE_TAG, NoteTagChip, NoteTagPicker } from '@/components/domain/person/note-tags';
-import { AddTagButton, type TagOption, TagsField } from '@/components/domain/person/tag-picker';
+import { ATTACH_NOTE_TAG, DETACH_NOTE_TAG } from '@/components/domain/person/tag-mutations';
+import { RowTags, type TagOption, TagsField } from '@/components/domain/person/tag-picker';
+import { EmptyState } from '@/components/page';
 import { Button } from '@/components/ui/button';
 import { Form } from '@/components/ui/form';
 import { FormDialog, FormDialogFooter } from '@/components/ui/form-dialog';
 import { Pencil, Trash2 } from '@/components/ui/icons';
 import { type MentionablePerson, parseMentionedPersonIds } from '@/lib/mentions';
-
-// ---------------------------------------------------------------------------
-// Mutations
-// ---------------------------------------------------------------------------
+import { fullName } from '@/lib/person-name';
 
 const CREATE_NOTE = graphql(`
   mutation CreateNote($body: String!, $personId: UUID!) {
@@ -61,41 +60,44 @@ const CREATE_NOTE_MENTION = graphql(`
 
 const DELETE_NOTE_MENTIONS = graphql(`
   mutation DeleteNoteMentions($noteId: UUID!) {
-    deleteNoteMention(where: { noteId: { eq: $noteId } }) {
+    deleteNoteMentions(where: { noteId: { eq: $noteId } }) {
       noteId
       mentionedPersonId
     }
   }
 `);
 
-// ---------------------------------------------------------------------------
-// Types
-// ---------------------------------------------------------------------------
-
+/** A note as its row shows it. */
 export interface NoteData {
   id: string;
   body: string;
+  /** The tags attached to the note. */
   labels: TagOption[];
+  /** The people the note mentions. */
   mentions: Array<{ id: string; firstName: string; lastName: string }>;
 }
 
 export interface PersonNotesProps {
   personId: string;
   notes: NoteData[];
+  /** Every tag the user has. */
   allTags: TagOption[];
+  /** Everyone a note can mention. */
   allPersons: Array<{ id: string; firstName: string; lastName: string }>;
+  /** Called after a note is added, edited or deleted, or its tags change. */
   onChanged: () => void;
+  /** Whether the Add Note dialog is open. */
   createOpen: boolean;
   onCreateOpenChange: (open: boolean) => void;
 }
 
-// ---------------------------------------------------------------------------
-// Note form (body, plus a tag picker when creating)
-// ---------------------------------------------------------------------------
-
+/** What the note form submits. */
 interface NoteFormValues {
+  /** The note text, trimmed and never empty. */
   body: string;
+  /** The ids of the people the body mentions by `@Name`. */
   mentionedPersonIds: string[];
+  /** The ids of the tags chosen; empty when the form has no tag picker. */
   labelIds: string[];
 }
 
@@ -103,13 +105,19 @@ interface NoteFormProps {
   initialBody?: string;
   /** Offered as a tag picker when given; an existing note's tags are managed on its row instead. */
   allTags?: TagOption[];
+  /** Everyone the note can mention. */
   allPersons: MentionablePerson[];
   placeholder: string;
   submitLabel: string;
+  /** Saves the note. A rejection's message is shown in the footer and the form stays as typed. */
   onSubmit: (values: NoteFormValues) => Promise<void>;
   onCancel: () => void;
 }
 
+/**
+ * The note body with its `@` mentions, an optional tag picker, and the footer. Submit is disabled while the body is
+ * blank.
+ */
 function NoteForm({
   initialBody = '',
   allTags = [],
@@ -126,7 +134,9 @@ function NoteForm({
     defaultValues,
     onSubmit: async ({ value }) => {
       const body = value.body.trim();
-      if (!body) return;
+      if (!body) {
+        return;
+      }
       setFormError(null);
       try {
         await onSubmit({
@@ -158,10 +168,6 @@ function NoteForm({
   );
 }
 
-// ---------------------------------------------------------------------------
-// Note row
-// ---------------------------------------------------------------------------
-
 interface NoteRowProps {
   note: NoteData;
   allTags: TagOption[];
@@ -169,10 +175,15 @@ interface NoteRowProps {
   onChanged: () => void;
 }
 
+/**
+ * One note: its body, its tags, the people it mentions, and its edit and delete. Saving an edit rewrites the
+ * mentions.
+ */
 function NoteRow({ note, allTags, allPersons, onChanged }: NoteRowProps) {
   const [editOpen, setEditOpen] = useState(false);
-  const [showAddTag, setShowAddTag] = useState(false);
   const [updateNote] = useMutation(UPDATE_NOTE);
+  const [attachTag] = useMutation(ATTACH_NOTE_TAG);
+  const [detachTag] = useMutation(DETACH_NOTE_TAG);
   const [deleteNote] = useMutation(DELETE_NOTE);
   const [createNoteMention] = useMutation(CREATE_NOTE_MENTION);
   const [deleteNoteMention] = useMutation(DELETE_NOTE_MENTIONS);
@@ -195,11 +206,9 @@ function NoteRow({ note, allTags, allPersons, onChanged }: NoteRowProps) {
     onChanged();
   };
 
-  const attachedIds = new Set(note.labels.map((t) => t.id));
-
   return (
     <>
-      <View className="gap-1.5 rounded-md border border-border px-3 py-2">
+      <View className="gap-1.5 rounded-md border border-foreground/10 px-3 py-2">
         <View className="flex-row items-start justify-between gap-3">
           <Text className="min-w-0 flex-1 text-sm text-foreground">{note.body}</Text>
           <View className="shrink-0 flex-row gap-1">
@@ -210,52 +219,33 @@ function NoteRow({ note, allTags, allPersons, onChanged }: NoteRowProps) {
               iconSlot={<Pencil />}
               onPress={() => setEditOpen(true)}
             />
-            <ActionButton
+            <ConfirmButton
               label="Delete note"
               variant="ghost"
               size="icon-xs"
               iconSlot={<Trash2 />}
-              onPress={handleDelete}
+              title="Delete this note?"
+              description="The note goes, with its tags and the people it mentions. It cannot be brought back."
+              onConfirm={handleDelete}
             />
           </View>
         </View>
 
-        {/* Tags */}
-        <View className="gap-1">
-          {note.labels.length > 0 && (
-            <View className="flex-row flex-wrap gap-1">
-              {note.labels.map((t) => (
-                <NoteTagChip
-                  key={t.id}
-                  noteId={note.id}
-                  labelId={t.id}
-                  label={t.label}
-                  color={t.color}
-                  onDetach={onChanged}
-                />
-              ))}
-            </View>
-          )}
-          {showAddTag ? (
-            <NoteTagPicker
-              noteId={note.id}
-              allTags={allTags}
-              attachedTagIds={attachedIds}
-              onClose={() => setShowAddTag(false)}
-              onAdd={onChanged}
-            />
-          ) : (
-            <AddTagButton onPress={() => setShowAddTag(true)} />
-          )}
-        </View>
+        <RowTags
+          tags={note.labels}
+          allTags={allTags}
+          onAttach={(labelId) => attachTag({ variables: { noteId: note.id, labelId } })}
+          onDetach={(labelId) => detachTag({ variables: { noteId: note.id, labelId } })}
+          onChanged={onChanged}
+        />
 
         {/* Mentions */}
         {note.mentions.length > 0 && (
           <View className="flex-row flex-wrap items-center gap-1">
-            <Text className="text-xs font-medium text-muted-foreground">Mentions:</Text>
+            <Text className="text-xs font-medium text-foreground/60">Mentions:</Text>
             {note.mentions.map((m) => (
               <Link key={m.id} href={`/persons/${m.id}`} asChild>
-                <Button variant="secondary" size="xs" content={`${m.firstName} ${m.lastName}`} />
+                <Button variant="secondary" size="xs" content={fullName(m)} />
               </Link>
             ))}
           </View>
@@ -276,10 +266,7 @@ function NoteRow({ note, allTags, allPersons, onChanged }: NoteRowProps) {
   );
 }
 
-// ---------------------------------------------------------------------------
-// Main export
-// ---------------------------------------------------------------------------
-
+/** A person's notes, in the order given, and the dialog that adds one. */
 export function PersonNotes({
   personId,
   notes,
@@ -310,7 +297,7 @@ export function PersonNotes({
 
   return (
     <View className="gap-2">
-      {notes.length === 0 && <Text className="text-sm text-muted-foreground">No notes yet.</Text>}
+      {notes.length === 0 && <EmptyState compact title="No notes yet." />}
 
       {notes.map((note) => (
         <NoteRow key={note.id} note={note} allTags={allTags} allPersons={allPersons} onChanged={onChanged} />

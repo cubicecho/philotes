@@ -1,29 +1,31 @@
 {
-  "name": "@philotes/db",
+  "name": "@cubicecho/philotes-db",
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "main": "./dist/index.js",
+  "exports": {
+    ".": "./src/index.ts",
+    "./schema": "./src/schema.ts",
+    "./relations": "./src/relations.ts",
+    "./wait": "./src/wait.ts",
+    "./ssl": "./src/ssl.ts",
+    "./defaults": "./src/defaults.ts"
+  },
   "scripts": {
-    "build": "tsc -p tsconfig.build.json",
     "generate": "drizzle-kit generate",
-    "migrate": "node --env-file=../.env src/migrate.ts",
-    "seed": "node --env-file=../.env src/seed.ts",
-    "cleanup": "node --env-file=../.env src/cleanup.ts",
+    "migrate": "drizzle-kit migrate",
+    "seed": "node --env-file-if-exists=../.env src/seed.ts",
+    "cleanup": "node --env-file-if-exists=../.env src/cleanup.ts",
     "push": "drizzle-kit push",
     "studio": "drizzle-kit studio",
     "clean": "rm -rf node_modules"
   },
   "dependencies": {
-    "@electric-sql/pglite": "^0.3.15",
     "drizzle-orm": "1.0.0-rc.4",
-    "@vantreeseba/drizzle-graphql": "^9.0.0",
     "postgres": "^3.4.9"
   },
   "devDependencies": {
     "@faker-js/faker": "^10.3.0",
-    "@types/bcryptjs": "^2.4.6",
-    "bcryptjs": "^3.0.3",
     "drizzle-kit": "1.0.0-rc.4"
   }
 }

@@ -3,8 +3,8 @@
 ## Technology
 
 - **ORM**: [Drizzle ORM](https://orm.drizzle.team/) 1.0 (`drizzle-orm/pg-core`)
-- **Engine**: PGlite (embedded Postgres, WASM) in development; `postgres-js`
-  against a real server when `DATABASE_URL` is a `postgres://` URL
+- **Engine**: PostgreSQL through `postgres-js`. Tests use an in-memory PGlite
+  they build themselves
 - **Models**: `db/src/models/` — one file per subject area, re-exported by
   `db/src/models/index.ts`, which `db/src/schema.ts` re-exports in turn
 - **Relations**: `db/src/relations.ts` (`defineRelations`)
@@ -17,16 +17,20 @@ the model file.
 
 ## Connection
 
-`db/src/index.ts` picks a driver from `DATABASE_URL` at module load, defaulting
-to a PGlite data directory at the repo root (`pgdata`):
+`db/src/index.ts` creates the postgres-js client at module load and throws when
+`DATABASE_URL` is empty. It does not connect until the first query, so codegen
+and image builds work with a placeholder URL. `npm run db:up` starts a local
+Postgres on port 5439 (`docker-compose.dev.yml`).
 
 ```ts
-const DATABASE_URL = process.env.DATABASE_URL ?? path.join(projectRoot, 'pgdata');
-const isPostgres = DATABASE_URL.startsWith('postgres://') || DATABASE_URL.startsWith('postgresql://');
-
-db = drizzle({ connection, relations });   // postgres-js
-db = drizzle({ client, relations });       // pglite
+export const db = drizzle({ connection: { url, onnotice: () => {} }, relations });
+export type DB = typeof db;
 ```
+
+At boot the server calls `waitForDatabase` (`db/src/wait.ts`), which retries
+the first connection with backoff, then applies the migrations. TLS is forced
+only in production for a public host (`db/src/ssl.ts`). The timings are in
+`db/src/defaults.ts`.
 
 Note there is no separate `schema` argument: drizzle-orm 1.0 dropped it, and
 the `relations` config built by `defineRelations` carries the tables. That same
@@ -36,16 +40,15 @@ out of `relations.ts` is a relation that does not exist in GraphQL.
 Server code imports through the workspace package:
 
 ```ts
-import { db, schema } from '@philotes/db';
-import type { Person, NewPerson } from '@philotes/db';
+import { db, schema } from '@cubicecho/philotes-db';
+import type { Person, NewPerson } from '@cubicecho/philotes-db';
 ```
 
-> `@philotes/db` resolves to `db/dist`, so run `npm run build -w db` after
-> editing anything under `db/src` — otherwise the server and codegen read a
-> stale schema.
+> `@cubicecho/philotes-db` exports its TypeScript sources. Node runs them directly, so an
+> edit under `db/src` needs no build.
 
-**Importing `@philotes/db` opens a database.** Never import it from a test;
-stub it with `vi.mock('@philotes/db')`. See
+**Importing `@cubicecho/philotes-db` opens a database.** Never import it from a test;
+stub it with `vi.mock('@cubicecho/philotes-db')`. See
 [`AGENTS.md`](../AGENTS.md#testing).
 
 ## Tables
@@ -60,13 +63,13 @@ Seventeen tables, plus `api_keys`:
 | `addresses` | `models/addresses.ts` | `user_id` |
 | `contact_infos` | `models/contact-infos.ts` | `user_id` |
 | `important_dates` | `models/important-dates.ts` | `user_id` |
-| `important_date_tags` | `models/important-dates.ts` | via `important_dates` |
+| `important_date_tags` | `models/important-dates.ts` | `user_id` |
 | `interactions` | `models/interactions.ts` | `user_id` |
-| `interaction_tags` | `models/interactions.ts` | via `interactions` |
+| `interaction_tags` | `models/interactions.ts` | `user_id` |
 | `labels` | `models/labels.ts` | `user_id` |
 | `notes` | `models/notes.ts` | `user_id` |
-| `note_tags` | `models/notes.ts` | via `notes` |
-| `note_mentions` | `models/notes.ts` | via `notes` |
+| `note_tags` | `models/notes.ts` | `user_id` |
+| `note_mentions` | `models/notes.ts` | `user_id` |
 | `person_labels` | `models/person-labels.ts` | `user_id` |
 | `person_relationships` | `models/person-relationships.ts` | `user_id` |
 | `relationship_types` | `models/relationship-types.ts` | `user_id` |
@@ -89,19 +92,17 @@ than simply inserts, and deleting one unlinks rather than deletes — see
 ## Tenancy
 
 Every new table needs an ownership story, and it must be registered in
-`server/src/tenancy.ts` or the API will not expose it safely:
+`server/src/graphql/tenancy.ts` or the API will not expose it safely:
 
 - **The common case**: give the table a `user_id` column
   (`.notNull().references(() => users.id, { onDelete: 'cascade' })`) and add
   its name to `USER_OWNED_TABLES`. That both scopes reads and stamps the column
   on write, so `userId` never appears in a GraphQL input.
-- **A junction table** with no `user_id` of its own: add it to
-  `JUNCTION_PARENTS`, naming the foreign key and the user-owned parent it
-  points at, and add its foreign keys to `FOREIGN_KEYS` in
-  `server/src/resolvers/junction-ownership.ts` so a create cannot reference
-  another user's row.
+- **A junction table** carries `user_id` too, and joins `USER_OWNED_TABLES`
+  like any other table. List its foreign keys in the domain's
+  `hooks.ts` so a create cannot reference another user's row.
 
-`server/src/__tests__/tenancy.test.ts` fails if a table exists with no scope
+`server/src/__tests__/graphql/tenancy.test.ts` fails if a table exists with no scope
 entry, so a table added without this step breaks the build rather than leaking
 quietly.
 
@@ -137,7 +138,10 @@ export const things = pgTable(
     id: uuid('id').primaryKey().defaultRandom(),
     name: text('name').notNull(),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
-    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true })
+      .notNull()
+      .defaultNow()
+      .$onUpdate(() => new Date()),
     userId: uuid('user_id')
       .notNull()
       .references(() => users.id, { onDelete: 'cascade' }),
@@ -153,7 +157,7 @@ export type NewThing = typeof things.$inferInsert;
 
 1. `id` — primary key, always first
 2. Domain / business columns
-3. `createdAt` / `updatedAt` timestamps (omit on simple join tables)
+3. `createdAt` / `updatedAt` timestamps (omit on simple join tables). Every timestamp is `withTimezone`
 4. Foreign key columns, `user_id` last
 
 ## Column Types
@@ -182,10 +186,29 @@ export type NewThing = typeof things.$inferInsert;
 - **Primary key**: always `uuid('id').primaryKey().defaultRandom()` — do not use `serial()`.
 - **Composite key** on a junction table: `primaryKey({ columns: [t.a, t.b] })`.
 - **Not-null**: mark required columns `.notNull()`. Leave optional columns without it.
-- **Unique**: use `.unique()` where applicable (e.g. `users.email`).
+- **Unique**: a named `uniqueIndex('uq_<table>_<columns>')` in the table's third argument.
 - **Cascade deletes**: join tables, child records and every `user_id` use
-  `{ onDelete: 'cascade' }`.
-- **Index** every foreign key you filter or join on.
+  `{ onDelete: 'cascade' }`. An optional reference uses `{ onDelete: 'set null' }`.
+- **Index** every foreign key, as `idx_<table>_<column>`. A composite primary key
+  covers its first column only.
+
+## Vocabularies
+
+A column that holds one of a closed set of values has a named vocabulary in its
+model file, an `as const` object with a type of the same name:
+
+```ts
+export const Recurrence = { Yearly: 'yearly', Monthly: 'monthly', Weekly: 'weekly' } as const;
+export type Recurrence = (typeof Recurrence)[keyof typeof Recurrence];
+```
+
+`ContactType` and `AddressType` back Postgres enums (`pgEnum('contact_type',
+ContactType)`). `MilestoneType` is a `text` column with an `enum` list, which is
+what makes it an enum in GraphQL. `Recurrence`, `InteractionChannel`,
+`InteractionSentiment` and `ContactFrequency` are plain `text` columns: the
+server's input schemas check a write against the vocabulary, and a row written
+before that check may hold another value. Code compares against a member
+(`Recurrence.Yearly`), never the bare string.
 
 ## Type Exports
 
@@ -213,5 +236,4 @@ After editing a model:
 
 1. `npm run db:generate` and commit the generated migration alongside the
    schema change.
-2. `npm run build -w db` — everything downstream reads `db/dist`.
-3. `npm run codegen` if the change is visible in the API.
+2. `npm run codegen` if the change is visible in the API.

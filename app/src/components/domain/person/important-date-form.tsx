@@ -1,64 +1,52 @@
 import { format, parseISO } from 'date-fns';
 import { useState } from 'react';
 import { z } from 'zod';
+import { ImportantDatesMilestoneTypeEnum as Milestone } from '@/__generated__/graphql';
 import { useAppForm } from '@/components/app-form';
 import { Form } from '@/components/ui/form';
 import { FormDialogFooter } from '@/components/ui/form-dialog';
+import { Recurrence } from '@/lib/vocabulary';
 
-// ---------------------------------------------------------------------------
-// Recurrence
-// ---------------------------------------------------------------------------
-
+/** How an important date repeats, as options; the empty value is a date that does not. */
 export const RECURRENCE_OPTIONS = [
   { value: '', label: 'Does not repeat' },
-  { value: 'yearly', label: 'Every year' },
-  { value: 'monthly', label: 'Every month' },
-  { value: 'weekly', label: 'Every week' },
+  { value: Recurrence.Yearly, label: 'Every year' },
+  { value: Recurrence.Monthly, label: 'Every month' },
+  { value: Recurrence.Weekly, label: 'Every week' },
 ] as const;
 
-export type RecurrenceValue = '' | 'yearly' | 'monthly' | 'weekly';
+/** A recurrence, or the empty string for a date that does not repeat. */
+export type RecurrenceValue = '' | Recurrence;
 
-// ---------------------------------------------------------------------------
-// Milestone type
-// ---------------------------------------------------------------------------
-
+/** The milestones an important date can mark, as options; the empty value is a regular date. */
 export const MILESTONE_TYPE_OPTIONS = [
   { value: '', label: 'None (regular date)' },
-  { value: 'new_job', label: 'New Job' },
-  { value: 'promotion', label: 'Promotion' },
-  { value: 'moved', label: 'Moved' },
-  { value: 'new_baby', label: 'New Baby' },
-  { value: 'married', label: 'Married' },
-  { value: 'divorced', label: 'Divorced' },
-  { value: 'retired', label: 'Retired' },
-  { value: 'health_event', label: 'Health Event' },
-  { value: 'graduation', label: 'Graduation' },
-  { value: 'loss', label: 'Loss / Bereavement' },
-  { value: 'other', label: 'Other' },
+  { value: Milestone.NewJob, label: 'New Job' },
+  { value: Milestone.Promotion, label: 'Promotion' },
+  { value: Milestone.Moved, label: 'Moved' },
+  { value: Milestone.NewBaby, label: 'New Baby' },
+  { value: Milestone.Married, label: 'Married' },
+  { value: Milestone.Divorced, label: 'Divorced' },
+  { value: Milestone.Retired, label: 'Retired' },
+  { value: Milestone.HealthEvent, label: 'Health Event' },
+  { value: Milestone.Graduation, label: 'Graduation' },
+  { value: Milestone.Loss, label: 'Loss / Bereavement' },
+  { value: Milestone.Other, label: 'Other' },
 ] as const;
 
-export type MilestoneTypeValue =
-  | ''
-  | 'new_job'
-  | 'promotion'
-  | 'moved'
-  | 'new_baby'
-  | 'married'
-  | 'divorced'
-  | 'retired'
-  | 'health_event'
-  | 'graduation'
-  | 'loss'
-  | 'other';
-
-// ---------------------------------------------------------------------------
-// Schema & types
-// ---------------------------------------------------------------------------
+/** A milestone, or the empty string for a regular date. */
+export type MilestoneTypeValue = '' | Milestone;
 
 // The select cannot hold an empty-string value, so "no recurrence" and "no
 // milestone" travel through the form as this and are stripped on the way out.
 const NONE = 'none';
 
+/**
+ * Options as a select can hold them, with `NONE` in place of the empty value.
+ *
+ * @param options - The options, one of which may have an empty value.
+ * @returns The same options and labels, the empty value replaced by `NONE`.
+ */
 function selectOptions(options: ReadonlyArray<{ value: string; label: string }>) {
   return options.map((opt) => ({ value: opt.value || NONE, label: opt.label }));
 }
@@ -66,6 +54,7 @@ function selectOptions(options: ReadonlyArray<{ value: string; label: string }>)
 const RECURRENCE_SELECT_OPTIONS = selectOptions(RECURRENCE_OPTIONS);
 const MILESTONE_TYPE_SELECT_OPTIONS = selectOptions(MILESTONE_TYPE_OPTIONS);
 
+/** What the important-date form must hold before it submits: a name and a date. */
 const importantDateSchema = z.object({
   name: z.string().min(1, 'Name is required.'),
   date: z.custom<Date | null>((value) => value instanceof Date, 'Date is required.'),
@@ -77,30 +66,41 @@ const importantDateSchema = z.object({
 /** An important date is a calendar day with no time: `yyyy-MM-dd`, read and written in local time. */
 const DATE_FORMAT = 'yyyy-MM-dd';
 
+/**
+ * A stored day read as a local date.
+ *
+ * @param [value] - The day as `yyyy-MM-dd`; anything after those ten characters is ignored.
+ * @returns Local midnight of that day, or `null` when the value is missing or not a date.
+ */
 function parseDay(value: string | undefined): Date | null {
-  if (!value) return null;
+  if (!value) {
+    return null;
+  }
   const parsed = parseISO(value.slice(0, 10));
   return Number.isNaN(parsed.getTime()) ? null : parsed;
 }
 
+/** What the important-date form reads and submits. */
 export interface ImportantDateFormValue {
   name: string;
+  /** The day as `yyyy-MM-dd`. */
   date: string;
   description?: string;
+  /** A `Recurrence` value; left out when the date does not repeat. */
   recurrence?: string;
+  /** A `Milestone` value; left out for a regular date. */
   milestoneType?: string;
 }
 
 interface ImportantDateFormProps {
+  /** Saves the date. A rejection's message is shown in the footer and the form stays as typed. */
   onSubmit: (value: ImportantDateFormValue) => Promise<void>;
   onCancel: () => void;
+  /** The date being edited; left out, the form starts blank. */
   initialValues?: ImportantDateFormValue;
 }
 
-// ---------------------------------------------------------------------------
-// Form
-// ---------------------------------------------------------------------------
-
+/** The important-date fields and their footer. It draws no dialog of its own: render it inside a `FormDialog`. */
 export function ImportantDateForm({ onSubmit, onCancel, initialValues }: ImportantDateFormProps) {
   const [formError, setFormError] = useState<string | null>(null);
   const defaultValues: z.input<typeof importantDateSchema> = {
@@ -117,7 +117,9 @@ export function ImportantDateForm({ onSubmit, onCancel, initialValues }: Importa
       onSubmit: importantDateSchema,
     },
     onSubmit: async ({ value }) => {
-      if (!value.date) return;
+      if (!value.date) {
+        return;
+      }
       setFormError(null);
       try {
         await onSubmit({

@@ -1,78 +1,93 @@
 import { useState } from 'react';
 import { useAppForm } from '@/components/app-form';
-import { Mail, MessageSquare, Phone, Users } from '@/components/app-icons';
+import { ChannelIcon } from '@/components/domain/person/channel-icon';
 import { type TagOption, TagsField } from '@/components/domain/person/tag-picker';
 import { FieldWrapper, Form } from '@/components/ui/form';
 import { FormDialogFooter } from '@/components/ui/form-dialog';
-import { Ellipsis } from '@/components/ui/icons';
 import { SegmentedButton, SegmentedGroup } from '@/components/ui/segmented';
+import { InteractionChannel, InteractionSentiment } from '@/lib/vocabulary';
 
-// ---------------------------------------------------------------------------
-// Channel / Sentiment helpers
-// ---------------------------------------------------------------------------
+/** How an interaction took place. */
+export type Channel = InteractionChannel;
+/** How an interaction went. */
+export type Sentiment = InteractionSentiment;
 
-export type Channel = 'call' | 'text' | 'email' | 'in-person' | 'other';
-export type Sentiment = 'great' | 'good' | 'neutral' | 'difficult';
-
+/** The channels an interaction can be logged on, in the order offered. */
 export const CHANNEL_OPTIONS: Array<{ value: Channel; label: string }> = [
-  { value: 'call', label: 'Call' },
-  { value: 'text', label: 'Text' },
-  { value: 'email', label: 'Email' },
-  { value: 'in-person', label: 'In Person' },
-  { value: 'other', label: 'Other' },
+  { value: InteractionChannel.Call, label: 'Call' },
+  { value: InteractionChannel.Text, label: 'Text' },
+  { value: InteractionChannel.Email, label: 'Email' },
+  { value: InteractionChannel.InPerson, label: 'In Person' },
+  { value: InteractionChannel.Other, label: 'Other' },
 ];
 
+/** The sentiments an interaction can be given, each with the emoji that stands for it. */
 export const SENTIMENT_OPTIONS: Array<{
   value: Sentiment;
   label: string;
   emoji: string;
 }> = [
-  { value: 'great', label: 'Great', emoji: '😄' },
-  { value: 'good', label: 'Good', emoji: '🙂' },
-  { value: 'neutral', label: 'Neutral', emoji: '😐' },
-  { value: 'difficult', label: 'Difficult', emoji: '😟' },
+  { value: InteractionSentiment.Great, label: 'Great', emoji: '😄' },
+  { value: InteractionSentiment.Good, label: 'Good', emoji: '🙂' },
+  { value: InteractionSentiment.Neutral, label: 'Neutral', emoji: '😐' },
+  { value: InteractionSentiment.Difficult, label: 'Difficult', emoji: '😟' },
 ];
 
-export function ChannelIcon({ channel, className }: { channel: string; className?: string }) {
-  switch (channel as Channel) {
-    case 'call':
-      return <Phone className={className} />;
-    case 'text':
-      return <MessageSquare className={className} />;
-    case 'email':
-      return <Mail className={className} />;
-    case 'in-person':
-      return <Users className={className} />;
-    default:
-      return <Ellipsis className={className} />;
-  }
+/**
+ * The channel a segmented button reported; undefined for a value that is not one.
+ *
+ * @param value - What the segmented group reported.
+ * @returns The matching channel, or `undefined`.
+ */
+function findChannel(value: string): Channel | undefined {
+  return CHANNEL_OPTIONS.find((option) => option.value === value)?.value;
 }
 
+/**
+ * The sentiment a segmented button reported; undefined for a value that is not one.
+ *
+ * @param value - What the segmented group reported.
+ * @returns The matching sentiment, or `undefined`.
+ */
+function findSentiment(value: string): Sentiment | undefined {
+  return SENTIMENT_OPTIONS.find((option) => option.value === value)?.value;
+}
+
+/**
+ * The emoji that stands for a sentiment.
+ *
+ * @param sentiment - The stored sentiment, if the interaction has one.
+ * @returns The emoji, or an empty string for no sentiment or one that is not known.
+ */
 export function sentimentEmoji(sentiment: string | null | undefined): string {
   return SENTIMENT_OPTIONS.find((s) => s.value === sentiment)?.emoji ?? '';
 }
 
-// ---------------------------------------------------------------------------
-// Interaction form (create + edit)
-// ---------------------------------------------------------------------------
-
+/** What the interaction form holds and submits. */
 export interface InteractionFormValues {
   channel: Channel;
   occurredAt: Date;
+  /** The empty string when no sentiment is chosen. */
   sentiment: Sentiment | '';
   note: string;
+  /** The ids of the tags chosen for the interaction. */
   labelIds: string[];
 }
 
 interface InteractionFormProps {
+  /** Unused. */
   personId: string;
+  /** Every tag the user has. */
   allTags: TagOption[];
+  /** Values to start from; a field left out starts as a call, now, with no sentiment, note or tags. */
   initialValues?: Partial<InteractionFormValues>;
   submitLabel?: string;
+  /** Saves the interaction. A rejection's message is shown in the footer and the form stays as typed. */
   onSubmit: (values: InteractionFormValues) => Promise<void>;
   onCancel: () => void;
 }
 
+/** The interaction fields and their footer. It draws no dialog of its own: render it inside a `FormDialog`. */
 export function InteractionForm({
   personId: _personId,
   allTags,
@@ -83,7 +98,7 @@ export function InteractionForm({
 }: InteractionFormProps) {
   const [formError, setFormError] = useState<string | null>(null);
   const defaultValues: InteractionFormValues = {
-    channel: initialValues?.channel ?? 'call',
+    channel: initialValues?.channel ?? InteractionChannel.Call,
     occurredAt: initialValues?.occurredAt ?? new Date(),
     sentiment: initialValues?.sentiment ?? '',
     note: initialValues?.note ?? '',
@@ -119,7 +134,12 @@ export function InteractionForm({
                   variant="plain"
                   className="flex-wrap"
                   value={field.state.value}
-                  onValueChange={(next) => field.handleChange(next as Channel)}
+                  onValueChange={(next) => {
+                    const channel = findChannel(next);
+                    if (channel) {
+                      field.handleChange(channel);
+                    }
+                  }}
                 >
                   {CHANNEL_OPTIONS.map((opt) => (
                     <SegmentedButton key={opt.value} value={opt.value} iconSlot={<ChannelIcon channel={opt.value} />}>
@@ -143,7 +163,10 @@ export function InteractionForm({
                   className="flex-wrap"
                   value={field.state.value}
                   // Pressing the current sentiment again clears it: it is optional.
-                  onValueChange={(next) => field.handleChange(field.state.value === next ? '' : (next as Sentiment))}
+                  onValueChange={(next) => {
+                    const isCurrent = field.state.value === next;
+                    field.handleChange(isCurrent ? '' : (findSentiment(next) ?? ''));
+                  }}
                 >
                   {SENTIMENT_OPTIONS.map((opt) => (
                     <SegmentedButton key={opt.value} value={opt.value}>

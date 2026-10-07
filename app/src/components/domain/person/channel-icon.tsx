@@ -1,20 +1,18 @@
 import { Mail, MessageSquare, Phone, Users, Video } from '@/components/app-icons';
 import { Ellipsis } from '@/components/ui/icons';
+import { InteractionChannel } from '@/lib/vocabulary';
+
+/** The glyph for each channel. `video` is no longer offered, but older interactions may hold it. */
+const CHANNEL_ICONS: Record<string, typeof Ellipsis> = {
+  [InteractionChannel.Call]: Phone,
+  [InteractionChannel.Text]: MessageSquare,
+  [InteractionChannel.Email]: Mail,
+  [InteractionChannel.InPerson]: Users,
+  video: Video,
+};
 
 /** The glyph for an interaction channel; anything unrecognised gets the ellipsis. */
 export function ChannelIcon({ channel, className }: { channel: string; className?: string }) {
-  switch (channel) {
-    case 'call':
-      return <Phone className={className} />;
-    case 'text':
-      return <MessageSquare className={className} />;
-    case 'email':
-      return <Mail className={className} />;
-    case 'video':
-      return <Video className={className} />;
-    case 'in-person':
-      return <Users className={className} />;
-    default:
-      return <Ellipsis className={className} />;
-  }
+  const Icon = CHANNEL_ICONS[channel] ?? Ellipsis;
+  return <Icon className={className} />;
 }

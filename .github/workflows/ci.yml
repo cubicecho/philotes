@@ -1,0 +1,81 @@
+name: CI
+on:
+  push: { branches: [main] }
+  pull_request:
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    env:
+      # Codegen needs one. Nothing connects, and tests use PGlite.
+      DATABASE_URL: postgres://ci:ci@127.0.0.1:5432/ci
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with: { node-version: 26, cache: npm }
+      - run: npm ci
+      # Generated files aren't in the tree, so codegen runs before anything reads them.
+      - run: npm run codegen
+      - name: Lint
+        run: npx biome ci .
+      - name: Typecheck
+        run: npm run check:types
+      - name: Test
+        run: npm test
+
+  postgres:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env: { POSTGRES_USER: ci, POSTGRES_PASSWORD: ci, POSTGRES_DB: ci }
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U ci -d ci"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      DATABASE_URL: postgres://ci:ci@127.0.0.1:5432/ci
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with: { node-version: 26, cache: npm }
+      - run: npm ci
+      - name: Migrations apply
+        run: npm run db:migrate
+      # drizzle-kit writes nothing when the models and migrations agree.
+      - name: Migrations match the models
+        run: |
+          npm run db:generate
+          if [ -n "$(git status --porcelain db/drizzle)" ]; then
+            git status --porcelain db/drizzle
+            echo "::error::The models changed without a migration. Run npm run db:generate and commit db/drizzle."
+            exit 1
+          fi
+
+  boot:
+    runs-on: ubuntu-latest
+    env:
+      # Preflight rejects short or default secrets in production. CI-only, never deployed.
+      BETTER_AUTH_SECRET: ci-only-0123456789abcdef0123456789abcdef
+    steps:
+      - uses: actions/checkout@v7
+      - uses: docker/setup-buildx-action@v4
+      # Loaded into the local daemon under the tag docker-compose.yml runs, so `up --no-build` uses it.
+      - uses: docker/build-push-action@v7
+        with:
+          context: .
+          push: false
+          load: true
+          tags: vantreeseba/philotes:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      # --wait blocks until every service's healthcheck passes, the app's included.
+      - name: Start the stack
+        run: docker compose up -d --no-build --wait --wait-timeout 180
+      - name: /healthz answers
+        run: curl -fsS http://127.0.0.1:3000/healthz
+      - name: Logs
+        if: failure()
+        run: docker compose logs

@@ -1,36 +1,20 @@
 import { useState } from 'react';
 import { Image, Text, View } from 'react-native';
+import { useAvatarImage } from '@/hooks/use-avatar-image';
+import { nameToColor } from '@/lib/name-color';
+import { fullName } from '@/lib/person-name';
 import { cn } from '@/lib/utils';
 
 interface AvatarProps {
   firstName: string;
   lastName: string;
+  /** The stored photo's path; `null` or left out draws the initials. */
   avatarPath?: string | null;
   size?: 'sm' | 'md' | 'lg';
   className?: string;
 }
 
-/** Deterministic background color from a name string. */
-export function nameToColor(name: string): string {
-  const colors = [
-    '#e2a87a',
-    '#7ab8e2',
-    '#7ae2a8',
-    '#e27ab8',
-    '#a8e27a',
-    '#b87ae2',
-    '#e2c87a',
-    '#7ae2c8',
-    '#c87ae2',
-    '#e27a7a',
-  ];
-  let hash = 0;
-  for (let i = 0; i < name.length; i++) {
-    hash = (hash * 31 + name.charCodeAt(i)) >>> 0;
-  }
-  return colors[hash % colors.length];
-}
-
+/** The box and the initials text classes of each size. */
 const SIZE_CLASSES: Record<NonNullable<AvatarProps['size']>, { box: string; text: string }> = {
   sm: { box: 'h-8 w-8', text: 'text-xs' },
   md: { box: 'h-10 w-10', text: 'text-sm' },
@@ -38,18 +22,20 @@ const SIZE_CLASSES: Record<NonNullable<AvatarProps['size']>, { box: string; text
 };
 
 /**
- * A person's photo if there is one, otherwise a deterministic initials circle —
- * which is also what a photo that fails to load falls back to.
+ * A person's photo if there is one, otherwise a deterministic initials circle, which is also
+ * what shows while a photo loads and when it fails to.
  */
 export function Avatar({ firstName, lastName, avatarPath, size = 'md', className }: AvatarProps) {
   const [failed, setFailed] = useState(false);
   const { box, text } = SIZE_CLASSES[size];
-  const name = `${firstName} ${lastName}`;
+  const name = fullName({ firstName, lastName });
+  const imageUri = useAvatarImage(avatarPath ?? null);
 
-  if (avatarPath && !failed) {
+  const showsPhoto = imageUri !== null && failed === false;
+  if (showsPhoto) {
     return (
       <Image
-        source={{ uri: `/avatars/${avatarPath}` }}
+        source={{ uri: imageUri }}
         accessibilityLabel={name}
         onError={() => setFailed(true)}
         className={cn('shrink-0 rounded-full', box, className)}

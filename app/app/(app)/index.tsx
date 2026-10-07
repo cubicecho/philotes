@@ -1,6 +1,6 @@
-import { useQuery } from '@apollo/client';
 import { View } from 'react-native';
 import { graphql } from '@/__generated__/gql';
+import type { DashboardQuery } from '@/__generated__/graphql';
 import type { UpcomingDate } from '@/components/domain/dashboard/coming-up';
 import { ComingUp } from '@/components/domain/dashboard/coming-up';
 import type { OpenTask } from '@/components/domain/dashboard/open-tasks';
@@ -12,27 +12,31 @@ import { RecentlyAdded } from '@/components/domain/dashboard/recently-added';
 import { PageLayout } from '@/components/page-layout';
 import { QueryState } from '@/components/query-state';
 import { computeOverdueByDays } from '@/lib/contact-frequency';
-
-// ---------------------------------------------------------------------------
-// GraphQL — one query feeds every widget
-// ---------------------------------------------------------------------------
+import { DASHBOARD_DEFAULTS } from '@/lib/defaults';
+import { daysUntilNextOccurrence } from '@/lib/next-occurrence';
+import { DAYS_PER_YEAR, MS_PER_DAY } from '@/lib/time';
+import { useAllRows } from '@/lib/use-all-rows';
 
 const GET_DASHBOARD = graphql(`
-  query Dashboard {
-    persons {
+  query Dashboard($limit: Int!, $offset: Int!) {
+    persons(
+      limit: $limit
+      offset: $offset
+      orderBy: { createdAt: { direction: asc, priority: 1 }, id: { direction: asc, priority: 2 } }
+    ) {
       id
       firstName
       lastName
       avatarPath
       contactFrequency
       createdAt
-      importantDates {
+      importantDates(limit: 20) {
         id
         name
         date
         recurrence
       }
-      tasks {
+      tasks(where: { completedAt: { isNull: true } }, limit: 20) {
         id
         title
         dueAt
@@ -49,99 +53,44 @@ const GET_DASHBOARD = graphql(`
   }
 `);
 
-// ---------------------------------------------------------------------------
-// Types
-// ---------------------------------------------------------------------------
+/** One person as the dashboard query returns them. */
+type DashboardPerson = DashboardQuery['persons'][number];
 
-type DashboardPerson = {
-  id: string;
-  firstName: string;
-  lastName: string;
-  avatarPath?: string | null;
-  contactFrequency?: string | null;
-  createdAt: Date;
-  importantDates: Array<{
-    id: string;
-    name: string;
-    date: Date;
-    recurrence?: string | null;
-  }>;
-  tasks: Array<{
-    id: string;
-    title: string;
-    dueAt?: Date | null;
-    completedAt?: Date | null;
-    personId: string;
-  }>;
-  interactions: Array<{
-    occurredAt: Date;
-  }>;
-};
+const { widgetLimit, upcomingWindowDays, dormantAfterDays, tasksDueWithinDays } = DASHBOARD_DEFAULTS;
 
-// ---------------------------------------------------------------------------
-// Constants
-// ---------------------------------------------------------------------------
+/** From this many days without contact, the dormant label counts the years. */
+const TWO_YEARS_IN_DAYS = 2 * DAYS_PER_YEAR;
 
-const WIDGET_LIMIT = 6;
-const UPCOMING_WINDOW_DAYS = 30;
-const DORMANT_THRESHOLD_DAYS = 365;
-const MS_PER_DAY = 1000 * 60 * 60 * 24;
-
-// ---------------------------------------------------------------------------
-// Date utilities
-// ---------------------------------------------------------------------------
-
-function todayMidnight(): Date {
-  const d = new Date();
-  d.setHours(0, 0, 0, 0);
-  return d;
+/**
+ * Whether a person last contacted this many days ago counts as a dormant tie.
+ *
+ * @param daysSince - Days since the last contact, or null when there has been none.
+ * @returns True from `dormantAfterDays` on; false for a person never contacted.
+ */
+function isDormant(daysSince: number | null): boolean {
+  return daysSince !== null && daysSince >= dormantAfterDays;
 }
 
-function daysBetween(a: Date, b: Date): number {
-  return Math.round((b.getTime() - a.getTime()) / MS_PER_DAY);
+/**
+ * What the reach-out list says about a dormant tie.
+ *
+ * @param daysSince - Days since the last contact, or null when there has been none.
+ * @returns The label, counting whole years from two years on.
+ */
+function dormantLabel(daysSince: number | null): string {
+  const isOverTwoYears = daysSince !== null && daysSince >= TWO_YEARS_IN_DAYS;
+  if (isOverTwoYears) {
+    return `No contact in over ${Math.floor(daysSince / DAYS_PER_YEAR)} years`;
+  }
+  return 'No contact in over a year';
 }
-
-function daysUntilNextOccurrence(storedDate: Date, recurrence: string | null | undefined): number | null {
-  const t = todayMidnight();
-  const month = storedDate.getMonth();
-  const day = storedDate.getDate();
-
-  if (!recurrence) {
-    const stored = new Date(storedDate.getFullYear(), month, day);
-    const diff = daysBetween(t, stored);
-    return diff >= 0 ? diff : null;
-  }
-
-  if (recurrence === 'yearly') {
-    const thisYear = new Date(t.getFullYear(), month, day);
-    const diff = daysBetween(t, thisYear);
-    if (diff >= 0) return diff;
-    return daysBetween(t, new Date(t.getFullYear() + 1, month, day));
-  }
-
-  if (recurrence === 'monthly') {
-    const thisMonth = new Date(t.getFullYear(), t.getMonth(), day);
-    const diff = daysBetween(t, thisMonth);
-    if (diff >= 0) return diff;
-    return daysBetween(t, new Date(t.getFullYear(), t.getMonth() + 1, day));
-  }
-
-  if (recurrence === 'weekly') {
-    const targetDow = storedDate.getDay();
-    const todayDow = t.getDay();
-    return (targetDow - todayDow + 7) % 7;
-  }
-
-  return null;
-}
-
-// ---------------------------------------------------------------------------
-// Derived data
-// ---------------------------------------------------------------------------
 
 /**
  * One merged "who should I contact" list: people past their check-in window
  * (sorted most-overdue first), then dormant ties (no contact in over a year).
+ *
+ * @param persons - Everyone on the dashboard, each with their latest interaction.
+ * @returns The first `widgetLimit` of the list.
  */
 function computeReachOut(persons: DashboardPerson[]): ReachOutPerson[] {
   const overdue = persons
@@ -164,37 +113,43 @@ function computeReachOut(persons: DashboardPerson[]): ReachOutPerson[] {
   const overdueIds = new Set(overdue.map((p) => p.id));
 
   const dormant = persons
-    .filter((p) => !overdueIds.has(p.id))
+    .filter((p) => overdueIds.has(p.id) === false)
     .map((p) => ({
       person: p,
       daysSince: p.interactions[0]?.occurredAt
         ? Math.floor((Date.now() - p.interactions[0].occurredAt.getTime()) / MS_PER_DAY)
         : null,
     }))
-    .filter((entry) => entry.daysSince !== null && entry.daysSince >= DORMANT_THRESHOLD_DAYS)
+    .filter((entry) => isDormant(entry.daysSince))
     .sort((a, b) => (b.daysSince ?? 0) - (a.daysSince ?? 0))
     .map(({ person, daysSince }) => ({
       id: person.id,
       firstName: person.firstName,
       lastName: person.lastName,
       avatarPath: person.avatarPath,
-      statusLabel:
-        daysSince && daysSince >= 730
-          ? `No contact in over ${Math.floor(daysSince / 365)} years`
-          : 'No contact in over a year',
+      statusLabel: dormantLabel(daysSince),
       isDormant: true,
     }));
 
-  return [...overdue, ...dormant].slice(0, WIDGET_LIMIT);
+  return [...overdue, ...dormant].slice(0, widgetLimit);
 }
 
+/**
+ * Lists the important dates that fall inside the upcoming window, soonest first.
+ *
+ * @param persons - Everyone on the dashboard, each with their important dates.
+ * @returns The first `widgetLimit` dates, each with the person it belongs to.
+ */
 function computeUpcomingDates(persons: DashboardPerson[]): UpcomingDate[] {
   const results: UpcomingDate[] = [];
 
   for (const person of persons) {
     for (const importantDate of person.importantDates) {
       const daysUntil = daysUntilNextOccurrence(importantDate.date, importantDate.recurrence);
-      if (daysUntil === null || daysUntil > UPCOMING_WINDOW_DAYS) continue;
+      const isOutsideWindow = daysUntil === null || daysUntil > upcomingWindowDays;
+      if (isOutsideWindow) {
+        continue;
+      }
       results.push({
         id: importantDate.id,
         name: importantDate.name,
@@ -206,23 +161,35 @@ function computeUpcomingDates(persons: DashboardPerson[]): UpcomingDate[] {
     }
   }
 
-  return results.sort((a, b) => a.daysUntil - b.daysUntil).slice(0, WIDGET_LIMIT);
+  return results.sort((a, b) => a.daysUntil - b.daysUntil).slice(0, widgetLimit);
 }
 
+/**
+ * Lists the open tasks that are overdue or fall due within `tasksDueWithinDays` days. A task with no
+ * due date is left out.
+ *
+ * @param persons - Everyone on the dashboard, each with their tasks.
+ * @returns The first `widgetLimit` tasks, overdue ones first and then by due date.
+ */
 function computeOpenTasks(persons: DashboardPerson[]): OpenTask[] {
   const now = Date.now();
-  const sevenDaysFromNow = now + 7 * MS_PER_DAY;
+  const dueSoonBefore = now + tasksDueWithinDays * MS_PER_DAY;
   const results: OpenTask[] = [];
 
   for (const person of persons) {
     for (const task of person.tasks) {
-      if (task.completedAt) continue;
+      if (task.completedAt) {
+        continue;
+      }
 
       const dueAt = task.dueAt ? task.dueAt.getTime() : null;
       const isOverdue = dueAt !== null && dueAt < now;
-      const isDueThisWeek = dueAt !== null && dueAt <= sevenDaysFromNow;
+      const isDueThisWeek = dueAt !== null && dueAt <= dueSoonBefore;
 
-      if (!isOverdue && !isDueThisWeek) continue;
+      const isBeyondThisWeek = isOverdue === false && isDueThisWeek === false;
+      if (isBeyondThisWeek) {
+        continue;
+      }
 
       results.push({
         id: task.id,
@@ -238,19 +205,31 @@ function computeOpenTasks(persons: DashboardPerson[]): OpenTask[] {
 
   return results
     .sort((a, b) => {
-      if (a.isOverdue && !b.isOverdue) return -1;
-      if (!a.isOverdue && b.isOverdue) return 1;
+      const isOnlyFirstOverdue = a.isOverdue && b.isOverdue === false;
+      if (isOnlyFirstOverdue) {
+        return -1;
+      }
+      const isOnlySecondOverdue = a.isOverdue === false && b.isOverdue;
+      if (isOnlySecondOverdue) {
+        return 1;
+      }
       const aTime = a.dueAt ? a.dueAt.getTime() : 0;
       const bTime = b.dueAt ? b.dueAt.getTime() : 0;
       return aTime - bTime;
     })
-    .slice(0, WIDGET_LIMIT);
+    .slice(0, widgetLimit);
 }
 
+/**
+ * Lists the people added most recently, newest first.
+ *
+ * @param persons - Everyone on the dashboard.
+ * @returns At most one fewer than `widgetLimit` people.
+ */
 function computeRecentlyAdded(persons: DashboardPerson[]): RecentPerson[] {
   return [...persons]
     .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
-    .slice(0, WIDGET_LIMIT - 1)
+    .slice(0, widgetLimit - 1)
     .map((p) => ({
       id: p.id,
       firstName: p.firstName,
@@ -260,17 +239,16 @@ function computeRecentlyAdded(persons: DashboardPerson[]): RecentPerson[] {
     }));
 }
 
-// ---------------------------------------------------------------------------
-// Page
-// ---------------------------------------------------------------------------
-
 /** Two columns from `md` up; the width sits on the cell because `gap-4` is not part of a percentage. */
 const CELL = 'w-full md:w-[calc(50%-0.5rem)]';
 
+/** The dashboard: who to reach out to, what is coming up, open tasks and the people added lately. */
 export default function DashboardPage() {
-  const { data, loading, error, refetch } = useQuery(GET_DASHBOARD);
+  const { data, loading, error, refetch } = useAllRows(GET_DASHBOARD, { field: 'persons' });
 
-  const persons = (data?.persons ?? []) as DashboardPerson[];
+  const persons = data?.persons ?? [];
+  const pending = loading && !data;
+  const hasFailedFirstLoad = Boolean(error) && !data;
 
   return (
     <PageLayout
@@ -278,7 +256,7 @@ export default function DashboardPage() {
       contentSlot={
         <View className="py-4">
           <QueryState
-            query={{ isPending: loading && !data, isError: Boolean(error) && !data, error, refetch }}
+            query={{ isPending: pending, isError: hasFailedFirstLoad, error, refetch }}
             what="dashboard data"
             // The widgets say their own "all caught up", so there is no empty rung here.
             count={1}
@@ -290,7 +268,7 @@ export default function DashboardPage() {
                 <ReachOut persons={computeReachOut(persons)} onLogged={() => refetch()} />
               </View>
               <View className={CELL}>
-                <ComingUp dates={computeUpcomingDates(persons)} windowDays={UPCOMING_WINDOW_DAYS} />
+                <ComingUp dates={computeUpcomingDates(persons)} windowDays={upcomingWindowDays} />
               </View>
               <View className={CELL}>
                 <OpenTasks tasks={computeOpenTasks(persons)} />

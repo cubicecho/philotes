@@ -1,32 +1,46 @@
-import { date, index, pgTable, primaryKey, text, uuid } from 'drizzle-orm/pg-core';
+import { date, index, pgTable, primaryKey, text, timestamp, uuid } from 'drizzle-orm/pg-core';
 
 import { labels } from './labels.ts';
 import { persons } from './persons.ts';
 import { users } from './users.ts';
 
-// Recurrence values mirror Google Calendar's model.
-// null = one-time event (only appears if the original date is upcoming).
-// "yearly"  = repeats every year on the same month + day (e.g. birthdays).
-// "monthly" = repeats every month on the same day-of-month.
-// "weekly"  = repeats every week on the same day-of-week.
-export const RECURRENCE_VALUES = ['yearly', 'monthly', 'weekly'] as const;
-export type Recurrence = (typeof RECURRENCE_VALUES)[number];
+/** How a date repeats: on the same month and day, day of the month, or weekday. A null recurrence is a one-time date. */
+export const Recurrence = { Yearly: 'yearly', Monthly: 'monthly', Weekly: 'weekly' } as const;
+export type Recurrence = (typeof Recurrence)[keyof typeof Recurrence];
 
-export const MILESTONE_TYPES = [
-  'new_job',
-  'promotion',
-  'moved',
-  'new_baby',
-  'married',
-  'divorced',
-  'retired',
-  'health_event',
-  'graduation',
-  'loss',
-  'other',
-] as const;
-export type MilestoneType = (typeof MILESTONE_TYPES)[number];
+/** The life events an important date can mark. */
+export const MilestoneType = {
+  NewJob: 'new_job',
+  Promotion: 'promotion',
+  Moved: 'moved',
+  NewBaby: 'new_baby',
+  Married: 'married',
+  Divorced: 'divorced',
+  Retired: 'retired',
+  HealthEvent: 'health_event',
+  Graduation: 'graduation',
+  Loss: 'loss',
+  Other: 'other',
+} as const;
+export type MilestoneType = (typeof MilestoneType)[keyof typeof MilestoneType];
 
+/**
+ * Lists a vocabulary's members in the non-empty tuple form a `text` column's `enum` takes.
+ *
+ * @typeParam T - The vocabulary's union.
+ * @param vocabulary - An `as const` vocabulary object.
+ * @returns Its members, in the order they are written.
+ * @throws An error when the vocabulary has no members.
+ */
+function membersOf<T extends string>(vocabulary: Readonly<Record<string, T>>): [T, ...T[]] {
+  const [first, ...rest] = Object.values(vocabulary);
+  if (first === undefined) {
+    throw new Error('A vocabulary needs at least one member.');
+  }
+  return [first, ...rest];
+}
+
+/** A date a user keeps for a person, such as a birthday. A null recurrence is a one-time date. */
 export const importantDates = pgTable(
   'important_dates',
   {
@@ -41,21 +55,12 @@ export const importantDates = pgTable(
     description: text('description'),
     date: date('date').notNull(),
     recurrence: text('recurrence').$type<Recurrence>(),
-    milestoneType: text('milestone_type', {
-      enum: [
-        'new_job',
-        'promotion',
-        'moved',
-        'new_baby',
-        'married',
-        'divorced',
-        'retired',
-        'health_event',
-        'graduation',
-        'loss',
-        'other',
-      ],
-    }).$type<MilestoneType>(),
+    milestoneType: text('milestone_type', { enum: membersOf(MilestoneType) }).$type<MilestoneType>(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true })
+      .notNull()
+      .defaultNow()
+      .$onUpdate(() => new Date()),
   },
   (t) => [
     index('idx_important_dates_person_id').on(t.personId),
@@ -64,6 +69,7 @@ export const importantDates = pgTable(
   ],
 );
 
+/** Ties an important date to a label. */
 export const importantDateTags = pgTable(
   'important_date_tags',
   {
@@ -73,11 +79,22 @@ export const importantDateTags = pgTable(
     labelId: uuid('label_id')
       .notNull()
       .references(() => labels.id, { onDelete: 'cascade' }),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
   },
-  (t) => [primaryKey({ columns: [t.importantDateId, t.labelId] })],
+  (t) => [
+    primaryKey({ columns: [t.importantDateId, t.labelId] }),
+    index('idx_important_date_tags_label_id').on(t.labelId),
+    index('idx_important_date_tags_user_id').on(t.userId),
+  ],
 );
 
+/** An important date row as read. */
 export type ImportantDate = typeof importantDates.$inferSelect;
+/** An important date row as inserted. */
 export type NewImportantDate = typeof importantDates.$inferInsert;
+/** An important date tag row as read. */
 export type ImportantDateTag = typeof importantDateTags.$inferSelect;
+/** An important date tag row as inserted. */
 export type NewImportantDateTag = typeof importantDateTags.$inferInsert;

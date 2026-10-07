@@ -1,10 +1,11 @@
-import { useQuery } from '@apollo/client';
+import { type ApolloError, useQuery } from '@apollo/client';
 import { Link, useLocalSearchParams } from 'expo-router';
 import { Text, View } from 'react-native';
 import { graphql } from '@/__generated__/gql';
 import { CalendarDays } from '@/components/app-icons';
 import { LabelChip } from '@/components/domain/label/label-chip';
 import { RECURRENCE_OPTIONS } from '@/components/domain/person/important-date-form';
+import { GET_PERSON_NOTES } from '@/components/domain/person/person-queries';
 import { EmptyState } from '@/components/page';
 import { PageLayout } from '@/components/page-layout';
 import { QueryError } from '@/components/query-state';
@@ -12,29 +13,17 @@ import { Section } from '@/components/section';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft } from '@/components/ui/icons';
 import { Spinner } from '@/components/ui/spinner';
-
-// ---------------------------------------------------------------------------
-// GraphQL
-// ---------------------------------------------------------------------------
+import { useAllRows } from '@/lib/use-all-rows';
 
 const GET_DATE_DETAIL = graphql(`
-  query GetImportantDateDetail($dateId: UUID!, $personId: UUID!) {
-    importantDates(where: { id: { eq: $dateId } }) {
+  query GetImportantDateDetail($dateId: UUID!) {
+    importantDates(where: { id: { eq: $dateId } }, limit: 1) {
       id
       name
       description
       date
       recurrence
-      labels {
-        id
-        label
-        color
-      }
-    }
-    notes(where: { personId: { eq: $personId } }) {
-      id
-      body
-      labels {
+      labels(limit: 10) {
         id
         label
         color
@@ -43,10 +32,12 @@ const GET_DATE_DETAIL = graphql(`
   }
 `);
 
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
+/**
+ * Writes a date in full, in the reader's locale.
+ *
+ * @param date - The date to write.
+ * @returns The date with a long month name, such as "March 9, 2026" in US English.
+ */
 function formatDate(date: Date): string {
   return date.toLocaleDateString(undefined, {
     month: 'long',
@@ -55,15 +46,36 @@ function formatDate(date: Date): string {
   });
 }
 
-// ---------------------------------------------------------------------------
-// Page
-// ---------------------------------------------------------------------------
+/** What stands in for the page until there is a date: the failure, a spinner, or "not found". */
+function DatePlaceholder({
+  error,
+  loading,
+  onRetry,
+}: {
+  error: ApolloError | undefined;
+  loading: boolean;
+  onRetry: () => void;
+}) {
+  if (error) {
+    return <QueryError error={error} onRetry={onRetry} what="this date" />;
+  }
+  if (loading) {
+    return <Spinner />;
+  }
+  return <EmptyState icon={CalendarDays} title="Date not found." />;
+}
 
+/** One important date of a person, with that person's notes that share a tag with it. */
 export default function ImportantDateDetailPage() {
   const { id: personId, dateId } = useLocalSearchParams<{ id: string; dateId: string }>();
 
   const { data, loading, error, refetch } = useQuery(GET_DATE_DETAIL, {
-    variables: { dateId, personId },
+    variables: { dateId },
+    fetchPolicy: 'cache-and-network',
+  });
+  const notesQuery = useAllRows(GET_PERSON_NOTES, {
+    field: 'notes',
+    variables: { personId },
     fetchPolicy: 'cache-and-network',
   });
 
@@ -80,24 +92,19 @@ export default function ImportantDateDetailPage() {
         title="Important date"
         iconSlot={<CalendarDays />}
         breadcrumbsSlot={backLink}
-        contentSlot={
-          error ? (
-            <QueryError error={error} onRetry={() => refetch()} what="this date" />
-          ) : loading ? (
-            <Spinner />
-          ) : (
-            <EmptyState icon={CalendarDays} title="Date not found." />
-          )
-        }
+        contentSlot={<DatePlaceholder error={error} loading={loading} onRetry={() => refetch()} />}
       />
     );
   }
 
-  const dateLabelIds = new Set((date.labels ?? []).map((l) => l.id));
+  const dateLabels = date.labels ?? [];
+  const dateLabelIds = new Set(dateLabels.map((l) => l.id));
   const recurrenceLabel = RECURRENCE_OPTIONS.find((o) => o.value === date.recurrence)?.label;
 
   // Notes that share at least one tag with this date
-  const relatedNotes = (data?.notes ?? []).filter((note) => (note.labels ?? []).some((l) => dateLabelIds.has(l.id)));
+  const relatedNotes = (notesQuery.data?.notes ?? [])
+    .map((note) => ({ id: note.id, body: note.body, labels: note.labels ?? [] }))
+    .filter((note) => note.labels.some((l) => dateLabelIds.has(l.id)));
 
   return (
     <PageLayout
@@ -109,9 +116,9 @@ export default function ImportantDateDetailPage() {
         <View className="gap-6 py-4">
           {date.description ? <Text className="text-foreground/60 text-sm">{date.description}</Text> : null}
 
-          {date.labels && date.labels.length > 0 ? (
+          {dateLabels.length > 0 ? (
             <View className="flex-row flex-wrap gap-1.5">
-              {date.labels.map((l) => (
+              {dateLabels.map((l) => (
                 <LabelChip key={l.id} label={l.label} color={l.color} />
               ))}
             </View>
@@ -131,9 +138,9 @@ export default function ImportantDateDetailPage() {
               ) : (
                 <View className="gap-2">
                   {relatedNotes.map((note) => (
-                    <View key={note.id} className="gap-1.5 rounded-md border border-border px-3 py-2">
+                    <View key={note.id} className="gap-1.5 rounded-md border border-foreground/10 px-3 py-2">
                       <Text className="text-foreground text-sm">{note.body}</Text>
-                      {note.labels && note.labels.length > 0 ? (
+                      {note.labels.length > 0 ? (
                         <View className="flex-row flex-wrap gap-1">
                           {note.labels.map((l) => (
                             // The tags this note shares with the date are the reason it is listed; the rest are dimmed.

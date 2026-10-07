@@ -24,8 +24,8 @@ birthday or their kid's birthday. Philotes gives you a quiet place to keep that
 context — so you can show up for the people in your life.
 
 It runs 100% locally. No cloud to trust, no vendor to worry about. Sign-in is
-a magic link handled by your own instance, and your data lives on your machine,
-in an embedded Postgres database, and nowhere else.
+handled by your own instance, and your data lives on your machine,
+in your own Postgres database, and nowhere else.
 
 ---
 
@@ -81,7 +81,7 @@ surfaces upcoming ones in the Review page. The automation doesn't reduce the
 warmth. It just removes the cognitive friction between caring and acting on it.
 
 Finally, privacy as a design constraint. The decision to store everything
-locally — in an embedded Postgres database, on your machine, with no cloud
+locally — in your own Postgres database, on your machine, with no cloud
 sync — is architectural, but it's also philosophical. Intimate relationship
 data is some of the most sensitive information a person generates. Who you know,
 how often you talk, what you remember about them. That data shouldn't be a
@@ -122,19 +122,21 @@ product, and Philotes isn't a platform. It's a tool. The boundary matters.
 
 ## Getting Started
 
-You'll need **Node.js 22+** and **npm**.
+You'll need **Node.js 26+** and **npm**.
 
 ```bash
 git clone https://github.com/vantreeseba/philotes.git
 cd philotes
 npm install
+cp .env.example .env
+npm run db:up
 npm run dev
 ```
 
-The app opens at [http://localhost:3000](http://localhost:3000). That's it — no
-database to set up, no environment variables required. Enter an email on the
-login page; in development the magic link is shown to you directly rather than
-mailed.
+`npm run dev` needs a Postgres to talk to. Copy `.env.example` to `.env`, then
+start the local one with `npm run db:up` (Docker). The app opens at
+[http://localhost:8081](http://localhost:8081) and the API listens on port 3000.
+Create an account on the login page with an email and a password.
 
 ---
 
@@ -144,11 +146,11 @@ mailed.
 | -------- | ----------------------------------------------------------- |
 | Frontend | React 19, Expo Router (web target), Apollo Client            |
 | UI       | React Native primitives, Tailwind 4 via NativeWind 5, cubeui |
-| API      | Apollo Server 5 on Express, GraphQL                         |
-| Database | Drizzle ORM, PGlite (embedded Postgres — no server needed)  |
+| API      | GraphQL Yoga on Express 5, better-auth                      |
+| Database | Drizzle ORM on PostgreSQL                                    |
 | Testing  | Vitest                                                      |
 | Linting  | Biome                                                       |
-| Runtime  | Node.js 22+, ESM                                            |
+| Runtime  | Node.js 26+, ESM                                            |
 
 ---
 
@@ -165,7 +167,7 @@ npm run db:studio    # Open Drizzle Studio to browse the local database
 
 ## Running with Docker
 
-Philotes ships with a multi-stage Alpine-based Dockerfile. The container runs the
+Philotes ships with a multi-stage `node:26-slim` Dockerfile. The container runs the
 GraphQL API and serves the built frontend — no separate web server needed.
 
 **Build the image:**
@@ -173,57 +175,51 @@ GraphQL API and serves the built frontend — no separate web server needed.
 docker build -t philotes .
 ```
 
-**Run with persistent data:**
+**Run it with its database:**
 ```bash
-docker run -d \
-  -p 3001:3001 \
-  -v philotes-data:/data \
-  -v philotes-avatars:/avatars \
-  --name philotes \
-  philotes
+BETTER_AUTH_SECRET=$(openssl rand -hex 32) docker compose up -d
 ```
 
-Then open [http://localhost:3001](http://localhost:3001).
+Then open [http://localhost:3000](http://localhost:3000).
+
+[`docker-compose.yml`](docker-compose.yml) starts Philotes beside a
+`postgres:17-alpine` container. Migrations run automatically on startup.
 
 **Volumes:**
 | Volume | Purpose |
 | --- | --- |
-| `/data` | PGlite database files (persists your contacts) |
-| `/avatars` | Uploaded avatar images |
+| `philotes_pgdata` | The Postgres data (your contacts) |
+| `philotes_data` | Uploaded avatar images (`/data/avatars`) |
 
 **Environment variables:**
 | Variable | Default | Description |
 | --- | --- | --- |
-| `PORT` | `3001` | Port the server listens on |
-| `DATABASE_URL` | `/data/pgdata` | PGlite data directory path, or a `postgres://` connection string |
+| `DATABASE_URL` | none, required | A `postgres://` connection string |
+| `BETTER_AUTH_SECRET` | none, required in production | Signs sessions |
+| `SECURE_LOCAL_NET` | `false` | Any email signs in at once. Private networks only |
+| `SESSION_STORE` | `memory` | `database` keeps sessions across restarts |
+| `SMTP_URL` | none | SMTP server for sign-in links. Unset, sign-in is by password only |
+| `SMTP_FROM` | `philotes@<APP_URL host>` | From address of sign-in emails |
+| `APP_URL` | `http://localhost:<PORT>` | Public URL the app is served at |
+| `PORT` | `3000` | Port the server listens on |
+| `AVATAR_DIR` | `./avatars`, `/data/avatars` in the image | Where uploaded avatars are kept |
+| `DB_CONNECT_TIMEOUT_MS` | `60000` | How long boot waits for Postgres |
+| `TRUST_PROXY` | `false` | Proxy hops that may set `X-Forwarded-For` |
 
----
+To use a Postgres you already run, set `DATABASE_URL` to it and start only the
+`philotes` service. TLS is required for a public host in production, and left
+off for local and private addresses unless the URL sets `sslmode`.
 
-## Using Full PostgreSQL
+> **Upgrading from a release that stored data in PGlite (`/data/pgdata`):**
+> that data is not migrated automatically. Keep the old volume until you have
+> moved what you need.
+>
+> **Upgrading from an image that kept avatars in `philotes_avatars`:** the
+> server now runs as the `node` user and keeps avatars in the `philotes_data`
+> volume. Upload avatars again, or copy the old files into the new volume.
 
-By default Philotes uses **PGlite** — an embedded Postgres that runs inside the
-process with no external server required. If you prefer a standalone PostgreSQL
-server (for multi-container deployments, external backups, or larger datasets),
-set `DATABASE_URL` to a standard connection string and Philotes will switch
-drivers automatically:
-
-```
-DATABASE_URL=postgres://user:password@host:5432/dbname
-```
-
-A ready-to-use Docker Compose file is provided at
-[`docker-compose.postgres.yml`](docker-compose.postgres.yml):
-
-```bash
-docker compose -f docker-compose.postgres.yml up -d
-```
-
-This starts a `postgres:16-alpine` container and the Philotes app wired together.
-Data is persisted in a named Docker volume (`pgdata`). Migrations run
-automatically on startup.
-
-> **Note:** When switching from PGlite to PostgreSQL your existing PGlite data
-> does not migrate automatically. Start fresh or export/import your data manually.
+Released images are published to Docker Hub (`vantreeseba/philotes`) and to
+GHCR (`ghcr.io/cubicecho/philotes`).
 
 ---
 

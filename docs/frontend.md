@@ -13,9 +13,10 @@ react-native-web turns into DOM. **Do not write `<div>` / `<span>` /
 
 - **Entry point**: `expo-router/entry` (see `app/package.json` `main`)
 - **Root layout**: `app/app/_layout.tsx`
-- **Dev server**: `http://localhost:3000`
-- **GraphQL endpoint**: `${EXPO_PUBLIC_API_URL}/graphql` — unset in dev, so the
-  request is same-origin and the API is expected at the app's own host
+- **Dev server**: `http://localhost:8081`
+- **GraphQL endpoint**: `${EXPO_PUBLIC_API_URL}/graphql`. `app/.env.development`
+  points it at `http://localhost:3000` for `npm run dev`; a production build
+  leaves it unset, so the request goes to the origin that served the app
 
 ## Directory Structure
 
@@ -27,7 +28,7 @@ app/
 ├── app/                        # Expo Router — file-based routes
 │   ├── _layout.tsx             # Theme, ApolloProvider, <Stack>, ErrorBoundary; imports global.css
 │   ├── login.tsx               # /login
-│   ├── auth/verify.tsx         # /auth/verify (magic-link landing)
+│   ├── auth/verify.tsx         # /auth/verify (sign-in link landing)
 │   └── (app)/                  # Authenticated group — no URL segment
 │       ├── _layout.tsx         # Redirects to /login; renders the AppShell
 │       ├── index.tsx           # /
@@ -121,6 +122,38 @@ Filtering, sorting and pagination are the API's, not the client's: pass `where`
 and `orderBy` through to the query rather than filtering an array in the
 component. See [`graphql.md`](./graphql.md#filtering).
 
+Every list is paged: the server returns 50 rows when a query passes no `limit`
+and refuses an operation that costs too much (see
+[`server.md`](./server.md#operation-limits)). A screen that needs every row —
+the dashboard, the network graph, an export — declares `$limit` and `$offset`
+on its document and reads it with `useAllRows` (`src/lib/use-all-rows.ts`),
+which fetches page after page and joins them under the list field:
+
+```ts
+const { data, loading, error, refetch } = useAllRows(GET_DASHBOARD, { field: 'persons' });
+```
+
+Pass `pageSize` from `PAGE_SIZE_DEFAULTS` when a row is costly. A nested list
+takes a literal `limit` in the document, and that limit is a hard cap.
+
+## Defaults and vocabularies
+
+No number or closed-set string is written where it is used.
+
+- **`src/lib/defaults.ts`** holds every tunable as grouped, frozen data
+  (`DASHBOARD_DEFAULTS`, `PAGE_SIZE_DEFAULTS`, `NETWORK_GRAPH_DEFAULTS`, …). It
+  imports nothing and computes nothing. Read the member, or destructure it once
+  below the imports.
+- **`src/lib/time.ts`** holds unit conversions (`MS_PER_DAY`, `DAYS_PER_WEEK`).
+- **Vocabularies.** GraphQL enums come generated, as `as const` objects:
+  `ContactTypeEnum`, `AddressTypeEnum` and `ImportantDatesMilestoneTypeEnum`
+  from `@/__generated__/graphql`. Recurrence, interaction channel, sentiment and
+  check-in frequency cross the API as plain strings, so `src/lib/vocabulary.ts`
+  mirrors the db package's objects, and `src/__tests__/vocabulary.test.ts`
+  fails when the two drift. Compare against a member
+  (`recurrence === Recurrence.Yearly`), and key a label or icon table by the
+  members rather than writing a `switch`.
+
 ## Fragments
 
 Fragment masking is **off** (`fragmentMasking: false` in `app/codegen.ts`, and
@@ -146,9 +179,9 @@ export interface PersonRowData {
   not `onChange(event)`. The one exception is the d3 canvas in
   `app/(app)/network.tsx`.
 - **Every string sits in a `<Text>`, and every `<Text>` names its colour**
-  (`text-foreground`, `text-foreground/60`, `text-destructive`, …). Text does
+  (`text-foreground`, `text-foreground/60`, `text-negative`, …). Text does
   not inherit colour or font from a parent `View`.
-- **Every border names its colour** — `border border-border`, never a bare
+- **Every border names its colour** — `border border-foreground/10`, never a bare
   `border`.
 - **A `View` is a column.** Write `flex-row` where a row is meant, `gap-*`
   rather than `space-x/y`, and no CSS grid.
@@ -225,8 +258,8 @@ edit), imported by `app/global.css`, which the root layout imports. Use utility
 classes directly in JSX, and `cn()` from `@/lib/utils` when merging conditional
 classes.
 
-Use the tokens — `bg-background`, `text-foreground/60`, `border-border`,
-`text-destructive` — never a palette class (`bg-red-50`) or a hex in a class
+Use the tokens — `bg-background`, `text-foreground/60`, `border-foreground/10`,
+`text-negative` — never a palette class (`bg-red-50`) or a hex in a class
 name. A colour the user chose (a label's) is data, so it goes inline: `Badge
 backgroundColor`, `ColorDot`, or `style`, with `readableTextColor()` picking
 the ink on top.
@@ -238,7 +271,7 @@ pre-paint script that applies the stored choice before the first frame.
 ## Running & Building
 
 ```bash
-npm run dev:app        # Expo dev server (port 3000)
+npm run dev:app        # Expo dev server (port 8081)
 npm run build:app      # Static web export → app/dist/
 ```
 

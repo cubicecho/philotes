@@ -7,6 +7,7 @@ import { PaletteProvider, useThemePreference } from '@/components/ui/theme-prefe
 import { client } from '@/lib/apollo';
 import '../global.css';
 
+/** The root layout: the theme, the palette and the Apollo client around every route. */
 export default function RootLayout() {
   // `public/index.html` has already painted the right theme; this keeps it that
   // way on every screen, not only Settings, and repaints a `system` user when

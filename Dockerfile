@@ -1,42 +1,47 @@
 # syntax=docker/dockerfile:1
 
-# ── Stage 1: build ───────────────────────────────────────────────────────────
-FROM node:24-alpine AS builder
-
-# Required for PGlite WASM compilation and native addons (sharp, etc.)
-RUN apk add --no-cache python3 make g++
-
+FROM node:26-slim AS builder
 WORKDIR /app
-
 COPY . .
-
-# Install all dependencies including devDependencies (needed for codegen + vite build)
 RUN npm ci
+# Codegen imports the db package, which refuses to load without DATABASE_URL.
+# postgres-js doesn't connect until a query runs, so a placeholder is enough.
+ENV DATABASE_URL=postgres://build:build@127.0.0.1:5432/build
+RUN npm run codegen && npm run build:app
 
-# Build db package, run GraphQL codegen, build Vite frontend
-RUN npm run build -w db && npm run codegen && npm run build -w app
+# Optional: docker build --target test
+FROM builder AS test
+CMD ["npm", "test"]
 
-# ── Stage 2: production ───────────────────────────────────────────────────────
-FROM node:22-alpine
-
+FROM node:26-slim AS runtime
 WORKDIR /app
+COPY package.json package-lock.json ./
+COPY db/package.json db/
+COPY server/package.json server/
+COPY app/package.json app/
+RUN npm ci --omit=dev --include-workspace-root --workspace @cubicecho/philotes-db --workspace @cubicecho/philotes-server \
+ && npm cache clean --force
 
-# Copy the full built monorepo from builder (preserves workspace symlinks + source for strip-types)
-COPY --from=builder /app .
+# The server isn't compiled. Its sources are the build output.
+COPY db/src db/src
+COPY db/drizzle db/drizzle
+COPY server/src server/src
+COPY --from=builder /app/app/dist app/dist
 
-# Drop devDependencies — PGlite WASM and all runtime deps are preserved
-RUN npm prune --omit=dev
+# Uploaded avatars. Created here and owned by node, so a fresh volume inherits that owner.
+RUN mkdir -p /data/avatars && chown -R node:node /data
+VOLUME ["/data"]
 
 ENV NODE_ENV=production
-ENV PORT=3001
-# PGlite stores its database files here — mount a volume at /data to persist across restarts
-ENV DATABASE_URL=/data/pgdata
+ENV PORT=3000
+ENV AVATAR_DIR=/data/avatars
+EXPOSE 3000
+USER node
 
-RUN mkdir -p /data /avatars
+HEALTHCHECK --interval=30s --timeout=3s --start-period=20s \
+  CMD node -e "fetch('http://127.0.0.1:'+(process.env.PORT||3000)+'/healthz').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
 
-EXPOSE 3001
-
-VOLUME ["/data", "/avatars"]
-
-# Run server directly as TypeScript — no compile step needed
-CMD ["node", "--experimental-strip-types", "--preserve-symlinks", "server/src/index.ts"]
+# No --preserve-symlinks: it would resolve the db workspace to its path inside
+# node_modules, and Node refuses to strip types from anything under there.
+# Exec form, so node is PID 1 and gets SIGTERM itself.
+CMD ["node", "server/src/index.ts"]

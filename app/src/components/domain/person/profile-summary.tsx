@@ -9,8 +9,11 @@ import type { SlotNode } from '@/lib/utils';
 export interface PersonProfileSummaryProps {
   firstName: string;
   lastName: string;
+  /** Drawn as a mail link; nothing is drawn without one. */
   email: string | null | undefined;
+  /** The stored photo's path; without one the initials are drawn. */
   avatarPath: string | null | undefined;
+  /** The contact cadence, shown as a badge; nothing is drawn without one. */
   contactFrequency: string | null | undefined;
   /** `accept` for the photo picker. */
   avatarAccept: string;
@@ -31,6 +34,8 @@ export function PersonProfileSummary({
   onPickAvatar,
   labelsSlot,
 }: PersonProfileSummaryProps) {
+  const hasDetails = Boolean(email || contactFrequency);
+
   return (
     <View className="flex-row items-start gap-4">
       <View className="relative shrink-0">
@@ -50,13 +55,13 @@ export function PersonProfileSummary({
         </View>
       </View>
       <View className="min-w-0 flex-1 gap-1.5">
-        {email || contactFrequency ? (
+        {hasDetails ? (
           <View className="flex-row flex-wrap items-center gap-x-3 gap-y-1">
             {email ? (
               <Text
                 role="link"
                 onPress={() => Linking.openURL(`mailto:${email}`)}
-                className="text-muted-foreground text-sm"
+                className="text-foreground/60 text-sm"
               >
                 {email}
               </Text>

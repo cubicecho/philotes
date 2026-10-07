@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { ContactTypeEnum } from '../__generated__/graphql';
 import { buildPersonsCsv, csvCell, type ExportPerson } from '../lib/csv-export';
 
 function person(overrides: Partial<ExportPerson> = {}): ExportPerson {
@@ -6,7 +7,7 @@ function person(overrides: Partial<ExportPerson> = {}): ExportPerson {
     id: '1',
     firstName: 'Ada',
     lastName: 'Lovelace',
-    email: 'ada@example.com',
+    email: null,
     contactInfos: [],
     addresses: [],
     importantDates: [],
@@ -91,8 +92,8 @@ describe('buildPersonsCsv', () => {
     const csv = buildPersonsCsv([
       person({
         importantDates: [
-          { name: 'Anniversary', date: '2000-06-01', recurrence: 'yearly' },
-          { name: 'Birthday', date: '1815-12-10', recurrence: 'yearly' },
+          { name: 'Anniversary', date: new Date(2000, 5, 1), recurrence: 'yearly' },
+          { name: 'Birthday', date: new Date(1815, 11, 10), recurrence: 'yearly' },
         ],
         labels: [
           { id: 'l1', label: 'Friend', color: '#fff' },
@@ -110,7 +111,35 @@ describe('buildPersonsCsv', () => {
       }),
     ]);
     expect(rows(csv)[0]).toContain('Address 1 - Street');
-    expect(rows(csv)[1]).toContain('Home,1 Main St,London,,,UK');
+    expect(rows(csv)[1]).toContain('Home,1 Main St,,London,,,UK');
+  });
+
+  it('writes the second address line as the extended address', () => {
+    const csv = buildPersonsCsv([
+      person({ addresses: [{ type: 'home', label: null, line1: '1 Main St', line2: 'Flat 2', city: 'London' }] }),
+    ]);
+    expect(rows(csv)[0]).toContain('Address 1 - Street,Address 1 - Extended Address');
+    expect(rows(csv)[1]).toContain('Home,1 Main St,Flat 2,London');
+  });
+
+  it("writes the person's own e-mail address first", () => {
+    const csv = buildPersonsCsv([
+      person({
+        email: 'ada@example.com',
+        contactInfos: [{ type: ContactTypeEnum.Email, label: 'Work', value: 'ada@work.example', isPrimary: false }],
+      }),
+    ]);
+    expect(rows(csv)[1]).toBe('Ada,Lovelace,,,Home,ada@example.com,Work,ada@work.example');
+  });
+
+  it("does not repeat the person's own address when a contact detail holds it", () => {
+    const csv = buildPersonsCsv([
+      person({
+        email: 'Ada@Example.com',
+        contactInfos: [{ type: ContactTypeEnum.Email, label: 'Work', value: 'ada@example.com', isPrimary: false }],
+      }),
+    ]);
+    expect(rows(csv)[1]).toBe('Ada,Lovelace,,,Work,ada@example.com');
   });
 
   it('quotes a value that contains a comma', () => {

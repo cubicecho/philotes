@@ -3,6 +3,7 @@ import { index, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core';
 import { persons } from './persons.ts';
 import { users } from './users.ts';
 
+/** Something a user means to do about a person. */
 export const tasks = pgTable(
   'tasks',
   {
@@ -15,9 +16,14 @@ export const tasks = pgTable(
       .references(() => users.id, { onDelete: 'cascade' }),
     title: text('title').notNull(),
     notes: text('notes'),
-    dueAt: timestamp('due_at'),
-    completedAt: timestamp('completed_at'),
-    createdAt: timestamp('created_at').notNull().defaultNow(),
+    dueAt: timestamp('due_at', { withTimezone: true }),
+    /** null while open. */
+    completedAt: timestamp('completed_at', { withTimezone: true }),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true })
+      .notNull()
+      .defaultNow()
+      .$onUpdate(() => new Date()),
   },
   (t) => [
     index('idx_tasks_person_id').on(t.personId),
@@ -26,5 +32,7 @@ export const tasks = pgTable(
   ],
 );
 
+/** A task row as read. */
 export type Task = typeof tasks.$inferSelect;
+/** A task row as inserted. */
 export type NewTask = typeof tasks.$inferInsert;

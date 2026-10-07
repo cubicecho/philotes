@@ -5,13 +5,15 @@ import { useAppForm } from '@/components/app-form';
 import { MultiSelect } from '@/components/multi-select';
 import { FieldRow, FieldWrapper, Form } from '@/components/ui/form';
 import { FormDialogFooter } from '@/components/ui/form-dialog';
+import { ContactFrequency } from '@/lib/vocabulary';
 
+/** How often to stay in touch, as options; the empty value is no cadence. */
 const CONTACT_FREQUENCY_OPTIONS = [
   { value: '', label: 'None' },
-  { value: 'weekly', label: 'Weekly' },
-  { value: 'monthly', label: 'Monthly' },
-  { value: 'quarterly', label: 'Quarterly' },
-  { value: 'yearly', label: 'Yearly' },
+  { value: ContactFrequency.Weekly, label: 'Weekly' },
+  { value: ContactFrequency.Monthly, label: 'Monthly' },
+  { value: ContactFrequency.Quarterly, label: 'Quarterly' },
+  { value: ContactFrequency.Yearly, label: 'Yearly' },
 ] as const;
 
 export { CONTACT_FREQUENCY_OPTIONS };
@@ -19,11 +21,13 @@ export { CONTACT_FREQUENCY_OPTIONS };
 /** A select item cannot carry an empty value, so "None" travels as this inside the form. */
 const NO_FREQUENCY = 'none';
 
+/** The frequency options as the select holds them, with `NO_FREQUENCY` in place of the empty value. */
 const FREQUENCY_SELECT_OPTIONS = CONTACT_FREQUENCY_OPTIONS.map((opt) => ({
   value: opt.value || NO_FREQUENCY,
   label: opt.label,
 }));
 
+/** What the person form must hold before it submits. */
 const personSchema = z.object({
   firstName: z.string().min(1, 'First name is required.'),
   lastName: z.string().min(1, 'Last name is required.'),
@@ -34,37 +38,61 @@ const personSchema = z.object({
   labelIds: z.array(z.string()),
 });
 
+/** The person form's values while it is being edited. */
 type PersonFormFields = z.infer<typeof personSchema>;
 
-/** `YYYY-MM-DD` read as a local day: `new Date(str)` would be UTC midnight, the day before out west. */
+/**
+ * `YYYY-MM-DD` read as a local day: `new Date(str)` would be UTC midnight, the day before out west.
+ *
+ * @param value - The day as a `YYYY-MM-DD` string, or a `Date`, which is returned as it is.
+ * @returns Local midnight of that day, or `null` for a missing value or a string without all three parts.
+ */
 function parseDay(value: string | Date | null | undefined): Date | null {
-  if (!value) return null;
-  if (value instanceof Date) return value;
+  if (!value) {
+    return null;
+  }
+  if (value instanceof Date) {
+    return value;
+  }
   const [year, month, day] = value.split('-').map(Number);
-  if (!year || !month || !day) return null;
+  const isIncomplete = !year || !month || !day;
+  if (isIncomplete) {
+    return null;
+  }
   return new Date(year, month - 1, day);
 }
 
+/**
+ * A date's local calendar day, as the server stores it.
+ *
+ * @param date - The date; its local year, month and day are used.
+ * @returns The day as `YYYY-MM-DD`.
+ */
 function formatDay(date: Date): string {
   const month = String(date.getMonth() + 1).padStart(2, '0');
   const day = String(date.getDate()).padStart(2, '0');
   return `${date.getFullYear()}-${month}-${day}`;
 }
 
+/** The person columns the form submits. */
 export interface PersonFormPerson {
   firstName: string;
   lastName: string;
   email: string;
+  /** `null` when no cadence is chosen. */
   contactFrequency?: string | null;
   howWeMet?: string | null;
+  /** A `YYYY-MM-DD` day; `null` when none is set. */
   firstMetDate?: string | null;
 }
 
+/** What the form submits: the person, and the ids of the labels chosen for them. */
 export interface PersonFormValue {
   person: PersonFormPerson;
   labelIds: string[];
 }
 
+/** A stored person's values, to start an edit from. */
 export interface PersonFormInitialValues {
   firstName: string;
   lastName: string;
@@ -77,9 +105,12 @@ export interface PersonFormInitialValues {
 }
 
 interface PersonFormProps {
+  /** Every label the person could be given. */
   availableLabels: Label_ListFragment[];
+  /** The person being edited; left out, the form adds one and clears itself after each save. */
   initialValues?: PersonFormInitialValues;
   submitLabel?: string;
+  /** Saves the person. A rejection's message is shown in the footer and the form stays as typed. */
   onSubmit: (value: PersonFormValue) => Promise<void>;
   onCancel: () => void;
 }

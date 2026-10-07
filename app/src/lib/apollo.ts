@@ -3,9 +3,8 @@ import { setContext } from '@apollo/client/link/context';
 import { onError } from '@apollo/client/link/error';
 import { Platform } from 'react-native';
 import { scalarTypePolicies } from '@/__generated__/type-policies';
+import { API_URL } from '@/lib/api-url';
 import { clearToken, getToken } from '@/lib/auth';
-
-const API_URL = process.env.EXPO_PUBLIC_API_URL ?? '';
 
 const httpLink = new HttpLink({ uri: `${API_URL}/graphql` });
 
@@ -19,13 +18,22 @@ const authLink = setContext((_, { headers }) => {
   };
 });
 
-const errorLink = onError(({ graphQLErrors }) => {
-  if (graphQLErrors?.some((e) => e.extensions?.code === 'UNAUTHENTICATED')) {
+/** The sign-in operations, where UNAUTHENTICATED means wrong credentials and the page shows it. */
+const SIGN_IN_OPERATIONS = new Set(['SignIn', 'SignUp', 'RequestSignIn', 'VerifyMagicLink']);
+
+const errorLink = onError(({ graphQLErrors, operation }) => {
+  const isSignedOut = graphQLErrors?.some((e) => e.extensions?.code === 'UNAUTHENTICATED') ?? false;
+  const isSigningIn = SIGN_IN_OPERATIONS.has(operation.operationName);
+  const hasExpiredSession = isSignedOut && isSigningIn === false;
+  if (hasExpiredSession) {
     clearToken();
-    if (Platform.OS === 'web') window.location.replace('/login');
+    if (Platform.OS === 'web') {
+      window.location.replace('/login');
+    }
   }
 });
 
+/** The app's Apollo client. It sends the session token, and signs out on UNAUTHENTICATED outside sign-in. */
 export const client = new ApolloClient({
   cache: new InMemoryCache({ typePolicies: scalarTypePolicies }),
   link: from([errorLink, authLink, httpLink]),

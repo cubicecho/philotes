@@ -1,7 +1,7 @@
-import { useMutation, useQuery } from '@apollo/client';
+import { useMutation } from '@apollo/client';
 import { useRouter } from 'expo-router';
-import { useEffect, useState } from 'react';
-import { Text, View } from 'react-native';
+import { useEffect, useRef, useState } from 'react';
+import { View } from 'react-native';
 import { graphql } from '@/__generated__/gql';
 import type { Person_RelationshipsFragment, PersonRelationshipEntry } from '@/__generated__/graphql';
 import { ActionButton } from '@/components/action-button';
@@ -9,15 +9,15 @@ import { useAppForm } from '@/components/app-form';
 import { ConfirmButton } from '@/components/confirm-button';
 import { ListItem } from '@/components/list-item';
 import { OptionSelect } from '@/components/option-select';
+import { EmptyState } from '@/components/page';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { FieldWrapper, Form } from '@/components/ui/form';
 import { FormDialog, FormDialogFooter } from '@/components/ui/form-dialog';
 import { Pencil, Trash2 } from '@/components/ui/icons';
-
-// ---------------------------------------------------------------------------
-// Fragments & queries
-// ---------------------------------------------------------------------------
+import { fullName } from '@/lib/person-name';
+import { useAllRows } from '@/lib/use-all-rows';
 
 export const PERSON_RELATIONSHIPS = graphql(`
   fragment Person_Relationships on Person {
@@ -33,17 +33,13 @@ export const PERSON_RELATIONSHIPS = graphql(`
 `);
 
 const GET_RELATIONSHIP_TYPES = graphql(`
-  query GetRelationshipTypes {
-    relationshipTypes {
+  query GetRelationshipTypes($limit: Int!, $offset: Int!) {
+    relationshipTypes(limit: $limit, offset: $offset, orderBy: { name: { direction: asc, priority: 1 }, id: { direction: asc, priority: 2 } }) {
       id
       name
     }
   }
 `);
-
-// ---------------------------------------------------------------------------
-// Mutations
-// ---------------------------------------------------------------------------
 
 const CREATE_RELATIONSHIP = graphql(`
   mutation CreatePersonRelationship(
@@ -105,41 +101,49 @@ const DELETE_RELATIONSHIP_TYPE = graphql(`
   }
 `);
 
-// ---------------------------------------------------------------------------
-// Types
-// ---------------------------------------------------------------------------
-
 export interface RelationshipsProps {
   person: Person_RelationshipsFragment;
+  /** Everyone the person could be linked to. */
   allPersons: Array<{ id: string; firstName: string; lastName: string }>;
+  /** Called with a relationship's id after it is removed. */
   onDelete: (id: string) => void;
+  /** Called after a relationship is created, with both people and its type name. */
   onAdd: (fromPersonId: string, toPersonId: string, type: string) => void;
+  /** Called with a relationship's id and its new type name after the change is saved. */
   onEdit: (id: string, type: string) => void;
+  /** Whether the Add Relationship dialog is open. */
   showAdd?: boolean;
+  /** Receives the Add Relationship dialog's open state. */
   onShowAdd?: (show: boolean) => void;
 }
 
+/** What the dialog needs of the relationship it edits. */
 type EditingRelationship = Pick<
   PersonRelationshipEntry,
   'id' | 'type' | 'relatedPersonId' | 'relatedPersonFirstName' | 'relatedPersonLastName'
 >;
 
-// ---------------------------------------------------------------------------
-// Add / edit dialog
-// ---------------------------------------------------------------------------
-
 interface RelationshipFormDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  /** The person whose page this is; a new relationship starts at them. */
   fromPersonId: string;
+  /** Everyone the person could be linked to. */
   allPersons: Array<{ id: string; firstName: string; lastName: string }>;
+  /** The people already related to this person, who are not offered again. */
   existingRelatedIds: Set<string>;
+  /** Called after a relationship is created, with both people and its type name. */
   onCreate?: (fromPersonId: string, toPersonId: string, type: string) => void;
   /** Set, the dialog changes this relationship's type; the person is fixed. */
   editing?: EditingRelationship | undefined;
+  /** Called with the relationship's id and its new type name after the change is saved. */
   onEdit?: (id: string, type: string) => void;
 }
 
+/**
+ * The dialog that links two people or changes how they are related. It also adds and deletes the relationship types
+ * offered.
+ */
 function RelationshipFormDialog({
   open,
   onOpenChange,
@@ -151,9 +155,14 @@ function RelationshipFormDialog({
   onEdit,
 }: RelationshipFormDialogProps) {
   const isEditing = editing !== undefined;
-  const { data: typesData } = useQuery(GET_RELATIONSHIP_TYPES);
+  const { data: typesData } = useAllRows(GET_RELATIONSHIP_TYPES, { field: 'relationshipTypes' });
   const types = typesData?.relationshipTypes ?? [];
   const firstType = types[0]?.name ?? '';
+  // Read through a ref so the reset below runs on open only, not when the type list refetches.
+  const firstTypeRef = useRef(firstType);
+  firstTypeRef.current = firstType;
+  /** The type whose delete is waiting on the confirm question, if one is. */
+  const [typeToDelete, setTypeToDelete] = useState<{ id: string; name: string } | null>(null);
 
   const [createRelationship, { error: createError, reset: resetCreate }] = useMutation(CREATE_RELATIONSHIP);
   const [updateRelationship, { error: updateError, reset: resetUpdate }] = useMutation(UPDATE_RELATIONSHIP);
@@ -187,17 +196,19 @@ function RelationshipFormDialog({
     },
   });
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: reset on open only, not when the type list refetches
   useEffect(() => {
-    if (!open) return;
+    const isClosed = open === false;
+    if (isClosed) {
+      return;
+    }
     form.reset({
       toPersonId: editing?.relatedPersonId ?? '',
-      type: editing?.type ?? firstType,
+      type: editing?.type ?? firstTypeRef.current,
       newTypeName: '',
     });
     resetCreate();
     resetUpdate();
-  }, [open, editing, form]);
+  }, [open, editing, form, resetCreate, resetUpdate]);
 
   const personOptions = isEditing
     ? [
@@ -207,18 +218,28 @@ function RelationshipFormDialog({
         },
       ]
     : allPersons
-        .filter((p) => p.id !== fromPersonId && !existingRelatedIds.has(p.id))
-        .map((p) => ({ value: p.id, label: `${p.firstName} ${p.lastName}` }));
+        .filter((p) => {
+          const isOther = p.id !== fromPersonId;
+          const isUnrelated = existingRelatedIds.has(p.id) === false;
+          return isOther && isUnrelated;
+        })
+        .map((p) => ({ value: p.id, label: fullName(p) }));
 
   // A relationship keeps its type's name after the type is deleted, so the one being edited may
   // no longer be in the list.
   const typeNames = types.map((t) => t.name);
-  if (isEditing && !typeNames.includes(editing.type)) typeNames.push(editing.type);
+  const isDeletedType = isEditing && typeNames.includes(editing.type) === false;
+  if (isDeletedType) {
+    typeNames.push(editing.type);
+  }
   const typeOptions = typeNames.map((name) => ({ value: name, label: name }));
 
   const addType = async () => {
     const name = form.state.values.newTypeName.trim();
-    if (!name || creatingType) return;
+    const isAddBlocked = name === '' || creatingType;
+    if (isAddBlocked) {
+      return;
+    }
     const { data } = await createType({ variables: { name } });
     form.setFieldValue('newTypeName', '');
     if (data?.createRelationshipType?.name) {
@@ -227,11 +248,12 @@ function RelationshipFormDialog({
   };
 
   const error = createError ?? updateError;
+  const hasNobodyToLink = isEditing === false && personOptions.length === 0;
 
   return (
     <FormDialog open={open} onOpenChange={onOpenChange} title={isEditing ? 'Edit Relationship' : 'Add Relationship'}>
-      {!isEditing && personOptions.length === 0 ? (
-        <Text className="text-muted-foreground text-sm">No other persons available to link.</Text>
+      {hasNobodyToLink ? (
+        <EmptyState compact title="No other persons available to link." />
       ) : (
         <form.AppForm>
           <Form className="gap-4">
@@ -291,14 +313,12 @@ function RelationshipFormDialog({
                 )}
               </form.AppField>
               <form.Subscribe selector={(state) => state.values.newTypeName}>
-                {(newTypeName) => (
-                  <Button
-                    variant="outline"
-                    content="Add"
-                    disabled={!newTypeName.trim() || creatingType}
-                    onPress={() => void addType()}
-                  />
-                )}
+                {(newTypeName) => {
+                  const isAddBlocked = newTypeName.trim() === '' || creatingType;
+                  return (
+                    <Button variant="outline" content="Add" disabled={isAddBlocked} onPress={() => void addType()} />
+                  );
+                }}
               </form.Subscribe>
             </View>
 
@@ -309,13 +329,33 @@ function RelationshipFormDialog({
                     key={t.id}
                     variant="secondary"
                     removeLabel={`Delete ${t.name}`}
-                    onRemove={() => void deleteType({ variables: { id: t.id } })}
+                    onRemove={() => setTypeToDelete(t)}
                   >
                     {t.name}
                   </Badge>
                 ))}
               </View>
             ) : null}
+
+            <ConfirmDialog
+              open={typeToDelete !== null}
+              onOpenChange={(open) => {
+                const isClosing = open === false;
+                if (isClosing) {
+                  setTypeToDelete(null);
+                }
+              }}
+              title={`Delete ${typeToDelete?.name ?? 'this type'}?`}
+              description="It is no longer offered when you link two people. Relationships that already use it keep it."
+              confirmLabel="Delete"
+              cancelLabel="Cancel"
+              onConfirm={() => {
+                if (typeToDelete) {
+                  void deleteType({ variables: { id: typeToDelete.id } });
+                }
+                setTypeToDelete(null);
+              }}
+            />
 
             <FormDialogFooter onCancel={() => onOpenChange(false)} error={error?.message ?? null}>
               <form.SubmitButton isEdit={isEditing} createLabel="Add" editLabel="Save" />
@@ -327,16 +367,15 @@ function RelationshipFormDialog({
   );
 }
 
-// ---------------------------------------------------------------------------
-// Relationship row
-// ---------------------------------------------------------------------------
-
 interface RelationshipRowProps {
   relationship: PersonRelationshipEntry;
+  /** Called with the relationship's id after it is removed. */
   onDelete: (id: string) => void;
+  /** Called when Edit is pressed. */
   onEditPress: () => void;
 }
 
+/** One relationship: the other person, opening their page when pressed, the type, and edit and remove. */
 function RelationshipRow({ relationship, onDelete, onEditPress }: RelationshipRowProps) {
   const { id, relatedPersonId, relatedPersonFirstName, relatedPersonLastName, type } = relationship;
   const router = useRouter();
@@ -350,7 +389,7 @@ function RelationshipRow({ relationship, onDelete, onEditPress }: RelationshipRo
 
   return (
     <ListItem
-      className="border border-border"
+      className="border border-foreground/10"
       title={name}
       meta={<Badge variant="secondary">{type}</Badge>}
       onPress={() => router.push(`/persons/${relatedPersonId}`)}
@@ -379,10 +418,7 @@ function RelationshipRow({ relationship, onDelete, onEditPress }: RelationshipRo
   );
 }
 
-// ---------------------------------------------------------------------------
-// Main export
-// ---------------------------------------------------------------------------
-
+/** A person's relationships, with the dialog that adds one and the dialog that edits one. */
 export function PersonRelationships({
   person,
   allPersons,
@@ -397,6 +433,7 @@ export function PersonRelationships({
   // Kept apart from the open flag so the dialog still shows the row while it closes.
   const [editing, setEditing] = useState<EditingRelationship | undefined>();
   const [editOpen, setEditOpen] = useState(false);
+  const hasNothingToShow = relationships.length === 0 && showAdd === false;
 
   return (
     <>
@@ -412,9 +449,7 @@ export function PersonRelationships({
             }}
           />
         ))}
-        {relationships.length === 0 && !showAdd ? (
-          <Text className="text-muted-foreground text-sm">No relationships yet.</Text>
-        ) : null}
+        {hasNothingToShow ? <EmptyState compact title="No relationships yet." /> : null}
       </View>
 
       <RelationshipFormDialog

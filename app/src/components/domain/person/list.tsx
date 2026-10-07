@@ -1,5 +1,6 @@
 import { Link, useRouter } from 'expo-router';
 import { Linking, Platform, Text, View } from 'react-native';
+import { ContactTypeEnum } from '@/__generated__/graphql';
 import { ActionButton } from '@/components/action-button';
 import { Mail, Phone, UserPlus, Users } from '@/components/app-icons';
 import { ConfirmButton } from '@/components/confirm-button';
@@ -12,20 +13,20 @@ import { PageLayout } from '@/components/page-layout';
 import { Button } from '@/components/ui/button';
 import { Search, Trash2, X } from '@/components/ui/icons';
 import { SearchInput } from '@/components/ui/search-input';
+import { fullName } from '@/lib/person-name';
 import { relativeTime } from '@/lib/relative-time';
 import { cn } from '@/lib/utils';
 
-// ---------------------------------------------------------------------------
-// Types
-// ---------------------------------------------------------------------------
-
+/** One of a person's contact values, as far as the list needs it. */
 export interface PersonContactInfo {
   id: string;
+  /** The contact type, one of the `ContactTypeEnum` values. */
   type: string;
   value: string;
   isPrimary?: boolean | null;
 }
 
+/** A person as a row of the list shows them. */
 export interface PersonRowData {
   id: string;
   firstName: string;
@@ -33,14 +34,19 @@ export interface PersonRowData {
   email: string | null;
   avatarPath?: string | null;
   labels: Array<{ id: string; label: string; color: string }>;
+  /** When they were last contacted; `null` or left out when never. */
   lastContactedAt?: Date | null;
   contactInfos: PersonContactInfo[];
 }
 
+/** What the list can be sorted by. */
 type SortField = 'name' | 'lastContacted';
+/** Which way a sort runs. */
 type SortDir = 'asc' | 'desc';
+/** A sort as the select's value: field, hyphen, direction. */
 type SortOption = `${SortField}-${SortDir}`;
 
+/** The sorts offered, as select options. */
 const SORT_OPTIONS: Array<{ value: SortOption; label: string }> = [
   { value: 'name-asc', label: 'Name (A–Z)' },
   { value: 'name-desc', label: 'Name (Z–A)' },
@@ -48,49 +54,66 @@ const SORT_OPTIONS: Array<{ value: SortOption; label: string }> = [
   { value: 'lastContacted-desc', label: 'Last contacted (recent first)' },
 ];
 
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
+/**
+ * The number to call a person on.
+ *
+ * @param infos - The person's contact values.
+ * @returns The phone or mobile marked primary, else the first of either; `null` when the person has none.
+ */
 function primaryPhone(infos: PersonContactInfo[]): string | null {
-  const phones = infos.filter((i) => i.type === 'phone' || i.type === 'mobile');
-  if (phones.length === 0) return null;
+  const phones = infos.filter((i) => {
+    const isLandline = i.type === ContactTypeEnum.Phone;
+    const isMobile = i.type === ContactTypeEnum.Mobile;
+    return isLandline || isMobile;
+  });
+  if (phones.length === 0) {
+    return null;
+  }
   return (phones.find((p) => p.isPrimary) ?? phones[0]).value;
 }
 
+/**
+ * The letter a person is grouped under in the name-sorted list.
+ *
+ * @param person - The person.
+ * @returns The first letter of the last name, or of the first name when there is none; `#` when it is not A–Z.
+ */
 function groupLetter(person: PersonRowData): string {
   const basis = person.lastName || person.firstName;
   const first = basis.charAt(0).toUpperCase();
-  return /[A-Z]/.test(first) ? first : '#';
+  const isLetter = /[A-Z]/.test(first);
+  return isLetter ? first : '#';
 }
 
 // Sticky under the page header on the web; on device the letter scrolls with its rows.
 const LETTER_HEADER = Platform.select({ web: 'sticky top-0 z-10', default: '' });
 
-// ---------------------------------------------------------------------------
-// PersonRow — one compact row: the middle opens the person, the ends act on them
-// ---------------------------------------------------------------------------
-
 interface PersonRowProps {
   person: PersonRowData;
+  /** Whether the row is set off from the one above it. */
   divided: boolean;
-  onClickDelete?: (id: string) => void;
+  /** Called with the person's id once the delete is confirmed; no delete button is drawn without it. */
+  onDeletePress?: (id: string) => void;
+  /** The labels being filtered by; the row's matching chips are drawn selected. */
   activeLabelIds: Set<string>;
 }
 
-function PersonRow({ person, divided, onClickDelete, activeLabelIds }: PersonRowProps) {
+/**
+ * One person: avatar, name, last contact (or email when never contacted), labels, and call, email and delete buttons.
+ */
+function PersonRow({ person, divided, onDeletePress, activeLabelIds }: PersonRowProps) {
   const router = useRouter();
   const phone = primaryPhone(person.contactInfos);
   const { email } = person;
 
   return (
     <ListItem
-      className={divided ? 'rounded-none border-border/60 border-t' : undefined}
+      className={divided ? 'rounded-none border-foreground/10 border-t' : undefined}
       onPress={() => router.push(`/persons/${person.id}`)}
       leadingSlot={
         <Avatar firstName={person.firstName} lastName={person.lastName} avatarPath={person.avatarPath} size="md" />
       }
-      title={`${person.firstName} ${person.lastName}`}
+      title={fullName(person)}
       description={
         person.lastContactedAt ? `Last contact: ${relativeTime(person.lastContactedAt)}` : (person.email ?? '')
       }
@@ -98,7 +121,7 @@ function PersonRow({ person, divided, onClickDelete, activeLabelIds }: PersonRow
         person.labels.length > 0 ? (
           <View className="hidden max-w-64 flex-row flex-wrap justify-end gap-1 sm:flex">
             {person.labels.map((l) => (
-              <LabelChip key={l.id} label={l.label} color={l.color} active={activeLabelIds.has(l.id)} />
+              <LabelChip key={l.id} label={l.label} color={l.color} selected={activeLabelIds.has(l.id)} />
             ))}
           </View>
         ) : undefined
@@ -123,15 +146,15 @@ function PersonRow({ person, divided, onClickDelete, activeLabelIds }: PersonRow
               onPress={() => Linking.openURL(`mailto:${email}`)}
             />
           )}
-          {onClickDelete && (
+          {onDeletePress && (
             <ConfirmButton
               variant="ghost"
               size="icon-sm"
-              label={`Delete ${person.firstName} ${person.lastName}`}
+              label={`Delete ${fullName(person)}`}
               iconSlot={<Trash2 />}
-              title={`Delete ${person.firstName} ${person.lastName}?`}
+              title={`Delete ${fullName(person)}?`}
               description={`This will permanently delete ${person.firstName} and all their associated data. This cannot be undone.`}
-              onConfirm={() => onClickDelete(person.id)}
+              onConfirm={() => onDeletePress(person.id)}
             />
           )}
         </>
@@ -140,25 +163,28 @@ function PersonRow({ person, divided, onClickDelete, activeLabelIds }: PersonRow
   );
 }
 
-// ---------------------------------------------------------------------------
-// PersonList — pure display component
-// ---------------------------------------------------------------------------
-
 export interface PersonListProps {
+  /** The rows to draw, already filtered and sorted by the owner. */
   persons: PersonRowData[];
   /** All labels in the workspace (not just the visible page). */
   allLabels: Array<{ id: string; label: string; color: string }>;
+  /** The ids of the labels being filtered by. */
   activeLabelIds: string[];
+  /** Called with a label's id to turn its filter on or off. */
   onToggleLabel: (id: string) => void;
+  /** The search text. */
   q: string;
   onSearchChange: (q: string) => void;
   loading?: boolean;
+  /** The chosen sort, one of the `SortOption` values. */
   sortValue: string;
   onSortChange: (value: string) => void;
   /** Group rows under sticky letter headers (name sort only). */
   grouped: boolean;
-  onClickAdd?: () => void;
-  onClickDelete?: (id: string) => void;
+  /** Called when Add Person is pressed; the button is not drawn without it. */
+  onAddPress?: () => void;
+  /** Called with a person's id once their delete is confirmed; no delete buttons are drawn without it. */
+  onDeletePress?: (id: string) => void;
 }
 
 /** The people screen: it is its own `PageLayout`, so a route renders it as the whole page. */
@@ -173,8 +199,8 @@ export function PersonList({
   sortValue,
   onSortChange,
   grouped,
-  onClickAdd,
-  onClickDelete,
+  onAddPress,
+  onDeletePress,
 }: PersonListProps) {
   const activeLabelSet = new Set(activeLabelIds);
   const hasFilters = q.trim().length > 0 || activeLabelIds.length > 0;
@@ -192,7 +218,8 @@ export function PersonList({
     for (const person of persons) {
       const letter = groupLetter(person);
       const last = groups[groups.length - 1];
-      if (last && last.letter === letter) {
+      const isSameLetter = last !== undefined && last.letter === letter;
+      if (isSameLetter) {
         last.rows.push(person);
       } else {
         groups.push({ letter, rows: [person] });
@@ -213,7 +240,7 @@ export function PersonList({
       description="Add someone, or import your existing contacts."
       actionSlot={
         <View className="flex-row flex-wrap justify-center gap-2">
-          {onClickAdd && <Button content="Add Person" iconSlot={<UserPlus />} onPress={onClickAdd} />}
+          {onAddPress && <Button content="Add Person" iconSlot={<UserPlus />} onPress={onAddPress} />}
           <Link href="/settings" asChild>
             <Button variant="outline" content="Import contacts" />
           </Link>
@@ -226,19 +253,30 @@ export function PersonList({
     <View role="list">
       {list.map((p, index) => (
         <View key={p.id} role="listitem">
-          <PersonRow person={p} divided={index > 0} onClickDelete={onClickDelete} activeLabelIds={activeLabelSet} />
+          <PersonRow person={p} divided={index > 0} onDeletePress={onDeletePress} activeLabelIds={activeLabelSet} />
         </View>
       ))}
     </View>
   );
+
+  const listSlot = grouped
+    ? groups.map((group) => (
+        <View key={group.letter}>
+          <View className={cn('bg-background px-3 py-1', LETTER_HEADER)}>
+            <Text className="font-semibold text-foreground text-xs">{group.letter}</Text>
+          </View>
+          {rows(group.rows)}
+        </View>
+      ))
+    : rows(persons);
 
   return (
     <PageLayout
       title="People"
       actionSlot={
         // Below `md` the app shell's own bar carries the add button.
-        onClickAdd ? (
-          <Button className="hidden md:flex" content="Add Person" iconSlot={<UserPlus />} onPress={onClickAdd} />
+        onAddPress ? (
+          <Button className="hidden md:flex" content="Add Person" iconSlot={<UserPlus />} onPress={onAddPress} />
         ) : undefined
       }
       headerContentSlot={
@@ -268,7 +306,7 @@ export function PersonList({
                   key={l.id}
                   label={l.label}
                   color={l.color}
-                  active={activeLabelSet.has(l.id)}
+                  selected={activeLabelSet.has(l.id)}
                   onPress={() => onToggleLabel(l.id)}
                   onRemove={activeLabelSet.has(l.id) ? () => onToggleLabel(l.id) : undefined}
                 />
@@ -280,25 +318,10 @@ export function PersonList({
           )}
         </View>
       }
-      contentSlot={
-        <View className={cn(loading && 'opacity-60')}>
-          {persons.length === 0
-            ? emptyState
-            : grouped
-              ? groups.map((group) => (
-                  <View key={group.letter}>
-                    <View className={cn('bg-background px-3 py-1', LETTER_HEADER)}>
-                      <Text className="font-semibold text-primary text-xs">{group.letter}</Text>
-                    </View>
-                    {rows(group.rows)}
-                  </View>
-                ))
-              : rows(persons)}
-        </View>
-      }
+      contentSlot={<View className={cn(loading && 'opacity-60')}>{persons.length === 0 ? emptyState : listSlot}</View>}
       footerSlot={
         persons.length > 0 ? (
-          <Text className="text-muted-foreground text-xs">
+          <Text className="text-foreground/60 text-xs">
             {persons.length} {persons.length === 1 ? 'person' : 'people'}
           </Text>
         ) : undefined

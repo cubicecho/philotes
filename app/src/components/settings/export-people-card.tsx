@@ -1,30 +1,37 @@
-import { gql, useQuery } from '@apollo/client';
-import { Text, View } from 'react-native';
+import { View } from 'react-native';
+import { graphql } from '@/__generated__/gql';
+import { QueryError } from '@/components/query-state';
 import { Section } from '@/components/section';
 import { Button } from '@/components/ui/button';
 import { downloadBlob } from '@/components/ui/download-button';
 import { Download } from '@/components/ui/icons';
-import { buildPersonsCsv, type ExportPerson } from '@/lib/csv-export';
+import { buildPersonsCsv } from '@/lib/csv-export';
+import { PAGE_SIZE_DEFAULTS } from '@/lib/defaults';
+import { useAllRows } from '@/lib/use-all-rows';
 
-const GET_EXPORT_PERSONS = gql`
-  query ExportPersons {
+/** Everyone, with what the CSV carries. Of the important dates only birthdays are read. */
+const GET_EXPORT_PERSONS = graphql(`
+  query ExportPersons($limit: Int!, $offset: Int!) {
     persons(
+      limit: $limit
+      offset: $offset
       orderBy: {
         lastName: { direction: asc, priority: 1 }
         firstName: { direction: asc, priority: 2 }
+        id: { direction: asc, priority: 3 }
       }
     ) {
       id
       firstName
       lastName
       email
-      contactInfos {
+      contactInfos(limit: 20) {
         type
         label
         value
         isPrimary
       }
-      addresses {
+      addresses(limit: 10) {
         type
         label
         line1
@@ -34,34 +41,40 @@ const GET_EXPORT_PERSONS = gql`
         postalCode
         country
       }
-      importantDates(where: { name: { eq: "Birthday" } }) {
+      importantDates(where: { name: { eq: "Birthday" } }, limit: 5) {
         name
         date
         recurrence
       }
-      labels {
+      labels(limit: 20) {
         id
         label
         color
       }
     }
   }
-`;
+`);
 
-interface ExportPersonsQueryResult {
-  persons: ExportPerson[];
-}
-
+/** The settings card that downloads everyone as `philotes-contacts.csv`. */
 export function ExportPeopleCard() {
   const {
     data: exportData,
     loading: exportLoading,
     error: exportError,
-  } = useQuery<ExportPersonsQueryResult>(GET_EXPORT_PERSONS);
+    refetch,
+  } = useAllRows(GET_EXPORT_PERSONS, {
+    field: 'persons',
+    pageSize: PAGE_SIZE_DEFAULTS.peopleExport,
+  });
+
+  const persons = exportData?.persons ?? [];
+  const isExportBlocked = exportLoading || exportError !== undefined || persons.length === 0;
 
   function handleExportPeople() {
-    if (!exportData?.persons?.length) return;
-    void downloadBlob(buildPersonsCsv(exportData.persons), 'philotes-contacts.csv', {
+    if (persons.length === 0) {
+      return;
+    }
+    void downloadBlob(buildPersonsCsv(persons), 'philotes-contacts.csv', {
       mimeType: 'text/csv;charset=utf-8',
     });
   }
@@ -73,13 +86,11 @@ export function ExportPeopleCard() {
       description="Download all your contacts as a CSV file compatible with Google Contacts, Apple Contacts, and other applications."
       contentSlot={
         <View className="items-start gap-3">
-          {exportError ? (
-            <Text className="text-destructive text-sm">{`Failed to load people: ${exportError.message}`}</Text>
-          ) : null}
+          {exportError ? <QueryError compact error={exportError} onRetry={() => refetch()} what="your people" /> : null}
           <Button
             iconSlot={<Download />}
-            content={exportLoading ? 'Loading…' : `Export ${exportData?.persons?.length ?? 0} People as CSV`}
-            disabled={exportLoading || !!exportError || !exportData?.persons?.length}
+            content={exportLoading ? 'Loading…' : `Export ${persons.length} People as CSV`}
+            disabled={isExportBlocked}
             onPress={handleExportPeople}
           />
         </View>

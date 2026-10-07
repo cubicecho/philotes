@@ -1,6 +1,6 @@
 import { useMutation } from '@apollo/client';
 import { useEffect, useState } from 'react';
-import { Linking, Text, View } from 'react-native';
+import { Linking, View } from 'react-native';
 import { graphql } from '@/__generated__/gql';
 import type { ContactInfo_ListFragment } from '@/__generated__/graphql';
 import { ContactTypeEnum } from '@/__generated__/graphql';
@@ -8,14 +8,11 @@ import { useAppForm } from '@/components/app-form';
 import { Globe, Mail, Phone, Share2, Smartphone } from '@/components/app-icons';
 import { ConfirmButton } from '@/components/confirm-button';
 import { ListItem } from '@/components/list-item';
+import { EmptyState } from '@/components/page';
 import { Badge } from '@/components/ui/badge';
 import { Form } from '@/components/ui/form';
 import { FormDialog, FormDialogFooter } from '@/components/ui/form-dialog';
 import { Ellipsis, Trash2 } from '@/components/ui/icons';
-
-// ---------------------------------------------------------------------------
-// Fragment
-// ---------------------------------------------------------------------------
 
 export const CONTACT_INFO_LIST_FRAGMENT = graphql(`
   fragment ContactInfo_List on Person {
@@ -29,10 +26,6 @@ export const CONTACT_INFO_LIST_FRAGMENT = graphql(`
     }
   }
 `);
-
-// ---------------------------------------------------------------------------
-// Mutations
-// ---------------------------------------------------------------------------
 
 const CREATE_CONTACT_INFO = graphql(`
   mutation CreateContactInfo(
@@ -69,10 +62,7 @@ const DELETE_CONTACT_INFO = graphql(`
   }
 `);
 
-// ---------------------------------------------------------------------------
-// Contact type helpers
-// ---------------------------------------------------------------------------
-
+/** The contact types as select options, in the order offered. */
 const CONTACT_TYPE_OPTIONS: Array<{ value: ContactTypeEnum; label: string }> = [
   { value: ContactTypeEnum.Email, label: 'Email' },
   { value: ContactTypeEnum.Phone, label: 'Phone' },
@@ -84,6 +74,7 @@ const CONTACT_TYPE_OPTIONS: Array<{ value: ContactTypeEnum; label: string }> = [
   { value: ContactTypeEnum.Other, label: 'Other' },
 ];
 
+/** An example value for each contact type, shown as the value field's placeholder. */
 const CONTACT_TYPE_PLACEHOLDERS: Record<ContactTypeEnum, string> = {
   [ContactTypeEnum.Email]: 'name@example.com',
   [ContactTypeEnum.Phone]: '+1 (555) 000-0000',
@@ -95,73 +86,110 @@ const CONTACT_TYPE_PLACEHOLDERS: Record<ContactTypeEnum, string> = {
   [ContactTypeEnum.Other]: 'Contact value',
 };
 
-/** Actionable href for a contact value — tap to call/text/email/open. */
+/**
+ * A phone number as a `tel:` link, without its spaces and punctuation.
+ *
+ * @param phoneNumber - The number as typed; only its digits and `+` are kept.
+ * @returns The `tel:` href.
+ */
+function telHref(phoneNumber: string): string {
+  return `tel:${phoneNumber.replace(/[^\d+]/g, '')}`;
+}
+
+/**
+ * A handle as a link to its profile under `profileBase`; a value that is already a URL is kept.
+ *
+ * @param profileBase - The network's profile URL up to the handle, ending in `/`.
+ * @param handle - The handle, with or without its leading `@`, or a full URL.
+ * @returns The profile URL.
+ */
+function profileHref(profileBase: string, handle: string): string {
+  const isUrl = handle.startsWith('http');
+  return isUrl ? handle : `${profileBase}${handle.replace(/^@/, '')}`;
+}
+
+/**
+ * A site as a link; a value that is already a URL is kept.
+ *
+ * @param site - A bare domain or a full URL.
+ * @returns The URL, with `https://` put in front of a bare domain.
+ */
+function websiteHref(site: string): string {
+  const isUrl = site.startsWith('http');
+  return isUrl ? site : `https://${site}`;
+}
+
+/** What turns a trimmed value of each contact type into its href. `other` has nothing to open. */
+const CONTACT_HREF_BUILDERS: Record<string, (value: string) => string | null> = {
+  [ContactTypeEnum.Email]: (address) => `mailto:${address}`,
+  [ContactTypeEnum.Phone]: telHref,
+  [ContactTypeEnum.Mobile]: telHref,
+  [ContactTypeEnum.Linkedin]: (handle) => profileHref('https://linkedin.com/in/', handle),
+  [ContactTypeEnum.Twitter]: (handle) => profileHref('https://x.com/', handle),
+  [ContactTypeEnum.Instagram]: (handle) => profileHref('https://instagram.com/', handle),
+  [ContactTypeEnum.Website]: websiteHref,
+  [ContactTypeEnum.Other]: () => null,
+} satisfies Record<ContactTypeEnum, (value: string) => string | null>;
+
+/**
+ * Actionable href for a contact value — tap to call/text/email/open.
+ *
+ * @param type - The contact type, one of the `ContactTypeEnum` values.
+ * @param value - The contact value as stored; it is trimmed before use.
+ * @returns The href, or `null` when the type has nothing to open or is not a known one.
+ */
 export function contactHref(type: string, value: string): string | null {
-  const v = value.trim();
-  switch (type as ContactTypeEnum) {
-    case ContactTypeEnum.Email:
-      return `mailto:${v}`;
-    case ContactTypeEnum.Phone:
-    case ContactTypeEnum.Mobile:
-      return `tel:${v.replace(/[^\d+]/g, '')}`;
-    case ContactTypeEnum.Linkedin:
-      return v.startsWith('http') ? v : `https://linkedin.com/in/${v.replace(/^@/, '')}`;
-    case ContactTypeEnum.Twitter:
-      return v.startsWith('http') ? v : `https://x.com/${v.replace(/^@/, '')}`;
-    case ContactTypeEnum.Instagram:
-      return v.startsWith('http') ? v : `https://instagram.com/${v.replace(/^@/, '')}`;
-    case ContactTypeEnum.Website:
-      return v.startsWith('http') ? v : `https://${v}`;
-    default:
-      return null;
+  const buildHref = CONTACT_HREF_BUILDERS[type];
+  if (!buildHref) {
+    return null;
   }
+  return buildHref(value.trim());
 }
 
+/** The glyph for each contact type. lucide dropped its brand glyphs, so the three networks share one. */
+const CONTACT_TYPE_ICONS: Record<string, typeof Ellipsis> = {
+  [ContactTypeEnum.Email]: Mail,
+  [ContactTypeEnum.Phone]: Phone,
+  [ContactTypeEnum.Mobile]: Smartphone,
+  [ContactTypeEnum.Linkedin]: Share2,
+  [ContactTypeEnum.Twitter]: Share2,
+  [ContactTypeEnum.Instagram]: Share2,
+  [ContactTypeEnum.Website]: Globe,
+  [ContactTypeEnum.Other]: Ellipsis,
+} satisfies Record<ContactTypeEnum, typeof Ellipsis>;
+
+/** The glyph for a contact type; anything unrecognised gets the ellipsis. */
 function ContactTypeIcon({ type, className }: { type: string; className?: string }) {
-  switch (type as ContactTypeEnum) {
-    case ContactTypeEnum.Email:
-      return <Mail className={className} />;
-    case ContactTypeEnum.Phone:
-      return <Phone className={className} />;
-    case ContactTypeEnum.Mobile:
-      return <Smartphone className={className} />;
-    // lucide dropped its brand glyphs, so the three networks share one.
-    case ContactTypeEnum.Linkedin:
-    case ContactTypeEnum.Twitter:
-    case ContactTypeEnum.Instagram:
-      return <Share2 className={className} />;
-    case ContactTypeEnum.Website:
-      return <Globe className={className} />;
-    default:
-      return <Ellipsis className={className} />;
-  }
+  const Icon = CONTACT_TYPE_ICONS[type] ?? Ellipsis;
+  return <Icon className={className} />;
 }
-
-// ---------------------------------------------------------------------------
-// Types
-// ---------------------------------------------------------------------------
 
 export interface ContactInfoListProps {
+  /** The person whose contact values are listed. */
   person: ContactInfo_ListFragment;
+  /** Called after a contact value is added. */
   onAdd: () => void;
+  /** Called after a contact value is deleted. */
   onDelete: () => void;
+  /** Whether the add dialog is open, when the owner holds that state; left out, the list holds it. */
   createOpen?: boolean;
+  /** Receives the add dialog's open state when the owner holds it. */
   onCreateOpenChange?: (open: boolean) => void;
 }
 
-// ---------------------------------------------------------------------------
-// ContactInfoRow
-// ---------------------------------------------------------------------------
-
 interface ContactInfoRowProps {
   id: string;
+  /** The contact type, one of the `ContactTypeEnum` values; it picks the glyph and what a press opens. */
   type: string;
   value: string;
+  /** The user's own name for the value, such as Work; shown under it. */
   label: string | null | undefined;
   isPrimary: boolean;
+  /** Called after the contact value is deleted. */
   onDelete: () => void;
 }
 
+/** One contact value with its type and primary badges. Pressing the row calls, mails or opens the value. */
 function ContactInfoRow({ id, type, value, label, isPrimary, onDelete }: ContactInfoRowProps) {
   const [deleteContactInfo] = useMutation(DELETE_CONTACT_INFO);
 
@@ -175,10 +203,10 @@ function ContactInfoRow({ id, type, value, label, isPrimary, onDelete }: Contact
 
   return (
     <ListItem
-      className="border border-border"
-      leadingSlot={<ContactTypeIcon type={type} className="h-4 w-4 text-muted-foreground" />}
+      className="border border-foreground/10"
+      leadingSlot={<ContactTypeIcon type={type} className="h-4 w-4 text-foreground/60" />}
       title={value}
-      titleClassName={href ? 'text-primary' : undefined}
+      titleClassName={href ? 'text-info' : undefined}
       description={label || undefined}
       meta={
         <>
@@ -203,24 +231,32 @@ function ContactInfoRow({ id, type, value, label, isPrimary, onDelete }: Contact
   );
 }
 
-// ---------------------------------------------------------------------------
-// Add contact info dialog
-// ---------------------------------------------------------------------------
+/** The add-contact-info form's values. */
+interface ContactInfoFields {
+  type: ContactTypeEnum;
+  value: string;
+  label: string;
+  isPrimary: boolean;
+}
 
-const EMPTY_CONTACT_INFO = {
-  type: ContactTypeEnum.Email as string,
+/** A blank contact info form; the type starts as email. */
+const EMPTY_CONTACT_INFO: ContactInfoFields = {
+  type: ContactTypeEnum.Email,
   value: '',
   label: '',
   isPrimary: false,
 };
 
 interface AddContactInfoDialogProps {
+  /** The person the contact value is added to. */
   personId: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  /** Called after the contact value is saved and the dialog has been told to close. */
   onAdded: () => void;
 }
 
+/** The dialog that adds one contact value to a person. Changing the type clears the value typed so far. */
 function AddContactInfoDialog({ personId, open, onOpenChange, onAdded }: AddContactInfoDialogProps) {
   const [createContactInfo, { error, reset }] = useMutation(CREATE_CONTACT_INFO);
 
@@ -231,7 +267,7 @@ function AddContactInfoDialog({ personId, open, onOpenChange, onAdded }: AddCont
         await createContactInfo({
           variables: {
             personId,
-            type: value.type as ContactTypeEnum,
+            type: value.type,
             value: value.value.trim(),
             label: value.label.trim() || null,
             isPrimary: value.isPrimary,
@@ -247,7 +283,10 @@ function AddContactInfoDialog({ personId, open, onOpenChange, onAdded }: AddCont
   });
 
   useEffect(() => {
-    if (!open) return;
+    const isClosed = open === false;
+    if (isClosed) {
+      return;
+    }
     form.reset(EMPTY_CONTACT_INFO);
     reset();
   }, [open, form, reset]);
@@ -269,13 +308,7 @@ function AddContactInfoDialog({ personId, open, onOpenChange, onAdded }: AddCont
                 name="value"
                 validators={{ onChange: ({ value }) => (value.trim() ? undefined : 'A value is required.') }}
               >
-                {(field) => (
-                  <field.InputField
-                    label="Value"
-                    required
-                    placeholder={CONTACT_TYPE_PLACEHOLDERS[type as ContactTypeEnum]}
-                  />
-                )}
+                {(field) => <field.InputField label="Value" required placeholder={CONTACT_TYPE_PLACEHOLDERS[type]} />}
               </form.AppField>
             )}
           </form.Subscribe>
@@ -292,10 +325,7 @@ function AddContactInfoDialog({ personId, open, onOpenChange, onAdded }: AddCont
   );
 }
 
-// ---------------------------------------------------------------------------
-// Main export
-// ---------------------------------------------------------------------------
-
+/** A person's contact values and the dialog that adds one. */
 export function ContactInfoList({ person, onAdd, onDelete, createOpen, onCreateOpenChange }: ContactInfoListProps) {
   const [internalOpen, setInternalOpen] = useState(false);
   const dialogOpen = createOpen ?? internalOpen;
@@ -305,7 +335,7 @@ export function ContactInfoList({ person, onAdd, onDelete, createOpen, onCreateO
   return (
     <>
       <View className="gap-2">
-        {contactInfos.length === 0 ? <Text className="text-muted-foreground text-sm">No contact info yet.</Text> : null}
+        {contactInfos.length === 0 ? <EmptyState compact title="No contact info yet." /> : null}
 
         {contactInfos.map((info) => (
           <ContactInfoRow

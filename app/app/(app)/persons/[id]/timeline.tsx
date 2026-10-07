@@ -1,8 +1,9 @@
-import { useQuery } from '@apollo/client';
+import { type ApolloError, useQuery } from '@apollo/client';
 import { Link, useLocalSearchParams } from 'expo-router';
 import { View } from 'react-native';
 import { graphql } from '@/__generated__/gql';
 import { Users } from '@/components/app-icons';
+import { GET_PERSON_INTERACTIONS } from '@/components/domain/person/person-queries';
 import {
   PersonTimeline,
   type TimelineImportantDate,
@@ -14,35 +15,22 @@ import { QueryError } from '@/components/query-state';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Clock } from '@/components/ui/icons';
 import { Spinner } from '@/components/ui/spinner';
-
-// ---------------------------------------------------------------------------
-// GraphQL
-// ---------------------------------------------------------------------------
+import { PAGE_SIZE_DEFAULTS } from '@/lib/defaults';
+import { fullName } from '@/lib/person-name';
+import { useAllRows } from '@/lib/use-all-rows';
 
 const GET_PERSON_TIMELINE = graphql(`
   query GetPersonTimeline($id: UUID!) {
-    persons(where: { id: { eq: $id } }) {
+    persons(where: { id: { eq: $id } }, limit: 1) {
       id
       firstName
       lastName
-      interactions(orderBy: { occurredAt: { direction: desc, priority: 1 } }) {
-        id
-        channel
-        occurredAt
-        sentiment
-        note
-        labels {
-          id
-          label
-          color
-        }
-      }
-      importantDates {
+      importantDates(limit: 100) {
         id
         date
         name
         milestoneType
-        labels {
+        labels(limit: 10) {
           id
           label
           color
@@ -52,15 +40,37 @@ const GET_PERSON_TIMELINE = graphql(`
   }
 `);
 
-// ---------------------------------------------------------------------------
-// Page
-// ---------------------------------------------------------------------------
+/** What stands in for the timeline until there is a person: the failure, a spinner, or "not found". */
+function TimelinePlaceholder({
+  error,
+  pending,
+  onRetry,
+}: {
+  error: ApolloError | undefined;
+  pending: boolean;
+  onRetry: () => void;
+}) {
+  if (error) {
+    return <QueryError error={error} onRetry={onRetry} what="the timeline" />;
+  }
+  if (pending) {
+    return <Spinner />;
+  }
+  return <EmptyState icon={Users} title="Person not found." />;
+}
 
+/** One person's timeline page: their interactions and important dates on one timeline. */
 export default function PersonTimelinePage() {
   const { id } = useLocalSearchParams<{ id: string }>();
 
   const { data, loading, error, refetch } = useQuery(GET_PERSON_TIMELINE, {
     variables: { id },
+    fetchPolicy: 'cache-and-network',
+  });
+  const interactionsQuery = useAllRows(GET_PERSON_INTERACTIONS, {
+    field: 'interactions',
+    variables: { personId: id },
+    pageSize: PAGE_SIZE_DEFAULTS.interactions,
     fetchPolicy: 'cache-and-network',
   });
 
@@ -71,7 +81,7 @@ export default function PersonTimelinePage() {
         variant="link"
         size="xs"
         iconSlot={<ArrowLeft />}
-        content={person ? `Back to ${person.firstName} ${person.lastName}` : 'Back'}
+        content={person ? `Back to ${fullName(person)}` : 'Back'}
       />
     </Link>
   );
@@ -83,20 +93,12 @@ export default function PersonTimelinePage() {
         title="Timeline"
         iconSlot={<Clock />}
         breadcrumbsSlot={backLink}
-        contentSlot={
-          error ? (
-            <QueryError error={error} onRetry={() => refetch()} what="the timeline" />
-          ) : pending ? (
-            <Spinner />
-          ) : (
-            <EmptyState icon={Users} title="Person not found." />
-          )
-        }
+        contentSlot={<TimelinePlaceholder error={error} pending={pending} onRetry={() => refetch()} />}
       />
     );
   }
 
-  const interactions: TimelineInteraction[] = (person.interactions ?? []).map((i) => ({
+  const interactions: TimelineInteraction[] = (interactionsQuery.data?.interactions ?? []).map((i) => ({
     id: i.id,
     channel: i.channel,
     occurredAt: i.occurredAt,
@@ -116,7 +118,7 @@ export default function PersonTimelinePage() {
   return (
     <PageLayout
       title="Timeline"
-      description={`${person.firstName} ${person.lastName}`}
+      description={fullName(person)}
       iconSlot={<Clock />}
       breadcrumbsSlot={backLink}
       contentSlot={

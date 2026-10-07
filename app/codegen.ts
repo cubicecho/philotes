@@ -19,6 +19,7 @@ const config: CodegenConfig = {
           field: true, // Use `null` for nullable fields instead of optionals
         },
         useTypeImports: true,
+        enumsAsConst: true,
         defaultScalarType: 'unknown',
         nonOptionalTypename: true,
         skipTypeNameForRoot: true,

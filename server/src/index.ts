@@ -1,45 +1,48 @@
-import { createServer } from 'node:http';
+import './core/preflight.ts';
+
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { db } from '@philotes/db';
-import cors from 'cors';
-import { migrate } from 'drizzle-orm/pglite/migrator';
-import express from 'express';
-import { createAvatarRouter } from './routes/avatars.ts';
-import { createGraphQLRouter } from './routes/graphql.ts';
-import { icalHandler } from './routes/ical.ts';
+import { closeDatabase, db } from '@cubicecho/philotes-db';
+import { waitForDatabase } from '@cubicecho/philotes-db/wait';
+import { migrate } from 'drizzle-orm/postgres-js/migrator';
+import { createAuth } from './auth/better-auth.ts';
+import { appUrl, avatarDir, dbConnectTimeoutMs, port, secureLocalNet } from './core/config.ts';
+import { errorMessage } from './core/errors.ts';
+import { createApp } from './http/app.ts';
+import { stopOnSignals } from './http/shutdown.ts';
 
-export type { Context } from './routes/graphql.ts';
+/** Postgres's port, shown when DATABASE_URL names none. */
+const DEFAULT_POSTGRES_PORT = '5432';
+/** Every interface. The container's port mapping decides who can reach it. */
+const LISTEN_HOST = '0.0.0.0';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const PORT = process.env.PORT ?? 3001;
 
-if (
-  process.env.NODE_ENV === 'production' &&
-  (!process.env.JWT_SECRET || process.env.JWT_SECRET === 'dev-secret-change-in-production')
-) {
-  console.error('FATAL: JWT_SECRET must be set to a strong random value in production.');
+try {
+  await waitForDatabase(db, { connectTimeoutMs: dbConnectTimeoutMs() });
+} catch (error) {
+  const { hostname, port: urlPort } = new URL(process.env.DATABASE_URL ?? '');
+  const dbPort = urlPort === '' ? DEFAULT_POSTGRES_PORT : urlPort;
+  console.error(`[db] cannot reach Postgres at ${hostname}:${dbPort}: ${errorMessage(error)}`);
+  console.error('[db] check DATABASE_URL in .env, and that `npm run db:up` has started it.');
   process.exit(1);
 }
-const staticDir = join(__dirname, '../../app/dist');
-const avatarDir = join(__dirname, '../../avatars');
 
+// At boot, so `docker compose up` on a fresh volume is the whole install.
 await migrate(db, { migrationsFolder: join(__dirname, '../../db/drizzle') });
 
-const app = express();
-const httpServer = createServer(app);
+if (secureLocalNet()) {
+  console.warn('[auth] SECURE_LOCAL_NET is on: any email signs in without a link. Private networks only.');
+}
 
-app.use(cors());
-app.use('/graphql', await createGraphQLRouter(httpServer));
-app.get('/ical', icalHandler);
-app.use('/avatars', express.static(avatarDir));
-app.use('/avatars', createAvatarRouter(avatarDir));
-app.use(express.static(staticDir));
-app.get('/{*path}', (_req, res) => {
-  res.sendFile(join(staticDir, 'index.html'));
+const app = createApp({
+  db,
+  auth: createAuth(db),
+  avatarDir: avatarDir(),
+  staticDir: join(__dirname, '../../app/dist'),
 });
 
-httpServer.listen(PORT, () => {
-  console.log(`🚀 Server ready at http://localhost:${PORT}/graphql`);
-  console.log(`🌐 App served at http://localhost:${PORT}`);
+const server = app.listen(port(), LISTEN_HOST, () => {
+  console.log(`[server] ready at ${appUrl()}`);
 });
+stopOnSignals(server, { after: closeDatabase });

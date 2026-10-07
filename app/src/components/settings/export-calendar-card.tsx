@@ -1,14 +1,22 @@
-import { gql, useQuery } from '@apollo/client';
 import { Text, View } from 'react-native';
+import { graphql } from '@/__generated__/gql';
+import { EmptyState } from '@/components/page';
+import { QueryError } from '@/components/query-state';
 import { Section } from '@/components/section';
 import { Button } from '@/components/ui/button';
 import { downloadBlob } from '@/components/ui/download-button';
 import { Download } from '@/components/ui/icons';
-import { buildIcsContent, type CalendarEventsData } from '@/lib/ics-export';
+import { PAGE_SIZE_DEFAULTS } from '@/lib/defaults';
+import { buildIcsContent } from '@/lib/ics-export';
+import { useAllRows } from '@/lib/use-all-rows';
 
-const GET_ALL_EVENTS_FOR_EXPORT = gql`
-  query GetAllEventsForExport {
-    interactions {
+const GET_INTERACTIONS_FOR_EXPORT = graphql(`
+  query GetInteractionsForExport($limit: Int!, $offset: Int!) {
+    interactions(
+      limit: $limit
+      offset: $offset
+      orderBy: { occurredAt: { direction: asc, priority: 1 }, id: { direction: asc, priority: 2 } }
+    ) {
       id
       channel
       occurredAt
@@ -19,7 +27,16 @@ const GET_ALL_EVENTS_FOR_EXPORT = gql`
         lastName
       }
     }
-    importantDates {
+  }
+`);
+
+const GET_IMPORTANT_DATES_FOR_EXPORT = graphql(`
+  query GetImportantDatesForExport($limit: Int!, $offset: Int!) {
+    importantDates(
+      limit: $limit
+      offset: $offset
+      orderBy: { date: { direction: asc, priority: 1 }, id: { direction: asc, priority: 2 } }
+    ) {
       id
       name
       description
@@ -33,16 +50,40 @@ const GET_ALL_EVENTS_FOR_EXPORT = gql`
       }
     }
   }
-`;
+`);
 
+/** The settings card that downloads every interaction and important date as `philotes-events.ics`. */
 export function ExportCalendarCard() {
-  const { data, loading, error } = useQuery<CalendarEventsData>(GET_ALL_EVENTS_FOR_EXPORT);
+  const interactionsQuery = useAllRows(GET_INTERACTIONS_FOR_EXPORT, {
+    field: 'interactions',
+    pageSize: PAGE_SIZE_DEFAULTS.calendarExport,
+  });
+  const importantDatesQuery = useAllRows(GET_IMPORTANT_DATES_FOR_EXPORT, {
+    field: 'importantDates',
+    pageSize: PAGE_SIZE_DEFAULTS.calendarExport,
+  });
+  const interactions = interactionsQuery.data?.interactions ?? [];
+  const importantDates = importantDatesQuery.data?.importantDates ?? [];
+  const loading = interactionsQuery.loading || importantDatesQuery.loading;
+  const error = interactionsQuery.error ?? importantDatesQuery.error;
+  const totalCount = interactions.length + importantDates.length;
+  const hasEvents = totalCount > 0;
+  const isLoaded = loading === false && error === undefined;
+  const isExportBlocked = isLoaded === false || hasEvents === false;
 
-  const totalCount = (data?.interactions?.length ?? 0) + (data?.importantDates?.length ?? 0);
+  /** Fetches both lists again after a failure. */
+  function refetch() {
+    void interactionsQuery.refetch();
+    void importantDatesQuery.refetch();
+  }
 
   function handleExport() {
-    if (!data) return;
-    void downloadBlob(buildIcsContent(data), 'philotes-events.ics', { mimeType: 'text/calendar;charset=utf-8' });
+    if (hasEvents === false) {
+      return;
+    }
+    void downloadBlob(buildIcsContent({ interactions, importantDates }), 'philotes-events.ics', {
+      mimeType: 'text/calendar;charset=utf-8',
+    });
   }
 
   return (
@@ -52,21 +93,19 @@ export function ExportCalendarCard() {
       description="Download all your interactions and important dates as an ICS file. You can import this into Google Calendar, Apple Calendar, Outlook, or any other calendar application."
       contentSlot={
         <View className="items-start gap-3">
-          {error ? <Text className="text-destructive text-sm">{`Failed to load events: ${error.message}`}</Text> : null}
+          {error ? <QueryError compact error={error} onRetry={() => refetch()} what="your events" /> : null}
           <Button
             iconSlot={<Download />}
             content={loading ? 'Loading…' : `Export ${totalCount} Events as ICS`}
-            disabled={loading || !!error || totalCount === 0}
+            disabled={isExportBlocked}
             onPress={handleExport}
           />
-          {!loading && !error && totalCount > 0 ? (
-            <Text className="text-muted-foreground text-sm">
-              {`${data?.interactions?.length ?? 0} interactions · ${data?.importantDates?.length ?? 0} important dates`}
+          {isLoaded && hasEvents ? (
+            <Text className="text-foreground/60 text-sm">
+              {`${interactions.length} interactions · ${importantDates.length} important dates`}
             </Text>
           ) : null}
-          {!loading && !error && totalCount === 0 ? (
-            <Text className="text-muted-foreground text-sm">No events to export yet.</Text>
-          ) : null}
+          {isLoaded && hasEvents === false ? <EmptyState compact title="No events to export yet." /> : null}
         </View>
       }
     />

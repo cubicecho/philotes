@@ -13,15 +13,15 @@ const VERIFY_MAGIC_LINK = graphql(`
   mutation VerifyMagicLink($token: String!) {
     verifyMagicLink(token: $token) {
       token
-      userId
     }
   }
 `);
 
+/** Where a magic link lands: spends its token for a session and opens the app, or says the link is no good. */
 export default function VerifyPage() {
   const router = useRouter();
   const { token } = useLocalSearchParams<{ token?: string }>();
-  // A magic token is spent on first use, so a re-run effect must not send it twice.
+  // A link's token is spent on first use, so a re-run effect must not send it twice.
   const started = useRef(false);
 
   const [verify, { error }] = useMutation(VERIFY_MAGIC_LINK, {
@@ -35,7 +35,10 @@ export default function VerifyPage() {
   });
 
   useEffect(() => {
-    if (started.current || !token) return;
+    const hasNothingToSend = started.current || !token;
+    if (hasNothingToSend) {
+      return;
+    }
     started.current = true;
     verify({ variables: { token } });
   }, [token, verify]);
@@ -46,17 +49,13 @@ export default function VerifyPage() {
         <EmptyState
           icon={CircleAlert}
           level={1}
-          title={
-            error.message.includes('expired')
-              ? 'This link has expired. Please request a new one.'
-              : 'Invalid magic link.'
-          }
+          title="This sign-in link is invalid or has expired. Request a new one."
           actionSlot={<Button variant="outline" linkSlot={<Link href="/login" />} content="Back to sign in" />}
         />
       ) : (
         <View className="flex-row items-center gap-2">
           <Spinner label="Signing you in" />
-          <Text className="text-muted-foreground">Signing you in…</Text>
+          <Text className="text-foreground/60">Signing you in…</Text>
         </View>
       )}
     </View>
