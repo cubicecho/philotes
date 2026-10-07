@@ -295,8 +295,9 @@ function addUserPersonsResolvers(schema: GraphQLSchema): void {
     const { db } = ctx;
     const { personId, ...updates } = args;
 
-    const defined = Object.fromEntries(Object.entries(updates).filter(([, v]) => v !== undefined));
-    parseOrThrow(userPersonInput, defined);
+    // GraphQL passes a named-but-absent argument as undefined, which is not the null that clears a field.
+    const named = Object.fromEntries(Object.entries(updates).filter(([, v]) => v !== undefined));
+    const defined = parseOrThrow(userPersonInput, named);
 
     const isCallersRow = and(eq(dbSchema.userPersons.userId, userId), eq(dbSchema.userPersons.personId, personId));
     // An update that sets nothing is not valid SQL, so a call naming no field reads the row as it stands.

@@ -4,6 +4,8 @@ import { createClient, createPerson, createTestDb, createUser, type TestDb } fro
 
 const UPDATE_CONTEXT =
   'mutation ($personId: UUID!, $howWeMet: String) { updateMyPersonContext(personId: $personId, howWeMet: $howWeMet) { personId howWeMet } }';
+const UPDATE_FIRST_MET =
+  'mutation ($personId: UUID!, $firstMetDate: String) { updateMyPersonContext(personId: $personId, firstMetDate: $firstMetDate) { personId firstMetDate } }';
 const DELETE_MANY = 'mutation ($ids: [UUID!]) { deletePerson(where: { id: { inArray: $ids } }) { id } }';
 const DELETE_ONE = 'mutation ($id: UUID!) { deletePerson(where: { id: { eq: $id } }) { id } }';
 
@@ -25,6 +27,23 @@ describe('updateMyPersonContext', () => {
 
     expect(result.errors).toBeUndefined();
     expect(result.data).toEqual({ updateMyPersonContext: { personId, howWeMet: 'At the library' } });
+  });
+
+  it('saves the day the caller first met the person', async () => {
+    const personId = await createPerson(db, userId, 'Grace');
+
+    const data = await createClient(db, userId).expectOk(UPDATE_FIRST_MET, { personId, firstMetDate: '2019-04-02' });
+
+    expect(data).toEqual({ updateMyPersonContext: { personId, firstMetDate: '2019-04-02' } });
+  });
+
+  it('refuses a first-met date that is not a calendar day', async () => {
+    const personId = await createPerson(db, userId, 'Linus');
+
+    await createClient(db, userId).expectError(ErrorCode.BadUserInput, UPDATE_FIRST_MET, {
+      personId,
+      firstMetDate: 'last spring',
+    });
   });
 });
 
