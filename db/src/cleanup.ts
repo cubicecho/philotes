@@ -1,4 +1,4 @@
-import { db } from './index.ts';
+import { closeDatabase, db } from './index.ts';
 import {
   addresses,
   contactInfos,
@@ -35,3 +35,6 @@ await db.delete(persons);
 await db.delete(labels);
 
 console.log('Cleanup complete. All data has been removed.');
+
+// The open connection would keep the process alive after the last query.
+await closeDatabase();

@@ -57,13 +57,6 @@ talking to someone else. The Review page in Philotes makes "overdue" contacts
 visible in one place — not to create guilt, but to create clarity. You can see
 the gap and decide, deliberately, whether to close it.
 
-The Pre-Contact Brief surfaces recent notes, open tasks, and upcoming dates
-before you reach out to someone. The intention is small but meaningful: arriving
-at a conversation with context signals that you've been paying attention, and
-that signal travels. Research on relationship quality consistently points to
-felt attentiveness — not grand gestures — as the thing that makes people feel
-cared for. Preparation isn't performance; it's respect.
-
 The `@mention` system in notes draws from what knowledge management tools like
 Roam and Obsidian demonstrated: linking people through shared context surfaces
 connections that aren't obvious in a flat contact list. Notes about a
