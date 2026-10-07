@@ -79,6 +79,12 @@ describe('parseGoogleContactsCsv', () => {
     expect(contacts[0].labels).toEqual(['friends']);
   });
 
+  it('keeps the case of a label and drops a repeat that differs only by case', () => {
+    const csv = 'First Name,Last Name,Labels\nAlice,Smith,* Book Club ::: book club ::: NYC';
+    const { contacts } = parseGoogleContactsCsv(csv);
+    expect(contacts[0].labels).toEqual(['Book Club', 'NYC']);
+  });
+
   it('parses a birthday in YYYY-MM-DD format', () => {
     const csv = 'First Name,Last Name,E-mail 1 - Value,Birthday\nAlice,Smith,alice@example.com,1990-06-15';
     const { contacts } = parseGoogleContactsCsv(csv);

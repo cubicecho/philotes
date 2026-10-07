@@ -127,10 +127,17 @@ const RRULE_FREQUENCY: Record<Recurrence, string> = {
 /** The last day of the month every month has; a monthly date after it needs a rule for the shorter months. */
 const LAST_DAY_IN_EVERY_MONTH = 28;
 
+/** February, as `Date.getMonth` counts it and as an RRULE's BYMONTH does. */
+const FEBRUARY = { monthIndex: 1, byMonth: 2 } as const;
+
+/** The day February has only in a leap year. */
+const LEAP_DAY = 29;
+
 /**
  * Writes the RRULE for an important date. A monthly date past the 28th names every day from the 28th to
  * its own and takes the last one each month has, so the 31st falls on the 30th in April rather than
- * skipping the month, which is what a bare `FREQ=MONTHLY` does.
+ * skipping the month, which is what a bare `FREQ=MONTHLY` does. A yearly 29 February is written the same
+ * way, so it falls on the 28th outside a leap year rather than skipping three years in four.
  *
  * @param date - The date as recorded, at local midnight.
  * @param [recurrence] - How the date repeats.
@@ -146,6 +153,12 @@ function recurrenceRule(date: Date, recurrence: string | null | undefined): stri
   if (isShortMonthProne) {
     const days = Array.from({ length: day - LAST_DAY_IN_EVERY_MONTH + 1 }, (_, i) => LAST_DAY_IN_EVERY_MONTH + i);
     return `RRULE:FREQ=${frequency};BYMONTHDAY=${days.join(',')};BYSETPOS=-1`;
+  }
+  const isLeapDay = date.getMonth() === FEBRUARY.monthIndex && day === LEAP_DAY;
+  const isLeapYearOnly = recurrence === Recurrence.Yearly && isLeapDay;
+  if (isLeapYearOnly) {
+    const days = [LAST_DAY_IN_EVERY_MONTH, LEAP_DAY];
+    return `RRULE:FREQ=${frequency};BYMONTH=${FEBRUARY.byMonth};BYMONTHDAY=${days.join(',')};BYSETPOS=-1`;
   }
   return `RRULE:FREQ=${frequency}`;
 }
