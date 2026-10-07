@@ -13,12 +13,8 @@ import {
   type Sentiment,
   sentimentEmoji,
 } from '@/components/domain/person/interaction-form';
-import {
-  ATTACH_INTERACTION_TAG,
-  InteractionTagChip,
-  InteractionTagPicker,
-} from '@/components/domain/person/interaction-tags';
-import { AddTagButton, type TagOption } from '@/components/domain/person/tag-picker';
+import { ATTACH_INTERACTION_TAG, DETACH_INTERACTION_TAG } from '@/components/domain/person/tag-mutations';
+import { RowTags, type TagOption } from '@/components/domain/person/tag-picker';
 import { Button } from '@/components/ui/button';
 import { FormDialog } from '@/components/ui/form-dialog';
 import { Pencil, Trash2 } from '@/components/ui/icons';
@@ -127,14 +123,13 @@ interface InteractionRowProps {
 function InteractionRow({ interaction, allTags, onChanged }: InteractionRowProps) {
   const [expanded, setExpanded] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
-  const [showAddTag, setShowAddTag] = useState(false);
   const [deleteInteraction] = useMutation(DELETE_INTERACTION);
+  const [attachTag] = useMutation(ATTACH_INTERACTION_TAG);
+  const [detachTag] = useMutation(DETACH_INTERACTION_TAG);
   const [updateInteraction] = useMutation(UPDATE_INTERACTION);
 
   const longNote = interaction.note && interaction.note.length > NOTE_TRUNCATE;
   const displayNote = longNote && !expanded ? `${interaction.note?.slice(0, NOTE_TRUNCATE)}…` : interaction.note;
-
-  const attachedIds = new Set(interaction.labels.map((t) => t.id));
 
   const handleDelete = async () => {
     await deleteInteraction({ variables: { id: interaction.id } });
@@ -206,34 +201,13 @@ function InteractionRow({ interaction, allTags, onChanged }: InteractionRowProps
           </View>
         </View>
 
-        {/* Tags */}
-        <View className="gap-1">
-          {interaction.labels.length > 0 && (
-            <View className="flex-row flex-wrap gap-1">
-              {interaction.labels.map((t) => (
-                <InteractionTagChip
-                  key={t.id}
-                  interactionId={interaction.id}
-                  labelId={t.id}
-                  label={t.label}
-                  color={t.color}
-                  onDetach={onChanged}
-                />
-              ))}
-            </View>
-          )}
-          {showAddTag ? (
-            <InteractionTagPicker
-              interactionId={interaction.id}
-              allTags={allTags}
-              attachedTagIds={attachedIds}
-              onClose={() => setShowAddTag(false)}
-              onAdd={onChanged}
-            />
-          ) : (
-            <AddTagButton onPress={() => setShowAddTag(true)} />
-          )}
-        </View>
+        <RowTags
+          tags={interaction.labels}
+          allTags={allTags}
+          onAttach={(labelId) => attachTag({ variables: { interactionId: interaction.id, labelId } })}
+          onDetach={(labelId) => detachTag({ variables: { interactionId: interaction.id, labelId } })}
+          onChanged={onChanged}
+        />
       </View>
 
       <FormDialog open={editOpen} onOpenChange={setEditOpen} title="Edit Interaction">

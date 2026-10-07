@@ -7,8 +7,8 @@ import { ActionButton } from '@/components/action-button';
 import { useAppForm } from '@/components/app-form';
 import { ConfirmButton } from '@/components/confirm-button';
 import { MentionTextareaField } from '@/components/domain/person/note-mentions';
-import { ATTACH_NOTE_TAG, NoteTagChip, NoteTagPicker } from '@/components/domain/person/note-tags';
-import { AddTagButton, type TagOption, TagsField } from '@/components/domain/person/tag-picker';
+import { ATTACH_NOTE_TAG, DETACH_NOTE_TAG } from '@/components/domain/person/tag-mutations';
+import { RowTags, type TagOption, TagsField } from '@/components/domain/person/tag-picker';
 import { Button } from '@/components/ui/button';
 import { Form } from '@/components/ui/form';
 import { FormDialog, FormDialogFooter } from '@/components/ui/form-dialog';
@@ -175,8 +175,9 @@ interface NoteRowProps {
 
 function NoteRow({ note, allTags, allPersons, onChanged }: NoteRowProps) {
   const [editOpen, setEditOpen] = useState(false);
-  const [showAddTag, setShowAddTag] = useState(false);
   const [updateNote] = useMutation(UPDATE_NOTE);
+  const [attachTag] = useMutation(ATTACH_NOTE_TAG);
+  const [detachTag] = useMutation(DETACH_NOTE_TAG);
   const [deleteNote] = useMutation(DELETE_NOTE);
   const [createNoteMention] = useMutation(CREATE_NOTE_MENTION);
   const [deleteNoteMention] = useMutation(DELETE_NOTE_MENTIONS);
@@ -198,8 +199,6 @@ function NoteRow({ note, allTags, allPersons, onChanged }: NoteRowProps) {
     await deleteNote({ variables: { id: note.id } });
     onChanged();
   };
-
-  const attachedIds = new Set(note.labels.map((t) => t.id));
 
   return (
     <>
@@ -226,34 +225,13 @@ function NoteRow({ note, allTags, allPersons, onChanged }: NoteRowProps) {
           </View>
         </View>
 
-        {/* Tags */}
-        <View className="gap-1">
-          {note.labels.length > 0 && (
-            <View className="flex-row flex-wrap gap-1">
-              {note.labels.map((t) => (
-                <NoteTagChip
-                  key={t.id}
-                  noteId={note.id}
-                  labelId={t.id}
-                  label={t.label}
-                  color={t.color}
-                  onDetach={onChanged}
-                />
-              ))}
-            </View>
-          )}
-          {showAddTag ? (
-            <NoteTagPicker
-              noteId={note.id}
-              allTags={allTags}
-              attachedTagIds={attachedIds}
-              onClose={() => setShowAddTag(false)}
-              onAdd={onChanged}
-            />
-          ) : (
-            <AddTagButton onPress={() => setShowAddTag(true)} />
-          )}
-        </View>
+        <RowTags
+          tags={note.labels}
+          allTags={allTags}
+          onAttach={(labelId) => attachTag({ variables: { noteId: note.id, labelId } })}
+          onDetach={(labelId) => detachTag({ variables: { noteId: note.id, labelId } })}
+          onChanged={onChanged}
+        />
 
         {/* Mentions */}
         {note.mentions.length > 0 && (

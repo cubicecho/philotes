@@ -12,8 +12,8 @@ import {
   MILESTONE_TYPE_OPTIONS,
   RECURRENCE_OPTIONS,
 } from '@/components/domain/person/important-date-form';
-import { ImportantDateTags } from '@/components/domain/person/important-date-tags';
-import type { TagOption } from '@/components/domain/person/tag-picker';
+import { ATTACH_IMPORTANT_DATE_TAG, DETACH_IMPORTANT_DATE_TAG } from '@/components/domain/person/tag-mutations';
+import { RowTags, type TagOption } from '@/components/domain/person/tag-picker';
 import { Badge } from '@/components/ui/badge';
 import { FormDialog } from '@/components/ui/form-dialog';
 import { Pencil, Trash2 } from '@/components/ui/icons';
@@ -79,7 +79,8 @@ export function ImportantDateRow({
   const recurrenceLabel = RECURRENCE_OPTIONS.find((o) => o.value === recurrence)?.label;
   const milestoneLabel = MILESTONE_TYPE_OPTIONS.find((o) => o.value === milestoneType)?.label;
   const [editOpen, setEditOpen] = useState(false);
-  const [showAddTag, setShowAddTag] = useState(false);
+  const [attachTag] = useMutation(ATTACH_IMPORTANT_DATE_TAG);
+  const [detachTag] = useMutation(DETACH_IMPORTANT_DATE_TAG);
   const [updateImportantDate] = useMutation(UPDATE_IMPORTANT_DATE, {
     refetchQueries: [],
   });
@@ -139,14 +140,15 @@ export function ImportantDateRow({
             />
           </View>
         </View>
-        <ImportantDateTags
-          importantDateId={id}
-          tags={tags}
-          allTags={allTags}
-          showAdd={showAddTag}
-          onShowAdd={setShowAddTag}
-          onChanged={onTagChanged}
-        />
+        <View className="mt-1.5">
+          <RowTags
+            tags={tags}
+            allTags={allTags}
+            onAttach={(labelId) => attachTag({ variables: { importantDateId: id, labelId } })}
+            onDetach={(labelId) => detachTag({ variables: { importantDateId: id, labelId } })}
+            onChanged={onTagChanged}
+          />
+        </View>
       </View>
 
       <FormDialog open={editOpen} onOpenChange={setEditOpen} title="Edit Important Date">
