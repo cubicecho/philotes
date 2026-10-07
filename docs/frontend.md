@@ -99,8 +99,7 @@ const GET_PERSONS = graphql(`
   query GetPersons($where: PersonFilters, $orderBy: PersonOrderBy) {
     persons(where: $where, orderBy: $orderBy) {
       id
-      firstName
-      lastName
+      displayName
     }
   }
 `);
@@ -147,7 +146,8 @@ No number or closed-set string is written where it is used.
   below the imports.
 - **`src/lib/time.ts`** holds unit conversions (`MS_PER_DAY`, `DAYS_PER_WEEK`).
 - **Vocabularies.** GraphQL enums come generated, as `as const` objects:
-  `ContactTypeEnum`, `AddressTypeEnum` and `ImportantDatesMilestoneTypeEnum`
+  `ContactTypeEnum`, `ContactInfosKindEnum`, `AddressTypeEnum`,
+  `ImportantDatesKindEnum` and `ImportantDatesMilestoneTypeEnum`
   from `@/__generated__/graphql`. Recurrence, interaction channel, sentiment and
   check-in frequency cross the API as plain strings, so `src/lib/vocabulary.ts`
   mirrors the db package's objects, and `src/__tests__/vocabulary.test.ts`
@@ -168,7 +168,7 @@ from the route instead, which is the simpler default for new work:
 ```ts
 export interface PersonRowData {
   id: string;
-  firstName: string;
+  displayName: string;
   // …
 }
 ```

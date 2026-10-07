@@ -44,6 +44,17 @@ for a caller:
   new row, and `deletePerson` deletes it with what was recorded about them.
   `updatePersons` and `deletePersons` need a `where` that names something, so
   neither can be run over every person by leaving it out.
+- A person's name parts are all nullable, and `createPerson` needs one of
+  `firstName`, `lastName`, `nickname` or `organization`. `displayName` and
+  `sortName` are computed by the database: read them, filter and order by them,
+  but they are in no input. `uid` is read-only too.
+- A contact info's `normalizedValue` is written by the server from `type`,
+  `value` and the caller's default country, and is in no input. Match a
+  telephone number on it, not on `value`. `setDefaultCountry(country)` changes
+  the country and renormalises the caller's numbers; `user { defaultCountry }`
+  reads it.
+- An important date with `hasYear: false` carries the year 1604 in `date`. The
+  client sends that year and does not show it.
 - A person's email addresses are `contactInfos` of type `email`; there is no
   `email` field on `Person`. `avatarPath` can be read but not written: a
   picture is set by uploading it to `POST /avatars/<personId>`.
@@ -59,7 +70,7 @@ Every list, aggregate, update and delete takes a `where` of per-column filter
 objects:
 
 ```graphql
-persons(where: { lastName: { eq: "Lovelace" } }) { id firstName }
+persons(where: { lastName: { eq: "Lovelace" } }) { id displayName }
 ```
 
 Operators depend on the column type: `eq`, `ne`, `gt`, `gte`, `lt`, `lte`,
@@ -79,7 +90,7 @@ notes(where: {
 ## Ordering and pagination
 
 ```graphql
-persons(orderBy: { lastName: { direction: asc, priority: 1 } }, limit: 20, offset: 40) { id }
+persons(orderBy: { sortName: { direction: asc, priority: 1 } }, limit: 20, offset: 40) { id }
 ```
 
 For stable paging over a large list, prefer the keyset cursor: select `cursor`
@@ -113,7 +124,7 @@ import { graphql } from "@/__generated__/gql.js";
 
 const GET_PERSONS = graphql(`
   query GetPersons {
-    persons { id firstName lastName }
+    persons { id displayName }
   }
 `);
 // GetPersonsQuery and GetPersonsQueryVariables are inferred automatically

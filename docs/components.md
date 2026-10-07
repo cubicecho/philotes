@@ -81,7 +81,7 @@ interface PersonFormProps {
 }
 
 interface PersonFormValue {
-  person: PersonFormPerson;   // firstName, lastName, contactFrequency, howWeMet, firstMetDate
+  person: PersonFormPerson;   // the name parts, organization, jobTitle, department, about, contactFrequency, …
   email: string | null;       // a new person's address, saved as a contact info; null on an edit
   labelIds: string[];
 }
@@ -91,6 +91,13 @@ Passing `initialValues` turns it into an edit form; the same component serves
 both. The email field is only drawn when adding: a stored person's addresses
 are contact infos, edited on their page. `primaryEmail` and `primaryPhone` in
 `lib/primary-contact.ts` pick the one a row or a button uses.
+
+A new person needs a first name, last name, nickname or organization; an edit
+does not, since a stored person may be only a number. That rule is checked on
+submit and shown in the footer, not on a field. A person is named on screen
+with `personName` (`lib/person-name.ts`): the server's `displayName`, else an
+email address, else a telephone number, else "Unnamed". Do not join name parts
+in a component.
 
 ### `PersonList` + `PersonRow` (`domain/person/list.tsx`)
 
