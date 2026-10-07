@@ -4,11 +4,11 @@ import { fileURLToPath } from 'node:url';
 import { DATABASE_URL, db, runMigrations } from '@philotes/db';
 import cors from 'cors';
 import express from 'express';
-import { createAvatarRouter } from './routes/avatars.ts';
-import { createGraphQLRouter } from './routes/graphql.ts';
-import { icalHandler } from './routes/ical.ts';
+import { createGraphQLRouter } from './graphql/handler.ts';
+import { icalHandler } from './important-dates/ical.ts';
+import { createAvatarRouter } from './persons/avatars.ts';
 
-export type { Context } from './routes/graphql.ts';
+export type { Context } from './graphql/handler.ts';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const PORT = process.env.PORT ?? 3001;

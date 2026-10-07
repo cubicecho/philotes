@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { parseGoogleContactsCsv } from '../lib/google-contacts-csv.ts';
-import { signMagicToken, signToken, verifyMagicToken, verifyToken } from '../resolvers/auth.ts';
+import { signMagicToken, signToken, verifyMagicToken, verifyToken } from '../auth/resolvers.ts';
+import { parseGoogleContactsCsv } from '../contact-import/google-contacts-csv.ts';
 
 // ---------------------------------------------------------------------------
 // 1. Google CSV parser

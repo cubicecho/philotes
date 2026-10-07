@@ -1,14 +1,14 @@
 import { db as dbInstance } from '@philotes/db';
 import { buildSchema } from '@vantreeseba/drizzle-graphql';
-import { applyApiKeysExtension } from './resolvers/api-keys.ts';
-import { applyAuthExtension } from './resolvers/auth.ts';
-import { applyImportContactsExtension } from './resolvers/import-contacts.ts';
-import { onWrite } from './resolvers/junction-ownership.ts';
-import { applyMergeLabelsExtension } from './resolvers/merge-labels.ts';
-import { applyRelationshipsExtension } from './resolvers/relationships.ts';
-import { applyUpcomingDatesExtension } from './resolvers/upcoming-dates.ts';
-import { applyUserScopeExtensions } from './resolvers/user-scope.ts';
+import { applyApiKeysExtension } from '../api-keys/resolvers.ts';
+import { applyAuthExtension } from '../auth/resolvers.ts';
+import { applyImportContactsExtension } from '../contact-import/resolvers.ts';
+import { applyUpcomingDatesExtension } from '../important-dates/resolvers.ts';
+import { applyMergeLabelsExtension } from '../labels/resolvers.ts';
+import { applyUserScopeExtensions } from '../persons/resolvers.ts';
+import { applyRelationshipsExtension } from '../relationships/resolvers.ts';
 import { contextValues, exclude, features, scope } from './tenancy.ts';
+import { onWrite } from './write-guards.ts';
 
 const { schema: drizzleSchema, entities } = buildSchema(dbInstance, {
   prefixes: {

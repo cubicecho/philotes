@@ -2,7 +2,7 @@ import { schema as dbSchema } from '@philotes/db';
 import { eq } from 'drizzle-orm';
 import { extendSchema, GraphQLError, type GraphQLObjectType, type GraphQLSchema, parse } from 'graphql';
 import jwt from 'jsonwebtoken';
-import type { Context } from '../routes/graphql.ts';
+import type { Context } from '../graphql/handler.ts';
 
 const JWT_SECRET = process.env.JWT_SECRET ?? 'dev-secret-change-in-production';
 const APP_URL = process.env.APP_URL ?? 'http://localhost:3000';

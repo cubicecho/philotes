@@ -8,7 +8,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 async function main() {
-  const projectRoot = resolve(__dirname, '..', '..');
+  const projectRoot = resolve(__dirname, '..', '..', '..');
   const outputDir = resolve(projectRoot, 'server', '__generated__');
   const outputPath = resolve(outputDir, 'schema.graphql');
 

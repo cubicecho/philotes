@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { constantTimeEqual, generateApiKey, hashApiKey, isApiKey } from '../api-keys.ts';
+import { constantTimeEqual, generateApiKey, hashApiKey, isApiKey } from '../api-keys/tokens.ts';
 
 describe('generateApiKey', () => {
   it('returns a prefixed token with its own hash', () => {

@@ -2,7 +2,7 @@ import { apiKeys, db, importantDates, persons } from '@philotes/db';
 import { and, eq, isNull } from 'drizzle-orm';
 import type { Request, Response } from 'express';
 import ical, { ICalEventRepeatingFreq } from 'ical-generator';
-import { hashApiKey, isApiKey } from '../api-keys.ts';
+import { hashApiKey, isApiKey } from '../api-keys/tokens.ts';
 
 export async function icalHandler(req: Request, res: Response): Promise<void> {
   const { key } = req.query;

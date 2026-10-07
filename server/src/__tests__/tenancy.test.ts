@@ -2,9 +2,9 @@ import type { FeatureSwitch } from '@vantreeseba/drizzle-graphql';
 import { getTableColumns, is, Table } from 'drizzle-orm';
 import { describe, expect, it, vi } from 'vitest';
 import * as dbSchema from '../../../db/src/schema.ts';
-import { onWrite, writtenRows } from '../resolvers/junction-ownership.ts';
-import type { Context } from '../routes/graphql.ts';
-import { contextValues, exclude, features, scope } from '../tenancy.ts';
+import type { Context } from '../graphql/handler.ts';
+import { contextValues, exclude, features, scope } from '../graphql/tenancy.ts';
+import { onWrite, writtenRows } from '../graphql/write-guards.ts';
 
 // The tenancy config is imported for its shape, not to run queries, so the db
 // package is stubbed: importing it for real boots a PGlite instance against the

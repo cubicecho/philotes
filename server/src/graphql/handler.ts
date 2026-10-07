@@ -5,8 +5,8 @@ import { expressMiddleware } from '@as-integrations/express5';
 import type { DB } from '@philotes/db';
 import { db } from '@philotes/db';
 import express, { Router } from 'express';
-import { extractUserId } from '../resolvers/auth.ts';
-import { schema } from '../schema.ts';
+import { extractUserId } from '../auth/resolvers.ts';
+import { schema } from './schema.ts';
 
 export interface Context {
   db: DB;

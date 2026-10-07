@@ -2,7 +2,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { DATABASE_URL, db, schema as dbSchema, runMigrations } from '@philotes/db';
 import { type ExecutionResult, graphql } from 'graphql';
-import { schema } from '../../schema.ts';
+import { schema } from '../../graphql/schema.ts';
 
 const MIGRATIONS_FOLDER = join(dirname(fileURLToPath(import.meta.url)), '../../../../db/drizzle');
 

@@ -1,8 +1,8 @@
 import { db, schema as dbSchema } from '@philotes/db';
 import type { BuildSchemaConfig, RowScope } from '@vantreeseba/drizzle-graphql';
 import { eq, inArray } from 'drizzle-orm';
-import { requireAuth } from './resolvers/auth.ts';
-import type { Context } from './routes/graphql.ts';
+import { requireAuth } from '../auth/resolvers.ts';
+import type { Context } from './handler.ts';
 
 // Multi-tenancy, expressed as drizzle-graphql configuration rather than as
 // resolver wrappers. `scope` is ANDed into the SQL of every read, update and

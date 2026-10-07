@@ -7,8 +7,8 @@ import { db, schema as dbSchema } from '@philotes/db';
 import { and, eq } from 'drizzle-orm';
 import express from 'express';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
-import { signToken } from '../resolvers/auth.ts';
-import { createAvatarRouter } from '../routes/avatars.ts';
+import { signToken } from '../auth/resolvers.ts';
+import { createAvatarRouter } from '../persons/avatars.ts';
 import { createPerson, createUser, migrateTestDatabase } from './helpers/harness.ts';
 
 const HTTP_OK = 200;

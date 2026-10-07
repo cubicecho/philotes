@@ -1,8 +1,8 @@
 import { schema as dbSchema } from '@philotes/db';
 import { and, eq } from 'drizzle-orm';
 import { extendSchema, GraphQLError, type GraphQLObjectType, type GraphQLSchema, parse } from 'graphql';
-import type { Context } from '../routes/graphql.ts';
-import { requireAuth } from './auth.ts';
+import { requireAuth } from '../auth/resolvers.ts';
+import type { Context } from '../graphql/handler.ts';
 
 // Row-level tenancy — which rows a user may read and write, and the userId
 // stamped on the rows they create — is configured on buildSchema itself; see

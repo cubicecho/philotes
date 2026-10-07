@@ -9,7 +9,7 @@
     "build": "echo 'no server build needed'",
     "start": "node --preserve-symlinks src/index.ts",
     "clean": "rm -rf __generated__",
-    "codegen": "node --import=./src/preload-env.ts src/write-schema.ts && graphql-codegen-esm"
+    "codegen": "node --import=./src/core/preload-env.ts src/graphql/write-schema.ts && graphql-codegen-esm"
   },
   "dependencies": {
     "@apollo/server": "^5.5.1",

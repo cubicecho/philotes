@@ -5,7 +5,7 @@ import { db, schema as dbSchema } from '@philotes/db';
 import { and, eq } from 'drizzle-orm';
 import { type NextFunction, type Request, type Response, Router } from 'express';
 import multer from 'multer';
-import { extractUserId } from '../resolvers/auth.ts';
+import { extractUserId } from '../auth/resolvers.ts';
 
 /** The URL prefix the stored `avatarPath` carries, and the mount the files are served under. */
 const AVATAR_URL_PREFIX = '/avatars/';
