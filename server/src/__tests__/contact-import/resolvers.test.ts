@@ -1,7 +1,7 @@
 import { db, schema as dbSchema } from '@philotes/db';
 import { eq } from 'drizzle-orm';
 import { beforeAll, describe, expect, it } from 'vitest';
-import { createUser, migrateTestDatabase, run } from './helpers/harness.ts';
+import { createUser, migrateTestDatabase, run } from '../helpers.ts';
 
 const IMPORT = 'mutation ($csv: String!) { importGoogleContacts(csv: $csv) { imported merged errors } }';
 const SHARED_PHONE = '555-0100';

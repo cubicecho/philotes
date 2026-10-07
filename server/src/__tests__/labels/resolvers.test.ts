@@ -1,7 +1,7 @@
 import { db, schema as dbSchema } from '@philotes/db';
 import { eq } from 'drizzle-orm';
 import { beforeAll, describe, expect, it } from 'vitest';
-import { createPerson, createUser, migrateTestDatabase, run } from './helpers/harness.ts';
+import { createPerson, createUser, migrateTestDatabase, run } from '../helpers.ts';
 
 const MERGE =
   'mutation ($keepId: UUID!, $deleteId: UUID!) { mergeLabelInto(keepId: $keepId, deleteId: $deleteId) { id } }';

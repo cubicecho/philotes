@@ -1,7 +1,7 @@
 import { apiKeys, db } from '@philotes/db';
 import { eq } from 'drizzle-orm';
 import { beforeAll, describe, expect, it } from 'vitest';
-import { createUser, migrateTestDatabase, run } from './helpers/harness.ts';
+import { createUser, migrateTestDatabase, run } from '../helpers.ts';
 
 const CREATE = 'mutation ($input: CreateApiKeyInput!) { myCreateApiKey(input: $input) { apiKey { id } } }';
 const REVOKE = 'mutation ($id: ID!) { myRevokeApiKey(id: $id) }';

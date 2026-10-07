@@ -2,9 +2,9 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { DATABASE_URL, db, schema as dbSchema, runMigrations } from '@philotes/db';
 import { type ExecutionResult, graphql } from 'graphql';
-import { schema } from '../../graphql/schema.ts';
+import { schema } from '../graphql/schema.ts';
 
-const MIGRATIONS_FOLDER = join(dirname(fileURLToPath(import.meta.url)), '../../../../db/drizzle');
+const MIGRATIONS_FOLDER = join(dirname(fileURLToPath(import.meta.url)), '../../../db/drizzle');
 
 /**
  * Applies the migrations to this test file's database. vitest.config.ts points `DATABASE_URL` at
