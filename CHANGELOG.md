@@ -1,3 +1,10 @@
+## [3.1.1](https://github.com/cubicecho/philotes/compare/v3.1.0...v3.1.1) (2026-10-07)
+
+
+### Bug Fixes
+
+* **server:** write the validated input in updateMyPersonContext ([3a3fae3](https://github.com/cubicecho/philotes/commit/3a3fae39e8e9add5bc2a83ed27c552808af3d137)), closes [#12](https://github.com/cubicecho/philotes/issues/12)
+
 # [3.1.0](https://github.com/cubicecho/philotes/compare/v3.0.0...v3.1.0) (2026-10-07)
 
 
