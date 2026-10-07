@@ -1,6 +1,6 @@
-import type { DB } from '@philotes/db';
-import { apiKeys } from '@philotes/db/api-keys';
-import { importantDates, persons } from '@philotes/db/schema';
+import type { DB } from '@cubicecho/philotes-db';
+import { apiKeys } from '@cubicecho/philotes-db/api-keys';
+import { importantDates, persons } from '@cubicecho/philotes-db/schema';
 import { and, eq, isNull } from 'drizzle-orm';
 import type { Request, RequestHandler, Response } from 'express';
 import ical, { ICalEventRepeatingFreq } from 'ical-generator';

@@ -1,8 +1,8 @@
 import { randomUUID } from 'node:crypto';
 import { unlink } from 'node:fs/promises';
 import { basename, join } from 'node:path';
-import type { DB } from '@philotes/db';
-import * as dbSchema from '@philotes/db/schema';
+import type { DB } from '@cubicecho/philotes-db';
+import * as dbSchema from '@cubicecho/philotes-db/schema';
 import { and, eq } from 'drizzle-orm';
 import { type NextFunction, type Request, type Response, Router } from 'express';
 import multer from 'multer';

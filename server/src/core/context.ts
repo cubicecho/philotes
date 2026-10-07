@@ -1,4 +1,4 @@
-import type { DB } from '@philotes/db';
+import type { DB } from '@cubicecho/philotes-db';
 
 /** What every resolver receives. Built once per request. */
 export interface Context {

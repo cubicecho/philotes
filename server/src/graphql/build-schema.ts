@@ -1,4 +1,4 @@
-import type { DB } from '@philotes/db';
+import type { DB } from '@cubicecho/philotes-db';
 import { buildSchema } from '@vantreeseba/drizzle-graphql';
 import type { GraphQLSchema } from 'graphql';
 import { applyApiKeysExtension } from '../api-keys/resolvers.ts';
@@ -10,13 +10,6 @@ import { applyUserScopeExtensions } from '../persons/resolvers.ts';
 import { applyRelationshipsExtension } from '../relationships/resolvers.ts';
 import { contextValues, exclude, features, scope } from './tenancy.ts';
 import { onWrite } from './write-guards.ts';
-
-/** What `createSchema` hands back. */
-export interface BuiltSchema {
-  schema: GraphQLSchema;
-  /** drizzle-graphql's generated types and resolvers, for hand-built roots. */
-  entities: ReturnType<typeof buildSchema>['entities'];
-}
 
 /** The hand-written extensions, in the order they are applied. */
 const EXTENSIONS: Array<(schema: GraphQLSchema) => GraphQLSchema> = [
@@ -33,9 +26,9 @@ const EXTENSIONS: Array<(schema: GraphQLSchema) => GraphQLSchema> = [
  * Builds the served schema. Kept apart from schema.ts so tests can bind a throwaway db.
  *
  * @param db - Drizzle client.
- * @returns The schema and drizzle-graphql's generated entities.
+ * @returns The schema and drizzle-graphql's generated entities, typed by inference from the tables.
  */
-export function createSchema(db: DB): BuiltSchema {
+export function createSchema(db: DB) {
   const { schema: generated, entities } = buildSchema(db, {
     prefixes: { insert: 'create', update: 'update', delete: 'delete' },
     // Table keys are plural (`tasks`). Types and single-row fields are singular (Task, task).

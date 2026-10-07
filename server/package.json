@@ -1,17 +1,17 @@
 {
-  "name": "@philotes/server",
+  "name": "@cubicecho/philotes-server",
   "version": "0.1.0",
   "private": true,
   "type": "module",
   "main": "./src/index.ts",
   "scripts": {
-    "dev": "node --env-file=../.env --watch src/index.ts",
+    "dev": "node --env-file-if-exists=../.env --watch src/index.ts",
     "start": "node src/index.ts",
     "clean": "rm -rf __generated__",
     "codegen": "node --import=./src/core/preload-env.ts src/graphql/write-schema.ts && graphql-codegen-esm"
   },
   "dependencies": {
-    "@philotes/db": "*",
+    "@cubicecho/philotes-db": "*",
     "@vantreeseba/drizzle-graphql": "^9.0.0",
     "cors": "^2.8.6",
     "drizzle-orm": "1.0.0-rc.4",

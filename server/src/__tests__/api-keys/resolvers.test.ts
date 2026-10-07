@@ -1,4 +1,4 @@
-import { apiKeys } from '@philotes/db/api-keys';
+import { apiKeys } from '@cubicecho/philotes-db/api-keys';
 import { eq } from 'drizzle-orm';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { ErrorCode } from '../../core/errors.ts';

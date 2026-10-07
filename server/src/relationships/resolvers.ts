@@ -1,4 +1,4 @@
-import * as dbSchema from '@philotes/db/schema';
+import * as dbSchema from '@cubicecho/philotes-db/schema';
 import { and, eq, or } from 'drizzle-orm';
 import { extendSchema, type GraphQLObjectType, type GraphQLSchema, parse } from 'graphql';
 import type { Context } from '../core/context.ts';

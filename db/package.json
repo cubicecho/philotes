@@ -1,5 +1,5 @@
 {
-  "name": "@philotes/db",
+  "name": "@cubicecho/philotes-db",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -7,21 +7,21 @@
     ".": "./src/index.ts",
     "./schema": "./src/schema.ts",
     "./relations": "./src/relations.ts",
-    "./api-keys": "./src/api-keys.ts"
+    "./api-keys": "./src/api-keys.ts",
+    "./wait": "./src/wait.ts",
+    "./defaults": "./src/defaults.ts"
   },
   "scripts": {
     "generate": "drizzle-kit generate",
-    "migrate": "node --env-file=../.env src/migrate.ts",
-    "seed": "node --env-file=../.env src/seed.ts",
-    "cleanup": "node --env-file=../.env src/cleanup.ts",
+    "migrate": "drizzle-kit migrate",
+    "seed": "node --env-file-if-exists=../.env src/seed.ts",
+    "cleanup": "node --env-file-if-exists=../.env src/cleanup.ts",
     "push": "drizzle-kit push",
     "studio": "drizzle-kit studio",
     "clean": "rm -rf node_modules"
   },
   "dependencies": {
-    "@electric-sql/pglite": "^0.3.15",
     "drizzle-orm": "1.0.0-rc.4",
-    "@vantreeseba/drizzle-graphql": "^9.0.0",
     "postgres": "^3.4.9"
   },
   "devDependencies": {

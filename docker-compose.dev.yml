@@ -1,0 +1,15 @@
+# Its own project name, so it never collides with docker-compose.yml's containers.
+name: philotes-dev
+services:
+  postgres:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment: { POSTGRES_USER: philotes, POSTGRES_PASSWORD: philotes, POSTGRES_DB: philotes }
+    ports:
+      # Loopback by default. Set DEV_BIND=0.0.0.0 when the Docker daemon is remote
+      # (`docker context ls`), because 127.0.0.1 there is the daemon host's loopback.
+      - "${DEV_BIND:-127.0.0.1}:${POSTGRES_PORT:-5439}:5432"
+    volumes: [philotes_dev_pgdata:/var/lib/postgresql/data]
+    healthcheck: { test: ["CMD-SHELL", "pg_isready -U philotes -d philotes"], interval: 5s, timeout: 5s, retries: 10 }
+volumes:
+  philotes_dev_pgdata:

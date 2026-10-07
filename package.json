@@ -30,7 +30,9 @@
     "check:types": "tsc --noEmit -p app/tsconfig.json && tsc --noEmit -p server/tsconfig.json && tsc --noEmit -p db/tsconfig.json",
     "codegen": "npm run codegen:server && npm run codegen:app",
     "codegen:app": "npm run codegen -w app",
-    "codegen:server": "npm run codegen -w server"
+    "codegen:server": "npm run codegen -w server",
+    "db:up": "docker compose -f docker-compose.dev.yml up -d",
+    "db:down": "docker compose -f docker-compose.dev.yml down"
   },
   "overrides": {
     "graphql": "16.13.2",

@@ -7,8 +7,8 @@ export default defineConfig({
     environment: 'node',
     include: ['**/*.test.ts', '**/*.test.tsx'],
     exclude: ['**/node_modules/**', '**/dist/**'],
-    // A test that loads the db package gets an in-memory PGlite, never the repo's pgdata directory.
-    env: { DATABASE_URL: 'memory://' },
+    // Empty, so a test that loads the db client by mistake fails at once. Tests build their own PGlite.
+    env: { DATABASE_URL: '' },
   },
   resolve: {
     alias: [

@@ -1,4 +1,4 @@
-import type { DB } from '@philotes/db';
+import type { DB } from '@cubicecho/philotes-db';
 import { createYoga } from 'graphql-yoga';
 import { extractUserId } from '../auth/resolvers.ts';
 import { isProduction } from '../core/config.ts';

@@ -3,7 +3,7 @@
 # ── Stage 1: build ───────────────────────────────────────────────────────────
 FROM node:26-alpine AS builder
 
-# Required for PGlite WASM compilation and native addons (sharp, etc.)
+# Required for native addons (sharp, etc.)
 RUN apk add --no-cache python3 make g++
 
 WORKDIR /app
@@ -13,7 +13,9 @@ COPY . .
 # Install all dependencies including devDependencies (needed for codegen + vite build)
 RUN npm ci
 
-# Run GraphQL codegen, build the web app
+# Codegen imports the db package, which refuses to load without DATABASE_URL.
+# postgres-js doesn't connect until a query runs, so a placeholder is enough.
+ENV DATABASE_URL=postgres://build:build@127.0.0.1:5432/build
 RUN npm run codegen && npm run build -w app
 
 # ── Stage 2: production ───────────────────────────────────────────────────────
@@ -24,19 +26,19 @@ WORKDIR /app
 # Copy the full built monorepo from builder (preserves workspace symlinks + source for strip-types)
 COPY --from=builder /app .
 
-# Drop devDependencies — PGlite WASM and all runtime deps are preserved
+# Drop devDependencies
 RUN npm prune --omit=dev
 
 ENV NODE_ENV=production
 ENV PORT=3001
-# PGlite stores its database files here — mount a volume at /data to persist across restarts
-ENV DATABASE_URL=/data/pgdata
+# The builder's placeholder must not reach a running container: preflight asks for a real one.
+ENV DATABASE_URL=
 
-RUN mkdir -p /data /avatars
+RUN mkdir -p /avatars
 
 EXPOSE 3001
 
-VOLUME ["/data", "/avatars"]
+VOLUME ["/avatars"]
 
 # Run server directly as TypeScript — no compile step needed
 CMD ["node", "server/src/index.ts"]

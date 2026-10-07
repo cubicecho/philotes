@@ -1,5 +1,6 @@
 // Getters, not constants, so a test (or a reload) sees the current environment.
 import { createRequire } from 'node:module';
+import { DATABASE_DEFAULTS } from '@cubicecho/philotes-db/defaults';
 import { HTTP_DEFAULTS } from './defaults.ts';
 
 const NODE_ENV_PRODUCTION = 'production';
@@ -59,6 +60,14 @@ export const allowedOrigins = (): string[] => (isProduction() ? [appUrl()] : [ap
  * @returns `JWT_SECRET`, or an empty string when unset.
  */
 export const jwtSecret = (): string => process.env.JWT_SECRET ?? '';
+
+/**
+ * How long boot waits for Postgres before exiting.
+ *
+ * @returns `DB_CONNECT_TIMEOUT_MS`, or `DATABASE_DEFAULTS.connectTimeoutMs`, in milliseconds.
+ */
+export const dbConnectTimeoutMs = (): number =>
+  envNumber(process.env.DB_CONNECT_TIMEOUT_MS, DATABASE_DEFAULTS.connectTimeoutMs);
 
 /**
  * Express `trust proxy`: which hops may set X-Forwarded-For, and so what `req.ip` is.

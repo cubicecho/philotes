@@ -16,6 +16,11 @@ function fatal(message: string): never {
   process.exit(1);
 }
 
+const databaseUrl = process.env.DATABASE_URL ?? '';
+if (databaseUrl === '') {
+  fatal('DATABASE_URL is required. Copy .env.example to .env, then run `npm run db:up` for a local Postgres.');
+}
+
 if (isProduction()) {
   const secret = jwtSecret();
   const isTooShort = secret.length < AUTH_DEFAULTS.minSecretLength;

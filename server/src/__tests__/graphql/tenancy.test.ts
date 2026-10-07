@@ -1,4 +1,4 @@
-import * as dbSchema from '@philotes/db/schema';
+import * as dbSchema from '@cubicecho/philotes-db/schema';
 import type { FeatureSwitch } from '@vantreeseba/drizzle-graphql';
 import { getTableColumns, is, Table } from 'drizzle-orm';
 import { describe, expect, it } from 'vitest';

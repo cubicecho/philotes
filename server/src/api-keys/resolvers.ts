@@ -1,4 +1,4 @@
-import { apiKeys } from '@philotes/db/api-keys';
+import { apiKeys } from '@cubicecho/philotes-db/api-keys';
 import { and, desc, eq, isNull } from 'drizzle-orm';
 import { extendSchema, type GraphQLObjectType, type GraphQLSchema, parse } from 'graphql';
 import type { Context } from '../core/context.ts';

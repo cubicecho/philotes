@@ -1,4 +1,4 @@
-import * as dbSchema from '@philotes/db/schema';
+import * as dbSchema from '@cubicecho/philotes-db/schema';
 import type { BuildSchemaConfig } from '@vantreeseba/drizzle-graphql';
 import { and, eq, inArray } from 'drizzle-orm';
 import type { Context } from '../core/context.ts';

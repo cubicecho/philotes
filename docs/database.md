@@ -3,8 +3,8 @@
 ## Technology
 
 - **ORM**: [Drizzle ORM](https://orm.drizzle.team/) 1.0 (`drizzle-orm/pg-core`)
-- **Engine**: PGlite (embedded Postgres, WASM) in development; `postgres-js`
-  against a real server when `DATABASE_URL` is a `postgres://` URL
+- **Engine**: PostgreSQL through `postgres-js`. Tests use an in-memory PGlite
+  they build themselves
 - **Models**: `db/src/models/` — one file per subject area, re-exported by
   `db/src/models/index.ts`, which `db/src/schema.ts` re-exports in turn
 - **Relations**: `db/src/relations.ts` (`defineRelations`)
@@ -17,16 +17,20 @@ the model file.
 
 ## Connection
 
-`db/src/index.ts` picks a driver from `DATABASE_URL` at module load, defaulting
-to a PGlite data directory at the repo root (`pgdata`):
+`db/src/index.ts` creates the postgres-js client at module load and throws when
+`DATABASE_URL` is empty. It does not connect until the first query, so codegen
+and image builds work with a placeholder URL. `npm run db:up` starts a local
+Postgres on port 5439 (`docker-compose.dev.yml`).
 
 ```ts
-const DATABASE_URL = process.env.DATABASE_URL ?? path.join(projectRoot, 'pgdata');
-const isPostgres = DATABASE_URL.startsWith('postgres://') || DATABASE_URL.startsWith('postgresql://');
-
-db = drizzle({ connection, relations });   // postgres-js
-db = drizzle({ client, relations });       // pglite
+export const db = drizzle({ connection: { url, onnotice: () => {} }, relations });
+export type DB = typeof db;
 ```
+
+At boot the server calls `waitForDatabase` (`db/src/wait.ts`), which retries
+the first connection with backoff, then applies the migrations. TLS is forced
+only in production for a public host (`db/src/ssl.ts`). The timings are in
+`db/src/defaults.ts`.
 
 Note there is no separate `schema` argument: drizzle-orm 1.0 dropped it, and
 the `relations` config built by `defineRelations` carries the tables. That same
@@ -36,15 +40,15 @@ out of `relations.ts` is a relation that does not exist in GraphQL.
 Server code imports through the workspace package:
 
 ```ts
-import { db, schema } from '@philotes/db';
-import type { Person, NewPerson } from '@philotes/db';
+import { db, schema } from '@cubicecho/philotes-db';
+import type { Person, NewPerson } from '@cubicecho/philotes-db';
 ```
 
-> `@philotes/db` exports its TypeScript sources. Node runs them directly, so an
+> `@cubicecho/philotes-db` exports its TypeScript sources. Node runs them directly, so an
 > edit under `db/src` needs no build.
 
-**Importing `@philotes/db` opens a database.** Never import it from a test;
-stub it with `vi.mock('@philotes/db')`. See
+**Importing `@cubicecho/philotes-db` opens a database.** Never import it from a test;
+stub it with `vi.mock('@cubicecho/philotes-db')`. See
 [`AGENTS.md`](../AGENTS.md#testing).
 
 ## Tables

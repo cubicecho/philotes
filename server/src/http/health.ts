@@ -1,4 +1,4 @@
-import type { DB } from '@philotes/db';
+import type { DB } from '@cubicecho/philotes-db';
 import { sql } from 'drizzle-orm';
 import { version } from '../core/config.ts';
 import { errorMessage } from '../core/errors.ts';

@@ -13,7 +13,7 @@ structure (npm workspaces) with three packages: `app/` (frontend), `server/`
 | Frontend | React 19, Expo Router (web target), Apollo Client |
 | UI       | React Native primitives, Tailwind 4 via NativeWind 5, [cubeui](https://github.com/cubicecho/cubeui) (native registry) |
 | API      | Apollo Server 5 on Express, GraphQL              |
-| Database | Drizzle ORM, PGlite (embedded Postgres)            |
+| Database | Drizzle ORM on PostgreSQL (PGlite in tests)        |
 | Testing  | Vitest                                             |
 | Linting  | Biome (formatter + linter)                         |
 | Runtime  | Node.js 26+, ESM (`"type": "module"` throughout)  |
@@ -50,7 +50,7 @@ philotes/
 │       ├── tenancy.ts       # Row scope + server-owned columns, as buildSchema config
 │       ├── resolvers/       # SDL extensions for what CRUD cannot express
 │       └── __tests__/       # Server tests
-├── db/                      # Database layer (Drizzle ORM + PGlite)
+├── db/                      # Database layer (Drizzle ORM on Postgres)
 │   ├── drizzle/             # Generated migrations
 │   └── src/
 │       ├── models/          # One file per table — the actual definitions
@@ -174,16 +174,16 @@ Do not hand-format — run `npm run check:biome`. The settings, from `biome.json
 - Use **`type` imports** for type-only imports — enforced by Biome rule
   `style/useImportType`:
   ```ts
-  import type { Person } from '@philotes/db';   // correct
-  import { type Person } from '@philotes/db';   // also acceptable
-  import { Person } from '@philotes/db';        // ERROR if Person is only used as a type
+  import type { Person } from '@cubicecho/philotes-db';   // correct
+  import { type Person } from '@cubicecho/philotes-db';   // also acceptable
+  import { Person } from '@cubicecho/philotes-db';        // ERROR if Person is only used as a type
   ```
 - Use `@/` path alias for imports within `app/` (maps to `app/src/`):
   ```ts
   import { Button } from '@/components/ui/button';
   import { cn } from '@/lib/utils';
   ```
-- Use `@philotes/db` package name when importing from `db/` in `server/`
+- Use `@cubicecho/philotes-db` package name when importing from `db/` in `server/`
 - Use **`.ts` extensions** in relative `server/` and `db/` imports. Node runs
   those packages directly, stripping the types itself, so the import
   specifier names the file that exists:
@@ -278,13 +278,15 @@ Do not hand-format — run `npm run check:biome`. The settings, from `biome.json
   no relations entry gets no relation fields in the API
 - Nearly every table carries a `user_id`. A new one almost certainly needs it,
   plus a `scope` entry in `server/src/tenancy.ts` (see above)
-- `db/src/index.ts` is a **singleton** — it creates one database connection at
-  import time (not a factory). `DATABASE_URL` selects the driver: a
-  `postgres://` URL uses postgres-js, anything else is a PGlite data directory,
-  defaulting to `<repo>/pgdata`
-- `@philotes/db` exports its TypeScript sources, which Node runs directly, so
+- `db/src/index.ts` is a **singleton**: one postgres-js client, created at
+  import time, which throws when `DATABASE_URL` is empty. Only
+  `server/src/index.ts` and `server/src/graphql/schema.ts` import it. Everything
+  else takes `db` as an argument and imports tables from
+  `@cubicecho/philotes-db/schema`
+- `@cubicecho/philotes-db` exports its TypeScript sources, which Node runs directly, so
   there is no build step between editing `db/src` and using it
-- PGlite is embedded Postgres via WASM — no external DB server needed in dev
+- Development needs a Postgres: `npm run db:up` starts one in Docker on port
+  5439, and the server applies the migrations at boot
 
 ### Error Handling
 - Server resolvers let Apollo Server handle GraphQL errors naturally. Throw a
@@ -300,9 +302,10 @@ Do not hand-format — run `npm run check:biome`. The settings, from `biome.json
   `*.test.ts` / `*.test.tsx` files. One root `vitest.config.ts` picks up every
   workspace, so run tests from the repo root
 - Tests use `describe`/`it`/`expect` from Vitest (globals enabled)
-- **Do not import `@philotes/db` from a test.** It opens a real PGlite instance
-  against the repo's `pgdata` on import. Stub it with `vi.mock('@philotes/db')`
-  and import table definitions from `db/src/schema.ts` directly when you need
-  the real ones — see `server/src/__tests__/tenancy.test.ts`
-- Prefer testing pure functions and configuration shape. Anything needing a
-  live database should use its own throwaway `DATABASE_URL`
+- **Do not import the root of `@cubicecho/philotes-db` from a test.** It is the
+  real client and throws without `DATABASE_URL`. Import tables from
+  `@cubicecho/philotes-db/schema`, and get a database from `createTestDb()` in
+  `server/src/__tests__/helpers.ts`: a fresh in-memory PGlite with the current
+  tables pushed from the models
+- Do not `vi.mock` this repo's own modules. Pass the test database to
+  `createClient(db, userId)` or `createApp({ db })` instead

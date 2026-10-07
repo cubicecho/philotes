@@ -1,9 +1,9 @@
 import type { Server } from 'node:http';
 import type { AddressInfo } from 'node:net';
+import { apiKeys } from '@cubicecho/philotes-db/api-keys';
+import { relations } from '@cubicecho/philotes-db/relations';
+import * as dbSchema from '@cubicecho/philotes-db/schema';
 import { PGlite } from '@electric-sql/pglite';
-import { apiKeys } from '@philotes/db/api-keys';
-import { relations } from '@philotes/db/relations';
-import * as dbSchema from '@philotes/db/schema';
 import { pushSchema } from 'drizzle-kit/api-postgres';
 import { drizzle } from 'drizzle-orm/pglite';
 import { type ExecutionResult, type GraphQLError, graphql } from 'graphql';

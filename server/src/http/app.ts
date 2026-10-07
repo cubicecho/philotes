@@ -1,4 +1,4 @@
-import type { DB } from '@philotes/db';
+import type { DB } from '@cubicecho/philotes-db';
 import cors from 'cors';
 import express, { type Express } from 'express';
 import { allowedOrigins, trustProxy } from '../core/config.ts';
