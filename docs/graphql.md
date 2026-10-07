@@ -46,6 +46,10 @@ for a caller:
   `deletePersons` unlink rather than deleting a row other users still have.
   Both deletes take people by id only: `where: { id: { eq } }`, or
   `{ id: { inArray } }` for the plural.
+- A person enters a caller's contacts only through `createPerson`,
+  `createPersons` or an import. No mutation links a person by id:
+  `user_persons` has no generated create, and an update cannot point a row at
+  a person outside the caller's contacts.
 - Referencing another user's row by id — tagging your note with their label —
   fails with `<Entity> not found`, never a leak of whether it exists.
 - `users` has no generated mutations; accounts come from `signUp`, `signIn`,

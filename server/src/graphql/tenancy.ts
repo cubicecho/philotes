@@ -73,9 +73,15 @@ export const exclude: NonNullable<BuildSchemaConfig['exclude']> = {
   tables: [...AUTH_TABLES],
 };
 
+/**
+ * Tables with no generated create. A `user_persons` row is what puts a person in a user's contacts, so
+ * a generated create would let a caller take any person by id. `createPerson` and the import write it.
+ */
+const TABLES_WITHOUT_INSERT = new Set(['users', 'userPersons']);
+
 /** User lifecycle belongs to the auth flow, not generated CRUD. */
 export const features: NonNullable<BuildSchemaConfig['features']> = {
-  insert: (table) => table !== 'users',
+  insert: (table) => TABLES_WITHOUT_INSERT.has(table) === false,
   update: (table) => table !== 'users',
   updateMany: (table) => table !== 'users',
   delete: (table) => table !== 'users',
