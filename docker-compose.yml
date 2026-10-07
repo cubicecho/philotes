@@ -15,10 +15,17 @@ services:
       SMTP_URL: ${SMTP_URL:-}
       SMTP_FROM: ${SMTP_FROM:-}
       TRUST_PROXY: ${TRUST_PROXY:-false}
+      # Unset, avatars are kept in the philotes_data volume.
+      S3_ENDPOINT: ${S3_ENDPOINT:-}
+      S3_BUCKET: ${S3_BUCKET:-}
+      S3_REGION: ${S3_REGION:-}
+      S3_ACCESS_KEY_ID: ${S3_ACCESS_KEY_ID:-}
+      S3_SECRET_ACCESS_KEY: ${S3_SECRET_ACCESS_KEY:-}
+      S3_FORCE_PATH_STYLE: ${S3_FORCE_PATH_STYLE:-}
       NODE_ENV: production
     ports:
       - "${PORT:-3000}:3000"
-    # Uploaded avatars.
+    # Uploaded avatars, unless S3_ENDPOINT sends them to a bucket.
     volumes: [philotes_data:/data]
   postgres:
     image: postgres:17-alpine

@@ -83,11 +83,43 @@ export const isProduction = (): boolean => process.env.NODE_ENV === NODE_ENV_PRO
 export const allowedOrigins = (): string[] => (isProduction() ? [appUrl()] : [appUrl(), DEV_APP_ORIGIN]);
 
 /**
- * Where uploaded avatars are kept. The Docker image points it at its `/data` volume.
+ * Where uploaded avatars are kept when no S3-compatible store is configured. The Docker image points it at its `/data` volume.
  *
  * @returns `AVATAR_DIR`, or `STORAGE_DEFAULTS.avatarDir`, as an absolute path.
  */
 export const avatarDir = (): string => resolve(REPO_ROOT, process.env.AVATAR_DIR ?? STORAGE_DEFAULTS.avatarDir);
+
+/** Where an S3-compatible store is and how to sign in to it. */
+export interface ObjectStorageConfig {
+  /** The store's URL, such as `http://minio:9000`. */
+  endpoint: string;
+  bucket: string;
+  region: string;
+  /** Whether the bucket goes in the URL's path, not its host. */
+  forcePathStyle: boolean;
+  accessKeyId: string;
+  secretAccessKey: string;
+}
+
+/**
+ * The S3-compatible store avatars are kept in, such as MinIO. Unset, they are kept in {@link avatarDir}.
+ *
+ * @returns The store's settings when `S3_ENDPOINT` is set, otherwise `null`. The keys are empty strings when unset.
+ */
+export const objectStorage = (): ObjectStorageConfig | null => {
+  const endpoint = (process.env.S3_ENDPOINT ?? '').trim();
+  if (endpoint === '') {
+    return null;
+  }
+  return {
+    endpoint,
+    bucket: process.env.S3_BUCKET || STORAGE_DEFAULTS.bucket,
+    region: process.env.S3_REGION || STORAGE_DEFAULTS.region,
+    forcePathStyle: envFlag(process.env.S3_FORCE_PATH_STYLE, STORAGE_DEFAULTS.forcePathStyle),
+    accessKeyId: process.env.S3_ACCESS_KEY_ID ?? '',
+    secretAccessKey: process.env.S3_SECRET_ACCESS_KEY ?? '',
+  };
+};
 
 /**
  * Whether typing an email signs in. Unsafe on a public network: on only where nothing hostile can reach the port.

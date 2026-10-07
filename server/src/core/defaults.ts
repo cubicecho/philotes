@@ -27,11 +27,20 @@ export const HTTP_DEFAULTS: Readonly<HttpSettings> = Object.freeze({
 export interface StorageSettings {
   /** The directory uploaded avatars are kept in. A relative path starts at the repo root. `AVATAR_DIR` overrides it. */
   avatarDir: string;
+  /** The bucket avatars are kept in when an S3-compatible store is configured. `S3_BUCKET` overrides it. */
+  bucket: string;
+  /** The region sent to the S3-compatible store. MinIO accepts any. `S3_REGION` overrides it. */
+  region: string;
+  /** Whether the bucket goes in the URL's path, not its host. MinIO needs it. `S3_FORCE_PATH_STYLE` overrides it. */
+  forcePathStyle: boolean;
 }
 
 /** The storage settings as shipped. */
 export const STORAGE_DEFAULTS: Readonly<StorageSettings> = Object.freeze({
   avatarDir: 'avatars',
+  bucket: 'philotes-avatars',
+  region: 'us-east-1',
+  forcePathStyle: true,
 });
 
 /** The sign-in throttle. */

@@ -8,11 +8,12 @@ import { HTTP_DEFAULTS } from '../core/defaults.ts';
 import { HttpStatus } from '../core/wire.ts';
 import { createGraphQLHandler } from '../graphql/handler.ts';
 import { createIcalHandler } from '../important-dates/ical.ts';
+import type { AvatarStore } from '../persons/avatar-store.ts';
 import { createAvatarRouter } from '../persons/avatars.ts';
 import { checkHealth } from './health.ts';
 import { createStaticHandler } from './static.ts';
 
-/** What the app talks to. Tests pass PGlite and a temporary avatar directory. */
+/** What the app talks to. Tests pass PGlite and leave the avatar store out. */
 export interface AppDeps {
   db: DB;
   auth: Auth;
@@ -23,7 +24,7 @@ export interface AppDeps {
    */
   limiter?: RateLimiter;
   /** Where uploaded avatars are stored and served from. Left out, the avatar routes are not mounted. */
-  avatarDir?: string;
+  avatarStore?: AvatarStore;
   /** The built app's directory. Left out in tests. */
   staticDir?: string;
 }
@@ -34,7 +35,7 @@ export interface AppDeps {
  * @param deps - What the app talks to.
  * @returns The app, not listening.
  */
-export function createApp({ db, auth, limiter = createRateLimiter(), avatarDir, staticDir }: AppDeps): Express {
+export function createApp({ db, auth, limiter = createRateLimiter(), avatarStore, staticDir }: AppDeps): Express {
   const app = express();
   // Which proxy hops may set X-Forwarded-For, and so what `req.ip` is.
   app.set('trust proxy', trustProxy());
@@ -53,8 +54,8 @@ export function createApp({ db, auth, limiter = createRateLimiter(), avatarDir, 
     res.status(status).json(health);
   });
   app.get('/ical', createIcalHandler({ db, auth }));
-  if (avatarDir !== undefined) {
-    app.use('/avatars', createAvatarRouter({ db, auth, avatarDir }));
+  if (avatarStore !== undefined) {
+    app.use('/avatars', createAvatarRouter({ db, auth, store: avatarStore }));
   }
   if (staticDir !== undefined) {
     app.use(createStaticHandler(staticDir));

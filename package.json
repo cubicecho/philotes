@@ -32,7 +32,8 @@
     "codegen:app": "npm run codegen -w app",
     "codegen:server": "npm run codegen -w server",
     "db:up": "docker compose -f docker-compose.dev.yml up -d",
-    "db:down": "docker compose -f docker-compose.dev.yml down"
+    "db:down": "docker compose -f docker-compose.dev.yml --profile storage down",
+    "storage:up": "docker compose -f docker-compose.dev.yml --profile storage up -d minio"
   },
   "overrides": {
     "graphql": "16.13.2",
