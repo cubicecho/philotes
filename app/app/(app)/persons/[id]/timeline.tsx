@@ -3,6 +3,7 @@ import { Link, useLocalSearchParams } from 'expo-router';
 import { View } from 'react-native';
 import { graphql } from '@/__generated__/gql';
 import { Users } from '@/components/app-icons';
+import { GET_PERSON_INTERACTIONS } from '@/components/domain/person/person-queries';
 import {
   PersonTimeline,
   type TimelineImportantDate,
@@ -15,6 +16,7 @@ import { Button } from '@/components/ui/button';
 import { ArrowLeft, Clock } from '@/components/ui/icons';
 import { Spinner } from '@/components/ui/spinner';
 import { fullName } from '@/lib/person-name';
+import { useAllRows } from '@/lib/use-all-rows';
 
 // ---------------------------------------------------------------------------
 // GraphQL
@@ -22,28 +24,16 @@ import { fullName } from '@/lib/person-name';
 
 const GET_PERSON_TIMELINE = graphql(`
   query GetPersonTimeline($id: UUID!) {
-    persons(where: { id: { eq: $id } }) {
+    persons(where: { id: { eq: $id } }, limit: 1) {
       id
       firstName
       lastName
-      interactions(orderBy: { occurredAt: { direction: desc, priority: 1 } }) {
-        id
-        channel
-        occurredAt
-        sentiment
-        note
-        labels {
-          id
-          label
-          color
-        }
-      }
-      importantDates {
+      importantDates(limit: 100) {
         id
         date
         name
         milestoneType
-        labels {
+        labels(limit: 10) {
           id
           label
           color
@@ -57,11 +47,20 @@ const GET_PERSON_TIMELINE = graphql(`
 // Page
 // ---------------------------------------------------------------------------
 
+/** An interaction row is small, so its pages are twice the default. */
+const INTERACTIONS_PAGE_SIZE = 100;
+
 export default function PersonTimelinePage() {
   const { id } = useLocalSearchParams<{ id: string }>();
 
   const { data, loading, error, refetch } = useQuery(GET_PERSON_TIMELINE, {
     variables: { id },
+    fetchPolicy: 'cache-and-network',
+  });
+  const interactionsQuery = useAllRows(GET_PERSON_INTERACTIONS, {
+    field: 'interactions',
+    variables: { personId: id },
+    pageSize: INTERACTIONS_PAGE_SIZE,
     fetchPolicy: 'cache-and-network',
   });
 
@@ -97,7 +96,7 @@ export default function PersonTimelinePage() {
     );
   }
 
-  const interactions: TimelineInteraction[] = (person.interactions ?? []).map((i) => ({
+  const interactions: TimelineInteraction[] = (interactionsQuery.data?.interactions ?? []).map((i) => ({
     id: i.id,
     channel: i.channel,
     occurredAt: i.occurredAt,

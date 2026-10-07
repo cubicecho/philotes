@@ -64,7 +64,7 @@ const CREATE_NOTE_MENTION = graphql(`
 
 const DELETE_NOTE_MENTIONS = graphql(`
   mutation DeleteNoteMentions($noteId: UUID!) {
-    deleteNoteMention(where: { noteId: { eq: $noteId } }) {
+    deleteNoteMentions(where: { noteId: { eq: $noteId } }) {
       noteId
       mentionedPersonId
     }

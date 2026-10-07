@@ -1,4 +1,4 @@
-import { useMutation, useQuery } from '@apollo/client';
+import { useMutation } from '@apollo/client';
 import { useState } from 'react';
 import { graphql } from '@/__generated__/gql';
 import type { CreateLabelInput, Label_ListFragment } from '@/__generated__/graphql';
@@ -9,10 +9,11 @@ import { PageLayout } from '@/components/page-layout';
 import { QueryState } from '@/components/query-state';
 import { FormDialog } from '@/components/ui/form-dialog';
 import { invalidateQueryFields } from '@/lib/invalidate';
+import { useAllRows } from '@/lib/use-all-rows';
 
 const GET_LABELS = graphql(`
-  query GetLabels {
-    labels {
+  query GetLabels($limit: Int!, $offset: Int!) {
+    labels(limit: $limit, offset: $offset, orderBy: { label: { direction: asc, priority: 1 }, id: { direction: asc, priority: 2 } }) {
       __typename
       id
       ...Label_List
@@ -65,16 +66,16 @@ const MERGE_LABEL_INTO = graphql(`
 `);
 
 export default function LabelsPage() {
-  const { data, loading, error, refetch } = useQuery(GET_LABELS);
+  const { data, loading, error, refetch } = useAllRows(GET_LABELS, { field: 'labels' });
   const [createLabel] = useMutation(CREATE_LABEL, {
-    refetchQueries: [{ query: GET_LABELS }],
+    refetchQueries: ['GetLabels'],
   });
   // A person carries their labels, so every list of people is stale once a label goes.
   const [deleteLabel] = useMutation(DELETE_LABEL, {
     update: (cache) => invalidateQueryFields(cache, ['persons', 'labels']),
   });
   const [updateLabel] = useMutation(UPDATE_LABEL, {
-    refetchQueries: [{ query: GET_LABELS }],
+    refetchQueries: ['GetLabels'],
   });
   const [mergeLabelInto] = useMutation(MERGE_LABEL_INTO, {
     update: (cache) => invalidateQueryFields(cache, ['persons', 'labels']),

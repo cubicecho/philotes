@@ -68,6 +68,10 @@
       "linter": { "rules": { "style": { "noMagicNumbers": "off" } } }
     },
     {
+      "includes": ["server/**", "db/**"],
+      "linter": { "rules": { "correctness": { "useHookAtTopLevel": "off" } } }
+    },
+    {
       "includes": ["app/babel.config.js", "app/metro.config.js"],
       "linter": { "rules": { "style": { "noCommonJs": "off" } } }
     }

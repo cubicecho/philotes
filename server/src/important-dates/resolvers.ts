@@ -2,6 +2,9 @@ import * as dbSchema from '@cubicecho/philotes-db/schema';
 import { eq } from 'drizzle-orm';
 import { extendSchema, type GraphQLObjectType, type GraphQLSchema, parse } from 'graphql';
 import type { Context } from '../core/context.ts';
+import { OPERATION_LIMIT_DEFAULTS } from '../core/defaults.ts';
+
+const { defaultPageSize, maxPageSize } = OPERATION_LIMIT_DEFAULTS;
 
 const { persons, importantDates } = dbSchema;
 
@@ -137,7 +140,8 @@ export function applyUpcomingDatesExtension(schema: GraphQLSchema): GraphQLSchem
 
   const queryType = extendedSchema.getType('Query') as GraphQLObjectType;
 
-  queryType.getFields().upcomingDates.resolve = async (_parent: unknown, args: UpcomingDatesArgs, context: Context) => {
+  const upcomingDatesField = queryType.getFields().upcomingDates;
+  upcomingDatesField.resolve = async (_parent: unknown, args: UpcomingDatesArgs, context: Context) => {
     if (!context.userId) {
       return [];
     }
@@ -185,8 +189,15 @@ export function applyUpcomingDatesExtension(schema: GraphQLSchema): GraphQLSchem
 
     entries.sort((a, b) => a.daysUntil - b.daysUntil);
 
-    const paginated = entries.slice(offset);
-    return args.limit != null ? paginated.slice(0, args.limit) : paginated;
+    // Hand-written lists don't inherit drizzle-graphql's page size, so this one applies the same two bounds.
+    const pageSize = Math.min(args.limit ?? defaultPageSize, maxPageSize);
+    return entries.slice(offset, offset + pageSize);
+  };
+  // The cost hint the generated lists carry: a page of rows, each priced by its selection.
+  upcomingDatesField.extensions = {
+    ...upcomingDatesField.extensions,
+    complexity: ({ args, childComplexity }: { args: UpcomingDatesArgs; childComplexity: number }) =>
+      Math.min(args.limit ?? defaultPageSize, maxPageSize) * childComplexity,
   };
 
   return extendedSchema;

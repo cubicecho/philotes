@@ -1,4 +1,3 @@
-import { useQuery } from '@apollo/client';
 import { useRouter } from 'expo-router';
 import { graphql } from '@/__generated__/gql';
 import { Users } from '@/components/app-icons';
@@ -6,21 +5,26 @@ import { NetworkGraph } from '@/components/domain/network/graph';
 import { EmptyState } from '@/components/page';
 import { PageLayout } from '@/components/page-layout';
 import { QueryState } from '@/components/query-state';
+import { useAllRows } from '@/lib/use-all-rows';
 
 const GET_NETWORK_DATA = graphql(`
-  query GetNetworkData {
-    persons {
+  query GetNetworkData($limit: Int!, $offset: Int!) {
+    persons(
+      limit: $limit
+      offset: $offset
+      orderBy: { createdAt: { direction: asc, priority: 1 }, id: { direction: asc, priority: 2 } }
+    ) {
       id
       firstName
       lastName
       email
       avatarPath
-      labels {
+      labels(limit: 20) {
         id
         label
         color
       }
-      relationshipsFrom {
+      relationshipsFrom(limit: 50) {
         id
         toPersonId
         type
@@ -29,9 +33,15 @@ const GET_NETWORK_DATA = graphql(`
   }
 `);
 
+/** A person here carries up to 50 relationships, so a page is smaller than the default to stay inside the server's cost limit. */
+const NETWORK_PAGE_SIZE = 40;
+
 export default function NetworkPage() {
   const router = useRouter();
-  const { data, loading, error, refetch } = useQuery(GET_NETWORK_DATA);
+  const { data, loading, error, refetch } = useAllRows(GET_NETWORK_DATA, {
+    field: 'persons',
+    pageSize: NETWORK_PAGE_SIZE,
+  });
 
   const persons = data?.persons ?? [];
   const pending = loading && !data;

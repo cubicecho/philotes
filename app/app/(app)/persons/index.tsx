@@ -1,4 +1,4 @@
-import { useMutation, useQuery } from '@apollo/client';
+import { useMutation } from '@apollo/client';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { graphql } from '@/__generated__/gql';
@@ -10,6 +10,7 @@ import { QueryState } from '@/components/query-state';
 import { FormDialog } from '@/components/ui/form-dialog';
 import { useQueryStringState } from '@/hooks/use-query-string-state';
 import { invalidateQueryFields } from '@/lib/invalidate';
+import { useAllRows } from '@/lib/use-all-rows';
 
 // ---------------------------------------------------------------------------
 // Utilities
@@ -28,19 +29,19 @@ function debounce<T extends (...args: Parameters<T>) => void>(fn: T, delay: numb
 // ---------------------------------------------------------------------------
 
 const GET_PERSONS = graphql(`
-  query GetPersons($where: PersonFilters, $orderBy: PersonOrderBy) {
-    persons(where: $where, orderBy: $orderBy) {
+  query GetPersons($where: PersonFilters, $orderBy: PersonOrderBy, $limit: Int!, $offset: Int!) {
+    persons(where: $where, orderBy: $orderBy, limit: $limit, offset: $offset) {
       id
       firstName
       lastName
       email
       avatarPath
-      labels {
+      labels(limit: 20) {
         id
         label
         color
       }
-      contactInfos {
+      contactInfos(limit: 10) {
         id
         type
         value
@@ -54,8 +55,8 @@ const GET_PERSONS = graphql(`
 `);
 
 const GET_LABELS = graphql(`
-  query GetLabelsForPersonForm {
-    labels {
+  query GetLabelsForPersonForm($limit: Int!, $offset: Int!) {
+    labels(limit: $limit, offset: $offset, orderBy: { label: { direction: asc, priority: 1 }, id: { direction: asc, priority: 2 } }) {
       id
       color
       label
@@ -149,18 +150,21 @@ export default function PersonsPage() {
   const orderDirection = sortDir === 'asc' ? OrderDirection.Asc : OrderDirection.Desc;
 
   // ── Data fetching — the whole (searched) list; sorting by name on the server
-  const { data, previousData, loading, error, refetch } = useQuery(GET_PERSONS, {
+  const { data, previousData, loading, error, refetch } = useAllRows(GET_PERSONS, {
+    field: 'persons',
     variables: {
       where,
       orderBy: {
         lastName: { direction: isNameSort ? orderDirection : OrderDirection.Asc, priority: 1 },
         firstName: { direction: isNameSort ? orderDirection : OrderDirection.Asc, priority: 2 },
+        // Paging needs one fixed order, and two people can share a name.
+        id: { direction: OrderDirection.Asc, priority: 3 },
       },
     },
   });
 
   const displayData = data ?? previousData;
-  const { data: labelsData } = useQuery(GET_LABELS);
+  const { data: labelsData } = useAllRows(GET_LABELS, { field: 'labels' });
 
   // The dashboard and the network graph list people too, so the field goes, not one query.
   const [createPerson] = useMutation(CREATE_PERSON, {

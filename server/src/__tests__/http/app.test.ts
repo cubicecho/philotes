@@ -1,6 +1,7 @@
 import type { Server } from 'node:http';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { signToken } from '../../auth/resolvers.ts';
+import { OPERATION_LIMIT_DEFAULTS } from '../../core/defaults.ts';
 import { ErrorCode } from '../../core/errors.ts';
 import { HttpStatus } from '../../core/wire.ts';
 import { createApp } from '../../http/app.ts';
@@ -10,6 +11,15 @@ const UNKNOWN_ID = '00000000-0000-4000-8000-000000000000';
 /** Just past `HTTP_DEFAULTS.bodyLimit`. */
 const OVERSIZED_BODY_BYTES = 1_100_000;
 const ME = '{ me { id } }';
+const { maxPageSize, maxDepth, maxAliases } = OPERATION_LIMIT_DEFAULTS;
+/** drizzle-graphql's own code for a `limit` over the page cap. */
+const LIMIT_EXCEEDED = 'DRIZZLE_LIMIT_EXCEEDED';
+/** Notes and their person, nested `maxDepth` times: two levels each. One row per list keeps it cheap. */
+const TOO_DEEP = `{ ${'notes(limit: 1) { person { '.repeat(maxDepth)} id ${'} } '.repeat(maxDepth)} }`;
+/** One alias more than `maxAliases`. */
+const TOO_ALIASED = `{ ${Array.from({ length: maxAliases + 1 }, (_, index) => `a${index}: me { id }`).join(' ')} }`;
+/** Three full pages multiplied together, far past `maxCost`. */
+const TOO_COSTLY = `{ persons(limit: ${maxPageSize}) { notes(limit: ${maxPageSize}) { labels(limit: ${maxPageSize}) { id } } } }`;
 const REVOKE = `mutation { myRevokeApiKey(id: "${UNKNOWN_ID}") }`;
 
 describe('the app over HTTP', () => {
@@ -69,5 +79,27 @@ describe('the app over HTTP', () => {
     const response = await post(`{ me { id } } # ${'x'.repeat(OVERSIZED_BODY_BYTES)}`);
 
     expect(response.status).toBe(HttpStatus.PayloadTooLarge);
+  });
+
+  it('refuses a page larger than the cap', async () => {
+    const body = await (await post(`{ persons(limit: ${maxPageSize + 1}) { id } }`, userId)).json();
+
+    expect(body.errors[0].extensions.code).toBe(LIMIT_EXCEEDED);
+  });
+
+  it('serves a page at the cap', async () => {
+    const body = await (await post(`{ persons(limit: ${maxPageSize}) { id } }`, userId)).json();
+
+    expect(body).toEqual({ data: { persons: [] } });
+  });
+
+  it.each([
+    ['too deep', TOO_DEEP],
+    ['too aliased', TOO_ALIASED],
+    ['too costly', TOO_COSTLY],
+  ])('refuses an operation that is %s', async (_what, query) => {
+    const body = await (await post(query, userId)).json();
+
+    expect(body.errors[0].extensions.code).toBe(ErrorCode.QueryTooComplex);
   });
 });

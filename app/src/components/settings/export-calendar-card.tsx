@@ -1,4 +1,3 @@
-import { useQuery } from '@apollo/client';
 import { Text, View } from 'react-native';
 import { graphql } from '@/__generated__/gql';
 import { EmptyState } from '@/components/page';
@@ -8,10 +7,15 @@ import { Button } from '@/components/ui/button';
 import { downloadBlob } from '@/components/ui/download-button';
 import { Download } from '@/components/ui/icons';
 import { buildIcsContent } from '@/lib/ics-export';
+import { useAllRows } from '@/lib/use-all-rows';
 
-const GET_ALL_EVENTS_FOR_EXPORT = graphql(`
-  query GetAllEventsForExport {
-    interactions {
+const GET_INTERACTIONS_FOR_EXPORT = graphql(`
+  query GetInteractionsForExport($limit: Int!, $offset: Int!) {
+    interactions(
+      limit: $limit
+      offset: $offset
+      orderBy: { occurredAt: { direction: asc, priority: 1 }, id: { direction: asc, priority: 2 } }
+    ) {
       id
       channel
       occurredAt
@@ -22,7 +26,16 @@ const GET_ALL_EVENTS_FOR_EXPORT = graphql(`
         lastName
       }
     }
-    importantDates {
+  }
+`);
+
+const GET_IMPORTANT_DATES_FOR_EXPORT = graphql(`
+  query GetImportantDatesForExport($limit: Int!, $offset: Int!) {
+    importantDates(
+      limit: $limit
+      offset: $offset
+      orderBy: { date: { direction: asc, priority: 1 }, id: { direction: asc, priority: 2 } }
+    ) {
       id
       name
       description
@@ -38,16 +51,37 @@ const GET_ALL_EVENTS_FOR_EXPORT = graphql(`
   }
 `);
 
-export function ExportCalendarCard() {
-  const { data, loading, error, refetch } = useQuery(GET_ALL_EVENTS_FOR_EXPORT);
+/** An event row is small, so the export asks for the server's largest page. */
+const EXPORT_PAGE_SIZE = 500;
 
-  const totalCount = (data?.interactions?.length ?? 0) + (data?.importantDates?.length ?? 0);
+export function ExportCalendarCard() {
+  const interactionsQuery = useAllRows(GET_INTERACTIONS_FOR_EXPORT, {
+    field: 'interactions',
+    pageSize: EXPORT_PAGE_SIZE,
+  });
+  const importantDatesQuery = useAllRows(GET_IMPORTANT_DATES_FOR_EXPORT, {
+    field: 'importantDates',
+    pageSize: EXPORT_PAGE_SIZE,
+  });
+  const interactions = interactionsQuery.data?.interactions ?? [];
+  const importantDates = importantDatesQuery.data?.importantDates ?? [];
+  const loading = interactionsQuery.loading || importantDatesQuery.loading;
+  const error = interactionsQuery.error ?? importantDatesQuery.error;
+  const totalCount = interactions.length + importantDates.length;
+
+  /** Fetches both lists again after a failure. */
+  function refetch() {
+    void interactionsQuery.refetch();
+    void importantDatesQuery.refetch();
+  }
 
   function handleExport() {
-    if (!data) {
+    if (totalCount === 0) {
       return;
     }
-    void downloadBlob(buildIcsContent(data), 'philotes-events.ics', { mimeType: 'text/calendar;charset=utf-8' });
+    void downloadBlob(buildIcsContent({ interactions, importantDates }), 'philotes-events.ics', {
+      mimeType: 'text/calendar;charset=utf-8',
+    });
   }
 
   return (
@@ -66,7 +100,7 @@ export function ExportCalendarCard() {
           />
           {!loading && !error && totalCount > 0 ? (
             <Text className="text-foreground/60 text-sm">
-              {`${data?.interactions?.length ?? 0} interactions · ${data?.importantDates?.length ?? 0} important dates`}
+              {`${interactions.length} interactions · ${importantDates.length} important dates`}
             </Text>
           ) : null}
           {!loading && !error && totalCount === 0 ? <EmptyState compact title="No events to export yet." /> : null}

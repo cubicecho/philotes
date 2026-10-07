@@ -1,4 +1,3 @@
-import { useQuery } from '@apollo/client';
 import { View } from 'react-native';
 import { graphql } from '@/__generated__/gql';
 import { QueryError } from '@/components/query-state';
@@ -7,26 +6,30 @@ import { Button } from '@/components/ui/button';
 import { downloadBlob } from '@/components/ui/download-button';
 import { Download } from '@/components/ui/icons';
 import { buildPersonsCsv } from '@/lib/csv-export';
+import { useAllRows } from '@/lib/use-all-rows';
 
 const GET_EXPORT_PERSONS = graphql(`
-  query ExportPersons {
+  query ExportPersons($limit: Int!, $offset: Int!) {
     persons(
+      limit: $limit
+      offset: $offset
       orderBy: {
         lastName: { direction: asc, priority: 1 }
         firstName: { direction: asc, priority: 2 }
+        id: { direction: asc, priority: 3 }
       }
     ) {
       id
       firstName
       lastName
       email
-      contactInfos {
+      contactInfos(limit: 20) {
         type
         label
         value
         isPrimary
       }
-      addresses {
+      addresses(limit: 10) {
         type
         label
         line1
@@ -36,12 +39,12 @@ const GET_EXPORT_PERSONS = graphql(`
         postalCode
         country
       }
-      importantDates(where: { name: { eq: "Birthday" } }) {
+      importantDates(where: { name: { eq: "Birthday" } }, limit: 5) {
         name
         date
         recurrence
       }
-      labels {
+      labels(limit: 20) {
         id
         label
         color
@@ -50,8 +53,19 @@ const GET_EXPORT_PERSONS = graphql(`
   }
 `);
 
+/** An exported person carries every contact detail and address, so a page is smaller than the default to stay inside the server's cost limit. */
+const EXPORT_PAGE_SIZE = 40;
+
 export function ExportPeopleCard() {
-  const { data: exportData, loading: exportLoading, error: exportError, refetch } = useQuery(GET_EXPORT_PERSONS);
+  const {
+    data: exportData,
+    loading: exportLoading,
+    error: exportError,
+    refetch,
+  } = useAllRows(GET_EXPORT_PERSONS, {
+    field: 'persons',
+    pageSize: EXPORT_PAGE_SIZE,
+  });
 
   function handleExportPeople() {
     if (!exportData?.persons?.length) {

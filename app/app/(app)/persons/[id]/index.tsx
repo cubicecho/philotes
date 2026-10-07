@@ -27,6 +27,7 @@ import { PersonIntroductions } from '@/components/domain/person/introductions';
 import { PersonLabels } from '@/components/domain/person/labels';
 import { PersonMentionedIn } from '@/components/domain/person/mentioned-in';
 import { PersonNotes } from '@/components/domain/person/notes';
+import { GET_PERSON_INTERACTIONS, GET_PERSON_NOTES } from '@/components/domain/person/person-queries';
 import { PersonProfileSummary } from '@/components/domain/person/profile-summary';
 import { PersonRelationships } from '@/components/domain/person/relationships';
 import { TaskList } from '@/components/domain/task/list';
@@ -42,6 +43,7 @@ import { Spinner } from '@/components/ui/spinner';
 import { useAvatarUpload } from '@/hooks/use-avatar-upload';
 import { invalidateQueryFields } from '@/lib/invalidate';
 import { fullName } from '@/lib/person-name';
+import { useAllRows } from '@/lib/use-all-rows';
 import type { SlotNode } from '@/lib/utils';
 
 // ---------------------------------------------------------------------------
@@ -61,58 +63,31 @@ const GET_PERSON_DETAIL = graphql(`
       firstMetDate
       createdAt
       updatedAt
-      labels {
+      labels(limit: 50) {
         id
         label
         color
       }
-      importantDates {
+      importantDates(limit: 100) {
         id
         name
         description
         date
         recurrence
         milestoneType
-        labels {
+        labels(limit: 10) {
           id
           label
           color
         }
       }
-      notes {
-        id
-        body
-        labels {
-          id
-          label
-          color
-        }
-        mentions {
-          id
-          firstName
-          lastName
-        }
-      }
-      mentionedInNotes {
+      mentionedInNotes(limit: 50) {
         id
         body
         person {
           id
           firstName
           lastName
-        }
-      }
-      interactions(orderBy: { occurredAt: { direction: desc, priority: 1 } }) {
-        id
-        personId
-        channel
-        occurredAt
-        sentiment
-        note
-        labels {
-          id
-          label
-          color
         }
       }
       relationships {
@@ -122,7 +97,7 @@ const GET_PERSON_DETAIL = graphql(`
         relatedPersonFirstName
         relatedPersonLastName
       }
-      tasks {
+      tasks(limit: 200) {
         id
         title
         notes
@@ -130,14 +105,14 @@ const GET_PERSON_DETAIL = graphql(`
         completedAt
         createdAt
       }
-      contactInfos {
+      contactInfos(limit: 50) {
         id
         type
         value
         label
         isPrimary
       }
-      addresses {
+      addresses(limit: 20) {
         id
         type
         label
@@ -154,14 +129,18 @@ const GET_PERSON_DETAIL = graphql(`
 `);
 
 const GET_ALL_PERSONS = graphql(`
-  query GetAllPersonsForDetail {
-    persons {
+  query GetAllPersonsForDetail($limit: Int!, $offset: Int!) {
+    persons(
+      limit: $limit
+      offset: $offset
+      orderBy: { createdAt: { direction: asc, priority: 1 }, id: { direction: asc, priority: 2 } }
+    ) {
       id
       firstName
       lastName
       email
       avatarPath
-      labels {
+      labels(limit: 20) {
         id
         label
         color
@@ -171,8 +150,8 @@ const GET_ALL_PERSONS = graphql(`
 `);
 
 const GET_ALL_LABELS = graphql(`
-  query GetAllLabelsForDetail {
-    labels {
+  query GetAllLabelsForDetail($limit: Int!, $offset: Int!) {
+    labels(limit: $limit, offset: $offset, orderBy: { label: { direction: asc, priority: 1 }, id: { direction: asc, priority: 2 } }) {
       id
       label
       color
@@ -314,6 +293,9 @@ const backLink = (
   </Link>
 );
 
+/** An interaction row is small, so its pages are twice the default. */
+const INTERACTIONS_PAGE_SIZE = 100;
+
 export default function PersonDetailPage() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
@@ -322,8 +304,15 @@ export default function PersonDetailPage() {
     variables: { id },
     fetchPolicy: 'cache-and-network',
   });
-  const { data: allPersonsData } = useQuery(GET_ALL_PERSONS);
-  const { data: allLabelsData } = useQuery(GET_ALL_LABELS);
+  const { data: allPersonsData } = useAllRows(GET_ALL_PERSONS, { field: 'persons' });
+  const { data: allLabelsData } = useAllRows(GET_ALL_LABELS, { field: 'labels' });
+  // Notes and interactions grow without bound, so each is its own paged list beside the person.
+  const notesQuery = useAllRows(GET_PERSON_NOTES, { field: 'notes', variables: { personId: id } });
+  const interactionsQuery = useAllRows(GET_PERSON_INTERACTIONS, {
+    field: 'interactions',
+    variables: { personId: id },
+    pageSize: INTERACTIONS_PAGE_SIZE,
+  });
 
   const [deleteImportantDate] = useMutation(DELETE_IMPORTANT_DATE, {
     refetchQueries: [{ query: GET_PERSON_DETAIL, variables: { id } }],
@@ -378,6 +367,8 @@ export default function PersonDetailPage() {
   const personName = fullName(person);
   const reload = () => {
     refetch();
+    void notesQuery.refetch();
+    void interactionsQuery.refetch();
   };
 
   const allPersonStubs = (allPersonsData?.persons ?? []).map((p) => ({
@@ -587,7 +578,7 @@ export default function PersonDetailPage() {
         contentSlot={
           <PersonNotes
             personId={person.id}
-            notes={(person.notes ?? []).map((n) => ({
+            notes={(notesQuery.data?.notes ?? []).map((n) => ({
               id: n.id,
               body: n.body,
               labels: n.labels ?? [],
@@ -615,7 +606,7 @@ export default function PersonDetailPage() {
         contentSlot={
           <PersonInteractions
             personId={person.id}
-            interactions={(person.interactions ?? []).map((i) => ({
+            interactions={(interactionsQuery.data?.interactions ?? []).map((i) => ({
               id: i.id,
               personId: i.personId,
               channel: i.channel,

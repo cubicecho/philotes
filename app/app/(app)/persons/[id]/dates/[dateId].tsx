@@ -5,6 +5,7 @@ import { graphql } from '@/__generated__/gql';
 import { CalendarDays } from '@/components/app-icons';
 import { LabelChip } from '@/components/domain/label/label-chip';
 import { RECURRENCE_OPTIONS } from '@/components/domain/person/important-date-form';
+import { GET_PERSON_NOTES } from '@/components/domain/person/person-queries';
 import { EmptyState } from '@/components/page';
 import { PageLayout } from '@/components/page-layout';
 import { QueryError } from '@/components/query-state';
@@ -12,29 +13,21 @@ import { Section } from '@/components/section';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft } from '@/components/ui/icons';
 import { Spinner } from '@/components/ui/spinner';
+import { useAllRows } from '@/lib/use-all-rows';
 
 // ---------------------------------------------------------------------------
 // GraphQL
 // ---------------------------------------------------------------------------
 
 const GET_DATE_DETAIL = graphql(`
-  query GetImportantDateDetail($dateId: UUID!, $personId: UUID!) {
-    importantDates(where: { id: { eq: $dateId } }) {
+  query GetImportantDateDetail($dateId: UUID!) {
+    importantDates(where: { id: { eq: $dateId } }, limit: 1) {
       id
       name
       description
       date
       recurrence
-      labels {
-        id
-        label
-        color
-      }
-    }
-    notes(where: { personId: { eq: $personId } }) {
-      id
-      body
-      labels {
+      labels(limit: 10) {
         id
         label
         color
@@ -63,7 +56,12 @@ export default function ImportantDateDetailPage() {
   const { id: personId, dateId } = useLocalSearchParams<{ id: string; dateId: string }>();
 
   const { data, loading, error, refetch } = useQuery(GET_DATE_DETAIL, {
-    variables: { dateId, personId },
+    variables: { dateId },
+    fetchPolicy: 'cache-and-network',
+  });
+  const notesQuery = useAllRows(GET_PERSON_NOTES, {
+    field: 'notes',
+    variables: { personId },
     fetchPolicy: 'cache-and-network',
   });
 
@@ -97,7 +95,9 @@ export default function ImportantDateDetailPage() {
   const recurrenceLabel = RECURRENCE_OPTIONS.find((o) => o.value === date.recurrence)?.label;
 
   // Notes that share at least one tag with this date
-  const relatedNotes = (data?.notes ?? []).filter((note) => (note.labels ?? []).some((l) => dateLabelIds.has(l.id)));
+  const relatedNotes = (notesQuery.data?.notes ?? []).filter((note) =>
+    (note.labels ?? []).some((l) => dateLabelIds.has(l.id)),
+  );
 
   return (
     <PageLayout

@@ -5,6 +5,7 @@ import { isProduction } from '../core/config.ts';
 import type { Context } from '../core/context.ts';
 import { createSchema } from './build-schema.ts';
 import { graphqlLogger } from './logger.ts';
+import { useOperationLimits } from './operation-limits.ts';
 
 /** What the handler passes on to resolvers. */
 interface GraphQLHandlerDeps {
@@ -25,6 +26,7 @@ export function createGraphQLHandler({ db }: GraphQLHandlerDeps) {
     graphiql: isProduction() === false,
     // Masked errors are logged here with their real cause.
     logging: graphqlLogger,
+    plugins: [useOperationLimits()],
     context: ({ request }): Context => {
       const authorization = request.headers.get('authorization') ?? undefined;
       return { db, userId: extractUserId({ headers: { authorization } }) };

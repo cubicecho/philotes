@@ -1,4 +1,3 @@
-import { useQuery } from '@apollo/client';
 import { View } from 'react-native';
 import { graphql } from '@/__generated__/gql';
 import type { UpcomingDate } from '@/components/domain/dashboard/coming-up';
@@ -12,27 +11,32 @@ import { RecentlyAdded } from '@/components/domain/dashboard/recently-added';
 import { PageLayout } from '@/components/page-layout';
 import { QueryState } from '@/components/query-state';
 import { computeOverdueByDays } from '@/lib/contact-frequency';
+import { useAllRows } from '@/lib/use-all-rows';
 
 // ---------------------------------------------------------------------------
 // GraphQL — one query feeds every widget
 // ---------------------------------------------------------------------------
 
 const GET_DASHBOARD = graphql(`
-  query Dashboard {
-    persons {
+  query Dashboard($limit: Int!, $offset: Int!) {
+    persons(
+      limit: $limit
+      offset: $offset
+      orderBy: { createdAt: { direction: asc, priority: 1 }, id: { direction: asc, priority: 2 } }
+    ) {
       id
       firstName
       lastName
       avatarPath
       contactFrequency
       createdAt
-      importantDates {
+      importantDates(limit: 20) {
         id
         name
         date
         recurrence
       }
-      tasks {
+      tasks(where: { completedAt: { isNull: true } }, limit: 20) {
         id
         title
         dueAt
@@ -285,7 +289,7 @@ function computeRecentlyAdded(persons: DashboardPerson[]): RecentPerson[] {
 const CELL = 'w-full md:w-[calc(50%-0.5rem)]';
 
 export default function DashboardPage() {
-  const { data, loading, error, refetch } = useQuery(GET_DASHBOARD);
+  const { data, loading, error, refetch } = useAllRows(GET_DASHBOARD, { field: 'persons' });
 
   const persons = (data?.persons ?? []) as DashboardPerson[];
 

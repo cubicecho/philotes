@@ -1,4 +1,4 @@
-import { useMutation, useQuery } from '@apollo/client';
+import { useMutation } from '@apollo/client';
 import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { View } from 'react-native';
@@ -17,6 +17,7 @@ import { FieldWrapper, Form } from '@/components/ui/form';
 import { FormDialog, FormDialogFooter } from '@/components/ui/form-dialog';
 import { Pencil, Trash2 } from '@/components/ui/icons';
 import { fullName } from '@/lib/person-name';
+import { useAllRows } from '@/lib/use-all-rows';
 
 // ---------------------------------------------------------------------------
 // Fragments & queries
@@ -36,8 +37,8 @@ export const PERSON_RELATIONSHIPS = graphql(`
 `);
 
 const GET_RELATIONSHIP_TYPES = graphql(`
-  query GetRelationshipTypes {
-    relationshipTypes {
+  query GetRelationshipTypes($limit: Int!, $offset: Int!) {
+    relationshipTypes(limit: $limit, offset: $offset, orderBy: { name: { direction: asc, priority: 1 }, id: { direction: asc, priority: 2 } }) {
       id
       name
     }
@@ -154,7 +155,7 @@ function RelationshipFormDialog({
   onEdit,
 }: RelationshipFormDialogProps) {
   const isEditing = editing !== undefined;
-  const { data: typesData } = useQuery(GET_RELATIONSHIP_TYPES);
+  const { data: typesData } = useAllRows(GET_RELATIONSHIP_TYPES, { field: 'relationshipTypes' });
   const types = typesData?.relationshipTypes ?? [];
   const firstType = types[0]?.name ?? '';
   /** The type whose delete is waiting on the confirm question, if one is. */

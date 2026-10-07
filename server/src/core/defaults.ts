@@ -31,3 +31,28 @@ export interface AuthSettings {
 export const AUTH_DEFAULTS: Readonly<AuthSettings> = Object.freeze({
   minSecretLength: 32,
 });
+
+/** Bounds on what one GraphQL operation may ask for. */
+export interface OperationLimitSettings {
+  /** Rows a list returns when the request passes no `limit`. */
+  defaultPageSize: number;
+  /** Largest `limit` a list accepts. A larger one is refused, not clamped. */
+  maxPageSize: number;
+  /** Deepest selection nesting an operation may have. */
+  maxDepth: number;
+  /** Most aliases one operation may use. */
+  maxAliases: number;
+  /** Highest total cost an operation may have. A list costs its page size times one row. */
+  maxCost: number;
+  /** Cost of a field that carries no cost hint. */
+  defaultFieldCost: number;
+}
+
+export const OPERATION_LIMIT_DEFAULTS: Readonly<OperationLimitSettings> = Object.freeze({
+  defaultPageSize: 50,
+  maxPageSize: 500,
+  maxDepth: 8,
+  maxAliases: 15,
+  maxCost: 10_000,
+  defaultFieldCost: 1,
+});

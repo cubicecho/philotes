@@ -76,6 +76,10 @@ describe('contextValues', () => {
 });
 
 describe('exclude and features', () => {
+  it('keeps nested writes off, so a child table’s hooks cannot be skipped', () => {
+    expect(features.nestedWrites).toBe(false);
+  });
+
   it('keeps passwordHash out of the schema', () => {
     expect(exclude.columns?.users).toContain('passwordHash');
   });

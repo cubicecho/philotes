@@ -1,15 +1,20 @@
 import type { DB } from '@cubicecho/philotes-db';
 import { buildSchema } from '@vantreeseba/drizzle-graphql';
-import type { GraphQLSchema } from 'graphql';
+import { GraphQLObjectType, GraphQLSchema } from 'graphql';
+import { GraphQLDateTime } from 'graphql-scalars';
 import { applyApiKeysExtension } from '../api-keys/resolvers.ts';
 import { applyAuthExtension } from '../auth/resolvers.ts';
 import { applyImportContactsExtension } from '../contact-import/resolvers.ts';
+import { OPERATION_LIMIT_DEFAULTS } from '../core/defaults.ts';
 import { applyUpcomingDatesExtension } from '../important-dates/resolvers.ts';
 import { applyMergeLabelsExtension } from '../labels/resolvers.ts';
 import { applyUserScopeExtensions } from '../persons/resolvers.ts';
 import { applyRelationshipsExtension } from '../relationships/resolvers.ts';
 import { contextValues, exclude, features, scope } from './tenancy.ts';
 import { onWrite } from './write-guards.ts';
+
+/** Drizzle's name for a Postgres timestamp column. */
+const TIMESTAMP_COLUMN = 'PgTimestamp';
 
 /** The hand-written extensions, in the order they are applied. */
 const EXTENSIONS: Array<(schema: GraphQLSchema) => GraphQLSchema> = [
@@ -38,12 +43,37 @@ export function createSchema(db: DB) {
     // Server-owned columns: removed from inputs and stamped from the context.
     contextValues,
     exclude,
-    // Which generated writes exist, per table.
+    // Which generated writes exist, per table. Nested writes are off.
     features,
     // Before hooks per table, inside the mutation's transaction.
     onWrite,
+    // Every list, root or relation, gets a page size.
+    limits: {
+      defaultLimit: OPERATION_LIMIT_DEFAULTS.defaultPageSize,
+      maxLimit: OPERATION_LIMIT_DEFAULTS.maxPageSize,
+    },
+    // Publishes each field's cost for useOperationLimits. On by default, and stated so nobody turns it off.
+    complexity: true,
+    // Without this, a null timestamp input parses as the epoch.
+    mapColumnType: (column) => (column.columnType === TIMESTAMP_COLUMN ? { input: GraphQLDateTime } : undefined),
   });
 
-  const schema = EXTENSIONS.reduce((extended, applyExtension) => applyExtension(extended), generated);
+  const withRoot = withMutationRoot(generated);
+  const schema = EXTENSIONS.reduce((extended, applyExtension) => applyExtension(extended), withRoot);
   return { schema, entities };
+}
+
+/**
+ * Adds an empty Mutation root when every generated write is off, so `extend type Mutation` has a target.
+ *
+ * @param schema - Generated schema.
+ * @returns The schema, with a Mutation root.
+ */
+function withMutationRoot(schema: GraphQLSchema): GraphQLSchema {
+  const mutationRoot = schema.getMutationType() ?? null;
+  if (mutationRoot !== null) {
+    return schema;
+  }
+  const emptyRoot = new GraphQLObjectType({ name: 'Mutation', fields: {} });
+  return new GraphQLSchema({ ...schema.toConfig(), mutation: emptyRoot });
 }

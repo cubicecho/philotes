@@ -96,4 +96,6 @@ export const features: NonNullable<BuildSchemaConfig['features']> = {
   update: (table) => table !== 'users',
   updateMany: (table) => table !== 'users',
   delete: (table) => table !== 'users',
+  // The default, but stated. Nested writes bypass the child table's onWrite hooks.
+  nestedWrites: false,
 };
