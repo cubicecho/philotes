@@ -154,8 +154,13 @@ route is a `PageLayout`.
 `ApiKeyManager` lists the caller's API keys and revokes them;
 `CreateApiKeyDialog` mints one and shows the plaintext key exactly once. See
 [`server.md`](./server.md) for the API-key model. `ExportCalendarCard`,
-`ExportPeopleCard` and `GoogleCsvImportCard` are the import/export tab; picking
-and downloading files works on the web only.
+`ExportPeopleCard`, `ExportVCardsCard`, `VCardImportCard` and
+`GoogleCsvImportCard` are the import/export tab; picking and downloading files
+works on the web only. Both imports are an `ImportCard`, which owns the stages
+(choose, preview, importing, result) and is handed the file type, a rough
+preview from `lib/import-preview.ts` and the mutation to run. The vCard export
+asks the server for the file (`exportVCards`) when the button is pressed; the
+CSV export is built in the browser.
 
 ---
 

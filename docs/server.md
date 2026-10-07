@@ -24,8 +24,8 @@ subject needs, under the same file names everywhere:
 | `<domain>/resolvers.ts` | An `apply<Name>Extension(schema)` for queries and mutations that are not plain CRUD |
 
 The folders are `persons`, `notes`, `gratitudes`, `interactions`, `tasks`,
-`important-dates`, `labels`, `relationships`, `contact-import`, `api-keys`,
-`users` and `auth`. `persons` has a second extension file, `duplicates.ts`, for
+`important-dates`, `labels`, `relationships`, `contact-import`, `vcard`,
+`api-keys`, `users` and `auth`. `persons` has a second extension file, `duplicates.ts`, for
 `potentialDuplicates` and `mergePersons`, and `normalized-values.ts`, which
 fills a contact info's `normalizedValue` on every write. `users` holds the
 caller's settings (`setDefaultCountry`). Three more hold what no domain owns:
@@ -152,13 +152,69 @@ back to every row of the caller's in that table: more people re-synced than
 needed, never fewer.
 
 A hand-written write calls the helpers itself. `mergePersons`, `mergeLabelInto`,
-`importGoogleContacts` and the avatar routes do.
+`importGoogleContacts`, `saveCard` (`vcard/store.ts`) and the avatar routes do.
 
 A new table that points at a person is either a card table (add it to
 `CARD_TABLES` and wrap its hooks) or goes in `OFF_CARD_TABLES` with the reason
 its writes leave the revision alone. `__tests__/persons/revisions.test.ts`
 fails until it is one or the other, and until a card table has a tested insert,
 update and delete.
+
+## vCard
+
+`vcard/` turns a person into a vCard and back. It has no route of its own: the
+Settings import and export use it today, and the CardDAV endpoint is built on
+the same calls.
+
+| File | Holds |
+| --- | --- |
+| `card.ts` | `Card`: a person and their details as one plain value, with no ids. The vocabularies for property names, parameters and type words |
+| `decode.ts` | `parseVCards(text)`: vCard 3.0 or 4.0 text to cards. Throws `VCardSyntaxError` when the text is not a vCard |
+| `encode.ts` | `writeVCard(card)` and `writeVCards(cards)`: cards to vCard 3.0 text |
+| `store.ts` | `readCards(db, userId)` and `saveCard(tx, userId, card, options)`: cards to and from the tables |
+| `resolvers.ts` | `exportVCards` and `importVCards` |
+
+The text is parsed and written by [`ical.js`](https://github.com/kewisch/ical.js);
+`decode.ts` and `encode.ts` only map its jCard properties to and from a `Card`.
+
+**What maps to what.** `N`, `NICKNAME`, `ORG` (organization, then department),
+`TITLE` and `NOTE` (the person's `about`) are the person. `EMAIL`, `TEL`, `URL`,
+`IMPP` and `X-SOCIALPROFILE` are contact infos; a `TEL` typed `fax` is a fax,
+and any other type Philotes has is written as `X-PHILOTES-CONTACT`. `ADR` is an
+address. `BDAY` and `ANNIVERSARY` are the important dates of those kinds, and
+any other date on the card is an Apple-style `X-ABDATE` with its name as the
+group's `X-ABLabel`. `CATEGORIES` are labels. `PHOTO` is the avatar. `UID` and
+`REV` are the person's `uid` and `updatedAt`. Everything else on a card, with
+the labels of its groups, is kept in `persons.vcard_extra` and written back
+unchanged, so a phone's own fields survive a round trip.
+
+Notes, interactions, tasks, gratitudes, relationships, how you met and the
+contact frequency are Philotes' own and never leave in a card.
+
+**A date without a year** is read from `--MMDD`, from `X-APPLE-OMIT-YEAR`, or
+from the year 1604 that Apple writes, and is written the Apple way, which
+Android reads too.
+
+**A custom label** on a number or an address (`label` on the row) is a group
+with an `X-ABLabel`, as Apple and Google write it. `FN` is written from the
+name and read only when a card has no other name.
+
+**Saving** has two modes. `SaveMode.Replace` makes the person exactly what the
+card says, as a sync client expects: details missing from the card are deleted,
+and a detail that did not change keeps its row. `SaveMode.Merge` only adds: an
+empty field is filled, a new detail is added, and nothing the user wrote is
+changed. A detail is the same one when its key matches: a contact info's type
+and `normalizedValue`, an address's parts, a date's kind and name. A save that
+changes nothing leaves the person's revision alone, so a re-sync of the same
+card is free. A label the user does not have is created, in
+`LABEL_DEFAULTS.importedColor`. A card is checked by the same zod schemas as a
+GraphQL write, and a refused card is a `CardRejectedError` carrying the message.
+
+`importVCards(vcf)` saves each card in a transaction of its own, in merge mode,
+so one bad card does not lose the rest. It finds the person a card belongs to
+by `UID`, then by its first email address, then by its first phone number
+together with the same name; anyone else is new. `exportVCards` returns every
+person as one file, without pictures, which would not fit in a GraphQL answer.
 
 ## Operation Limits
 
@@ -173,7 +229,8 @@ pages through them — see `useAllRows` in [frontend.md](./frontend.md#data-fetc
 ## Context
 
 Every resolver receives the `Context` declared in `core/context.ts`: `db`,
-`auth`, `limiter`, `ip`, `userId` and `headers`. `graphql/handler.ts` builds it
+`auth`, `limiter`, `ip`, `userId`, `headers` and `avatarStore` (null when the
+server was built without one, as most tests are). `graphql/handler.ts` builds it
 once per request, and `userId` is whatever better-auth resolves from the
 request's session cookie or bearer token. A resolver that needs a user calls
 `requireAuth(ctx)`, which throws `UNAUTHENTICATED`, and never reads `userId`

@@ -5,6 +5,7 @@ import { type Auth, sessionUserId } from '../auth/better-auth.ts';
 import type { RateLimiter } from '../auth/rate-limit.ts';
 import { isProduction } from '../core/config.ts';
 import { type Context, UNKNOWN_IP } from '../core/context.ts';
+import type { AvatarStore } from '../persons/avatar-store.ts';
 import { createSchema } from './build-schema.ts';
 import { graphqlLogger } from './logger.ts';
 import { useOperationLimits } from './operation-limits.ts';
@@ -14,6 +15,8 @@ interface GraphQLHandlerDeps {
   db: DB;
   auth: Auth;
   limiter: RateLimiter;
+  /** Where avatar images are kept. Left out, resolvers leave pictures alone. */
+  avatarStore?: AvatarStore;
 }
 
 /** What Express hands Yoga alongside the fetch request. */
@@ -24,10 +27,10 @@ interface ServerContext {
 /**
  * Builds the Yoga handler for /graphql.
  *
- * @param deps - The database, the auth instance and the sign-in rate limiter.
+ * @param deps - The database, the auth instance, the sign-in rate limiter and the avatar store.
  * @returns The Yoga instance, callable as Express middleware.
  */
-export function createGraphQLHandler({ db, auth, limiter }: GraphQLHandlerDeps) {
+export function createGraphQLHandler({ db, auth, limiter, avatarStore }: GraphQLHandlerDeps) {
   const { schema } = createSchema(db);
   return createYoga<ServerContext, Context>({
     schema,
@@ -44,6 +47,7 @@ export function createGraphQLHandler({ db, auth, limiter }: GraphQLHandlerDeps) 
       ip: req?.ip ?? UNKNOWN_IP,
       userId: await sessionUserId(auth, request.headers),
       headers: request.headers,
+      avatarStore: avatarStore ?? null,
     }),
   });
 }

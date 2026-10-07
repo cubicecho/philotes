@@ -246,12 +246,15 @@ export interface LabelSettings {
   maxLabelLength: number;
   /** Longest colour value, in characters. */
   maxColorLength: number;
+  /** The colour of a label an import or a synced contact card creates. */
+  importedColor: string;
 }
 
 /** The label limits as shipped. */
 export const LABEL_DEFAULTS: Readonly<LabelSettings> = Object.freeze({
   maxLabelLength: 100,
   maxColorLength: 32,
+  importedColor: '#6b7280',
 });
 
 /** Limits on what a relationship or relationship type may hold. */

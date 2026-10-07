@@ -1,6 +1,7 @@
 import type { DB } from '@cubicecho/philotes-db';
 import type { Auth } from '../auth/better-auth.ts';
 import type { RateLimiter } from '../auth/rate-limit.ts';
+import type { AvatarStore } from '../persons/avatar-store.ts';
 
 /** `Context.ip` when Express gave no address, as when a test calls the schema directly. */
 export const UNKNOWN_IP = 'unknown';
@@ -19,4 +20,6 @@ export interface Context {
   userId: string | null;
   /** Request headers; sign-out and better-auth calls need them. */
   headers: Headers;
+  /** Where avatar images are kept, or null on a server that keeps none. A contact card's picture goes here. */
+  avatarStore: AvatarStore | null;
 }
