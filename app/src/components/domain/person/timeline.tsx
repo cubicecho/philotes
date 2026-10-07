@@ -6,6 +6,7 @@ import { SectionHeading } from '@/components/section-heading';
 import { formatDate } from '@/lib/format';
 import { relativeTime } from '@/lib/relative-time';
 import { cn } from '@/lib/utils';
+import { InteractionChannel } from '@/lib/vocabulary';
 
 type TimelineLabel = { id: string; label: string; color: string };
 
@@ -79,7 +80,7 @@ function EntryLabels({ labels }: { labels: TimelineLabel[] }) {
 
 function InteractionEntry({ item }: { item: TimelineInteraction }) {
   const emoji = item.sentiment ? (SENTIMENT_EMOJI[item.sentiment] ?? '') : '';
-  const channel = item.channel === 'in-person' ? 'In Person' : item.channel;
+  const channel = item.channel === InteractionChannel.InPerson ? 'In Person' : item.channel;
   return (
     <View className="min-w-0 flex-row items-start gap-2">
       <ChannelIcon channel={item.channel} className="mt-0.5 h-4 w-4 shrink-0 text-foreground/60" />

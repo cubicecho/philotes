@@ -5,16 +5,17 @@ import { type TagOption, TagsField } from '@/components/domain/person/tag-picker
 import { FieldWrapper, Form } from '@/components/ui/form';
 import { FormDialogFooter } from '@/components/ui/form-dialog';
 import { SegmentedButton, SegmentedGroup } from '@/components/ui/segmented';
+import { InteractionChannel, InteractionSentiment } from '@/lib/vocabulary';
 
-export type Channel = 'call' | 'text' | 'email' | 'in-person' | 'other';
-export type Sentiment = 'great' | 'good' | 'neutral' | 'difficult';
+export type Channel = InteractionChannel;
+export type Sentiment = InteractionSentiment;
 
 export const CHANNEL_OPTIONS: Array<{ value: Channel; label: string }> = [
-  { value: 'call', label: 'Call' },
-  { value: 'text', label: 'Text' },
-  { value: 'email', label: 'Email' },
-  { value: 'in-person', label: 'In Person' },
-  { value: 'other', label: 'Other' },
+  { value: InteractionChannel.Call, label: 'Call' },
+  { value: InteractionChannel.Text, label: 'Text' },
+  { value: InteractionChannel.Email, label: 'Email' },
+  { value: InteractionChannel.InPerson, label: 'In Person' },
+  { value: InteractionChannel.Other, label: 'Other' },
 ];
 
 export const SENTIMENT_OPTIONS: Array<{
@@ -22,10 +23,10 @@ export const SENTIMENT_OPTIONS: Array<{
   label: string;
   emoji: string;
 }> = [
-  { value: 'great', label: 'Great', emoji: '😄' },
-  { value: 'good', label: 'Good', emoji: '🙂' },
-  { value: 'neutral', label: 'Neutral', emoji: '😐' },
-  { value: 'difficult', label: 'Difficult', emoji: '😟' },
+  { value: InteractionSentiment.Great, label: 'Great', emoji: '😄' },
+  { value: InteractionSentiment.Good, label: 'Good', emoji: '🙂' },
+  { value: InteractionSentiment.Neutral, label: 'Neutral', emoji: '😐' },
+  { value: InteractionSentiment.Difficult, label: 'Difficult', emoji: '😟' },
 ];
 
 export function sentimentEmoji(sentiment: string | null | undefined): string {
@@ -59,7 +60,7 @@ export function InteractionForm({
 }: InteractionFormProps) {
   const [formError, setFormError] = useState<string | null>(null);
   const defaultValues: InteractionFormValues = {
-    channel: initialValues?.channel ?? 'call',
+    channel: initialValues?.channel ?? InteractionChannel.Call,
     occurredAt: initialValues?.occurredAt ?? new Date(),
     sentiment: initialValues?.sentiment ?? '',
     note: initialValues?.note ?? '',

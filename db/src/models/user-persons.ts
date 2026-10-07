@@ -3,8 +3,14 @@ import { date, index, pgTable, primaryKey, text, timestamp, uuid } from 'drizzle
 import { persons } from './persons.ts';
 import { users } from './users.ts';
 
-export const CONTACT_FREQUENCY_VALUES = ['weekly', 'monthly', 'quarterly', 'yearly'] as const;
-export type ContactFrequency = (typeof CONTACT_FREQUENCY_VALUES)[number];
+/** How often a user means to be in touch with a person. */
+export const ContactFrequency = {
+  Weekly: 'weekly',
+  Monthly: 'monthly',
+  Quarterly: 'quarterly',
+  Yearly: 'yearly',
+} as const;
+export type ContactFrequency = (typeof ContactFrequency)[keyof typeof ContactFrequency];
 
 export const userPersons = pgTable(
   'user_persons',

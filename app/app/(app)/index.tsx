@@ -11,7 +11,10 @@ import { RecentlyAdded } from '@/components/domain/dashboard/recently-added';
 import { PageLayout } from '@/components/page-layout';
 import { QueryState } from '@/components/query-state';
 import { computeOverdueByDays } from '@/lib/contact-frequency';
+import { DASHBOARD_DEFAULTS } from '@/lib/defaults';
+import { DAYS_PER_WEEK, DAYS_PER_YEAR, MS_PER_DAY } from '@/lib/time';
 import { useAllRows } from '@/lib/use-all-rows';
+import { Recurrence } from '@/lib/vocabulary';
 
 const GET_DASHBOARD = graphql(`
   query Dashboard($limit: Int!, $offset: Int!) {
@@ -74,10 +77,10 @@ type DashboardPerson = {
   }>;
 };
 
-const WIDGET_LIMIT = 6;
-const UPCOMING_WINDOW_DAYS = 30;
-const DORMANT_THRESHOLD_DAYS = 365;
-const MS_PER_DAY = 1000 * 60 * 60 * 24;
+const { widgetLimit, upcomingWindowDays, dormantAfterDays, tasksDueWithinDays } = DASHBOARD_DEFAULTS;
+
+/** From this many days without contact, the dormant label counts the years. */
+const TWO_YEARS_IN_DAYS = 2 * DAYS_PER_YEAR;
 
 function todayMidnight(): Date {
   const d = new Date();
@@ -100,7 +103,7 @@ function daysUntilNextOccurrence(storedDate: Date, recurrence: string | null | u
     return diff >= 0 ? diff : null;
   }
 
-  if (recurrence === 'yearly') {
+  if (recurrence === Recurrence.Yearly) {
     const thisYear = new Date(t.getFullYear(), month, day);
     const diff = daysBetween(t, thisYear);
     if (diff >= 0) {
@@ -109,7 +112,7 @@ function daysUntilNextOccurrence(storedDate: Date, recurrence: string | null | u
     return daysBetween(t, new Date(t.getFullYear() + 1, month, day));
   }
 
-  if (recurrence === 'monthly') {
+  if (recurrence === Recurrence.Monthly) {
     const thisMonth = new Date(t.getFullYear(), t.getMonth(), day);
     const diff = daysBetween(t, thisMonth);
     if (diff >= 0) {
@@ -118,10 +121,10 @@ function daysUntilNextOccurrence(storedDate: Date, recurrence: string | null | u
     return daysBetween(t, new Date(t.getFullYear(), t.getMonth() + 1, day));
   }
 
-  if (recurrence === 'weekly') {
+  if (recurrence === Recurrence.Weekly) {
     const targetDow = storedDate.getDay();
     const todayDow = t.getDay();
-    return (targetDow - todayDow + 7) % 7;
+    return (targetDow - todayDow + DAYS_PER_WEEK) % DAYS_PER_WEEK;
   }
 
   return null;
@@ -159,7 +162,7 @@ function computeReachOut(persons: DashboardPerson[]): ReachOutPerson[] {
         ? Math.floor((Date.now() - p.interactions[0].occurredAt.getTime()) / MS_PER_DAY)
         : null,
     }))
-    .filter((entry) => entry.daysSince !== null && entry.daysSince >= DORMANT_THRESHOLD_DAYS)
+    .filter((entry) => entry.daysSince !== null && entry.daysSince >= dormantAfterDays)
     .sort((a, b) => (b.daysSince ?? 0) - (a.daysSince ?? 0))
     .map(({ person, daysSince }) => ({
       id: person.id,
@@ -167,13 +170,13 @@ function computeReachOut(persons: DashboardPerson[]): ReachOutPerson[] {
       lastName: person.lastName,
       avatarPath: person.avatarPath,
       statusLabel:
-        daysSince && daysSince >= 730
-          ? `No contact in over ${Math.floor(daysSince / 365)} years`
+        daysSince && daysSince >= TWO_YEARS_IN_DAYS
+          ? `No contact in over ${Math.floor(daysSince / DAYS_PER_YEAR)} years`
           : 'No contact in over a year',
       isDormant: true,
     }));
 
-  return [...overdue, ...dormant].slice(0, WIDGET_LIMIT);
+  return [...overdue, ...dormant].slice(0, widgetLimit);
 }
 
 function computeUpcomingDates(persons: DashboardPerson[]): UpcomingDate[] {
@@ -182,7 +185,7 @@ function computeUpcomingDates(persons: DashboardPerson[]): UpcomingDate[] {
   for (const person of persons) {
     for (const importantDate of person.importantDates) {
       const daysUntil = daysUntilNextOccurrence(importantDate.date, importantDate.recurrence);
-      if (daysUntil === null || daysUntil > UPCOMING_WINDOW_DAYS) {
+      if (daysUntil === null || daysUntil > upcomingWindowDays) {
         continue;
       }
       results.push({
@@ -196,12 +199,12 @@ function computeUpcomingDates(persons: DashboardPerson[]): UpcomingDate[] {
     }
   }
 
-  return results.sort((a, b) => a.daysUntil - b.daysUntil).slice(0, WIDGET_LIMIT);
+  return results.sort((a, b) => a.daysUntil - b.daysUntil).slice(0, widgetLimit);
 }
 
 function computeOpenTasks(persons: DashboardPerson[]): OpenTask[] {
   const now = Date.now();
-  const sevenDaysFromNow = now + 7 * MS_PER_DAY;
+  const dueSoonBefore = now + tasksDueWithinDays * MS_PER_DAY;
   const results: OpenTask[] = [];
 
   for (const person of persons) {
@@ -212,7 +215,7 @@ function computeOpenTasks(persons: DashboardPerson[]): OpenTask[] {
 
       const dueAt = task.dueAt ? task.dueAt.getTime() : null;
       const isOverdue = dueAt !== null && dueAt < now;
-      const isDueThisWeek = dueAt !== null && dueAt <= sevenDaysFromNow;
+      const isDueThisWeek = dueAt !== null && dueAt <= dueSoonBefore;
 
       const isBeyondThisWeek = isOverdue === false && isDueThisWeek === false;
       if (isBeyondThisWeek) {
@@ -245,13 +248,13 @@ function computeOpenTasks(persons: DashboardPerson[]): OpenTask[] {
       const bTime = b.dueAt ? b.dueAt.getTime() : 0;
       return aTime - bTime;
     })
-    .slice(0, WIDGET_LIMIT);
+    .slice(0, widgetLimit);
 }
 
 function computeRecentlyAdded(persons: DashboardPerson[]): RecentPerson[] {
   return [...persons]
     .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
-    .slice(0, WIDGET_LIMIT - 1)
+    .slice(0, widgetLimit - 1)
     .map((p) => ({
       id: p.id,
       firstName: p.firstName,
@@ -287,7 +290,7 @@ export default function DashboardPage() {
                 <ReachOut persons={computeReachOut(persons)} onLogged={() => refetch()} />
               </View>
               <View className={CELL}>
-                <ComingUp dates={computeUpcomingDates(persons)} windowDays={UPCOMING_WINDOW_DAYS} />
+                <ComingUp dates={computeUpcomingDates(persons)} windowDays={upcomingWindowDays} />
               </View>
               <View className={CELL}>
                 <OpenTasks tasks={computeOpenTasks(persons)} />

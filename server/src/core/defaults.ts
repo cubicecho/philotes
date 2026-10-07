@@ -183,17 +183,20 @@ export const TASK_DEFAULTS: Readonly<TaskSettings> = Object.freeze({
   maxNotesLength: 10_000,
 });
 
-/** Limits on what an important date may hold. */
+/** Limits on what an important date may hold, and how far ahead they are looked for. */
 export interface ImportantDateSettings {
   /** Longest name, in characters. */
   maxNameLength: number;
   /** Longest description, in characters. */
   maxDescriptionLength: number;
+  /** How far ahead `upcomingDates` looks when the request passes no `lookaheadDays`, in days. */
+  lookaheadDays: number;
 }
 
 export const IMPORTANT_DATE_DEFAULTS: Readonly<ImportantDateSettings> = Object.freeze({
   maxNameLength: 200,
   maxDescriptionLength: 2_000,
+  lookaheadDays: 30,
 });
 
 /** Limits on what a label may hold. */

@@ -5,13 +5,14 @@ import { useAppForm } from '@/components/app-form';
 import { MultiSelect } from '@/components/multi-select';
 import { FieldRow, FieldWrapper, Form } from '@/components/ui/form';
 import { FormDialogFooter } from '@/components/ui/form-dialog';
+import { ContactFrequency } from '@/lib/vocabulary';
 
 const CONTACT_FREQUENCY_OPTIONS = [
   { value: '', label: 'None' },
-  { value: 'weekly', label: 'Weekly' },
-  { value: 'monthly', label: 'Monthly' },
-  { value: 'quarterly', label: 'Quarterly' },
-  { value: 'yearly', label: 'Yearly' },
+  { value: ContactFrequency.Weekly, label: 'Weekly' },
+  { value: ContactFrequency.Monthly, label: 'Monthly' },
+  { value: ContactFrequency.Quarterly, label: 'Quarterly' },
+  { value: ContactFrequency.Yearly, label: 'Yearly' },
 ] as const;
 
 export { CONTACT_FREQUENCY_OPTIONS };

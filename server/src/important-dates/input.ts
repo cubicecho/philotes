@@ -1,4 +1,4 @@
-import { MILESTONE_TYPES, RECURRENCE_VALUES } from '@cubicecho/philotes-db/schema';
+import { MilestoneType, Recurrence } from '@cubicecho/philotes-db/schema';
 import { z } from 'zod';
 import { IMPORTANT_DATE_DEFAULTS } from '../core/defaults.ts';
 
@@ -11,7 +11,7 @@ export const importantDateInput = z
       .min(1, 'Name cannot be empty.')
       .max(IMPORTANT_DATE_DEFAULTS.maxNameLength, 'Name is too long.'),
     description: z.string().max(IMPORTANT_DATE_DEFAULTS.maxDescriptionLength, 'Description is too long.').nullable(),
-    recurrence: z.enum(RECURRENCE_VALUES, `Recurrence must be one of: ${RECURRENCE_VALUES.join(', ')}.`).nullable(),
-    milestoneType: z.enum(MILESTONE_TYPES, 'Choose a milestone type from the list.').nullable(),
+    recurrence: z.enum(Recurrence, `Recurrence must be one of: ${Object.values(Recurrence).join(', ')}.`).nullable(),
+    milestoneType: z.enum(MilestoneType, 'Choose a milestone type from the list.').nullable(),
   })
   .partial();

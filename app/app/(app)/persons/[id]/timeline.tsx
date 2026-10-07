@@ -15,6 +15,7 @@ import { QueryError } from '@/components/query-state';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Clock } from '@/components/ui/icons';
 import { Spinner } from '@/components/ui/spinner';
+import { PAGE_SIZE_DEFAULTS } from '@/lib/defaults';
 import { fullName } from '@/lib/person-name';
 import { useAllRows } from '@/lib/use-all-rows';
 
@@ -39,9 +40,6 @@ const GET_PERSON_TIMELINE = graphql(`
   }
 `);
 
-/** An interaction row is small, so its pages are twice the default. */
-const INTERACTIONS_PAGE_SIZE = 100;
-
 export default function PersonTimelinePage() {
   const { id } = useLocalSearchParams<{ id: string }>();
 
@@ -52,7 +50,7 @@ export default function PersonTimelinePage() {
   const interactionsQuery = useAllRows(GET_PERSON_INTERACTIONS, {
     field: 'interactions',
     variables: { personId: id },
-    pageSize: INTERACTIONS_PAGE_SIZE,
+    pageSize: PAGE_SIZE_DEFAULTS.interactions,
     fetchPolicy: 'cache-and-network',
   });
 

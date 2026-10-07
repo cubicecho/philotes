@@ -1,4 +1,4 @@
-const MS_PER_DAY = 1000 * 60 * 60 * 24;
+import { DAYS_PER_MONTH, DAYS_PER_WEEK, DAYS_PER_YEAR, MS_PER_DAY } from './time';
 
 function plural(n: number, unit: string): string {
   return n === 1 ? `1 ${unit} ago` : `${n} ${unit}s ago`;
@@ -13,14 +13,14 @@ export function relativeTime(date: Date): string {
   if (diffDays === 1) {
     return 'Yesterday';
   }
-  if (diffDays < 7) {
+  if (diffDays < DAYS_PER_WEEK) {
     return plural(diffDays, 'day');
   }
-  if (diffDays < 30) {
-    return plural(Math.floor(diffDays / 7), 'week');
+  if (diffDays < DAYS_PER_MONTH) {
+    return plural(Math.floor(diffDays / DAYS_PER_WEEK), 'week');
   }
-  if (diffDays < 365) {
-    return plural(Math.floor(diffDays / 30), 'month');
+  if (diffDays < DAYS_PER_YEAR) {
+    return plural(Math.floor(diffDays / DAYS_PER_MONTH), 'month');
   }
-  return plural(Math.floor(diffDays / 365), 'year');
+  return plural(Math.floor(diffDays / DAYS_PER_YEAR), 'year');
 }

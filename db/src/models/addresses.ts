@@ -3,10 +3,11 @@ import { boolean, index, pgEnum, pgTable, text, timestamp, uuid } from 'drizzle-
 import { persons } from './persons.ts';
 import { users } from './users.ts';
 
-export const ADDRESS_TYPE_VALUES = ['home', 'work', 'other'] as const;
-export type AddressTypeValue = (typeof ADDRESS_TYPE_VALUES)[number];
+/** What an address is for. */
+export const AddressType = { Home: 'home', Work: 'work', Other: 'other' } as const;
+export type AddressType = (typeof AddressType)[keyof typeof AddressType];
 
-export const addressTypeEnum = pgEnum('address_type', ADDRESS_TYPE_VALUES);
+export const addressTypeEnum = pgEnum('address_type', AddressType);
 
 export const addresses = pgTable(
   'addresses',

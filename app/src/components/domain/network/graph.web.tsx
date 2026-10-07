@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Text, View } from 'react-native';
 import { LabelChip } from '@/components/domain/label/label-chip';
 import { Button } from '@/components/ui/button';
+import { NETWORK_GRAPH_DEFAULTS } from '@/lib/defaults';
 import { nameToColor } from '@/lib/name-color';
 import { fullName } from '@/lib/person-name';
 import type { NetworkGraphProps, NetworkPerson } from './types';
@@ -19,11 +20,20 @@ type TooltipState = {
   person: NetworkPerson;
 } | null;
 
+const GRAPH = NETWORK_GRAPH_DEFAULTS;
+
+const HALF_TURN_DEGREES = 180;
+const QUARTER_TURN_DEGREES = 90;
+
+/** The stroke the edge lines and the hub rings share. */
+const FAINT_STROKE = { width: 1.5, opacity: 0.4 };
+/** The pill behind a relationship label. */
+const EDGE_PILL = { cornerRadius: 3, strokeWidth: 0.5, strokeOpacity: 0.1, opacity: 0.9 };
+
 function getNodeRadius(connections: number): number {
-  const min = 18;
-  const max = 32;
-  const clamped = Math.min(connections, 10);
-  return min + ((max - min) * clamped) / 10;
+  const { minNodeRadius, maxNodeRadius, nodeRadiusFullAt } = GRAPH;
+  const counted = Math.min(connections, nodeRadiusFullAt);
+  return minNodeRadius + ((maxNodeRadius - minNodeRadius) * counted) / nodeRadiusFullAt;
 }
 
 function getInitials(firstName: string, lastName: string): string {
@@ -103,7 +113,7 @@ export function NetworkGraph({ persons, onOpenPerson }: NetworkGraphProps) {
     // Zoom + pan behaviour
     const zoom = d3
       .zoom<SVGSVGElement, unknown>()
-      .scaleExtent([0.1, 4])
+      .scaleExtent([GRAPH.minZoom, GRAPH.maxZoom])
       .on('zoom', (event: d3.D3ZoomEvent<SVGSVGElement, unknown>) => {
         container.attr('transform', event.transform.toString());
       });
@@ -116,7 +126,7 @@ export function NetworkGraph({ persons, onOpenPerson }: NetworkGraphProps) {
       zoom.transform,
       d3.zoomIdentity
         .translate(width / 2, height / 2)
-        .scale(0.5)
+        .scale(GRAPH.initialZoom)
         .translate(-width / 2, -height / 2),
     );
 
@@ -132,18 +142,25 @@ export function NetworkGraph({ persons, onOpenPerson }: NetworkGraphProps) {
           .distance((d) => {
             const sc = connectionCount.get((d.source as SimNode).id) ?? 0;
             const tc = connectionCount.get((d.target as SimNode).id) ?? 0;
-            return 120 + (sc + tc) * 8;
+            return GRAPH.linkDistance + (sc + tc) * GRAPH.linkDistancePerConnection;
           })
-          .strength(0.5),
+          .strength(GRAPH.linkStrength),
       )
       .force(
         'charge',
-        d3.forceManyBody<SimNode>().strength((d) => -300 - (connectionCount.get(d.id) ?? 0) * 30),
+        d3
+          .forceManyBody<SimNode>()
+          .strength((d) => GRAPH.chargeStrength + (connectionCount.get(d.id) ?? 0) * GRAPH.chargeStrengthPerConnection),
       )
-      .force('center', d3.forceCenter(width / 2, height / 2).strength(0.05))
-      .force('collide', d3.forceCollide<SimNode>((d) => getNodeRadius(connectionCount.get(d.id) ?? 0) + 50).strength(1))
-      .alphaDecay(0.02) // slower cooling = better final layout
-      .velocityDecay(0.4);
+      .force('center', d3.forceCenter(width / 2, height / 2).strength(GRAPH.centerStrength))
+      .force(
+        'collide',
+        d3
+          .forceCollide<SimNode>((d) => getNodeRadius(connectionCount.get(d.id) ?? 0) + GRAPH.collidePadding)
+          .strength(1),
+      )
+      .alphaDecay(GRAPH.alphaDecay)
+      .velocityDecay(GRAPH.velocityDecay);
 
     simulationRef.current = simulation;
 
@@ -155,8 +172,8 @@ export function NetworkGraph({ persons, onOpenPerson }: NetworkGraphProps) {
       .data(links)
       .join('line')
       .attr('stroke', 'var(--foreground)')
-      .attr('stroke-width', 1.5)
-      .attr('stroke-opacity', 0.4)
+      .attr('stroke-width', FAINT_STROKE.width)
+      .attr('stroke-opacity', FAINT_STROKE.opacity)
       .style('cursor', 'default');
 
     // Edge label groups (pill background + rotated text)
@@ -171,13 +188,13 @@ export function NetworkGraph({ persons, onOpenPerson }: NetworkGraphProps) {
     // Background pill
     edgeLabelGroups
       .append('rect')
-      .attr('rx', 3)
-      .attr('ry', 3)
+      .attr('rx', EDGE_PILL.cornerRadius)
+      .attr('ry', EDGE_PILL.cornerRadius)
       .attr('fill', 'var(--secondary)')
       .attr('stroke', 'var(--foreground)')
-      .attr('stroke-opacity', 0.1)
-      .attr('stroke-width', 0.5)
-      .attr('opacity', 0.9);
+      .attr('stroke-opacity', EDGE_PILL.strokeOpacity)
+      .attr('stroke-width', EDGE_PILL.strokeWidth)
+      .attr('opacity', EDGE_PILL.opacity);
 
     // Label text
     edgeLabelGroups
@@ -197,7 +214,7 @@ export function NetworkGraph({ persons, onOpenPerson }: NetworkGraphProps) {
         return;
       }
       const bbox = textEl.getBBox();
-      const pad = { x: 4, y: 2 };
+      const pad = { x: GRAPH.edgeLabelPaddingX, y: GRAPH.edgeLabelPaddingY };
       g.select('rect')
         .attr('x', -bbox.width / 2 - pad.x)
         .attr('y', -bbox.height / 2 - pad.y)
@@ -239,7 +256,7 @@ export function NetworkGraph({ persons, onOpenPerson }: NetworkGraphProps) {
       .on('start', (event, d) => {
         event.sourceEvent.stopPropagation();
         if (!event.active) {
-          simulation.alphaTarget(0.3).restart();
+          simulation.alphaTarget(GRAPH.reheatAlpha).restart();
         }
         d.fx = d.x;
         d.fy = d.y;
@@ -262,13 +279,13 @@ export function NetworkGraph({ persons, onOpenPerson }: NetworkGraphProps) {
 
     // Outer ring for well-connected hub nodes (drawn before main circle so it sits underneath)
     nodeGroup
-      .filter((d) => (connectionCount.get(d.id) ?? 0) > 3)
+      .filter((d) => (connectionCount.get(d.id) ?? 0) > GRAPH.hubAboveConnections)
       .append('circle')
-      .attr('r', (d) => getNodeRadius(connectionCount.get(d.id) ?? 0) + 4)
+      .attr('r', (d) => getNodeRadius(connectionCount.get(d.id) ?? 0) + GRAPH.hubRingGap)
       .attr('fill', 'none')
       .attr('stroke', nodeColor)
-      .attr('stroke-width', 1.5)
-      .attr('stroke-opacity', 0.4)
+      .attr('stroke-width', FAINT_STROKE.width)
+      .attr('stroke-opacity', FAINT_STROKE.opacity)
       .attr('pointer-events', 'none');
 
     // Main filled circle
@@ -288,7 +305,7 @@ export function NetworkGraph({ persons, onOpenPerson }: NetworkGraphProps) {
       .attr('fill', '#fff')
       .attr('font-size', (d) => {
         const r = getNodeRadius(connectionCount.get(d.id) ?? 0);
-        return `${Math.floor(r * 0.6)}px`;
+        return `${Math.floor(r * GRAPH.initialsSizeRatio)}px`;
       })
       .attr('pointer-events', 'none');
 
@@ -301,7 +318,7 @@ export function NetworkGraph({ persons, onOpenPerson }: NetworkGraphProps) {
       .attr('fill', 'var(--foreground)')
       .attr('font-size', '11px')
       .attr('font-weight', '500')
-      .attr('y', (d) => getNodeRadius(connectionCount.get(d.id) ?? 0) + 6)
+      .attr('y', (d) => getNodeRadius(connectionCount.get(d.id) ?? 0) + GRAPH.nameGap)
       .attr('pointer-events', 'none')
       .style('user-select', 'none')
       .style('paint-order', 'stroke')
@@ -324,11 +341,10 @@ export function NetworkGraph({ persons, onOpenPerson }: NetworkGraphProps) {
         const ty = (d.target as SimNode).y ?? 0;
         const mx = (sx + tx) / 2;
         const my = (sy + ty) / 2;
-        // Rotate text to follow edge direction (flip if upside-down)
-        let angle = (Math.atan2(ty - sy, tx - sx) * 180) / Math.PI;
-        if (angle > 90 || angle < -90) {
-          angle += 180;
-        }
+        // The label follows the edge's direction, turned over when that would leave it upside down.
+        const edgeAngle = (Math.atan2(ty - sy, tx - sx) * HALF_TURN_DEGREES) / Math.PI;
+        const isUpsideDown = Math.abs(edgeAngle) > QUARTER_TURN_DEGREES;
+        const angle = isUpsideDown ? edgeAngle + HALF_TURN_DEGREES : edgeAngle;
         return `translate(${mx},${my}) rotate(${angle})`;
       });
 
@@ -348,13 +364,16 @@ export function NetworkGraph({ persons, onOpenPerson }: NetworkGraphProps) {
     if (!simulation || size.width === 0 || size.height === 0) {
       return;
     }
-    simulation.force('center', d3.forceCenter(size.width / 2, size.height / 2).strength(0.05));
-    simulation.alpha(0.3).restart();
+    simulation.force('center', d3.forceCenter(size.width / 2, size.height / 2).strength(GRAPH.centerStrength));
+    simulation.alpha(GRAPH.reheatAlpha).restart();
   }, [size.width, size.height]);
 
   const handleResetZoom = () => {
     if (svgRef.current && zoomRef.current) {
-      d3.select(svgRef.current).transition().duration(400).call(zoomRef.current.transform, d3.zoomIdentity);
+      d3.select(svgRef.current)
+        .transition()
+        .duration(GRAPH.resetZoomMs)
+        .call(zoomRef.current.transform, d3.zoomIdentity);
     }
   };
 
@@ -384,7 +403,7 @@ export function NetworkGraph({ persons, onOpenPerson }: NetworkGraphProps) {
         <View
           pointerEvents="none"
           className="absolute min-w-40 rounded-lg border border-foreground/10 bg-secondary px-3 py-2 shadow-lg"
-          style={{ left: tooltip.x + 16, top: tooltip.y - 8 }}
+          style={{ left: tooltip.x + GRAPH.tooltipOffsetX, top: tooltip.y - GRAPH.tooltipOffsetY }}
         >
           <Text className="font-semibold text-foreground text-sm">
             {tooltip.person.firstName} {tooltip.person.lastName}

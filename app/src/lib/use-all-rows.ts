@@ -7,15 +7,13 @@ import {
   type WatchQueryFetchPolicy,
 } from '@apollo/client';
 import { useEffect, useRef, useState } from 'react';
+import { PAGE_SIZE_DEFAULTS } from './defaults';
 
 /** The paging variables every document read by `useAllRows` declares. */
 export interface PageVariables {
   limit: number;
   offset: number;
 }
-
-/** Rows asked for per request. The server's default page, and what the documents' costs are worked out for. */
-export const DEFAULT_PAGE_SIZE = 50;
 
 /** The network states in which the first page is being fetched again, so the later pages are stale. */
 const FIRST_PAGE_FETCHES: ReadonlySet<NetworkStatus> = new Set([
@@ -78,7 +76,7 @@ export function useAllRows<TData, TVariables extends OperationVariables & PageVa
   options: AllRowsOptions<TData, TVariables>,
 ): AllRowsResult<TData> {
   const { field, fetchPolicy } = options;
-  const pageSize = options.pageSize ?? DEFAULT_PAGE_SIZE;
+  const pageSize = options.pageSize ?? PAGE_SIZE_DEFAULTS.list;
   // The cast joins the caller's variables to the two the hook owns, which TypeScript cannot prove equals TVariables.
   const variables = { ...options.variables, limit: pageSize, offset: 0 } as TVariables;
   const { data, previousData, error, networkStatus, fetchMore, refetch } = useQuery(document, {

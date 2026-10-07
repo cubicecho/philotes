@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { ScrollView, Text, View } from 'react-native';
 import { graphql } from '@/__generated__/gql';
 import type { ImportantDatesMilestoneTypeEnum } from '@/__generated__/graphql';
+import { ContactTypeEnum } from '@/__generated__/graphql';
 import { ActionButton } from '@/components/action-button';
 import {
   BookUser,
@@ -41,6 +42,7 @@ import { FormDialog } from '@/components/ui/form-dialog';
 import { ArrowLeft, Clock, Pencil, Trash2 } from '@/components/ui/icons';
 import { Spinner } from '@/components/ui/spinner';
 import { useAvatarUpload } from '@/hooks/use-avatar-upload';
+import { PAGE_SIZE_DEFAULTS } from '@/lib/defaults';
 import { invalidateQueryFields } from '@/lib/invalidate';
 import { fullName } from '@/lib/person-name';
 import { useAllRows } from '@/lib/use-all-rows';
@@ -285,9 +287,6 @@ const backLink = (
   </Link>
 );
 
-/** An interaction row is small, so its pages are twice the default. */
-const INTERACTIONS_PAGE_SIZE = 100;
-
 export default function PersonDetailPage() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
@@ -303,7 +302,7 @@ export default function PersonDetailPage() {
   const interactionsQuery = useAllRows(GET_PERSON_INTERACTIONS, {
     field: 'interactions',
     variables: { personId: id },
-    pageSize: INTERACTIONS_PAGE_SIZE,
+    pageSize: PAGE_SIZE_DEFAULTS.interactions,
   });
 
   const [deleteImportantDate] = useMutation(DELETE_IMPORTANT_DATE, {
@@ -455,7 +454,9 @@ export default function PersonDetailPage() {
       (p) => p.id !== person.id && person.relationships.some((r) => r.relatedPersonId === p.id) === false,
     ).length === 0;
 
-  const phones = (person.contactInfos ?? []).filter((ci) => ci.type === 'phone' || ci.type === 'mobile');
+  const phones = (person.contactInfos ?? []).filter(
+    (ci) => ci.type === ContactTypeEnum.Phone || ci.type === ContactTypeEnum.Mobile,
+  );
   const primaryPhone = (phones.find((p) => p.isPrimary) ?? phones[0])?.value ?? null;
   const mentionedInNotes = person.mentionedInNotes ?? [];
 

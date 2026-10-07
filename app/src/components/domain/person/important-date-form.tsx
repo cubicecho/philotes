@@ -1,47 +1,37 @@
 import { format, parseISO } from 'date-fns';
 import { useState } from 'react';
 import { z } from 'zod';
+import { ImportantDatesMilestoneTypeEnum as Milestone } from '@/__generated__/graphql';
 import { useAppForm } from '@/components/app-form';
 import { Form } from '@/components/ui/form';
 import { FormDialogFooter } from '@/components/ui/form-dialog';
+import { Recurrence } from '@/lib/vocabulary';
 
 export const RECURRENCE_OPTIONS = [
   { value: '', label: 'Does not repeat' },
-  { value: 'yearly', label: 'Every year' },
-  { value: 'monthly', label: 'Every month' },
-  { value: 'weekly', label: 'Every week' },
+  { value: Recurrence.Yearly, label: 'Every year' },
+  { value: Recurrence.Monthly, label: 'Every month' },
+  { value: Recurrence.Weekly, label: 'Every week' },
 ] as const;
 
-export type RecurrenceValue = '' | 'yearly' | 'monthly' | 'weekly';
+export type RecurrenceValue = '' | Recurrence;
 
 export const MILESTONE_TYPE_OPTIONS = [
   { value: '', label: 'None (regular date)' },
-  { value: 'new_job', label: 'New Job' },
-  { value: 'promotion', label: 'Promotion' },
-  { value: 'moved', label: 'Moved' },
-  { value: 'new_baby', label: 'New Baby' },
-  { value: 'married', label: 'Married' },
-  { value: 'divorced', label: 'Divorced' },
-  { value: 'retired', label: 'Retired' },
-  { value: 'health_event', label: 'Health Event' },
-  { value: 'graduation', label: 'Graduation' },
-  { value: 'loss', label: 'Loss / Bereavement' },
-  { value: 'other', label: 'Other' },
+  { value: Milestone.NewJob, label: 'New Job' },
+  { value: Milestone.Promotion, label: 'Promotion' },
+  { value: Milestone.Moved, label: 'Moved' },
+  { value: Milestone.NewBaby, label: 'New Baby' },
+  { value: Milestone.Married, label: 'Married' },
+  { value: Milestone.Divorced, label: 'Divorced' },
+  { value: Milestone.Retired, label: 'Retired' },
+  { value: Milestone.HealthEvent, label: 'Health Event' },
+  { value: Milestone.Graduation, label: 'Graduation' },
+  { value: Milestone.Loss, label: 'Loss / Bereavement' },
+  { value: Milestone.Other, label: 'Other' },
 ] as const;
 
-export type MilestoneTypeValue =
-  | ''
-  | 'new_job'
-  | 'promotion'
-  | 'moved'
-  | 'new_baby'
-  | 'married'
-  | 'divorced'
-  | 'retired'
-  | 'health_event'
-  | 'graduation'
-  | 'loss'
-  | 'other';
+export type MilestoneTypeValue = '' | Milestone;
 
 // The select cannot hold an empty-string value, so "no recurrence" and "no
 // milestone" travel through the form as this and are stripped on the way out.

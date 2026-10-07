@@ -5,23 +5,39 @@ import { persons } from './persons.ts';
 import { users } from './users.ts';
 
 /** How a date repeats: on the same month and day, day of the month, or weekday. A null recurrence is a one-time date. */
-export const RECURRENCE_VALUES = ['yearly', 'monthly', 'weekly'] as const;
-export type Recurrence = (typeof RECURRENCE_VALUES)[number];
+export const Recurrence = { Yearly: 'yearly', Monthly: 'monthly', Weekly: 'weekly' } as const;
+export type Recurrence = (typeof Recurrence)[keyof typeof Recurrence];
 
-export const MILESTONE_TYPES = [
-  'new_job',
-  'promotion',
-  'moved',
-  'new_baby',
-  'married',
-  'divorced',
-  'retired',
-  'health_event',
-  'graduation',
-  'loss',
-  'other',
-] as const;
-export type MilestoneType = (typeof MILESTONE_TYPES)[number];
+/** The life events an important date can mark. */
+export const MilestoneType = {
+  NewJob: 'new_job',
+  Promotion: 'promotion',
+  Moved: 'moved',
+  NewBaby: 'new_baby',
+  Married: 'married',
+  Divorced: 'divorced',
+  Retired: 'retired',
+  HealthEvent: 'health_event',
+  Graduation: 'graduation',
+  Loss: 'loss',
+  Other: 'other',
+} as const;
+export type MilestoneType = (typeof MilestoneType)[keyof typeof MilestoneType];
+
+/**
+ * Lists a vocabulary's members in the non-empty tuple form a `text` column's `enum` takes.
+ *
+ * @typeParam T - The vocabulary's union.
+ * @param vocabulary - An `as const` vocabulary object.
+ * @returns Its members, in the order they are written.
+ */
+function membersOf<T extends string>(vocabulary: Readonly<Record<string, T>>): [T, ...T[]] {
+  const [first, ...rest] = Object.values(vocabulary);
+  if (first === undefined) {
+    throw new Error('A vocabulary needs at least one member.');
+  }
+  return [first, ...rest];
+}
 
 export const importantDates = pgTable(
   'important_dates',
@@ -37,21 +53,7 @@ export const importantDates = pgTable(
     description: text('description'),
     date: date('date').notNull(),
     recurrence: text('recurrence').$type<Recurrence>(),
-    milestoneType: text('milestone_type', {
-      enum: [
-        'new_job',
-        'promotion',
-        'moved',
-        'new_baby',
-        'married',
-        'divorced',
-        'retired',
-        'health_event',
-        'graduation',
-        'loss',
-        'other',
-      ],
-    }).$type<MilestoneType>(),
+    milestoneType: text('milestone_type', { enum: membersOf(MilestoneType) }).$type<MilestoneType>(),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true })
       .notNull()

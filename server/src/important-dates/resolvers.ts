@@ -2,12 +2,13 @@ import * as dbSchema from '@cubicecho/philotes-db/schema';
 import { eq } from 'drizzle-orm';
 import { extendSchema, type GraphQLSchema, parse } from 'graphql';
 import type { Context } from '../core/context.ts';
-import { OPERATION_LIMIT_DEFAULTS } from '../core/defaults.ts';
+import { IMPORTANT_DATE_DEFAULTS, OPERATION_LIMIT_DEFAULTS } from '../core/defaults.ts';
+import { DAYS_PER_WEEK, MS_PER_DAY } from '../core/wire.ts';
 import { objectType } from '../graphql/object-type.ts';
 
 const { defaultPageSize, maxPageSize } = OPERATION_LIMIT_DEFAULTS;
 
-const { persons, importantDates } = dbSchema;
+const { persons, importantDates, Recurrence } = dbSchema;
 
 interface UpcomingDatesArgs {
   limit?: number | null;
@@ -67,7 +68,7 @@ function todayMidnight(): Date {
 
 /** Days between two midnight-normalised dates (can be negative). */
 function daysBetween(a: Date, b: Date): number {
-  return Math.round((b.getTime() - a.getTime()) / (1000 * 60 * 60 * 24));
+  return Math.round((b.getTime() - a.getTime()) / MS_PER_DAY);
 }
 
 /**
@@ -103,7 +104,7 @@ function computeNextOccurrence(
     return { daysUntil, nextDate: stored };
   }
 
-  if (recurrence === 'yearly') {
+  if (recurrence === Recurrence.Yearly) {
     const thisYear = new Date(t.getFullYear(), month, day);
     const diff = daysBetween(t, thisYear);
     if (diff >= 0) {
@@ -113,7 +114,7 @@ function computeNextOccurrence(
     return { daysUntil: daysBetween(t, nextYear), nextDate: nextYear };
   }
 
-  if (recurrence === 'monthly') {
+  if (recurrence === Recurrence.Monthly) {
     const thisMonth = new Date(t.getFullYear(), t.getMonth(), day);
     const diff = daysBetween(t, thisMonth);
     if (diff >= 0) {
@@ -123,11 +124,11 @@ function computeNextOccurrence(
     return { daysUntil: daysBetween(t, nextMonth), nextDate: nextMonth };
   }
 
-  if (recurrence === 'weekly') {
+  if (recurrence === Recurrence.Weekly) {
     const storedDate = new Date(storedYear, month, day);
     const targetDow = storedDate.getDay(); // 0 = Sun
     const todayDow = t.getDay();
-    const daysAhead = (targetDow - todayDow + 7) % 7;
+    const daysAhead = (targetDow - todayDow + DAYS_PER_WEEK) % DAYS_PER_WEEK;
     const next = new Date(t);
     next.setDate(t.getDate() + daysAhead);
     return { daysUntil: daysAhead, nextDate: next };
@@ -146,7 +147,7 @@ export function applyUpcomingDatesExtension(schema: GraphQLSchema): GraphQLSchem
     if (!context.userId) {
       return [];
     }
-    const lookaheadDays = args.lookaheadDays ?? 30;
+    const lookaheadDays = args.lookaheadDays ?? IMPORTANT_DATE_DEFAULTS.lookaheadDays;
     const offset = args.offset ?? 0;
 
     // biome-ignore lint/suspicious/noExplicitAny: drizzle-orm 1.0 column type compat

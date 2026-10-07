@@ -1,7 +1,10 @@
 // RFC 5545 calendar export. The `GetAllEventsForExport` query in export-calendar-card.tsx must select
 // every field these shapes name. Dates arrive as `Date` objects, made by the Apollo cache's scalar policies.
 
+import { CALENDAR_EXPORT_DEFAULTS } from '@/lib/defaults';
 import { localIsoDate } from '@/lib/local-date';
+import { MS_PER_MINUTE } from '@/lib/time';
+import { Recurrence } from '@/lib/vocabulary';
 
 export interface CalendarPerson {
   id: string;
@@ -62,7 +65,9 @@ function buildInteractionEvent(interaction: CalendarInteraction, now: string): s
     `${interaction.channel.charAt(0).toUpperCase()}${interaction.channel.slice(1)} with ${personName}`,
   );
   const dtStart = formatIcsDateTime(interaction.occurredAt);
-  const dtEnd = formatIcsDateTime(new Date(interaction.occurredAt.getTime() + 30 * 60 * 1000));
+  const dtEnd = formatIcsDateTime(
+    new Date(interaction.occurredAt.getTime() + CALENDAR_EXPORT_DEFAULTS.interactionMinutes * MS_PER_MINUTE),
+  );
   const lines = [
     'BEGIN:VEVENT',
     `UID:interaction-${interaction.id}@philotes`,
@@ -92,7 +97,7 @@ function buildImportantDateEvent(importantDate: CalendarImportantDate, now: stri
   if (importantDate.description) {
     lines.push(`DESCRIPTION:${escapeIcsText(importantDate.description)}`);
   }
-  if (importantDate.recurrence === 'yearly') {
+  if (importantDate.recurrence === Recurrence.Yearly) {
     lines.push('RRULE:FREQ=YEARLY');
   }
   lines.push('END:VEVENT');

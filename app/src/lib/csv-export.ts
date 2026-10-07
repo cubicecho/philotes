@@ -1,6 +1,7 @@
 // Google Contacts-compatible CSV export. The `ExportPersons` query in export-people-card.tsx must select
 // every field these shapes name. Dates arrive as `Date` objects, made by the Apollo cache's scalar policies.
 
+import { ContactTypeEnum } from '@/__generated__/graphql';
 import { localIsoDate } from '@/lib/local-date';
 
 export interface ExportContactInfo {
@@ -67,10 +68,15 @@ function contactInfoLabel(entry: ExportContactInfo, defaultLabel: string): strin
 
 export function buildPersonsCsv(persons: ExportPerson[]): string {
   // 1. Calculate max counts across all persons
-  const maxEmails = Math.max(0, ...persons.map((p) => p.contactInfos.filter((c) => c.type === 'email').length));
+  const maxEmails = Math.max(
+    0,
+    ...persons.map((p) => p.contactInfos.filter((c) => c.type === ContactTypeEnum.Email).length),
+  );
   const maxPhones = Math.max(
     0,
-    ...persons.map((p) => p.contactInfos.filter((c) => c.type === 'phone' || c.type === 'mobile').length),
+    ...persons.map(
+      (p) => p.contactInfos.filter((c) => c.type === ContactTypeEnum.Phone || c.type === ContactTypeEnum.Mobile).length,
+    ),
   );
   const maxWebsites = Math.max(0, ...persons.map((p) => p.contactInfos.filter((c) => c.type === 'website').length));
   const maxAddresses = Math.max(0, ...persons.map((p) => p.addresses.length));
@@ -106,17 +112,19 @@ export function buildPersonsCsv(persons: ExportPerson[]): string {
     const cells: string[] = [person.firstName, person.lastName ?? '', birthday, labelsStr];
 
     // Emails
-    const emails = person.contactInfos.filter((c) => c.type === 'email');
+    const emails = person.contactInfos.filter((c) => c.type === ContactTypeEnum.Email);
     for (let n = 0; n < maxEmails; n++) {
       const entry = emails[n];
       cells.push(entry ? contactInfoLabel(entry, 'Home') : '', entry?.value ?? '');
     }
 
     // Phones
-    const phones = person.contactInfos.filter((c) => c.type === 'phone' || c.type === 'mobile');
+    const phones = person.contactInfos.filter(
+      (c) => c.type === ContactTypeEnum.Phone || c.type === ContactTypeEnum.Mobile,
+    );
     for (let n = 0; n < maxPhones; n++) {
       const entry = phones[n];
-      const defaultLabel = entry?.type === 'mobile' ? 'Mobile' : 'Phone';
+      const defaultLabel = entry?.type === ContactTypeEnum.Mobile ? 'Mobile' : 'Phone';
       cells.push(entry ? contactInfoLabel(entry, defaultLabel) : '', entry?.value ?? '');
     }
 

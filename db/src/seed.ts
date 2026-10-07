@@ -1,12 +1,17 @@
 import { faker } from '@faker-js/faker';
+import { SEED_DEFAULTS as SEED } from './defaults.ts';
 import { db as _db } from './index.ts';
 
 // biome-ignore lint/suspicious/noExplicitAny: seed script — union db type is runtime-safe
 const db = _db as any;
 
 import {
+  AddressType,
   addresses,
+  ContactType,
   contactInfos,
+  InteractionChannel,
+  InteractionSentiment,
   importantDates,
   importantDateTags,
   interactions,
@@ -18,10 +23,16 @@ import {
   personLabels,
   personRelationships,
   persons,
+  Recurrence,
   tasks,
   userPersons,
   users,
 } from './schema.ts';
+
+const MS_PER_DAY = 86_400_000;
+const DAYS_PER_YEAR = 365;
+/** The middle of `Math.random`'s range. Subtracting it gives a sort order that is as often negative as positive. */
+const EVEN_ODDS = 0.5;
 
 function randomId(): string {
   return crypto.randomUUID();
@@ -31,38 +42,54 @@ function pickRandom<T>(arr: T[]): T {
   return arr[Math.floor(Math.random() * arr.length)];
 }
 
+/** Picks a whole number from `min` to `max`, both included. */
+function randomCount(min: number, max: number): number {
+  return min + Math.floor(Math.random() * (max - min + 1));
+}
+
+/** Answers true `probability` of the time, where 1 is always. */
+function chance(probability: number): boolean {
+  return Math.random() < probability;
+}
+
 function pickRandomSubset<T>(arr: T[], min: number, max: number): T[] {
-  const count = min + Math.floor(Math.random() * (max - min + 1));
-  const shuffled = [...arr].sort(() => Math.random() - 0.5);
+  const count = randomCount(min, max);
+  const shuffled = [...arr].sort(() => Math.random() - EVEN_ODDS);
   return shuffled.slice(0, Math.min(count, shuffled.length));
 }
 
 function randomPastDate(yearsBack: number): Date {
   const now = Date.now();
-  const msBack = yearsBack * 365 * 24 * 60 * 60 * 1000;
+  const msBack = yearsBack * DAYS_PER_YEAR * MS_PER_DAY;
   return new Date(now - Math.random() * msBack);
 }
 
 function randomFutureDate(daysAhead: number): Date {
   const now = Date.now();
-  return new Date(now + Math.random() * daysAhead * 24 * 60 * 60 * 1000);
+  return new Date(now + Math.random() * daysAhead * MS_PER_DAY);
 }
 
 function toIsoDate(d: Date): string {
   return d.toISOString().slice(0, 10);
 }
 
-const INTERACTION_CHANNELS = ['call', 'text', 'email', 'in-person', 'other'] as const;
-
-const INTERACTION_SENTIMENTS = ['great', 'good', 'neutral', 'difficult'] as const;
-
-const RECURRENCES = ['yearly', 'monthly', 'weekly'] as const;
-
 const RELATIONSHIP_TYPES = ['friend', 'colleague', 'mentor', 'mentee', 'acquaintance', 'family', 'partner'];
 
-const CONTACT_INFO_TYPES = ['phone', 'mobile', 'linkedin', 'twitter', 'instagram', 'website', 'other'] as const;
+/** Emails are left out: a seeded person's email is on the person row. */
+const SEEDED_CONTACT_TYPES = Object.values(ContactType).filter((type) => type !== ContactType.Email);
 
-const ADDRESS_TYPES = ['home', 'work', 'other'] as const;
+const fakeHandle = () => `@${faker.internet.username()}`;
+const fakeWord = () => faker.lorem.word();
+
+/** What a made-up contact detail of each type looks like. A type with no entry gets a word. */
+const SEEDED_CONTACT_VALUES: Partial<Record<ContactType, () => string>> = {
+  [ContactType.Phone]: () => faker.phone.number(),
+  [ContactType.Mobile]: () => faker.phone.number(),
+  [ContactType.Linkedin]: () => `https://linkedin.com/in/${faker.internet.username()}`,
+  [ContactType.Twitter]: fakeHandle,
+  [ContactType.Instagram]: fakeHandle,
+  [ContactType.Website]: () => faker.internet.url(),
+};
 
 const IMPORTANT_DATE_NAMES = [
   'Birthday',
@@ -142,7 +169,7 @@ async function seedPersons(userId: string) {
 
 async function seedPersonLabels(personData: { id: string }[], labelData: { id: string }[], userId: string) {
   const personLabelData = personData.flatMap((person) => {
-    const assignedLabels = pickRandomSubset(labelData, 1, 3);
+    const assignedLabels = pickRandomSubset(labelData, SEED.minLabelsPerPerson, SEED.maxLabelsPerPerson);
     return assignedLabels.map((lbl) => ({
       userId,
       personId: person.id,
@@ -160,7 +187,7 @@ async function seedNotes(personData: { id: string }[], labelData: { id: string }
   const noteMentionData: { noteId: string; mentionedPersonId: string }[] = [];
 
   for (const person of personData) {
-    const noteCount = 2 + Math.floor(Math.random() * 4); // 2–5
+    const noteCount = randomCount(SEED.minNotesPerPerson, SEED.maxNotesPerPerson);
 
     for (let i = 0; i < noteCount; i++) {
       const noteId = randomId();
@@ -172,7 +199,7 @@ async function seedNotes(personData: { id: string }[], labelData: { id: string }
       });
 
       // ~30% chance of a @mention of another person
-      if (Math.random() < 0.3) {
+      if (chance(SEED.noteMentionChance)) {
         const otherPerson = pickRandom(personData.filter((p) => p.id !== person.id));
         noteMentionData.push({
           noteId,
@@ -181,7 +208,7 @@ async function seedNotes(personData: { id: string }[], labelData: { id: string }
       }
 
       // 0–2 label tags per note
-      const tagLabels = pickRandomSubset(labelData, 0, 2);
+      const tagLabels = pickRandomSubset(labelData, 0, SEED.maxTagsPerNote);
       for (const lbl of tagLabels) {
         noteTagData.push({ noteId, labelId: lbl.id });
       }
@@ -210,7 +237,7 @@ async function seedImportantDates(personData: { id: string }[], labelData: { id:
     name: string;
     description: string;
     date: string;
-    recurrence: (typeof RECURRENCES)[number];
+    recurrence: Recurrence;
   }[] = [];
 
   const importantDateTagData: {
@@ -219,7 +246,7 @@ async function seedImportantDates(personData: { id: string }[], labelData: { id:
   }[] = [];
 
   for (const person of personData) {
-    const dateCount = 1 + Math.floor(Math.random() * 3); // 1–3
+    const dateCount = randomCount(SEED.minDatesPerPerson, SEED.maxDatesPerPerson);
 
     for (let i = 0; i < dateCount; i++) {
       const dateId = randomId();
@@ -231,12 +258,12 @@ async function seedImportantDates(personData: { id: string }[], labelData: { id:
         personId: person.id,
         name,
         description: faker.lorem.sentence(),
-        date: toIsoDate(randomPastDate(30)),
-        recurrence: pickRandom([...RECURRENCES]),
+        date: toIsoDate(randomPastDate(SEED.dateWithinPastYears)),
+        recurrence: pickRandom(Object.values(Recurrence)),
       });
 
       // 0–1 label tag per important date
-      if (Math.random() > 0.5) {
+      if (chance(SEED.dateTagChance)) {
         importantDateTagData.push({
           importantDateId: dateId,
           labelId: pickRandom(labelData).id,
@@ -260,15 +287,15 @@ async function seedInteractions(personData: { id: string }[], labelData: { id: s
     userId: string;
     personId: string;
     occurredAt: Date;
-    channel: (typeof INTERACTION_CHANNELS)[number];
-    sentiment: (typeof INTERACTION_SENTIMENTS)[number];
+    channel: InteractionChannel;
+    sentiment: InteractionSentiment;
     note: string;
   }[] = [];
 
   const interactionTagData: { interactionId: string; labelId: string }[] = [];
 
   for (const person of personData) {
-    const count = 1 + Math.floor(Math.random() * 4); // 1–4
+    const count = randomCount(SEED.minInteractionsPerPerson, SEED.maxInteractionsPerPerson);
 
     for (let i = 0; i < count; i++) {
       const interactionId = randomId();
@@ -277,14 +304,14 @@ async function seedInteractions(personData: { id: string }[], labelData: { id: s
         id: interactionId,
         userId,
         personId: person.id,
-        occurredAt: randomPastDate(2),
-        channel: pickRandom([...INTERACTION_CHANNELS]),
-        sentiment: pickRandom([...INTERACTION_SENTIMENTS]),
+        occurredAt: randomPastDate(SEED.interactionWithinPastYears),
+        channel: pickRandom(Object.values(InteractionChannel)),
+        sentiment: pickRandom(Object.values(InteractionSentiment)),
         note: faker.lorem.sentences({ min: 1, max: 3 }),
       });
 
       // 0–1 label tag per interaction
-      if (Math.random() > 0.5) {
+      if (chance(SEED.interactionTagChance)) {
         interactionTagData.push({
           interactionId,
           labelId: pickRandom(labelData).id,
@@ -303,7 +330,7 @@ async function seedInteractions(personData: { id: string }[], labelData: { id: s
 }
 
 async function seedPersonRelationships(personData: { id: string }[], userId: string) {
-  const targetCount = 30 + Math.floor(Math.random() * 31); // 30–60
+  const targetCount = randomCount(SEED.minRelationships, SEED.maxRelationships);
   const usedPairs = new Set<string>();
   const relationshipData: {
     id: string;
@@ -356,12 +383,12 @@ async function seedTasks(personData: { id: string }[], userId: string) {
   }[] = [];
 
   for (const person of personData) {
-    const count = Math.floor(Math.random() * 4); // 0–3
+    const count = randomCount(0, SEED.maxTasksPerPerson);
 
     for (let i = 0; i < count; i++) {
-      const isCompleted = Math.random() < 0.4;
-      const hasDueDate = Math.random() > 0.3;
-      const hasNotes = Math.random() > 0.5;
+      const isCompleted = chance(SEED.taskCompletedChance);
+      const hasDueDate = chance(SEED.taskDueDateChance);
+      const hasNotes = chance(SEED.taskNotesChance);
 
       taskData.push({
         id: randomId(),
@@ -369,8 +396,8 @@ async function seedTasks(personData: { id: string }[], userId: string) {
         personId: person.id,
         title: faker.company.catchPhrase(),
         notes: hasNotes ? faker.lorem.sentence() : null,
-        dueAt: hasDueDate ? randomFutureDate(90) : null,
-        completedAt: isCompleted ? randomPastDate(1) : null,
+        dueAt: hasDueDate ? randomFutureDate(SEED.taskDueWithinDays) : null,
+        completedAt: isCompleted ? randomPastDate(SEED.taskCompletedWithinPastYears) : null,
       });
     }
   }
@@ -388,39 +415,18 @@ async function seedContactInfos(personData: { id: string }[], userId: string) {
     id: string;
     userId: string;
     personId: string;
-    type: (typeof CONTACT_INFO_TYPES)[number];
+    type: ContactType;
     value: string;
     label: string | null;
     isPrimary: boolean;
   }[] = [];
 
   for (const person of personData) {
-    const count = Math.floor(Math.random() * 3); // 0–2
+    const count = randomCount(0, SEED.maxContactInfosPerPerson);
 
     for (let i = 0; i < count; i++) {
-      const type = pickRandom([...CONTACT_INFO_TYPES]);
-      let value: string;
-
-      switch (type) {
-        case 'phone':
-        case 'mobile':
-          value = faker.phone.number();
-          break;
-        case 'linkedin':
-          value = `https://linkedin.com/in/${faker.internet.username()}`;
-          break;
-        case 'twitter':
-          value = `@${faker.internet.username()}`;
-          break;
-        case 'instagram':
-          value = `@${faker.internet.username()}`;
-          break;
-        case 'website':
-          value = faker.internet.url();
-          break;
-        default:
-          value = faker.lorem.word();
-      }
+      const type = pickRandom(SEEDED_CONTACT_TYPES);
+      const value = (SEEDED_CONTACT_VALUES[type] ?? fakeWord)();
 
       contactInfoData.push({
         id: randomId(),
@@ -428,7 +434,7 @@ async function seedContactInfos(personData: { id: string }[], userId: string) {
         personId: person.id,
         type,
         value,
-        label: Math.random() > 0.6 ? faker.lorem.word() : null,
+        label: chance(SEED.contactInfoLabelChance) ? faker.lorem.word() : null,
         isPrimary: i === 0,
       });
     }
@@ -447,7 +453,7 @@ async function seedAddresses(personData: { id: string }[], userId: string) {
     id: string;
     userId: string;
     personId: string;
-    type: (typeof ADDRESS_TYPES)[number];
+    type: AddressType;
     label: string | null;
     line1: string;
     line2: string | null;
@@ -459,17 +465,17 @@ async function seedAddresses(personData: { id: string }[], userId: string) {
   }[] = [];
 
   for (const person of personData) {
-    const count = Math.floor(Math.random() * 3); // 0–2
+    const count = randomCount(0, SEED.maxAddressesPerPerson);
 
     for (let i = 0; i < count; i++) {
       addressData.push({
         id: randomId(),
         userId,
         personId: person.id,
-        type: pickRandom([...ADDRESS_TYPES]),
-        label: Math.random() > 0.6 ? faker.lorem.word() : null,
+        type: pickRandom(Object.values(AddressType)),
+        label: chance(SEED.addressLabelChance) ? faker.lorem.word() : null,
         line1: faker.location.streetAddress(),
-        line2: Math.random() > 0.7 ? faker.location.secondaryAddress() : null,
+        line2: chance(SEED.addressSecondLineChance) ? faker.location.secondaryAddress() : null,
         city: faker.location.city(),
         state: faker.location.state({ abbreviated: true }),
         postalCode: faker.location.zipCode(),

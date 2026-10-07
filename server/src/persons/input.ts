@@ -1,4 +1,4 @@
-import { CONTACT_FREQUENCY_VALUES } from '@cubicecho/philotes-db/schema';
+import { ContactFrequency } from '@cubicecho/philotes-db/schema';
 import { z } from 'zod';
 import { ADDRESS_DEFAULTS, CONTACT_INFO_DEFAULTS, PERSON_DEFAULTS } from '../core/defaults.ts';
 
@@ -19,7 +19,7 @@ export const personInput = z
 /** What a user keeps about a person in their contacts. */
 export const userPersonInput = z
   .object({
-    contactFrequency: z.enum(CONTACT_FREQUENCY_VALUES, 'Choose weekly, monthly, quarterly or yearly.').nullable(),
+    contactFrequency: z.enum(ContactFrequency, 'Choose weekly, monthly, quarterly or yearly.').nullable(),
     howWeMet: z.string().max(PERSON_DEFAULTS.maxHowWeMetLength, 'How we met is too long.').nullable(),
     avatarPath: z.string().max(PERSON_DEFAULTS.maxAvatarPathLength, 'Avatar path is too long.').nullable(),
   })

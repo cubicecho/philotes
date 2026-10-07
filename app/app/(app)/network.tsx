@@ -5,6 +5,7 @@ import { NetworkGraph } from '@/components/domain/network/graph';
 import { EmptyState } from '@/components/page';
 import { PageLayout } from '@/components/page-layout';
 import { QueryState } from '@/components/query-state';
+import { PAGE_SIZE_DEFAULTS } from '@/lib/defaults';
 import { useAllRows } from '@/lib/use-all-rows';
 
 const GET_NETWORK_DATA = graphql(`
@@ -33,14 +34,11 @@ const GET_NETWORK_DATA = graphql(`
   }
 `);
 
-/** A person here carries up to 50 relationships, so a page is smaller than the default to stay inside the server's cost limit. */
-const NETWORK_PAGE_SIZE = 40;
-
 export default function NetworkPage() {
   const router = useRouter();
   const { data, loading, error, refetch } = useAllRows(GET_NETWORK_DATA, {
     field: 'persons',
-    pageSize: NETWORK_PAGE_SIZE,
+    pageSize: PAGE_SIZE_DEFAULTS.network,
   });
 
   const persons = data?.persons ?? [];

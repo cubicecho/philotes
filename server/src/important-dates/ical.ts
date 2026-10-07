@@ -1,10 +1,17 @@
 import type { DB } from '@cubicecho/philotes-db';
-import { importantDates, persons } from '@cubicecho/philotes-db/schema';
+import { importantDates, persons, Recurrence } from '@cubicecho/philotes-db/schema';
 import { eq } from 'drizzle-orm';
 import type { Request, RequestHandler, Response } from 'express';
 import ical, { ICalEventRepeatingFreq } from 'ical-generator';
 import { API_KEY_PREFIX, type Auth } from '../auth/better-auth.ts';
 import { HttpStatus } from '../core/wire.ts';
+
+/** How each recurrence is said in an iCal repeat rule. */
+const REPEAT_FREQUENCIES: Record<Recurrence, ICalEventRepeatingFreq> = {
+  [Recurrence.Yearly]: ICalEventRepeatingFreq.YEARLY,
+  [Recurrence.Monthly]: ICalEventRepeatingFreq.MONTHLY,
+  [Recurrence.Weekly]: ICalEventRepeatingFreq.WEEKLY,
+};
 
 /** What the feed is built from. */
 export interface IcalDeps {
@@ -73,12 +80,10 @@ async function sendCalendar({ db, auth }: IcalDeps, req: Request, res: Response)
       event.description(row.description);
     }
 
-    if (row.recurrence === 'yearly') {
-      event.repeating({ freq: ICalEventRepeatingFreq.YEARLY });
-    } else if (row.recurrence === 'monthly') {
-      event.repeating({ freq: ICalEventRepeatingFreq.MONTHLY });
-    } else if (row.recurrence === 'weekly') {
-      event.repeating({ freq: ICalEventRepeatingFreq.WEEKLY });
+    // A row written before recurrences were validated may hold a word outside the set. It does not repeat.
+    const frequency = row.recurrence === null ? undefined : REPEAT_FREQUENCIES[row.recurrence];
+    if (frequency !== undefined) {
+      event.repeating({ freq: frequency });
     }
   }
 

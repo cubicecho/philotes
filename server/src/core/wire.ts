@@ -13,3 +13,5 @@ export type HttpStatus = (typeof HttpStatus)[keyof typeof HttpStatus];
 export const MS_PER_SECOND = 1000;
 export const SECONDS_PER_MINUTE = 60;
 export const SECONDS_PER_DAY = 86_400;
+export const MS_PER_DAY = 86_400_000;
+export const DAYS_PER_WEEK = 7;

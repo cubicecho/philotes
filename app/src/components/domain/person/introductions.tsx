@@ -3,6 +3,7 @@ import { Text, View } from 'react-native';
 import { LabelChip } from '@/components/domain/label/label-chip';
 import { Avatar } from '@/components/domain/person/avatar';
 import { EmptyState } from '@/components/page';
+import { INTRODUCTION_DEFAULTS } from '@/lib/defaults';
 
 export interface PersonWithLabels {
   id: string;
@@ -42,7 +43,7 @@ function computeSuggestions(
     })
     .filter((s) => s.overlapCount > 0)
     .sort((a, b) => b.overlapCount - a.overlapCount)
-    .slice(0, 5);
+    .slice(0, INTRODUCTION_DEFAULTS.maxSuggestions);
 }
 
 interface SuggestionRowProps {

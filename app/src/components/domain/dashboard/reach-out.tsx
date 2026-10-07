@@ -9,6 +9,7 @@ import { ListItem } from '@/components/list-item';
 import { Button } from '@/components/ui/button';
 import { Check } from '@/components/ui/icons';
 import { fullName } from '@/lib/person-name';
+import { DAYS_PER_MONTH, DAYS_PER_WEEK, WEEKS_PER_MONTH } from '@/lib/time';
 import { Widget } from './widget';
 
 export type ReachOutPerson = {
@@ -41,17 +42,17 @@ export function formatOverdueLabel(days: number): string {
   if (days === 1) {
     return '1 day overdue';
   }
-  if (days < 7) {
+  if (days < DAYS_PER_WEEK) {
     return `${days} days overdue`;
   }
-  const weeks = Math.floor(days / 7);
+  const weeks = Math.floor(days / DAYS_PER_WEEK);
   if (weeks === 1) {
     return '1 week overdue';
   }
-  if (weeks < 4) {
+  if (weeks < WEEKS_PER_MONTH) {
     return `${weeks} weeks overdue`;
   }
-  const months = Math.floor(days / 30);
+  const months = Math.floor(days / DAYS_PER_MONTH);
   if (months === 1) {
     return '1 month overdue';
   }

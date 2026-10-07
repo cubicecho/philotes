@@ -1,5 +1,6 @@
 import { Link, useRouter } from 'expo-router';
 import { Linking, Platform, Text, View } from 'react-native';
+import { ContactTypeEnum } from '@/__generated__/graphql';
 import { ActionButton } from '@/components/action-button';
 import { Mail, Phone, UserPlus, Users } from '@/components/app-icons';
 import { ConfirmButton } from '@/components/confirm-button';
@@ -46,7 +47,7 @@ const SORT_OPTIONS: Array<{ value: SortOption; label: string }> = [
 ];
 
 function primaryPhone(infos: PersonContactInfo[]): string | null {
-  const phones = infos.filter((i) => i.type === 'phone' || i.type === 'mobile');
+  const phones = infos.filter((i) => i.type === ContactTypeEnum.Phone || i.type === ContactTypeEnum.Mobile);
   if (phones.length === 0) {
     return null;
   }

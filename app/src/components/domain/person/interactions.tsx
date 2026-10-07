@@ -19,6 +19,7 @@ import { EmptyState } from '@/components/page';
 import { Button } from '@/components/ui/button';
 import { FormDialog } from '@/components/ui/form-dialog';
 import { Pencil, Trash2 } from '@/components/ui/icons';
+import { EXCERPT_DEFAULTS } from '@/lib/defaults';
 import { relativeTime } from '@/lib/relative-time';
 
 const CREATE_INTERACTION = graphql(`
@@ -101,7 +102,7 @@ export interface PersonInteractionsProps {
   onCreateOpenChange: (open: boolean) => void;
 }
 
-const NOTE_TRUNCATE = 80;
+const { interactionNoteLength } = EXCERPT_DEFAULTS;
 
 interface InteractionRowProps {
   interaction: InteractionData;
@@ -117,8 +118,9 @@ function InteractionRow({ interaction, allTags, onChanged }: InteractionRowProps
   const [detachTag] = useMutation(DETACH_INTERACTION_TAG);
   const [updateInteraction] = useMutation(UPDATE_INTERACTION);
 
-  const longNote = interaction.note && interaction.note.length > NOTE_TRUNCATE;
-  const displayNote = longNote && !expanded ? `${interaction.note?.slice(0, NOTE_TRUNCATE)}…` : interaction.note;
+  const longNote = interaction.note && interaction.note.length > interactionNoteLength;
+  const displayNote =
+    longNote && !expanded ? `${interaction.note?.slice(0, interactionNoteLength)}…` : interaction.note;
 
   const handleDelete = async () => {
     await deleteInteraction({ variables: { id: interaction.id } });

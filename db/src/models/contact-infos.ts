@@ -3,19 +3,20 @@ import { boolean, index, pgEnum, pgTable, text, timestamp, uuid } from 'drizzle-
 import { persons } from './persons.ts';
 import { users } from './users.ts';
 
-export const CONTACT_TYPE_VALUES = [
-  'email',
-  'phone',
-  'mobile',
-  'linkedin',
-  'twitter',
-  'instagram',
-  'website',
-  'other',
-] as const;
-export type ContactTypeValue = (typeof CONTACT_TYPE_VALUES)[number];
+/** The ways of reaching a person that a contact detail can hold. */
+export const ContactType = {
+  Email: 'email',
+  Phone: 'phone',
+  Mobile: 'mobile',
+  Linkedin: 'linkedin',
+  Twitter: 'twitter',
+  Instagram: 'instagram',
+  Website: 'website',
+  Other: 'other',
+} as const;
+export type ContactType = (typeof ContactType)[keyof typeof ContactType];
 
-export const contactTypeEnum = pgEnum('contact_type', CONTACT_TYPE_VALUES);
+export const contactTypeEnum = pgEnum('contact_type', ContactType);
 
 export const contactInfos = pgTable(
   'contact_infos',

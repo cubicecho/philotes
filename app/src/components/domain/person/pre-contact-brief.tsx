@@ -4,8 +4,11 @@ import { ChannelIcon } from '@/components/domain/person/channel-icon';
 import { EmptyState } from '@/components/page';
 import { SectionHeading } from '@/components/section-heading';
 import { Separator } from '@/components/ui/separator';
+import { PRE_CONTACT_BRIEF_DEFAULTS } from '@/lib/defaults';
 import { relativeTime } from '@/lib/relative-time';
+import { MS_PER_DAY } from '@/lib/time';
 import { cn } from '@/lib/utils';
+import { InteractionChannel } from '@/lib/vocabulary';
 
 interface Interaction {
   id: string;
@@ -33,6 +36,8 @@ interface ImportantDate {
   date: Date;
 }
 
+const BRIEF = PRE_CONTACT_BRIEF_DEFAULTS;
+
 export interface PreContactBriefProps {
   person: {
     firstName: string;
@@ -48,7 +53,7 @@ export interface PreContactBriefProps {
 function daysUntil(date: Date): number {
   const now = new Date();
   const diffMs = date.getTime() - now.getTime();
-  return Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+  return Math.ceil(diffMs / MS_PER_DAY);
 }
 
 /** Format relative due date for a task. */
@@ -70,11 +75,11 @@ function dueDateLabel(dueAt: Date | null): string | null {
 }
 
 /**
- * Returns the next occurrence of a month+day date within the next 60 days.
+ * Returns the next occurrence of a month+day date, when it falls inside the brief's window.
  * Handles annual recurrence by projecting the stored date to the current year
  * (or next year if this year's occurrence has already passed).
  */
-function nextOccurrenceWithin60Days(stored: Date): number | null {
+function nextOccurrenceInWindow(stored: Date): number | null {
   const month = stored.getUTCMonth();
   const day = stored.getUTCDate();
 
@@ -83,9 +88,9 @@ function nextOccurrenceWithin60Days(stored: Date): number | null {
   const nextYear = new Date(Date.UTC(now.getUTCFullYear() + 1, month, day));
 
   const candidate = thisYear >= now ? thisYear : nextYear;
-  const diff = Math.ceil((candidate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+  const diff = Math.ceil((candidate.getTime() - now.getTime()) / MS_PER_DAY);
 
-  return diff <= 60 ? diff : null;
+  return diff <= BRIEF.upcomingWindowDays ? diff : null;
 }
 
 function truncate(text: string, maxLength: number): string {
@@ -95,27 +100,29 @@ function truncate(text: string, maxLength: number): string {
   return `${text.slice(0, maxLength)}…`;
 }
 
+/** How the brief words each channel. `video` is no longer offered, but older interactions may hold it. */
+const CHANNEL_LABELS: Record<string, string> = {
+  [InteractionChannel.Call]: 'Phone call',
+  [InteractionChannel.Text]: 'Text',
+  [InteractionChannel.Email]: 'Email',
+  [InteractionChannel.InPerson]: 'In person',
+  video: 'Video call',
+};
+
 function channelLabel(channel: string): string {
-  const labels: Record<string, string> = {
-    call: 'Phone call',
-    text: 'Text',
-    email: 'Email',
-    video: 'Video call',
-    'in-person': 'In person',
-  };
-  return labels[channel] ?? channel;
+  return CHANNEL_LABELS[channel] ?? channel;
 }
 
 export function PreContactBrief({ person }: PreContactBriefProps) {
   const sortedInteractions = [...person.interactions].sort((a, b) => b.occurredAt.getTime() - a.occurredAt.getTime());
   const lastInteraction = sortedInteractions[0] ?? null;
 
-  const recentNotes = person.notes.slice(0, 3);
+  const recentNotes = person.notes.slice(0, BRIEF.maxNotes);
 
-  const openTasks = person.tasks.filter((t) => t.completedAt === null).slice(0, 3);
+  const openTasks = person.tasks.filter((t) => t.completedAt === null).slice(0, BRIEF.maxTasks);
 
   const upcomingDates = person.importantDates
-    .map((d) => ({ date: d, daysAway: nextOccurrenceWithin60Days(d.date) }))
+    .map((d) => ({ date: d, daysAway: nextOccurrenceInWindow(d.date) }))
     .filter((entry): entry is { date: ImportantDate; daysAway: number } => entry.daysAway !== null)
     .sort((a, b) => a.daysAway - b.daysAway);
 
@@ -137,7 +144,9 @@ export function PreContactBrief({ person }: PreContactBriefProps) {
                   </Text>
                 </View>
                 {lastInteraction.note ? (
-                  <Text className="pl-6 text-foreground/60 text-xs">{truncate(lastInteraction.note, 100)}</Text>
+                  <Text className="pl-6 text-foreground/60 text-xs">
+                    {truncate(lastInteraction.note, BRIEF.interactionNoteExcerptLength)}
+                  </Text>
                 ) : null}
               </View>
             ) : (
@@ -154,7 +163,9 @@ export function PreContactBrief({ person }: PreContactBriefProps) {
                   {recentNotes.map((note) => (
                     <View key={note.id} role="listitem" className="flex-row gap-1.5">
                       <View className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-foreground/40" />
-                      <Text className="shrink text-foreground/60 text-sm">{truncate(note.body, 80)}</Text>
+                      <Text className="shrink text-foreground/60 text-sm">
+                        {truncate(note.body, BRIEF.noteExcerptLength)}
+                      </Text>
                     </View>
                   ))}
                 </View>

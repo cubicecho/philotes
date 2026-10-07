@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { downloadBlob } from '@/components/ui/download-button';
 import { Download } from '@/components/ui/icons';
 import { buildPersonsCsv } from '@/lib/csv-export';
+import { PAGE_SIZE_DEFAULTS } from '@/lib/defaults';
 import { useAllRows } from '@/lib/use-all-rows';
 
 const GET_EXPORT_PERSONS = graphql(`
@@ -53,9 +54,6 @@ const GET_EXPORT_PERSONS = graphql(`
   }
 `);
 
-/** An exported person carries every contact detail and address, so a page is smaller than the default to stay inside the server's cost limit. */
-const EXPORT_PAGE_SIZE = 40;
-
 export function ExportPeopleCard() {
   const {
     data: exportData,
@@ -64,7 +62,7 @@ export function ExportPeopleCard() {
     refetch,
   } = useAllRows(GET_EXPORT_PERSONS, {
     field: 'persons',
-    pageSize: EXPORT_PAGE_SIZE,
+    pageSize: PAGE_SIZE_DEFAULTS.peopleExport,
   });
 
   function handleExportPeople() {

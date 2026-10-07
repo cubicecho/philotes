@@ -6,6 +6,7 @@ import { Section } from '@/components/section';
 import { Button } from '@/components/ui/button';
 import { downloadBlob } from '@/components/ui/download-button';
 import { Download } from '@/components/ui/icons';
+import { PAGE_SIZE_DEFAULTS } from '@/lib/defaults';
 import { buildIcsContent } from '@/lib/ics-export';
 import { useAllRows } from '@/lib/use-all-rows';
 
@@ -51,17 +52,14 @@ const GET_IMPORTANT_DATES_FOR_EXPORT = graphql(`
   }
 `);
 
-/** An event row is small, so the export asks for the server's largest page. */
-const EXPORT_PAGE_SIZE = 500;
-
 export function ExportCalendarCard() {
   const interactionsQuery = useAllRows(GET_INTERACTIONS_FOR_EXPORT, {
     field: 'interactions',
-    pageSize: EXPORT_PAGE_SIZE,
+    pageSize: PAGE_SIZE_DEFAULTS.calendarExport,
   });
   const importantDatesQuery = useAllRows(GET_IMPORTANT_DATES_FOR_EXPORT, {
     field: 'importantDates',
-    pageSize: EXPORT_PAGE_SIZE,
+    pageSize: PAGE_SIZE_DEFAULTS.calendarExport,
   });
   const interactions = interactionsQuery.data?.interactions ?? [];
   const importantDates = importantDatesQuery.data?.importantDates ?? [];

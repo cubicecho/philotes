@@ -9,6 +9,7 @@ import { PageLayout } from '@/components/page-layout';
 import { QueryState } from '@/components/query-state';
 import { FormDialog } from '@/components/ui/form-dialog';
 import { useQueryStringState } from '@/hooks/use-query-string-state';
+import { SEARCH_DEFAULTS } from '@/lib/defaults';
 import { invalidateQueryFields } from '@/lib/invalidate';
 import { useAllRows } from '@/lib/use-all-rows';
 
@@ -106,7 +107,7 @@ export default function PersonsPage() {
   const [searchValue, setSearchValue] = useState(urlQ);
 
   const debouncedSetUrlQ = useCallback(
-    debounce((q: string) => setUrlState({ q }), 300),
+    debounce((q: string) => setUrlState({ q }), SEARCH_DEFAULTS.debounceMs),
     // debounce returns a new function only once; setUrlState is stable
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [],

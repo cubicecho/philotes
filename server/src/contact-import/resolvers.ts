@@ -28,6 +28,18 @@ function isUniqueViolation(err: unknown): boolean {
   );
 }
 
+const { AddressType, ContactType, Recurrence } = dbSchema;
+type ContactType = dbSchema.ContactType;
+
+/** A phone whose Google label holds this word is a mobile. */
+const MOBILE_LABEL_WORD = 'mobile';
+
+/** The address type a Google label names, by the word it holds. The first match wins. */
+const ADDRESS_LABEL_WORDS = [
+  { word: 'home', type: AddressType.Home },
+  { word: 'work', type: AddressType.Work },
+] as const;
+
 const IMPORT_CONTACTS_SDL = parse(`
   type ImportContactsResult {
     imported: Int!
@@ -193,7 +205,7 @@ async function insertContactInfos(db: any, personId: string, userId: string, con
   const rows: Array<{
     personId: string;
     userId: string;
-    type: 'email' | 'phone' | 'mobile' | 'linkedin' | 'twitter' | 'instagram' | 'website' | 'other';
+    type: ContactType;
     value: string;
     label: string | undefined;
     isPrimary: boolean;
@@ -204,7 +216,7 @@ async function insertContactInfos(db: any, personId: string, userId: string, con
     rows.push({
       personId,
       userId,
-      type: 'email',
+      type: ContactType.Email,
       value: e.value,
       label: e.label || undefined,
       isPrimary: i === 0,
@@ -213,7 +225,7 @@ async function insertContactInfos(db: any, personId: string, userId: string, con
 
   for (const p of contact.phones) {
     const lower = p.label.toLowerCase();
-    const type: 'phone' | 'mobile' = lower.includes('mobile') ? 'mobile' : 'phone';
+    const type = lower.includes(MOBILE_LABEL_WORD) ? ContactType.Mobile : ContactType.Phone;
     rows.push({
       personId,
       userId,
@@ -262,7 +274,7 @@ async function insertAddresses(db: any, personId: string, userId: string, contac
 
   const rows = contact.addresses.map((addr) => {
     const lower = addr.label.toLowerCase();
-    const type: 'home' | 'work' | 'other' = lower.includes('home') ? 'home' : lower.includes('work') ? 'work' : 'other';
+    const type = ADDRESS_LABEL_WORDS.find(({ word }) => lower.includes(word))?.type ?? AddressType.Other;
 
     return {
       personId,
@@ -319,7 +331,7 @@ async function insertBirthday(db: any, personId: string, userId: string, contact
     userId,
     name: 'Birthday',
     date: contact.birthday,
-    recurrence: 'yearly',
+    recurrence: Recurrence.Yearly,
   });
 }
 

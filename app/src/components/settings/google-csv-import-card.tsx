@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { FilePickerButton } from '@/components/ui/file-picker';
 import { Upload } from '@/components/ui/icons';
 import { Spinner } from '@/components/ui/spinner';
+import { CONTACT_IMPORT_DEFAULTS } from '@/lib/defaults';
 import { invalidateQueryFields } from '@/lib/invalidate';
 
 const IMPORT_GOOGLE_CONTACTS = graphql(`
@@ -21,15 +22,26 @@ const IMPORT_GOOGLE_CONTACTS = graphql(`
   }
 `);
 
+/** Where an import stands, from choosing the file to its result. */
+const ImportStage = {
+  Idle: 'idle',
+  Preview: 'preview',
+  Importing: 'importing',
+  Done: 'done',
+  Error: 'error',
+} as const;
+
 type ImportState =
-  | { stage: 'idle' }
-  | { stage: 'preview'; contactCount: number; firstFiveNames: string[]; rawCsv: string }
-  | { stage: 'importing' }
-  | { stage: 'done'; imported: number; merged: number; skipped: number; errors: string[] }
-  | { stage: 'error'; message: string };
+  | { stage: typeof ImportStage.Idle }
+  | { stage: typeof ImportStage.Preview; contactCount: number; previewNames: string[]; rawCsv: string }
+  | { stage: typeof ImportStage.Importing }
+  | { stage: typeof ImportStage.Done; imported: number; merged: number; skipped: number; errors: string[] }
+  | { stage: typeof ImportStage.Error; message: string };
+
+const { previewNames: previewNameCount } = CONTACT_IMPORT_DEFAULTS;
 
 export function GoogleCsvImportCard() {
-  const [importState, setImportState] = useState<ImportState>({ stage: 'idle' });
+  const [importState, setImportState] = useState<ImportState>({ stage: ImportStage.Idle });
 
   const [importContacts] = useMutation(IMPORT_GOOGLE_CONTACTS, {
     update: (cache) => invalidateQueryFields(cache, ['persons', 'labels']),
@@ -40,8 +52,8 @@ export function GoogleCsvImportCard() {
     const lines = text.split(/\r?\n|\r/).filter((l) => l.trim().length > 0);
     const dataLines = Math.max(0, lines.length - 1); // subtract header row
 
-    // Get first 5 names from raw lines for preview (best-effort, unquoted)
-    const firstFiveNames = lines.slice(1, 6).map((line) => {
+    // The first names after the header row, read from the raw lines (best-effort, unquoted).
+    const previewNames = lines.slice(1, 1 + previewNameCount).map((line) => {
       const firstComma = line.indexOf(',');
       const secondComma = line.indexOf(',', firstComma + 1);
       const first = line.slice(0, firstComma).replace(/^"|"$/g, '').trim();
@@ -56,26 +68,26 @@ export function GoogleCsvImportCard() {
     });
 
     setImportState({
-      stage: 'preview',
+      stage: ImportStage.Preview,
       contactCount: dataLines,
-      firstFiveNames,
+      previewNames,
       rawCsv: text,
     });
   }
 
   async function handleImport() {
-    if (importState.stage !== 'preview' || !importState.rawCsv) {
+    if (importState.stage !== ImportStage.Preview || !importState.rawCsv) {
       return;
     }
 
-    setImportState({ stage: 'importing' });
+    setImportState({ stage: ImportStage.Importing });
 
     try {
       const result = await importContacts({ variables: { csv: importState.rawCsv } });
 
       if (result.errors?.length) {
         setImportState({
-          stage: 'error',
+          stage: ImportStage.Error,
           message: result.errors.map((e) => e.message).join('; '),
         });
         return;
@@ -83,13 +95,13 @@ export function GoogleCsvImportCard() {
 
       const summary = result.data?.importGoogleContacts;
       if (!summary) {
-        setImportState({ stage: 'error', message: 'Unknown error' });
+        setImportState({ stage: ImportStage.Error, message: 'Unknown error' });
         return;
       }
-      setImportState({ stage: 'done', ...summary });
+      setImportState({ stage: ImportStage.Done, ...summary });
     } catch (err) {
       setImportState({
-        stage: 'error',
+        stage: ImportStage.Error,
         message: err instanceof Error ? err.message : 'Unknown error',
       });
     }
@@ -102,23 +114,23 @@ export function GoogleCsvImportCard() {
       description="Upload a CSV export from Google Contacts to import your contacts into Philotes. Contacts without an email address will be skipped."
       contentSlot={
         <View className="items-start gap-3">
-          {importState.stage === 'idle' ? (
+          {importState.stage === ImportStage.Idle ? (
             <FilePickerButton variant="outline" label="Choose CSV File" accept=".csv" onPick={handlePick} />
           ) : null}
 
-          {importState.stage === 'preview' ? (
+          {importState.stage === ImportStage.Preview ? (
             <>
               <Text className="text-foreground/60 text-sm">
                 {`Ready to import approximately ${importState.contactCount} contacts.`}
               </Text>
-              {importState.firstFiveNames.length > 0 ? (
+              {importState.previewNames.length > 0 ? (
                 <View className="gap-1">
-                  {importState.firstFiveNames.map((name, i) => (
+                  {importState.previewNames.map((name, i) => (
                     // biome-ignore lint/suspicious/noArrayIndexKey: static preview list
                     <Text key={i} className="text-foreground/60 text-sm">{`• ${name}`}</Text>
                   ))}
-                  {importState.contactCount > 5 ? (
-                    <Text className="text-foreground/60 text-sm">{`…and ${importState.contactCount - 5} more`}</Text>
+                  {importState.contactCount > previewNameCount ? (
+                    <Text className="text-foreground/60 text-sm">{`…and ${importState.contactCount - previewNameCount} more`}</Text>
                   ) : null}
                 </View>
               ) : null}
@@ -126,14 +138,14 @@ export function GoogleCsvImportCard() {
             </>
           ) : null}
 
-          {importState.stage === 'importing' ? (
+          {importState.stage === ImportStage.Importing ? (
             <View className="flex-row items-center gap-2">
               <Spinner label="Importing" />
               <Text className="text-foreground/60 text-sm">Importing…</Text>
             </View>
           ) : null}
 
-          {importState.stage === 'done' ? (
+          {importState.stage === ImportStage.Done ? (
             <>
               <Text className="text-positive text-sm">
                 {`✓ ${importState.imported} contacts imported${
@@ -154,18 +166,22 @@ export function GoogleCsvImportCard() {
                 variant="outline"
                 size="sm"
                 content="Import Another File"
-                onPress={() => setImportState({ stage: 'idle' })}
+                onPress={() => setImportState({ stage: ImportStage.Idle })}
               />
             </>
           ) : null}
 
-          {importState.stage === 'error' ? (
+          {importState.stage === ImportStage.Error ? (
             <Alert
               className="self-stretch"
               variant="destructive"
               title={`Import failed: ${importState.message}`}
               actionSlot={
-                <Button variant="outline" content="Try Again" onPress={() => setImportState({ stage: 'idle' })} />
+                <Button
+                  variant="outline"
+                  content="Try Again"
+                  onPress={() => setImportState({ stage: ImportStage.Idle })}
+                />
               }
             />
           ) : null}

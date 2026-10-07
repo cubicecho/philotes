@@ -4,11 +4,24 @@ import { labels } from './labels.ts';
 import { persons } from './persons.ts';
 import { users } from './users.ts';
 
-export const INTERACTION_CHANNELS = ['call', 'text', 'email', 'in-person', 'other'] as const;
-export type InteractionChannel = (typeof INTERACTION_CHANNELS)[number];
+/** How an interaction took place. */
+export const InteractionChannel = {
+  Call: 'call',
+  Text: 'text',
+  Email: 'email',
+  InPerson: 'in-person',
+  Other: 'other',
+} as const;
+export type InteractionChannel = (typeof InteractionChannel)[keyof typeof InteractionChannel];
 
-export const INTERACTION_SENTIMENTS = ['great', 'good', 'neutral', 'difficult'] as const;
-export type InteractionSentiment = (typeof INTERACTION_SENTIMENTS)[number];
+/** How an interaction felt. */
+export const InteractionSentiment = {
+  Great: 'great',
+  Good: 'good',
+  Neutral: 'neutral',
+  Difficult: 'difficult',
+} as const;
+export type InteractionSentiment = (typeof InteractionSentiment)[keyof typeof InteractionSentiment];
 
 export const interactions = pgTable(
   'interactions',
