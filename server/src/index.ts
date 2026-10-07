@@ -1,9 +1,8 @@
 import { createServer } from 'node:http';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { db } from '@philotes/db';
+import { DATABASE_URL, db, runMigrations } from '@philotes/db';
 import cors from 'cors';
-import { migrate } from 'drizzle-orm/pglite/migrator';
 import express from 'express';
 import { createAvatarRouter } from './routes/avatars.ts';
 import { createGraphQLRouter } from './routes/graphql.ts';
@@ -24,7 +23,7 @@ if (
 const staticDir = join(__dirname, '../../app/dist');
 const avatarDir = join(__dirname, '../../avatars');
 
-await migrate(db, { migrationsFolder: join(__dirname, '../../db/drizzle') });
+await runMigrations(db, join(__dirname, '../../db/drizzle'), DATABASE_URL);
 
 const app = express();
 const httpServer = createServer(app);

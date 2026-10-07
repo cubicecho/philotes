@@ -24,7 +24,7 @@ confirmed in code. Nothing here is implemented until approved.
 | B11 | Bug | Shows uploaded avatars: the app prefixed `/avatars/` to a path that already starts with it, so no upload ever displayed | Avatars display | B3 | done |
 | B4 | Bug | Stops contact import returning raw database error text, and scopes its duplicate check to the importing user | No schema details in responses; no cross-user dedupe | — | done |
 | B5 | Bug | Keeps the owner on the person-label rows that merging two labels re-inserts | Merge does not fail on the NOT NULL owner column | — | done |
-| B6 | Bug | Runs the postgres-js migrator when `DATABASE_URL` is a Postgres URL, not the PGlite one | Migrations apply on a real Postgres | — | approved |
+| B6 | Refactor [reuse] | Chooses the migrator by `DATABASE_URL` in one function in the db package, used by the server, the `migrate` script and the tests. Not a bug after all: on drizzle-orm 1.0.0-rc.4 the PGlite migrator also applied all 18 tables to a real Postgres 17, so the server only worked by the two migrators sharing an implementation | The server no longer depends on that accident | — | done |
 | B7 | Bug | Makes the avatar upload in the app check the response and use the configured API URL | A failed upload is reported, and works off-origin | B3 | done |
 | B8 | Bug | Refetches the lists that import, person delete, label merge and label delete change | No stale rows after a mutation | — | approved |
 | B9 | Bug | Shows loading and error states in the API key and export cards, which today show "empty" while loading | Honest states | — | approved |
