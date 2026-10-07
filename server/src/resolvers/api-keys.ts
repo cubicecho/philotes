@@ -106,20 +106,17 @@ export function applyApiKeysExtension(schema: GraphQLSchema): GraphQLSchema {
     const userId = requireAuth(ctx);
     const db = ctx.db as AnyDB;
 
-    const [key] = await db
-      .select({ id: apiKeys.id, userId: apiKeys.userId })
-      .from(apiKeys)
-      .where(eq(apiKeys.id, args.id))
-      .limit(1);
+    // One statement scoped to the caller, so another user's key and a missing key answer the same.
+    const revoked: Array<{ id: string }> = await db
+      .update(apiKeys)
+      .set({ revokedAt: new Date() })
+      .where(and(eq(apiKeys.id, args.id), eq(apiKeys.userId, userId)))
+      .returning({ id: apiKeys.id });
 
-    if (!key) {
-      throw new GraphQLError(`API key not found`);
+    const isMissing = revoked.length === 0;
+    if (isMissing) {
+      throw new GraphQLError('API key not found');
     }
-    if (key.userId !== userId) {
-      throw new GraphQLError('Forbidden');
-    }
-
-    await db.update(apiKeys).set({ revokedAt: new Date() }).where(eq(apiKeys.id, args.id));
 
     return true;
   };
