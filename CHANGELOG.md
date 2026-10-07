@@ -1,3 +1,63 @@
+# [3.0.0](https://github.com/cubicecho/philotes/compare/v2.1.0...v3.0.0) (2026-10-07)
+
+
+* build!: ship the standard image, compose stack, CI and release on port 3000 ([e668c7f](https://github.com/cubicecho/philotes/commit/e668c7f212ea42a34d87007cfdf988d9c690a672))
+* feat(auth)!: sign in through better-auth, with sessions, passwords and API keys ([1399ac9](https://github.com/cubicecho/philotes/commit/1399ac9daa20f87c726577adf818042f19f5f479))
+* feat(db)!: bring every table to the schema conventions ([eddb53d](https://github.com/cubicecho/philotes/commit/eddb53dde0ed1745f69d5296696d073f14f7b1c1))
+* feat(db)!: make Postgres the only database and wait for it at boot ([40caafe](https://github.com/cubicecho/philotes/commit/40caafe7d3850443debcb1992d2362daf4c05245))
+* feat(server)!: bound every GraphQL operation and move to drizzle-graphql 13 ([183e162](https://github.com/cubicecho/philotes/commit/183e162517e4181f4cacee0db7d32a26dd30dbf5))
+* refactor(server)!: serve GraphQL with graphql-yoga from createApp(deps) ([992f700](https://github.com/cubicecho/philotes/commit/992f70009874205a5a62a8488c89ee848ddc2ea4))
+
+
+### Bug Fixes
+
+* **app:** correct date maths and display, interaction tag edits, exports, import preview and mentions ([621f83a](https://github.com/cubicecho/philotes/commit/621f83a569804e219ae72bea422a21eed86e766d))
+* **app:** export birthdays and important dates on the right day ([11b38d0](https://github.com/cubicecho/philotes/commit/11b38d0c84b32f7567ace2b59908f83c0edb7547))
+* **app:** give a person one colour and a channel one icon everywhere ([28229b1](https://github.com/cubicecho/philotes/commit/28229b129d71458087b6e19bfa3488d335817f6e))
+* **app:** refetch the lists a mutation makes stale ([3212088](https://github.com/cubicecho/philotes/commit/321208857ab36642ae9cc95f9f9f67c4124465aa))
+* **app:** show loading and failure in the API key and export cards ([12df701](https://github.com/cubicecho/philotes/commit/12df701eefbd1a45f4a40103318565c9c2baa560))
+* **app:** show uploaded avatars and report a failed upload ([3d379e4](https://github.com/cubicecho/philotes/commit/3d379e4cdf5cefc9e5318cc21b35140fe7927263))
+* **docker:** keep .env files out of the build context ([50cc402](https://github.com/cubicecho/philotes/commit/50cc40234e0d5e5c47c405fdac1e691ca691a2dd))
+* point the server clean script and the graphqlsp plugin at server/__generated__ ([df093bc](https://github.com/cubicecho/philotes/commit/df093bc8b34700acf5b37a54c0186d39e023fd64))
+* **server:** answer 'not found' when revoking another user's API key ([c1057d5](https://github.com/cubicecho/philotes/commit/c1057d5d0cb19b55cb64d377847d54fb65f988b8))
+* **server:** authorise an avatar upload before the file is written ([c5b3246](https://github.com/cubicecho/philotes/commit/c5b3246aeb1bd01a3acbeeedcafb75fd957ff0b4))
+* **server:** clamp month-end occurrences, return one person from deletePerson and count skipped import rows ([989af6c](https://github.com/cubicecho/philotes/commit/989af6c80390aa2e08af1974260b34b9d9d872af))
+* **server:** keep contact import to the importing user's own rows ([e95c077](https://github.com/cubicecho/philotes/commit/e95c077d13621d20b6ed6ad050062727626c9ec3))
+* **server:** keep the owner on person-label rows when merging labels ([fe749db](https://github.com/cubicecho/philotes/commit/fe749dbc24c6cbbafbf394bfa43003848263998a))
+
+
+### Features
+
+* **app:** ask before deleting a note, task, interaction, date, label, type or key ([465b89b](https://github.com/cubicecho/philotes/commit/465b89ba1d64ce4b08d3d6b03b0ef2e3f688b8e4))
+* **server:** validate every generated write and check the rows it points at ([0391a00](https://github.com/cubicecho/philotes/commit/0391a00c50341aef5284e53e153eac6358a48920))
+
+
+### BREAKING CHANGES
+
+* the junction tables require user_id. The migration
+fills it from the parent row. Existing timestamps without a zone are
+read as UTC, and rows that had no created_at take the migration time.
+* the server listens on port 3000 by default, not 3001, and the
+Expo dev server moves to 8081. The compose stack keeps avatars in the
+philotes_data volume, not philotes_avatars.
+* BETTER_AUTH_SECRET replaces JWT_SECRET. Every user signs in
+again, and has to create a password or use a sign-in link. Existing API keys
+are dropped with the api_keys table and must be created again. The
+requestMagicLink mutation is gone, and verifyMagicLink returns
+{ token, user } in place of { token, userId }.
+* drizzle-graphql 13 renames the generated mutations.
+updateX and deleteX now change one row and return it; the bulk forms are
+updateXs and deleteXs. updateXSingle and deleteXSingle are gone. A list
+query without a limit returns 50 rows, and a limit over 500 is refused
+with DRIZZLE_LIMIT_EXCEEDED. upcomingDates is capped the same way.
+* the embedded PGlite database is gone. DATABASE_URL is
+required and must be a postgres:// URL; data under /data/pgdata is not
+migrated. docker-compose.yml now starts Postgres beside the app, and
+docker-compose.postgres.yml is removed.
+* unexpected resolver errors are now masked as
+"Unexpected error."; errors thrown on purpose keep their message and code.
+Browsers on an origin other than APP_URL are no longer allowed by CORS.
+
 # [2.1.0](https://github.com/cubicecho/philotes/compare/v2.0.1...v2.1.0) (2026-10-07)
 
 
