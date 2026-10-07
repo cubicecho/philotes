@@ -41,28 +41,6 @@ export const DASHBOARD_DEFAULTS: Readonly<DashboardSettings> = Object.freeze({
   tasksDueWithinDays: 7,
 });
 
-/** What the brief shown before contacting a person holds. */
-export interface PreContactBriefSettings {
-  /** Most recent notes listed. */
-  maxNotes: number;
-  /** Most open tasks listed. */
-  maxTasks: number;
-  /** How far ahead it looks for the person's important dates, in days. */
-  upcomingWindowDays: number;
-  /** Longest excerpt of the last interaction's note, in characters. */
-  interactionNoteExcerptLength: number;
-  /** Longest excerpt of a recent note, in characters. */
-  noteExcerptLength: number;
-}
-
-export const PRE_CONTACT_BRIEF_DEFAULTS: Readonly<PreContactBriefSettings> = Object.freeze({
-  maxNotes: 3,
-  maxTasks: 3,
-  upcomingWindowDays: 60,
-  interactionNoteExcerptLength: 100,
-  noteExcerptLength: 80,
-});
-
 /** How much of a long text the lists on a person's page show. */
 export interface ExcerptSettings {
   /** Longest excerpt of an interaction's note in the interaction list, in characters. */

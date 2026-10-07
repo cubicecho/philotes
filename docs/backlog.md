@@ -60,7 +60,7 @@ A lightweight place to capture gift ideas per person — things someone mentione
 - **Option A:** Special note category — add a `gift_idea` tag to the existing labels/tags system, no new schema needed
 - **Option B:** A dedicated lightweight `giftIdeas` field — simple text array per person, or a minimal `gift_ideas` table (`id`, `personId`, `idea`, `occasionNote`, `createdAt`)
 
-**Integration:** Surface gift ideas in the upcoming dates widget and pre-contact brief when that person has a date coming up within 30 days.
+**Integration:** Surface gift ideas in the upcoming dates widget when that person has a date coming up within 30 days.
 
 **Implementation notes:**
 - Monica CRM (open source, PHP/Laravel) has a full gift tracking feature as a reference
