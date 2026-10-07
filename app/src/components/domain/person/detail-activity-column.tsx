@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { View } from 'react-native';
 import type { GetPersonInteractionsQuery, GetPersonNotesQuery } from '@/__generated__/graphql';
-import { MessageSquare, NotebookPen, SquareCheck } from '@/components/app-icons';
+import { Heart, MessageSquare, NotebookPen, SquareCheck } from '@/components/app-icons';
 import type { DetailLabel, PersonDetail, PersonStub } from '@/components/domain/person/detail-queries';
+import { PersonGratitudes } from '@/components/domain/person/gratitudes';
 import { ImportantDatesSection } from '@/components/domain/person/important-dates-section';
 import { PersonInteractions } from '@/components/domain/person/interactions';
 import { PersonMentionedIn } from '@/components/domain/person/mentioned-in';
@@ -43,6 +44,7 @@ export function PersonActivityColumn({
 }: PersonActivityColumnProps) {
   const [noteDialogOpen, setNoteDialogOpen] = useState(false);
   const [taskDialogOpen, setTaskDialogOpen] = useState(false);
+  const [gratitudeDialogOpen, setGratitudeDialogOpen] = useState(false);
   const mentionedInNotes = person.mentionedInNotes ?? [];
 
   return (
@@ -121,6 +123,21 @@ export function PersonActivityColumn({
             onUpdate={onChanged}
             createOpen={taskDialogOpen}
             onCreateOpenChange={setTaskDialogOpen}
+          />
+        }
+      />
+
+      <Section
+        surface="card"
+        title="Gratitude"
+        actionSlot={<SectionAdd iconSlot={<Heart />} onPress={() => setGratitudeDialogOpen(true)} />}
+        contentSlot={
+          <PersonGratitudes
+            personId={person.id}
+            gratitudes={person.gratitudes ?? []}
+            onChanged={onChanged}
+            createOpen={gratitudeDialogOpen}
+            onCreateOpenChange={setGratitudeDialogOpen}
           />
         }
       />

@@ -6,6 +6,7 @@ import { applyApiKeysExtension } from '../api-keys/resolvers.ts';
 import { applyAuthExtension } from '../auth/resolvers.ts';
 import { applyImportContactsExtension } from '../contact-import/resolvers.ts';
 import { OPERATION_LIMIT_DEFAULTS } from '../core/defaults.ts';
+import { gratitudeWriteHooks } from '../gratitudes/hooks.ts';
 import { importantDateWriteHooks } from '../important-dates/hooks.ts';
 import { applyUpcomingDatesExtension } from '../important-dates/resolvers.ts';
 import { interactionWriteHooks } from '../interactions/hooks.ts';
@@ -27,6 +28,7 @@ const TIMESTAMP_COLUMN = 'PgTimestamp';
 export const WRITE_HOOKS: OnWriteConfig = {
   ...personWriteHooks,
   ...noteWriteHooks,
+  ...gratitudeWriteHooks,
   ...interactionWriteHooks,
   ...taskWriteHooks,
   ...importantDateWriteHooks,

@@ -170,6 +170,17 @@ export const NOTE_DEFAULTS: Readonly<NoteSettings> = Object.freeze({
   maxBodyLength: 20_000,
 });
 
+/** Limits on what a gratitude may hold. */
+export interface GratitudeSettings {
+  /** Longest body, in characters. */
+  maxBodyLength: number;
+}
+
+/** The gratitude limits as shipped. */
+export const GRATITUDE_DEFAULTS: Readonly<GratitudeSettings> = Object.freeze({
+  maxBodyLength: 2_000,
+});
+
 /** Limits on what an interaction may hold. */
 export interface InteractionSettings {
   /** Longest note, in characters. */

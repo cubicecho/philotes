@@ -7,6 +7,7 @@ import { requireAuth } from '../core/errors.ts';
 export const USER_OWNED_TABLES = [
   'addresses',
   'contactInfos',
+  'gratitudes',
   'importantDateTags',
   'importantDates',
   'interactionTags',

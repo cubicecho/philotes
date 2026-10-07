@@ -36,6 +36,10 @@ export const GET_PERSON_DETAIL = graphql(`
         label
         color
       }
+      gratitudes(limit: 100, orderBy: { createdAt: { direction: desc, priority: 1 } }) {
+        id
+        body
+      }
       importantDates(limit: 100) {
         id
         name
