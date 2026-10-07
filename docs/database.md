@@ -54,7 +54,7 @@ database from `createTestDb()` in `server/src/__tests__/helpers.ts`. See
 
 ## Tables
 
-Eighteen tables, plus `api_keys`:
+Nineteen tables, plus `api_keys`:
 
 | Table | File | Ownership |
 | --- | --- | --- |
@@ -74,6 +74,7 @@ Eighteen tables, plus `api_keys`:
 | `note_mentions` | `models/notes.ts` | `user_id` |
 | `person_labels` | `models/person-labels.ts` | `user_id` |
 | `person_relationships` | `models/person-relationships.ts` | `user_id` |
+| `person_tombstones` | `models/person-tombstones.ts` | `user_id` |
 | `relationship_types` | `models/relationship-types.ts` | `user_id` |
 | `tasks` | `models/tasks.ts` | `user_id` |
 | `api_keys` | `api-keys.ts` | `user_id` |
@@ -135,6 +136,30 @@ are known, `has_year` is false and the date is stored under year 1604
 (`YEARLESS_DATE_YEAR`, the year a contact card uses for the same purpose and a
 leap year, so 29 February is storable). The year of such a date means nothing
 and is never shown.
+
+### Change tracking
+
+A client that keeps a copy of a user's people (a phone's address book, the
+app's offline cache) asks for what changed since it last looked. Three things
+answer it:
+
+- `users.persons_revision` counts the changes to a user's people.
+- `persons.revision` is that count when the person, or a detail their contact
+  card carries, last changed. It is 0 (`UNREVISED`) only inside the write that
+  creates the person.
+- `person_tombstones` holds one row for each deleted person: the `uid` a phone
+  knew them by and the count when they went. `person_id` is not a foreign key,
+  since the person is gone. A uid has one tombstone per user, updated when a
+  person is made again under it and deleted again.
+
+"What changed after revision N" is the people with `revision > N` plus the
+tombstones with `revision > N`. Taking the next number updates the user's row,
+which holds a lock until the transaction ends, so a user's changes commit in
+the order they are numbered and a client cannot miss one that commits late.
+
+The numbers are written by the server, not by a trigger: see "Change tracking"
+in [`server.md`](server.md#change-tracking). A statement run against the
+database by hand does not move a revision.
 
 ## Tenancy
 

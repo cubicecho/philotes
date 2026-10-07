@@ -274,6 +274,24 @@ describe.each(STORES)('avatar routes, kept in $kind', ({ makeStore }) => {
     expect(files[0]).not.toBe(firstName);
   });
 
+  it("moves the person's revision on when the picture is set and when it is removed", async () => {
+    const revision = async (): Promise<number> => {
+      const [person] = await db
+        .select({ revision: dbSchema.persons.revision })
+        .from(dbSchema.persons)
+        .where(eq(dbSchema.persons.id, personId));
+      return person.revision;
+    };
+    const before = await revision();
+
+    await uploadAvatar(ownerId);
+    const afterUpload = await revision();
+    await fetch(`${baseUrl}/avatars/${personId}`, { method: 'DELETE', headers: ownerHeaders });
+
+    expect(afterUpload).toBeGreaterThan(before);
+    expect(await revision()).toBeGreaterThan(afterUpload);
+  });
+
   it('removes the file and clears the path on delete', async () => {
     await uploadAvatar(ownerId);
 

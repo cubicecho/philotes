@@ -126,6 +126,40 @@ in `WRITE_HOOKS` takes generated writes unchecked, so a new table needs one.
 A hand-written resolver validates the same way, with `parseOrThrow(schema,
 value)` from `core/validation.ts`.
 
+## Change Tracking
+
+Every write to a person, or to a detail their contact card carries, gives the
+person the user's next revision (the columns are described in
+[`database.md`](database.md#change-tracking)). `persons/revisions.ts` holds the
+three calls, each made inside the transaction of the write:
+
+| Call | When |
+| --- | --- |
+| `touchPersons(tx, userId, personIds)` | the person or a card detail changed |
+| `touchNewPersons(tx, userId)` | after an insert of people |
+| `buryPersons(tx, userId, personIds)` | before a delete of people; writes their tombstones |
+
+The generated writes get this from `countingChanges(table, hooks)` in
+`persons/revision-hooks.ts`, which wraps the hooks of every table in
+`CARD_TABLES`: `persons`, `contactInfos`, `addresses`, `importantDates`,
+`personLabels` and `labels` (a label's name is on the card of everyone who
+wears it). It finds the people in the `before` hook, by compiling the write's
+own `where` with drizzle-graphql's `extractFilters` and selecting the rows it
+will reach, because an `after` hook's rows hold only the columns the client
+selected ([drizzle-graphql#177](https://github.com/cubicecho/drizzle-graphql/issues/177)).
+A `where` that reaches through a relation cannot be compiled there and falls
+back to every row of the caller's in that table: more people re-synced than
+needed, never fewer.
+
+A hand-written write calls the helpers itself. `mergePersons`, `mergeLabelInto`,
+`importGoogleContacts` and the avatar routes do.
+
+A new table that points at a person is either a card table (add it to
+`CARD_TABLES` and wrap its hooks) or goes in `OFF_CARD_TABLES` with the reason
+its writes leave the revision alone. `__tests__/persons/revisions.test.ts`
+fails until it is one or the other, and until a card table has a tested insert,
+update and delete.
+
 ## Operation Limits
 
 A list returns `defaultPageSize` rows when the request passes no `limit`, and

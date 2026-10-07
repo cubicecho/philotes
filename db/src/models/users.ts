@@ -1,4 +1,4 @@
-import { boolean, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core';
+import { bigint, boolean, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core';
 import { USER_DEFAULTS } from '../defaults.ts';
 
 /** An account. better-auth owns the columns it names (auth.md); the rest of the schema hangs off `id`. */
@@ -12,6 +12,11 @@ export const users = pgTable('users', {
   image: text('image'),
   /** The country a phone number written without a country code is read as: an ISO 3166-1 alpha-2 code. */
   defaultCountry: text('default_country').notNull().default(USER_DEFAULTS.country),
+  /**
+   * How many times the user's people have changed. Each change takes the next number, so a client that
+   * remembers this one can ask for what changed after it.
+   */
+  personsRevision: bigint('persons_revision', { mode: 'number' }).notNull().default(0),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true })
     .notNull()

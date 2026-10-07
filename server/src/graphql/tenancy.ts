@@ -19,6 +19,7 @@ export const USER_OWNED_TABLES = [
   'notes',
   'personLabels',
   'personRelationships',
+  'personTombstones',
   'persons',
   'relationshipTypes',
   'tasks',
@@ -66,7 +67,13 @@ const databaseOwned = (): undefined => undefined;
  */
 export const contextValues: NonNullable<BuildSchemaConfig['contextValues']> = {
   ...Object.fromEntries(USER_OWNED_TABLES.map((name) => [name, { userId: requireAuth }])),
-  persons: { userId: requireAuth, uid: databaseOwned, displayName: databaseOwned, sortName: databaseOwned },
+  persons: {
+    userId: requireAuth,
+    uid: databaseOwned,
+    displayName: databaseOwned,
+    sortName: databaseOwned,
+    revision: databaseOwned,
+  },
   contactInfos: { userId: requireAuth, normalizedValue: () => UNNORMALIZED_VALUE },
 };
 
@@ -80,12 +87,26 @@ export const exclude: NonNullable<BuildSchemaConfig['exclude']> = {
   columns: { persons: ['vcardExtra'] },
 };
 
-/** User lifecycle belongs to the auth flow, not generated CRUD. */
+/**
+ * The tables the API only reads. User lifecycle belongs to the auth flow, and a tombstone is written by
+ * the delete it records.
+ */
+export const READ_ONLY_TABLES: ReadonlySet<string> = new Set(['users', 'personTombstones']);
+
+/**
+ * Says whether a table takes generated writes.
+ *
+ * @param table - The table's schema key.
+ * @returns False for a read-only table.
+ */
+const isWritable = (table: string): boolean => READ_ONLY_TABLES.has(table) === false;
+
+/** Which generated operations exist, per table. */
 export const features: NonNullable<BuildSchemaConfig['features']> = {
-  insert: (table) => table !== 'users',
-  update: (table) => table !== 'users',
-  updateMany: (table) => table !== 'users',
-  delete: (table) => table !== 'users',
+  insert: isWritable,
+  update: isWritable,
+  updateMany: isWritable,
+  delete: isWritable,
   // Deleting a person takes everything recorded about them, so a delete or update of people names which.
   requireWhere: (table) => table === 'persons',
   // The default, but stated. Nested writes bypass the child table's onWrite hooks.

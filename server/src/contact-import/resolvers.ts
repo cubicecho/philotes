@@ -6,6 +6,7 @@ import type { Context } from '../core/context.ts';
 import { requireAuth } from '../core/errors.ts';
 import { objectType } from '../graphql/object-type.ts';
 import { defaultCountryOf } from '../persons/normalized-values.ts';
+import { touchPersons } from '../persons/revisions.ts';
 import { type ParsedContact, parseGoogleContactsCsv } from './google-contacts-csv.ts';
 import { insertAddresses, insertBirthday, insertContactInfos, insertPersonLabels } from './person-details.ts';
 
@@ -184,6 +185,8 @@ export function applyImportContactsExtension(schema: GraphQLSchema): GraphQLSche
     let importedCount = 0;
     let mergedCount = 0;
     const errors: string[] = [];
+    // Everyone the import made or added to, counted as one change once it is done.
+    const changedPersonIds = new Set<string>();
 
     for (const contact of contacts) {
       const name = nameOf(contact);
@@ -213,6 +216,8 @@ export function applyImportContactsExtension(schema: GraphQLSchema): GraphQLSche
         continue;
       }
 
+      changedPersonIds.add(personId);
+
       // Step 4: Insert related data in parallel
       // Each helper is isolated with .catch() so a failure in one (e.g. a
       // duplicate address) does not roll back an otherwise-successful import.
@@ -231,6 +236,8 @@ export function applyImportContactsExtension(schema: GraphQLSchema): GraphQLSche
         }),
       ]);
     }
+
+    await db.transaction((tx) => touchPersons(tx, userId, changedPersonIds));
 
     return {
       imported: importedCount,
