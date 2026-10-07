@@ -3,7 +3,10 @@
 // The shapes below are what the exporter reads, not the GraphQL schema — the
 // `GetAllEventsForExport` query in
 // `components/settings/export-calendar-card.tsx` must select every field named
-// here.
+// here. Dates arrive as `Date` objects: the Apollo cache's scalar policies turn
+// the wire strings into them.
+
+import { localIsoDate } from '@/lib/local-date';
 
 export interface CalendarPerson {
   id: string;
@@ -14,7 +17,7 @@ export interface CalendarPerson {
 export interface CalendarInteraction {
   id: string;
   channel: string;
-  occurredAt: string;
+  occurredAt: Date;
   note?: string | null;
   person?: CalendarPerson | null;
 }
@@ -23,7 +26,8 @@ export interface CalendarImportantDate {
   id: string;
   name: string;
   description?: string | null;
-  date: string;
+  /** Local midnight of the calendar day. */
+  date: Date;
   recurrence?: string | null;
   milestoneType?: string | null;
   person?: CalendarPerson | null;
@@ -41,16 +45,16 @@ function buildCalendarPersonName(person?: CalendarPerson | null): string {
   return [person.firstName, person.lastName].filter(Boolean).join(' ');
 }
 
-function formatIcsDateTime(dateStr: string): string {
-  return new Date(dateStr)
+function formatIcsDateTime(date: Date): string {
+  return date
     .toISOString()
     .replace(/[-:]/g, '')
     .replace(/\.\d{3}/, '');
 }
 
 /** Format a date-only value as a DATE (not DATE-TIME) for all-day events */
-function formatIcsDateOnly(dateStr: string): string {
-  return new Date(dateStr).toISOString().slice(0, 10).replace(/-/g, '');
+function formatIcsDateOnly(date: Date): string {
+  return localIsoDate(date).replace(/-/g, '');
 }
 
 function escapeIcsText(text: string): string {
@@ -63,7 +67,7 @@ function buildInteractionEvent(interaction: CalendarInteraction, now: string): s
     `${interaction.channel.charAt(0).toUpperCase()}${interaction.channel.slice(1)} with ${personName}`,
   );
   const dtStart = formatIcsDateTime(interaction.occurredAt);
-  const dtEnd = formatIcsDateTime(new Date(new Date(interaction.occurredAt).getTime() + 30 * 60 * 1000).toISOString());
+  const dtEnd = formatIcsDateTime(new Date(interaction.occurredAt.getTime() + 30 * 60 * 1000));
   const lines = [
     'BEGIN:VEVENT',
     `UID:interaction-${interaction.id}@philotes`,
@@ -101,7 +105,7 @@ function buildImportantDateEvent(importantDate: CalendarImportantDate, now: stri
 }
 
 export function buildIcsContent(data: CalendarEventsData): string {
-  const now = formatIcsDateTime(new Date().toISOString());
+  const now = formatIcsDateTime(new Date());
 
   const events = [
     ...data.interactions.map((i) => buildInteractionEvent(i, now)),

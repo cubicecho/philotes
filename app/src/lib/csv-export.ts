@@ -2,7 +2,10 @@
 //
 // The shapes below are what the exporter reads, not the GraphQL schema — the
 // `ExportPersons` query in `components/settings/export-people-card.tsx` must
-// select every field named here.
+// select every field named here. Dates arrive as `Date` objects: the Apollo
+// cache's scalar policies turn the wire strings into them.
+
+import { localIsoDate } from '@/lib/local-date';
 
 export interface ExportContactInfo {
   type: string;
@@ -24,7 +27,8 @@ export interface ExportAddress {
 
 export interface ExportImportantDate {
   name: string;
-  date: string;
+  /** Local midnight of the calendar day. */
+  date: Date;
   recurrence?: string | null;
 }
 
@@ -38,15 +42,11 @@ export interface ExportPerson {
   id: string;
   firstName: string;
   lastName?: string | null;
-  email: string;
+  email?: string | null;
   contactInfos: ExportContactInfo[];
   addresses: ExportAddress[];
   importantDates: ExportImportantDate[];
   labels: ExportLabel[];
-}
-
-export interface ExportPersonsQueryResult {
-  persons: ExportPerson[];
 }
 
 export function csvCell(value: string): string {
@@ -103,7 +103,8 @@ export function buildPersonsCsv(persons: ExportPerson[]): string {
 
   // 3. Build data rows
   const rows = persons.map((person) => {
-    const birthday = person.importantDates.find((d) => d.name === 'Birthday')?.date ?? '';
+    const birthdayDate = person.importantDates.find((d) => d.name === 'Birthday')?.date;
+    const birthday = birthdayDate ? localIsoDate(birthdayDate) : '';
     const labelsStr = person.labels.map((l) => l.label).join(' ::: ');
 
     const cells: string[] = [person.firstName, person.lastName ?? '', birthday, labelsStr];

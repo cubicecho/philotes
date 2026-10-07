@@ -91,8 +91,8 @@ describe('buildPersonsCsv', () => {
     const csv = buildPersonsCsv([
       person({
         importantDates: [
-          { name: 'Anniversary', date: '2000-06-01', recurrence: 'yearly' },
-          { name: 'Birthday', date: '1815-12-10', recurrence: 'yearly' },
+          { name: 'Anniversary', date: new Date(2000, 5, 1), recurrence: 'yearly' },
+          { name: 'Birthday', date: new Date(1815, 11, 10), recurrence: 'yearly' },
         ],
         labels: [
           { id: 'l1', label: 'Friend', color: '#fff' },
