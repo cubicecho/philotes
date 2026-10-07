@@ -305,6 +305,7 @@ async function insertAddresses(db: DB, personId: string, userId: string, contact
       type,
       label: addr.label || undefined,
       line1: addr.line1,
+      line2: addr.line2 || undefined,
       city: addr.city || undefined,
       state: addr.state || undefined,
       postalCode: addr.postalCode || undefined,

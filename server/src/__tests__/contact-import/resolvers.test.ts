@@ -9,8 +9,8 @@ const SHARED_EMAIL = 'ada@example.com';
 /** What one import stores as contact details, sorted. */
 const CONTACT_VALUES = [SHARED_PHONE, SHARED_EMAIL];
 const CSV = [
-  'First Name,Last Name,E-mail 1 - Value,Phone 1 - Value,Address 1 - Street',
-  `Ada,Lovelace,${SHARED_EMAIL},${SHARED_PHONE},1 Analytical Way`,
+  'First Name,Last Name,E-mail 1 - Value,Phone 1 - Value,Address 1 - Street,Address 1 - Extended Address',
+  `Ada,Lovelace,${SHARED_EMAIL},${SHARED_PHONE},1 Analytical Way,Flat 2`,
 ].join('\n');
 
 describe('importGoogleContacts', () => {
@@ -37,10 +37,10 @@ describe('importGoogleContacts', () => {
       .where(eq(dbSchema.contactInfos.userId, secondUserId));
     expect(details.map((row) => row.value).sort()).toEqual(CONTACT_VALUES);
     const addresses = await db
-      .select({ line1: dbSchema.addresses.line1 })
+      .select({ line1: dbSchema.addresses.line1, line2: dbSchema.addresses.line2 })
       .from(dbSchema.addresses)
       .where(eq(dbSchema.addresses.userId, secondUserId));
-    expect(addresses).toEqual([{ line1: '1 Analytical Way' }]);
+    expect(addresses).toEqual([{ line1: '1 Analytical Way', line2: 'Flat 2' }]);
   });
 
   it('does not duplicate details when the same user imports twice', async () => {

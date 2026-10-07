@@ -13,6 +13,8 @@ export interface ParsedContact {
   addresses: Array<{
     label: string;
     line1: string;
+    /** The empty string when the row has no second line. */
+    line2: string;
     city: string;
     state: string;
     postalCode: string;
@@ -334,6 +336,7 @@ export function parseGoogleContactsCsv(csvText: string): {
       addressList.push({
         label,
         line1,
+        line2: col(row, `Address ${n} - Extended Address`),
         city: col(row, `Address ${n} - City`),
         state: col(row, `Address ${n} - Region`),
         postalCode: col(row, `Address ${n} - Postal Code`),
