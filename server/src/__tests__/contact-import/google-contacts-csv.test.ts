@@ -17,6 +17,20 @@ describe('parseGoogleContactsCsv', () => {
     expect(skippedCount).toBe(0);
   });
 
+  it('reads the second address line from the Extended Address column', () => {
+    const csv = [
+      'First Name,Last Name,Address 1 - Street,Address 1 - Extended Address,Address 2 - Street',
+      'Ada,Lovelace,1 Analytical Way,Flat 2,12 St James Square',
+    ].join('\n');
+
+    const { contacts } = parseGoogleContactsCsv(csv);
+
+    expect(contacts[0].addresses.map(({ line1, line2 }) => [line1, line2])).toEqual([
+      ['1 Analytical Way', 'Flat 2'],
+      ['12 St James Square', ''],
+    ]);
+  });
+
   it('imports a phone-only contact (no email) with null email', () => {
     const csv = 'First Name,Last Name,Phone 1 - Value\nBob,Jones,555-1234';
     const { contacts, skippedCount } = parseGoogleContactsCsv(csv);
