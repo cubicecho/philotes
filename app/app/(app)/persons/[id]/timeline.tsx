@@ -1,13 +1,19 @@
 import { useQuery } from '@apollo/client';
 import { Link, useLocalSearchParams } from 'expo-router';
-import { ArrowLeft, Clock } from 'lucide-react';
+import { View } from 'react-native';
 import { graphql } from '@/__generated__/gql';
+import { Users } from '@/components/app-icons';
 import {
   PersonTimeline,
   type TimelineImportantDate,
   type TimelineInteraction,
 } from '@/components/domain/person/timeline';
-import { Spinner } from '@/components/ui/spinner.tsx';
+import { EmptyState } from '@/components/page';
+import { PageLayout } from '@/components/page-layout';
+import { QueryError } from '@/components/query-state';
+import { Button } from '@/components/ui/button';
+import { ArrowLeft, Clock } from '@/components/ui/icons';
+import { Spinner } from '@/components/ui/spinner';
 
 // ---------------------------------------------------------------------------
 // GraphQL
@@ -53,16 +59,42 @@ const GET_PERSON_TIMELINE = graphql(`
 export default function PersonTimelinePage() {
   const { id } = useLocalSearchParams<{ id: string }>();
 
-  const { data, loading, error } = useQuery(GET_PERSON_TIMELINE, {
+  const { data, loading, error, refetch } = useQuery(GET_PERSON_TIMELINE, {
     variables: { id },
     fetchPolicy: 'cache-and-network',
   });
 
-  if (loading) return <Spinner />;
-  if (error) return <p>Error loading timeline: {error.message}</p>;
-
   const person = data?.persons?.[0];
-  if (!person) return <p className="text-muted-foreground">Person not found.</p>;
+  const backLink = (
+    <Link href={`/persons/${id}`} asChild>
+      <Button
+        variant="link"
+        size="xs"
+        iconSlot={<ArrowLeft />}
+        content={person ? `Back to ${person.firstName} ${person.lastName}` : 'Back'}
+      />
+    </Link>
+  );
+
+  if (!person) {
+    const pending = loading && !error;
+    return (
+      <PageLayout
+        title="Timeline"
+        iconSlot={<Clock />}
+        breadcrumbsSlot={backLink}
+        contentSlot={
+          error ? (
+            <QueryError error={error} onRetry={() => refetch()} what="the timeline" />
+          ) : pending ? (
+            <Spinner />
+          ) : (
+            <EmptyState icon={Users} title="Person not found." />
+          )
+        }
+      />
+    );
+  }
 
   const interactions: TimelineInteraction[] = (person.interactions ?? []).map((i) => ({
     id: i.id,
@@ -82,33 +114,16 @@ export default function PersonTimelinePage() {
   }));
 
   return (
-    <div className="h-full overflow-y-auto min-h-0 pr-2">
-      <div className="space-y-6 py-4">
-        {/* Back link */}
-        <div>
-          <Link
-            href={`/persons/${id}`}
-            className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            Back to {person.firstName} {person.lastName}
-          </Link>
-        </div>
-
-        {/* Header */}
-        <div className="flex items-center gap-3">
-          <Clock className="h-6 w-6 text-muted-foreground shrink-0" />
-          <div>
-            <h1 className="font-bold text-3xl">Timeline</h1>
-            <p className="text-muted-foreground text-sm">
-              {person.firstName} {person.lastName}
-            </p>
-          </div>
-        </div>
-
-        {/* Timeline */}
-        <PersonTimeline interactions={interactions} importantDates={importantDates} />
-      </div>
-    </div>
+    <PageLayout
+      title="Timeline"
+      description={`${person.firstName} ${person.lastName}`}
+      iconSlot={<Clock />}
+      breadcrumbsSlot={backLink}
+      contentSlot={
+        <View className="py-4">
+          <PersonTimeline interactions={interactions} importantDates={importantDates} />
+        </View>
+      }
+    />
   );
 }

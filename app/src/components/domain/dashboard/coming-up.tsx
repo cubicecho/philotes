@@ -1,6 +1,8 @@
-import { Link } from 'expo-router';
-import { CalendarDays } from 'lucide-react';
-import { AllCaughtUp, Widget } from './widget';
+import { useRouter } from 'expo-router';
+import { CalendarDays } from '@/components/app-icons';
+import { ListItem } from '@/components/list-item';
+import { Badge } from '@/components/ui/badge';
+import { Widget } from './widget';
 
 export type UpcomingDate = {
   id: string;
@@ -18,34 +20,23 @@ function daysLabel(days: number): string {
 }
 
 export function ComingUp({ dates, windowDays }: { dates: UpcomingDate[]; windowDays: number }) {
+  const router = useRouter();
+
   return (
-    <Widget icon={<CalendarDays />} title="Coming Up" subtitle={`next ${windowDays} days`}>
-      {dates.length === 0 ? (
-        <AllCaughtUp message="Nothing on the calendar" />
-      ) : (
-        <ul className="space-y-1">
-          {dates.map((d) => (
-            <li key={d.id} className="flex items-center gap-3 rounded-md px-2 py-1.5 hover:bg-muted/60">
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-medium">{d.name}</p>
-                <Link
-                  href={`/persons/${d.personId}`}
-                  className="block truncate text-xs text-muted-foreground hover:text-foreground hover:underline"
-                >
-                  {d.personFirstName} {d.personLastName}
-                </Link>
-              </div>
-              <span
-                className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${
-                  d.daysUntil <= 1 ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground'
-                }`}
-              >
-                {daysLabel(d.daysUntil)}
-              </span>
-            </li>
-          ))}
-        </ul>
-      )}
-    </Widget>
+    <Widget
+      iconSlot={<CalendarDays />}
+      title="Coming Up"
+      subtitle={`next ${windowDays} days`}
+      emptyMessage="Nothing on the calendar"
+      contentSlot={dates.map((d) => (
+        <ListItem
+          key={d.id}
+          title={d.name}
+          description={`${d.personFirstName} ${d.personLastName}`}
+          meta={<Badge variant={d.daysUntil <= 1 ? 'info' : 'secondary'}>{daysLabel(d.daysUntil)}</Badge>}
+          onPress={() => router.push(`/persons/${d.personId}`)}
+        />
+      ))}
+    />
   );
 }

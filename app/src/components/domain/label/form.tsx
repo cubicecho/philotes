@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { z } from 'zod';
 import type { CreateLabelInput as NewLabel } from '@/__generated__/graphql';
-import { Button } from '@/components/ui/button';
-import { FieldGroup } from '@/components/ui/field';
-import { FormError, TextField, useAppForm } from '@/components/ui/form-field.tsx';
+import { useAppForm } from '@/components/app-form';
+import { Form } from '@/components/ui/form';
+import { FormDialogFooter } from '@/components/ui/form-dialog';
 
 const labelSchema = z.object({
   label: z.string().min(1, 'Name is required.'),
@@ -20,6 +20,7 @@ interface LabelFormProps {
   submitLabel?: string;
 }
 
+/** The label fields and their footer. It draws no dialog of its own: render it inside a `FormDialog`. */
 export function LabelForm({ initialValues, onSubmit, onCancel, submitLabel }: LabelFormProps) {
   const [formError, setFormError] = useState<string | null>(null);
   const form = useAppForm({
@@ -45,32 +46,18 @@ export function LabelForm({ initialValues, onSubmit, onCancel, submitLabel }: La
     },
   });
 
-  const defaultSubmitLabel = initialValues ? 'Save' : 'Create';
+  const isEdit = initialValues !== undefined;
+  const label = submitLabel ?? (isEdit ? 'Save' : 'Create');
 
   return (
-    <form
-      onSubmit={(e) => {
-        e.preventDefault();
-        form.handleSubmit();
-      }}
-    >
-      <FieldGroup className="gap-4">
-        <form.AppField name="label">{() => <TextField label="Name" />}</form.AppField>
-        <form.AppField name="color">{() => <TextField label="Color" type="color" />}</form.AppField>
-        <FormError formError={formError} />
-        <div className="flex gap-2">
-          <form.Subscribe selector={(state) => [state.canSubmit, state.isSubmitting]}>
-            {([canSubmit, isSubmitting]) => (
-              <Button type="submit" disabled={!canSubmit || isSubmitting}>
-                {isSubmitting ? 'Saving...' : (submitLabel ?? defaultSubmitLabel)}
-              </Button>
-            )}
-          </form.Subscribe>
-          <Button type="button" variant="outline" onClick={onCancel}>
-            Cancel
-          </Button>
-        </div>
-      </FieldGroup>
-    </form>
+    <form.AppForm>
+      <Form className="gap-4">
+        <form.AppField name="label">{(field) => <field.InputField label="Name" autoFocus />}</form.AppField>
+        <form.AppField name="color">{(field) => <field.ColorField label="Color" />}</form.AppField>
+        <FormDialogFooter onCancel={onCancel} error={formError}>
+          <form.SubmitButton isEdit={isEdit} createLabel={label} editLabel={label} savingLabel="Saving..." />
+        </FormDialogFooter>
+      </Form>
+    </form.AppForm>
   );
 }

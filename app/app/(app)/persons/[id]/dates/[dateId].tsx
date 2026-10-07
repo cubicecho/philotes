@@ -1,10 +1,17 @@
 import { useQuery } from '@apollo/client';
 import { Link, useLocalSearchParams } from 'expo-router';
-import { ArrowLeft, CalendarDays } from 'lucide-react';
+import { Text, View } from 'react-native';
 import { graphql } from '@/__generated__/gql';
+import { CalendarDays } from '@/components/app-icons';
+import { LabelChip } from '@/components/domain/label/label-chip';
 import { RECURRENCE_OPTIONS } from '@/components/domain/person/important-date-form';
-import { Card, CardContent } from '@/components/ui/card';
-import { Spinner } from '@/components/ui/spinner.tsx';
+import { EmptyState } from '@/components/page';
+import { PageLayout } from '@/components/page-layout';
+import { QueryError } from '@/components/query-state';
+import { Section } from '@/components/section';
+import { Button } from '@/components/ui/button';
+import { ArrowLeft } from '@/components/ui/icons';
+import { Spinner } from '@/components/ui/spinner';
 
 // ---------------------------------------------------------------------------
 // GraphQL
@@ -55,16 +62,36 @@ function formatDate(date: Date): string {
 export default function ImportantDateDetailPage() {
   const { id: personId, dateId } = useLocalSearchParams<{ id: string; dateId: string }>();
 
-  const { data, loading, error } = useQuery(GET_DATE_DETAIL, {
+  const { data, loading, error, refetch } = useQuery(GET_DATE_DETAIL, {
     variables: { dateId, personId },
     fetchPolicy: 'cache-and-network',
   });
 
-  if (loading) return <Spinner />;
-  if (error) return <p>Error loading date: {error.message}</p>;
+  const backLink = (
+    <Link href={`/persons/${personId}`} asChild>
+      <Button variant="link" size="xs" iconSlot={<ArrowLeft />} content="Back to person" />
+    </Link>
+  );
 
   const date = data?.importantDates?.[0];
-  if (!date) return <p className="text-muted-foreground">Date not found.</p>;
+  if (!date) {
+    return (
+      <PageLayout
+        title="Important date"
+        iconSlot={<CalendarDays />}
+        breadcrumbsSlot={backLink}
+        contentSlot={
+          error ? (
+            <QueryError error={error} onRetry={() => refetch()} what="this date" />
+          ) : loading ? (
+            <Spinner />
+          ) : (
+            <EmptyState icon={CalendarDays} title="Date not found." />
+          )
+        }
+      />
+    );
+  }
 
   const dateLabelIds = new Set((date.labels ?? []).map((l) => l.id));
   const recurrenceLabel = RECURRENCE_OPTIONS.find((o) => o.value === date.recurrence)?.label;
@@ -73,91 +100,60 @@ export default function ImportantDateDetailPage() {
   const relatedNotes = (data?.notes ?? []).filter((note) => (note.labels ?? []).some((l) => dateLabelIds.has(l.id)));
 
   return (
-    <div className="space-y-6">
-      {/* Back link */}
-      <div>
-        <Link
-          href={`/persons/${personId}`}
-          className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          Back to person
-        </Link>
-      </div>
+    <PageLayout
+      title={date.name}
+      description={recurrenceLabel ? `${formatDate(date.date)} · ${recurrenceLabel}` : formatDate(date.date)}
+      iconSlot={<CalendarDays />}
+      breadcrumbsSlot={backLink}
+      contentSlot={
+        <View className="gap-6 py-4">
+          {date.description ? <Text className="text-foreground/60 text-sm">{date.description}</Text> : null}
 
-      {/* Header */}
-      <div className="flex items-center gap-3">
-        <CalendarDays className="h-6 w-6 text-muted-foreground shrink-0" />
-        <div>
-          <h1 className="font-bold text-3xl">{date.name}</h1>
-          <p className="text-muted-foreground text-sm">
-            {formatDate(date.date)}
-            {recurrenceLabel && <span className="ml-2">· {recurrenceLabel}</span>}
-          </p>
-          {date.description && <p className="text-muted-foreground text-sm mt-0.5">{date.description}</p>}
-        </div>
-      </div>
-
-      {/* Tags */}
-      {date.labels && date.labels.length > 0 && (
-        <div className="flex flex-wrap gap-1.5">
-          {date.labels.map((l) => (
-            <span key={l.id} className="inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs">
-              <span
-                className="inline-block h-2 w-2 rounded-full shrink-0"
-                style={{ backgroundColor: l.color }}
-                aria-hidden="true"
-              />
-              {l.label}
-            </span>
-          ))}
-        </div>
-      )}
-
-      {/* Related notes */}
-      <Card>
-        <CardContent className="p-4 space-y-3">
-          <h2 className="font-semibold text-base">Related Notes</h2>
-          <p className="text-xs text-muted-foreground">
-            Notes from this person that share at least one tag with this date.
-          </p>
-
-          {relatedNotes.length === 0 ? (
-            <p className="text-sm text-muted-foreground">
-              {dateLabelIds.size === 0
-                ? 'Add tags to this date to see related notes.'
-                : 'No notes share a tag with this date yet.'}
-            </p>
-          ) : (
-            <div className="space-y-2">
-              {relatedNotes.map((note) => (
-                <div key={note.id} className="rounded-md border border-border px-3 py-2 text-sm space-y-1.5">
-                  <p className="whitespace-pre-wrap">{note.body}</p>
-                  {note.labels && note.labels.length > 0 && (
-                    <div className="flex flex-wrap gap-1">
-                      {note.labels.map((l) => (
-                        <span
-                          key={l.id}
-                          className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs ${
-                            dateLabelIds.has(l.id) ? 'border-primary/40 bg-primary/5' : ''
-                          }`}
-                        >
-                          <span
-                            className="inline-block h-2 w-2 rounded-full shrink-0"
-                            style={{ backgroundColor: l.color }}
-                            aria-hidden="true"
-                          />
-                          {l.label}
-                        </span>
-                      ))}
-                    </div>
-                  )}
-                </div>
+          {date.labels && date.labels.length > 0 ? (
+            <View className="flex-row flex-wrap gap-1.5">
+              {date.labels.map((l) => (
+                <LabelChip key={l.id} label={l.label} color={l.color} />
               ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
-    </div>
+            </View>
+          ) : null}
+
+          <Section
+            surface="card"
+            title="Related Notes"
+            description="Notes from this person that share at least one tag with this date."
+            contentSlot={
+              relatedNotes.length === 0 ? (
+                <Text className="text-foreground/60 text-sm">
+                  {dateLabelIds.size === 0
+                    ? 'Add tags to this date to see related notes.'
+                    : 'No notes share a tag with this date yet.'}
+                </Text>
+              ) : (
+                <View className="gap-2">
+                  {relatedNotes.map((note) => (
+                    <View key={note.id} className="gap-1.5 rounded-md border border-border px-3 py-2">
+                      <Text className="text-foreground text-sm">{note.body}</Text>
+                      {note.labels && note.labels.length > 0 ? (
+                        <View className="flex-row flex-wrap gap-1">
+                          {note.labels.map((l) => (
+                            // The tags this note shares with the date are the reason it is listed; the rest are dimmed.
+                            <LabelChip
+                              key={l.id}
+                              label={l.label}
+                              color={l.color}
+                              className={dateLabelIds.has(l.id) ? undefined : 'opacity-50'}
+                            />
+                          ))}
+                        </View>
+                      ) : null}
+                    </View>
+                  ))}
+                </View>
+              )
+            }
+          />
+        </View>
+      }
+    />
   );
 }

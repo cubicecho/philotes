@@ -1,7 +1,11 @@
-import { Mail, MessageSquare, MoreHorizontal, Phone, Users } from 'lucide-react';
 import { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { TagMultiSelect } from '@/components/ui/tag-multi-select';
+import { useAppForm } from '@/components/app-form';
+import { Mail, MessageSquare, Phone, Users } from '@/components/app-icons';
+import { type TagOption, TagsField } from '@/components/domain/person/tag-picker';
+import { FieldWrapper, Form } from '@/components/ui/form';
+import { FormDialogFooter } from '@/components/ui/form-dialog';
+import { Ellipsis } from '@/components/ui/icons';
+import { SegmentedButton, SegmentedGroup } from '@/components/ui/segmented';
 
 // ---------------------------------------------------------------------------
 // Channel / Sentiment helpers
@@ -40,7 +44,7 @@ export function ChannelIcon({ channel, className }: { channel: string; className
     case 'in-person':
       return <Users className={className} />;
     default:
-      return <MoreHorizontal className={className} />;
+      return <Ellipsis className={className} />;
   }
 }
 
@@ -54,7 +58,7 @@ export function sentimentEmoji(sentiment: string | null | undefined): string {
 
 export interface InteractionFormValues {
   channel: Channel;
-  occurredAt: string;
+  occurredAt: Date;
   sentiment: Sentiment | '';
   note: string;
   labelIds: string[];
@@ -62,15 +66,11 @@ export interface InteractionFormValues {
 
 interface InteractionFormProps {
   personId: string;
-  allTags: Array<{ id: string; label: string; color: string }>;
+  allTags: TagOption[];
   initialValues?: Partial<InteractionFormValues>;
   submitLabel?: string;
   onSubmit: (values: InteractionFormValues) => Promise<void>;
   onCancel: () => void;
-}
-
-function todayIso(): string {
-  return new Date().toISOString().slice(0, 16);
 }
 
 export function InteractionForm({
@@ -81,125 +81,91 @@ export function InteractionForm({
   onSubmit,
   onCancel,
 }: InteractionFormProps) {
-  const [channel, setChannel] = useState<Channel>(initialValues?.channel ?? 'call');
-  const [occurredAt, setOccurredAt] = useState(
-    initialValues?.occurredAt ? new Date(initialValues.occurredAt).toISOString().slice(0, 16) : todayIso(),
-  );
-  const [sentiment, setSentiment] = useState<Sentiment | ''>(initialValues?.sentiment ?? '');
-  const [note, setNote] = useState(initialValues?.note ?? '');
-  const [labelIds, setLabelIds] = useState<string[]>(initialValues?.labelIds ?? []);
-  const [submitting, setSubmitting] = useState(false);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setSubmitting(true);
-    try {
-      await onSubmit({ channel, occurredAt, sentiment, note, labelIds });
-    } finally {
-      setSubmitting(false);
-    }
+  const [formError, setFormError] = useState<string | null>(null);
+  const defaultValues: InteractionFormValues = {
+    channel: initialValues?.channel ?? 'call',
+    occurredAt: initialValues?.occurredAt ?? new Date(),
+    sentiment: initialValues?.sentiment ?? '',
+    note: initialValues?.note ?? '',
+    labelIds: initialValues?.labelIds ?? [],
   };
 
+  const form = useAppForm({
+    defaultValues,
+    onSubmit: async ({ value }) => {
+      setFormError(null);
+      try {
+        await onSubmit(value);
+      } catch (err: unknown) {
+        setFormError(err instanceof Error ? err.message : 'An unexpected error occurred.');
+      }
+    },
+  });
+
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      {/* Date/time */}
-      <div className="space-y-1.5">
-        <label htmlFor="interaction-date" className="text-sm font-medium">
-          Date &amp; Time
-        </label>
-        <input
-          id="interaction-date"
-          type="datetime-local"
-          value={occurredAt}
-          onChange={(e) => setOccurredAt(e.target.value)}
-          className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-          required
-        />
-      </div>
+    <form.AppForm>
+      <Form className="gap-4">
+        <form.AppField name="occurredAt">
+          {(field) => <field.DateTimeField label="Date & Time" required />}
+        </form.AppField>
 
-      {/* Channel */}
-      <div className="space-y-1.5">
-        <span className="text-sm font-medium">Channel</span>
-        <div className="flex flex-wrap gap-2">
-          {CHANNEL_OPTIONS.map((opt) => (
-            <button
-              key={opt.value}
-              type="button"
-              onClick={() => setChannel(opt.value)}
-              className={`inline-flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-sm transition-colors ${
-                channel === opt.value
-                  ? 'border-primary bg-primary text-primary-foreground'
-                  : 'border-border hover:bg-muted'
-              }`}
-            >
-              <ChannelIcon channel={opt.value} className="h-3.5 w-3.5" />
-              {opt.label}
-            </button>
-          ))}
-        </div>
-      </div>
+        <form.AppField name="channel">
+          {(field) => (
+            <FieldWrapper
+              label="Channel"
+              asGroup
+              controlSlot={
+                <SegmentedGroup
+                  variant="plain"
+                  className="flex-wrap"
+                  value={field.state.value}
+                  onValueChange={(next) => field.handleChange(next as Channel)}
+                >
+                  {CHANNEL_OPTIONS.map((opt) => (
+                    <SegmentedButton key={opt.value} value={opt.value} iconSlot={<ChannelIcon channel={opt.value} />}>
+                      {opt.label}
+                    </SegmentedButton>
+                  ))}
+                </SegmentedGroup>
+              }
+            />
+          )}
+        </form.AppField>
 
-      {/* Sentiment */}
-      <div className="space-y-1.5">
-        <span className="text-sm font-medium">Sentiment</span>
-        <div className="flex flex-wrap gap-2">
-          {SENTIMENT_OPTIONS.map((opt) => (
-            <button
-              key={opt.value}
-              type="button"
-              onClick={() => setSentiment(sentiment === opt.value ? '' : opt.value)}
-              className={`inline-flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-sm transition-colors ${
-                sentiment === opt.value
-                  ? 'border-primary bg-primary text-primary-foreground'
-                  : 'border-border hover:bg-muted'
-              }`}
-            >
-              <span>{opt.emoji}</span>
-              {opt.label}
-            </button>
-          ))}
-        </div>
-      </div>
+        <form.AppField name="sentiment">
+          {(field) => (
+            <FieldWrapper
+              label="Sentiment"
+              asGroup
+              controlSlot={
+                <SegmentedGroup
+                  variant="plain"
+                  className="flex-wrap"
+                  value={field.state.value}
+                  // Pressing the current sentiment again clears it: it is optional.
+                  onValueChange={(next) => field.handleChange(field.state.value === next ? '' : (next as Sentiment))}
+                >
+                  {SENTIMENT_OPTIONS.map((opt) => (
+                    <SegmentedButton key={opt.value} value={opt.value}>
+                      {`${opt.emoji} ${opt.label}`}
+                    </SegmentedButton>
+                  ))}
+                </SegmentedGroup>
+              }
+            />
+          )}
+        </form.AppField>
 
-      {/* Note */}
-      <div className="space-y-1.5">
-        <label htmlFor="interaction-note" className="text-sm font-medium">
-          Note
-        </label>
-        <textarea
-          id="interaction-note"
-          value={note}
-          onChange={(e) => setNote(e.target.value)}
-          rows={3}
-          placeholder="What happened?"
-          className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring resize-none"
-        />
-      </div>
+        <form.AppField name="note">
+          {(field) => <field.TextareaField label="Note" rows={3} placeholder="What happened?" />}
+        </form.AppField>
 
-      {/* Tags */}
-      {allTags.length > 0 && (
-        <div className="space-y-1.5">
-          <label htmlFor="interaction-tags" className="text-sm font-medium">
-            Tags
-          </label>
-          <TagMultiSelect
-            id="interaction-tags"
-            options={allTags}
-            selected={labelIds}
-            onChange={setLabelIds}
-            placeholder="Add tags..."
-          />
-        </div>
-      )}
+        {allTags.length > 0 && <form.AppField name="labelIds">{() => <TagsField allTags={allTags} />}</form.AppField>}
 
-      <div className="flex gap-2">
-        <Button type="submit" disabled={submitting}>
-          {submitting ? 'Saving...' : submitLabel}
-        </Button>
-        <Button type="button" variant="outline" onClick={onCancel}>
-          Cancel
-        </Button>
-      </div>
-    </form>
+        <FormDialogFooter onCancel={onCancel} error={formError}>
+          <form.SubmitButton createLabel={submitLabel} savingLabel="Saving..." />
+        </FormDialogFooter>
+      </Form>
+    </form.AppForm>
   );
 }

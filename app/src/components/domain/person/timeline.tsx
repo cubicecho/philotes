@@ -1,9 +1,16 @@
-import { Mail, MessageSquare, MoreHorizontal, Phone, Users } from 'lucide-react';
+import { Text, View } from 'react-native';
+import { LabelChip } from '@/components/domain/label/label-chip';
+import { ChannelIcon } from '@/components/domain/person/channel-icon';
+import { EmptyState } from '@/components/page';
+import { SectionHeading } from '@/components/section-heading';
 import { relativeTime } from '@/lib/relative-time';
+import { cn } from '@/lib/utils';
 
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
+
+type TimelineLabel = { id: string; label: string; color: string };
 
 export interface TimelineInteraction {
   id: string;
@@ -11,7 +18,7 @@ export interface TimelineInteraction {
   occurredAt: Date;
   sentiment: string | null | undefined;
   note: string | null | undefined;
-  labels: Array<{ id: string; label: string; color: string }>;
+  labels: TimelineLabel[];
 }
 
 export interface TimelineImportantDate {
@@ -19,7 +26,7 @@ export interface TimelineImportantDate {
   date: Date;
   name: string;
   milestoneType: string | null | undefined;
-  labels: Array<{ id: string; label: string; color: string }>;
+  labels: TimelineLabel[];
 }
 
 export interface PersonTimelineProps {
@@ -31,14 +38,9 @@ export interface PersonTimelineProps {
 // Helpers
 // ---------------------------------------------------------------------------
 
-type TimelineItemType = 'interaction' | 'importantDate';
-
-interface TimelineItem {
-  id: string;
-  type: TimelineItemType;
-  date: Date;
-  data: TimelineInteraction | TimelineImportantDate;
-}
+type TimelineItem =
+  | { id: string; type: 'interaction'; date: Date; data: TimelineInteraction }
+  | { id: string; type: 'importantDate'; date: Date; data: TimelineImportantDate };
 
 const SENTIMENT_EMOJI: Record<string, string> = {
   great: '😄',
@@ -74,73 +76,51 @@ function monthYearKey(date: Date): string {
 }
 
 // ---------------------------------------------------------------------------
-// Channel icon (mirrors interactions.tsx without importing from it)
-// ---------------------------------------------------------------------------
-
-function ChannelIcon({ channel, className }: { channel: string; className?: string }) {
-  switch (channel) {
-    case 'call':
-      return <Phone className={className} />;
-    case 'text':
-      return <MessageSquare className={className} />;
-    case 'email':
-      return <Mail className={className} />;
-    case 'in-person':
-      return <Users className={className} />;
-    default:
-      return <MoreHorizontal className={className} />;
-  }
-}
-
-// ---------------------------------------------------------------------------
 // Individual entry renderers
 // ---------------------------------------------------------------------------
 
+function EntryLabels({ labels }: { labels: TimelineLabel[] }) {
+  if (labels.length === 0) return null;
+  return (
+    <View className="mt-1 flex-row flex-wrap gap-1">
+      {labels.map((l) => (
+        <LabelChip key={l.id} label={l.label} color={l.color} />
+      ))}
+    </View>
+  );
+}
+
 function InteractionEntry({ item }: { item: TimelineInteraction }) {
   const emoji = item.sentiment ? (SENTIMENT_EMOJI[item.sentiment] ?? '') : '';
+  const channel = item.channel === 'in-person' ? 'In Person' : item.channel;
   return (
-    <div className="flex items-start gap-2 min-w-0">
-      <ChannelIcon channel={item.channel} className="h-4 w-4 mt-0.5 shrink-0 text-muted-foreground" />
-      <div className="min-w-0 flex-1">
-        <p className="text-sm font-medium capitalize">
-          {item.channel === 'in-person' ? 'In Person' : item.channel}
-          {emoji && <span className="ml-1.5">{emoji}</span>}
-        </p>
-        {item.note && <p className="text-sm text-muted-foreground mt-0.5 line-clamp-3">{item.note}</p>}
-        {item.labels.length > 0 && (
-          <div className="mt-1 flex flex-wrap gap-1">
-            {item.labels.map((l) => (
-              <span key={l.id} className="inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs">
-                <span className="inline-block h-2 w-2 rounded-full shrink-0" style={{ backgroundColor: l.color }} />
-                {l.label}
-              </span>
-            ))}
-          </div>
-        )}
-      </div>
-    </div>
+    <View className="min-w-0 flex-row items-start gap-2">
+      <ChannelIcon channel={item.channel} className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
+      <View className="min-w-0 flex-1">
+        <Text className="font-medium text-foreground text-sm capitalize">
+          {emoji ? `${channel} ${emoji}` : channel}
+        </Text>
+        {item.note ? (
+          <Text numberOfLines={3} className="mt-0.5 text-muted-foreground text-sm">
+            {item.note}
+          </Text>
+        ) : null}
+        <EntryLabels labels={item.labels} />
+      </View>
+    </View>
   );
 }
 
 function ImportantDateEntry({ item }: { item: TimelineImportantDate }) {
   const emoji = item.milestoneType ? (MILESTONE_EMOJI[item.milestoneType] ?? '📅') : '📅';
   return (
-    <div className="flex items-start gap-2 min-w-0">
-      <span className="text-lg leading-none mt-0.5 shrink-0">{emoji}</span>
-      <div className="min-w-0 flex-1">
-        <p className="text-sm font-medium">{item.name}</p>
-        {item.labels.length > 0 && (
-          <div className="mt-1 flex flex-wrap gap-1">
-            {item.labels.map((l) => (
-              <span key={l.id} className="inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs">
-                <span className="inline-block h-2 w-2 rounded-full shrink-0" style={{ backgroundColor: l.color }} />
-                {l.label}
-              </span>
-            ))}
-          </div>
-        )}
-      </div>
-    </div>
+    <View className="min-w-0 flex-row items-start gap-2">
+      <Text className="shrink-0 text-foreground text-lg leading-none">{emoji}</Text>
+      <View className="min-w-0 flex-1">
+        <Text className="font-medium text-foreground text-sm">{item.name}</Text>
+        <EntryLabels labels={item.labels} />
+      </View>
+    </View>
   );
 }
 
@@ -149,17 +129,16 @@ function ImportantDateEntry({ item }: { item: TimelineImportantDate }) {
 // ---------------------------------------------------------------------------
 
 export function PersonTimeline({ interactions, importantDates }: PersonTimelineProps) {
-  // Build unified list
   const items: TimelineItem[] = [
     ...interactions.map((i): TimelineItem => ({ id: `i-${i.id}`, type: 'interaction', date: i.occurredAt, data: i })),
     ...importantDates.map((d): TimelineItem => ({ id: `d-${d.id}`, type: 'importantDate', date: d.date, data: d })),
   ];
 
-  // Sort descending by date
+  // Newest first
   items.sort((a, b) => b.date.getTime() - a.date.getTime());
 
   if (items.length === 0) {
-    return <p className="text-muted-foreground text-sm">No timeline events yet.</p>;
+    return <EmptyState compact title="No timeline events yet." />;
   }
 
   // Group by month-year
@@ -175,34 +154,35 @@ export function PersonTimeline({ interactions, importantDates }: PersonTimelineP
   }
 
   return (
-    <div className="space-y-6">
+    <View className="gap-6">
       {groups.map((group) => (
-        <div key={group.key}>
-          {/* Month heading */}
-          <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">{group.heading}</h3>
+        <View key={group.key} className="gap-3">
+          <SectionHeading variant="overline" level={2}>
+            {group.heading}
+          </SectionHeading>
 
-          {/* Entries */}
-          <div className="relative ml-4 border-l border-border space-y-0">
-            {group.items.map((item) => (
-              <div key={item.id} className="relative pl-6 pb-5 last:pb-0">
-                {/* Timeline dot */}
-                <span className="absolute -left-[5px] top-1 h-2.5 w-2.5 rounded-full border-2 border-background bg-muted-foreground" />
+          {/* The rail is this view's left border; each entry's dot sits on it. */}
+          <View className="ml-4 border-border border-l">
+            {group.items.map((item, index) => (
+              <View key={item.id} className={cn('relative pl-6', index < group.items.length - 1 && 'pb-5')}>
+                <View className="absolute top-1 -left-[5px] h-2.5 w-2.5 rounded-full border-2 border-background bg-muted-foreground" />
 
-                {/* Date label */}
-                <div className="flex items-baseline gap-2 mb-1">
-                  <span className="text-xs text-muted-foreground font-medium">{formatDate(item.date)}</span>
-                  <span className="text-xs text-muted-foreground">·</span>
-                  <span className="text-xs text-muted-foreground">{relativeTime(item.date)}</span>
-                </div>
+                <View className="mb-1 flex-row items-baseline gap-2">
+                  <Text className="font-medium text-muted-foreground text-xs">{formatDate(item.date)}</Text>
+                  <Text className="text-muted-foreground text-xs">·</Text>
+                  <Text className="text-muted-foreground text-xs">{relativeTime(item.date)}</Text>
+                </View>
 
-                {/* Entry content */}
-                {item.type === 'interaction' && <InteractionEntry item={item.data as TimelineInteraction} />}
-                {item.type === 'importantDate' && <ImportantDateEntry item={item.data as TimelineImportantDate} />}
-              </div>
+                {item.type === 'interaction' ? (
+                  <InteractionEntry item={item.data} />
+                ) : (
+                  <ImportantDateEntry item={item.data} />
+                )}
+              </View>
             ))}
-          </div>
-        </div>
+          </View>
+        </View>
       ))}
-    </div>
+    </View>
   );
 }

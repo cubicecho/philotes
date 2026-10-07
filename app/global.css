@@ -1,3 +1,22 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+/*
+  The palette comes from cubeui's `tokens` item (`cubeui-tokens.css`, generated —
+  do not edit it here; re-run `npx shadcn add @cubeui/tokens` to update it). It
+  brings Tailwind 4, NativeWind's theme, the light/dark tokens (sidebar included),
+  the `box-sizing` reset raw DOM controls need, and the `html.dark` /
+  `html.light` blocks that let the Settings theme picker beat the system
+  appearance: cubeui's `useThemePreference` (and the pre-paint script in
+  `public/index.html`) put one of those classes on <html>.
+
+  What follows is only what the registry does not cover: the page's own colours.
+*/
+@import "./cubeui-tokens.css";
+
+html,
+body {
+  background-color: var(--background);
+  color: var(--foreground);
+}
+
+* {
+  border-color: var(--border);
+}

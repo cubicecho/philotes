@@ -1,8 +1,9 @@
 import { gql, useQuery } from '@apollo/client';
-import { Download } from 'lucide-react';
+import { Text, View } from 'react-native';
+import { Section } from '@/components/section';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { downloadFile } from '@/lib/download';
+import { downloadBlob } from '@/components/ui/download-button';
+import { Download } from '@/components/ui/icons';
 import { buildIcsContent, type CalendarEventsData } from '@/lib/ics-export';
 
 const GET_ALL_EVENTS_FOR_EXPORT = gql`
@@ -41,33 +42,33 @@ export function ExportCalendarCard() {
 
   function handleExport() {
     if (!data) return;
-    downloadFile(buildIcsContent(data), 'philotes-events.ics', 'text/calendar;charset=utf-8');
+    void downloadBlob(buildIcsContent(data), 'philotes-events.ics', { mimeType: 'text/calendar;charset=utf-8' });
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Export Calendar Events</CardTitle>
-        <CardDescription>
-          Download all your interactions and important dates as an ICS file. You can import this into Google Calendar,
-          Apple Calendar, Outlook, or any other calendar application.
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        {error && <p className="text-sm text-destructive mb-4">Failed to load events: {error.message}</p>}
-        <Button onClick={handleExport} disabled={loading || !!error || totalCount === 0}>
-          <Download className="h-4 w-4 mr-2" />
-          {loading ? 'Loading…' : `Export ${totalCount} Events as ICS`}
-        </Button>
-        {!loading && !error && totalCount > 0 && (
-          <p className="text-sm text-muted-foreground mt-3">
-            {data?.interactions?.length ?? 0} interactions · {data?.importantDates?.length ?? 0} important dates
-          </p>
-        )}
-        {!loading && !error && totalCount === 0 && (
-          <p className="text-sm text-muted-foreground mt-3">No events to export yet.</p>
-        )}
-      </CardContent>
-    </Card>
+    <Section
+      surface="card"
+      title="Export Calendar Events"
+      description="Download all your interactions and important dates as an ICS file. You can import this into Google Calendar, Apple Calendar, Outlook, or any other calendar application."
+      contentSlot={
+        <View className="items-start gap-3">
+          {error ? <Text className="text-destructive text-sm">{`Failed to load events: ${error.message}`}</Text> : null}
+          <Button
+            iconSlot={<Download />}
+            content={loading ? 'Loading…' : `Export ${totalCount} Events as ICS`}
+            disabled={loading || !!error || totalCount === 0}
+            onPress={handleExport}
+          />
+          {!loading && !error && totalCount > 0 ? (
+            <Text className="text-muted-foreground text-sm">
+              {`${data?.interactions?.length ?? 0} interactions · ${data?.importantDates?.length ?? 0} important dates`}
+            </Text>
+          ) : null}
+          {!loading && !error && totalCount === 0 ? (
+            <Text className="text-muted-foreground text-sm">No events to export yet.</Text>
+          ) : null}
+        </View>
+      }
+    />
   );
 }

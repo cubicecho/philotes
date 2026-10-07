@@ -1,6 +1,10 @@
-import { Mail, MessageSquare, MoreHorizontal, Phone, Users, Video } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Text, View } from 'react-native';
+import { CardLayout } from '@/components/card-layout';
+import { ChannelIcon } from '@/components/domain/person/channel-icon';
+import { SectionHeading } from '@/components/section-heading';
+import { Separator } from '@/components/ui/separator';
 import { relativeTime } from '@/lib/relative-time';
+import { cn } from '@/lib/utils';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -88,32 +92,6 @@ function truncate(text: string, maxLength: number): string {
   return `${text.slice(0, maxLength)}…`;
 }
 
-// ---------------------------------------------------------------------------
-// Sub-components
-// ---------------------------------------------------------------------------
-
-type ChannelIconProps = {
-  channel: string;
-  className?: string;
-};
-
-function ChannelIcon({ channel, className }: ChannelIconProps) {
-  switch (channel) {
-    case 'call':
-      return <Phone className={className} />;
-    case 'text':
-      return <MessageSquare className={className} />;
-    case 'email':
-      return <Mail className={className} />;
-    case 'video':
-      return <Video className={className} />;
-    case 'in-person':
-      return <Users className={className} />;
-    default:
-      return <MoreHorizontal className={className} />;
-  }
-}
-
 function channelLabel(channel: string): string {
   const labels: Record<string, string> = {
     call: 'Phone call',
@@ -123,10 +101,6 @@ function channelLabel(channel: string): string {
     'in-person': 'In person',
   };
   return labels[channel] ?? channel;
-}
-
-function SectionDivider() {
-  return <hr className="border-t border-border" />;
 }
 
 // ---------------------------------------------------------------------------
@@ -146,104 +120,97 @@ export function PreContactBrief({ person }: PreContactBriefProps) {
     .filter((entry): entry is { date: ImportantDate; daysAway: number } => entry.daysAway !== null)
     .sort((a, b) => a.daysAway - b.daysAway);
 
-  const hasNotes = recentNotes.length > 0;
-  const hasTasks = openTasks.length > 0;
-  const hasDates = upcomingDates.length > 0;
-
   return (
-    <Card>
-      <CardHeader className="pb-3">
-        <CardTitle className="text-base">Before You Reach Out</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4 text-sm">
-        {/* Last interaction */}
-        <div>
-          <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground mb-1.5">Last Interaction</p>
-          {lastInteraction ? (
-            <div className="space-y-1">
-              <div className="flex items-center gap-2 text-sm">
-                <ChannelIcon channel={lastInteraction.channel} className="h-4 w-4 shrink-0 text-muted-foreground" />
-                <span>
-                  {channelLabel(lastInteraction.channel)}{' '}
-                  <span className="text-muted-foreground">· {relativeTime(lastInteraction.occurredAt)}</span>
-                </span>
-              </div>
-              {lastInteraction.note && (
-                <p className="text-muted-foreground text-xs pl-6">{truncate(lastInteraction.note, 100)}</p>
-              )}
-            </div>
-          ) : (
-            <p className="text-muted-foreground">No interactions logged yet</p>
-          )}
-        </div>
+    <CardLayout
+      title="Before You Reach Out"
+      contentClassName="gap-4"
+      contentSlot={
+        <>
+          <View className="gap-1.5">
+            <SectionHeading variant="overline">Last Interaction</SectionHeading>
+            {lastInteraction ? (
+              <View className="gap-1">
+                <View className="flex-row items-center gap-2">
+                  <ChannelIcon channel={lastInteraction.channel} className="h-4 w-4 shrink-0 text-muted-foreground" />
+                  <Text className="shrink text-foreground text-sm">
+                    {channelLabel(lastInteraction.channel)}{' '}
+                    <Text className="text-muted-foreground">· {relativeTime(lastInteraction.occurredAt)}</Text>
+                  </Text>
+                </View>
+                {lastInteraction.note ? (
+                  <Text className="pl-6 text-muted-foreground text-xs">{truncate(lastInteraction.note, 100)}</Text>
+                ) : null}
+              </View>
+            ) : (
+              <Text className="text-muted-foreground text-sm">No interactions logged yet</Text>
+            )}
+          </View>
 
-        {/* Recent notes */}
-        {hasNotes && (
-          <>
-            <SectionDivider />
-            <div>
-              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground mb-1.5">Recent Notes</p>
-              <ul className="space-y-1">
-                {recentNotes.map((note) => (
-                  <li key={note.id} className="flex gap-1.5 text-sm">
-                    <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-muted-foreground/60" />
-                    <span className="text-muted-foreground">{truncate(note.body, 80)}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </>
-        )}
+          {recentNotes.length > 0 ? (
+            <>
+              <Separator />
+              <View className="gap-1.5">
+                <SectionHeading variant="overline">Recent Notes</SectionHeading>
+                <View role="list" className="gap-1">
+                  {recentNotes.map((note) => (
+                    <View key={note.id} role="listitem" className="flex-row gap-1.5">
+                      <View className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-muted-foreground/60" />
+                      <Text className="shrink text-muted-foreground text-sm">{truncate(note.body, 80)}</Text>
+                    </View>
+                  ))}
+                </View>
+              </View>
+            </>
+          ) : null}
 
-        {/* Open tasks */}
-        {hasTasks && (
-          <>
-            <SectionDivider />
-            <div>
-              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground mb-1.5">Open Tasks</p>
-              <ul className="space-y-1.5">
-                {openTasks.map((task) => {
-                  const due = dueDateLabel(task.dueAt);
-                  const isOverdue = due?.startsWith('overdue');
-                  return (
-                    <li key={task.id} className="flex items-baseline gap-2 text-sm">
-                      <span className="shrink-0 text-muted-foreground">·</span>
-                      <span className="flex-1">{task.title}</span>
-                      {due && (
-                        <span
-                          className={`shrink-0 text-xs ${isOverdue ? 'text-destructive' : 'text-muted-foreground'}`}
-                        >
-                          {due}
-                        </span>
-                      )}
-                    </li>
-                  );
-                })}
-              </ul>
-            </div>
-          </>
-        )}
+          {openTasks.length > 0 ? (
+            <>
+              <Separator />
+              <View className="gap-1.5">
+                <SectionHeading variant="overline">Open Tasks</SectionHeading>
+                <View role="list" className="gap-1.5">
+                  {openTasks.map((task) => {
+                    const due = dueDateLabel(task.dueAt);
+                    const isOverdue = due?.startsWith('overdue');
+                    return (
+                      <View key={task.id} role="listitem" className="flex-row items-baseline gap-2">
+                        <Text className="shrink-0 text-muted-foreground text-sm">·</Text>
+                        <Text className="flex-1 text-foreground text-sm">{task.title}</Text>
+                        {due ? (
+                          <Text
+                            className={cn('shrink-0 text-xs', isOverdue ? 'text-destructive' : 'text-muted-foreground')}
+                          >
+                            {due}
+                          </Text>
+                        ) : null}
+                      </View>
+                    );
+                  })}
+                </View>
+              </View>
+            </>
+          ) : null}
 
-        {/* Upcoming dates */}
-        {hasDates && (
-          <>
-            <SectionDivider />
-            <div>
-              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground mb-1.5">Upcoming Dates</p>
-              <ul className="space-y-1.5">
-                {upcomingDates.map(({ date, daysAway }) => (
-                  <li key={date.id} className="flex items-center justify-between gap-2 text-sm">
-                    <span>{date.name}</span>
-                    <span className="shrink-0 text-xs text-muted-foreground">
-                      {daysAway === 0 ? 'today' : daysAway === 1 ? 'tomorrow' : `in ${daysAway} days`}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </>
-        )}
-      </CardContent>
-    </Card>
+          {upcomingDates.length > 0 ? (
+            <>
+              <Separator />
+              <View className="gap-1.5">
+                <SectionHeading variant="overline">Upcoming Dates</SectionHeading>
+                <View role="list" className="gap-1.5">
+                  {upcomingDates.map(({ date, daysAway }) => (
+                    <View key={date.id} role="listitem" className="flex-row items-center justify-between gap-2">
+                      <Text className="shrink text-foreground text-sm">{date.name}</Text>
+                      <Text className="shrink-0 text-muted-foreground text-xs">
+                        {daysAway === 0 ? 'today' : daysAway === 1 ? 'tomorrow' : `in ${daysAway} days`}
+                      </Text>
+                    </View>
+                  ))}
+                </View>
+              </View>
+            </>
+          ) : null}
+        </>
+      }
+    />
   );
 }

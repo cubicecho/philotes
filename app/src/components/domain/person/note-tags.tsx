@@ -1,6 +1,7 @@
 import { useMutation } from '@apollo/client';
-import { X } from 'lucide-react';
 import { graphql } from '@/__generated__/gql';
+import { LabelChip } from '@/components/domain/label/label-chip';
+import { type TagOption, TagPickerPanel } from '@/components/domain/person/tag-picker';
 
 export const ATTACH_NOTE_TAG = graphql(`
   mutation AttachTagToNote($noteId: UUID!, $labelId: UUID!) {
@@ -38,24 +39,7 @@ export function NoteTagChip({ noteId, labelId, label, color, onDetach }: NoteTag
     onDetach();
   };
 
-  return (
-    <span className="inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs">
-      <span
-        className="inline-block h-2 w-2 rounded-full shrink-0"
-        style={{ backgroundColor: color }}
-        aria-hidden="true"
-      />
-      {label}
-      <button
-        type="button"
-        onClick={handleDetach}
-        className="ml-0.5 text-muted-foreground hover:text-destructive transition-colors"
-        aria-label={`Remove tag ${label}`}
-      >
-        <X className="h-3 w-3" />
-      </button>
-    </span>
-  );
+  return <LabelChip label={label} color={color} onRemove={handleDetach} />;
 }
 
 // ---------------------------------------------------------------------------
@@ -64,7 +48,7 @@ export function NoteTagChip({ noteId, labelId, label, color, onDetach }: NoteTag
 
 interface NoteTagPickerProps {
   noteId: string;
-  allTags: Array<{ id: string; label: string; color: string }>;
+  allTags: TagOption[];
   attachedTagIds: Set<string>;
   onClose: () => void;
   onAdd: () => void;
@@ -72,7 +56,6 @@ interface NoteTagPickerProps {
 
 export function NoteTagPicker({ noteId, allTags, attachedTagIds, onClose, onAdd }: NoteTagPickerProps) {
   const [attachTag] = useMutation(ATTACH_NOTE_TAG);
-  const available = allTags.filter((t) => !attachedTagIds.has(t.id));
 
   const handleSelect = async (labelId: string) => {
     await attachTag({ variables: { noteId, labelId } });
@@ -80,41 +63,5 @@ export function NoteTagPicker({ noteId, allTags, attachedTagIds, onClose, onAdd 
     onClose();
   };
 
-  if (available.length === 0) {
-    return (
-      <div className="flex gap-1.5 rounded-md border border-border p-2 text-xs text-muted-foreground">
-        All tags attached.
-        <button type="button" onClick={onClose} className="ml-auto hover:text-foreground transition-colors">
-          Cancel
-        </button>
-      </div>
-    );
-  }
-
-  return (
-    <div className="flex flex-wrap gap-1.5 rounded-md border border-border p-2">
-      {available.map((t) => (
-        <button
-          key={t.id}
-          type="button"
-          onClick={() => handleSelect(t.id)}
-          className="inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs hover:bg-muted transition-colors cursor-pointer"
-        >
-          <span
-            className="inline-block h-2 w-2 rounded-full shrink-0"
-            style={{ backgroundColor: t.color }}
-            aria-hidden="true"
-          />
-          {t.label}
-        </button>
-      ))}
-      <button
-        type="button"
-        onClick={onClose}
-        className="ml-auto text-xs text-muted-foreground hover:text-foreground transition-colors"
-      >
-        Cancel
-      </button>
-    </div>
-  );
+  return <TagPickerPanel allTags={allTags} attachedTagIds={attachedTagIds} onSelect={handleSelect} onClose={onClose} />;
 }

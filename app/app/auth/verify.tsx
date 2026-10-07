@@ -1,7 +1,12 @@
 import { useMutation } from '@apollo/client';
-import { useRouter } from 'expo-router';
-import { useEffect } from 'react';
+import { Link, useLocalSearchParams, useRouter } from 'expo-router';
+import { useEffect, useRef } from 'react';
+import { Text, View } from 'react-native';
 import { graphql } from '@/__generated__/gql';
+import { EmptyState } from '@/components/page';
+import { Button } from '@/components/ui/button';
+import { CircleAlert } from '@/components/ui/icons';
+import { Spinner } from '@/components/ui/spinner';
 import { setToken } from '@/lib/auth';
 
 const VERIFY_MAGIC_LINK = graphql(`
@@ -15,41 +20,45 @@ const VERIFY_MAGIC_LINK = graphql(`
 
 export default function VerifyPage() {
   const router = useRouter();
+  const { token } = useLocalSearchParams<{ token?: string }>();
+  // A magic token is spent on first use, so a re-run effect must not send it twice.
+  const started = useRef(false);
 
   const [verify, { error }] = useMutation(VERIFY_MAGIC_LINK, {
     onCompleted(data) {
       setToken(data.verifyMagicLink.token);
       router.replace('/');
     },
+    onError() {
+      // Rendered from `error` below.
+    },
   });
 
   useEffect(() => {
-    const token = new URLSearchParams(window.location.search).get('token');
-    if (token) {
-      verify({ variables: { token } });
-    }
-  }, [verify]);
-
-  if (error) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="text-center max-w-sm p-8">
-          <p className="font-medium text-destructive">
-            {error.message.includes('expired')
-              ? 'This link has expired. Please request a new one.'
-              : 'Invalid magic link.'}
-          </p>
-          <a href="/login" className="mt-4 block text-sm underline text-muted-foreground">
-            Back to sign in
-          </a>
-        </div>
-      </div>
-    );
-  }
+    if (started.current || !token) return;
+    started.current = true;
+    verify({ variables: { token } });
+  }, [token, verify]);
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background">
-      <p className="text-muted-foreground">Signing you in…</p>
-    </div>
+    <View role="main" className="min-h-full flex-1 items-center justify-center bg-background p-4">
+      {error ? (
+        <EmptyState
+          icon={CircleAlert}
+          level={1}
+          title={
+            error.message.includes('expired')
+              ? 'This link has expired. Please request a new one.'
+              : 'Invalid magic link.'
+          }
+          actionSlot={<Button variant="outline" linkSlot={<Link href="/login" />} content="Back to sign in" />}
+        />
+      ) : (
+        <View className="flex-row items-center gap-2">
+          <Spinner label="Signing you in" />
+          <Text className="text-muted-foreground">Signing you in…</Text>
+        </View>
+      )}
+    </View>
   );
 }

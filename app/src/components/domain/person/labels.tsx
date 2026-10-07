@@ -1,10 +1,15 @@
 import { useMutation } from '@apollo/client';
-import { Plus } from 'lucide-react';
-
+import { useEffect, useState } from 'react';
+import { View } from 'react-native';
 import { graphql } from '@/__generated__/gql';
 import type { Person_LabelsFragment } from '@/__generated__/graphql';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { LabelChip } from '@/components/ui/label-chip';
+import { useAppForm } from '@/components/app-form';
+import { LabelChip } from '@/components/domain/label/label-chip';
+import { MultiSelect } from '@/components/multi-select';
+import { Button } from '@/components/ui/button';
+import { FieldWrapper, Form } from '@/components/ui/form';
+import { FormDialog, FormDialogFooter } from '@/components/ui/form-dialog';
+import { Plus } from '@/components/ui/icons';
 
 // ---------------------------------------------------------------------------
 // Fragment
@@ -49,9 +54,11 @@ const DETACH_LABEL = graphql(`
 // Types
 // ---------------------------------------------------------------------------
 
+type LabelOption = { id: string; label: string; color: string };
+
 export interface PersonLabelsProps {
   person: Person_LabelsFragment;
-  allLabels: Array<{ id: string; label: string; color: string }>;
+  allLabels: LabelOption[];
   onDelete: (labelId: string) => void;
   onAdd: (labelId: string) => void;
   showAdd?: boolean;
@@ -82,53 +89,77 @@ function AttachedLabelChip({ personId, labelId, label, color, onDelete }: Attach
 }
 
 // ---------------------------------------------------------------------------
-// Add-label picker
+// Add-label dialog
 // ---------------------------------------------------------------------------
 
-interface AddLabelPickerProps {
+interface AddLabelDialogProps {
   personId: string;
-  allLabels: Array<{ id: string; label: string; color: string }>;
-  attachedLabelIds: Set<string>;
-  onClose: () => void;
+  available: LabelOption[];
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
   onAdd: (labelId: string) => void;
 }
 
-function AddLabelPicker({ personId, allLabels, attachedLabelIds, onClose, onAdd }: AddLabelPickerProps) {
+const NO_LABELS: { labelIds: string[] } = { labelIds: [] };
+
+function AddLabelDialog({ personId, available, open, onOpenChange, onAdd }: AddLabelDialogProps) {
   const [attachLabel] = useMutation(ATTACH_LABEL);
+  const [formError, setFormError] = useState<string | null>(null);
 
-  const available = allLabels.filter((l) => !attachedLabelIds.has(l.id));
+  const form = useAppForm({
+    defaultValues: NO_LABELS,
+    onSubmit: async ({ value }) => {
+      setFormError(null);
+      try {
+        for (const labelId of value.labelIds) {
+          await attachLabel({ variables: { personId, labelId } });
+          onAdd(labelId);
+        }
+        onOpenChange(false);
+      } catch (err: unknown) {
+        setFormError(err instanceof Error ? err.message : 'An unexpected error occurred.');
+      }
+    },
+  });
 
-  const handleSelect = async (labelId: string) => {
-    await attachLabel({ variables: { personId, labelId } });
-    onAdd(labelId);
-    onClose();
-  };
+  useEffect(() => {
+    if (!open) return;
+    form.reset(NO_LABELS);
+    setFormError(null);
+  }, [open, form]);
 
   return (
-    <div className="flex flex-wrap gap-1.5 rounded-md border border-border p-3">
-      {available.map((l) => (
-        <button
-          key={l.id}
-          type="button"
-          onClick={() => handleSelect(l.id)}
-          className="inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs hover:bg-muted transition-colors cursor-pointer"
-        >
-          <span
-            className="inline-block h-2 w-2 rounded-full shrink-0"
-            style={{ backgroundColor: l.color }}
-            aria-hidden="true"
-          />
-          {l.label}
-        </button>
-      ))}
-      <button
-        type="button"
-        onClick={onClose}
-        className="ml-auto text-xs text-muted-foreground hover:text-foreground transition-colors"
-      >
-        Cancel
-      </button>
-    </div>
+    <FormDialog open={open} onOpenChange={onOpenChange} title="Add Label">
+      <form.AppForm>
+        <Form className="gap-4">
+          <form.AppField
+            name="labelIds"
+            validators={{ onSubmit: ({ value }) => (value.length > 0 ? undefined : 'Pick at least one label.') }}
+          >
+            {(field) => (
+              <FieldWrapper
+                label="Labels"
+                asGroup
+                controlSlot={
+                  <MultiSelect
+                    options={available.map((l) => ({ value: l.id, label: l.label, color: l.color }))}
+                    value={field.state.value}
+                    onValueChange={(next) => field.handleChange(next)}
+                    onBlur={field.handleBlur}
+                    placeholder="Add labels…"
+                    searchLabel="Search labels"
+                    popoverLabel="Labels"
+                  />
+                }
+              />
+            )}
+          </form.AppField>
+          <FormDialogFooter onCancel={() => onOpenChange(false)} error={formError}>
+            <form.SubmitButton createLabel="Add" savingLabel="Adding..." />
+          </FormDialogFooter>
+        </Form>
+      </form.AppForm>
+    </FormDialog>
   );
 }
 
@@ -138,11 +169,10 @@ function AddLabelPicker({ personId, allLabels, attachedLabelIds, onClose, onAdd 
 
 export function PersonLabels({ person, allLabels, onDelete, onAdd, showAdd = false, onShowAdd }: PersonLabelsProps) {
   const attachedIds = new Set(person.labels.map((l) => l.id));
-
-  const hasUnattached = allLabels.some((l) => !attachedIds.has(l.id));
+  const available = allLabels.filter((l) => !attachedIds.has(l.id));
 
   return (
-    <div className="flex flex-wrap items-center gap-1.5">
+    <View className="flex-row flex-wrap items-center gap-1.5">
       {person.labels.map((l) => (
         <AttachedLabelChip
           key={l.id}
@@ -153,34 +183,17 @@ export function PersonLabels({ person, allLabels, onDelete, onAdd, showAdd = fal
           onDelete={onDelete}
         />
       ))}
-      {hasUnattached && onShowAdd && (
-        <button
-          type="button"
-          onClick={() => onShowAdd(true)}
-          className="inline-flex items-center gap-0.5 rounded-full border border-dashed border-border px-2 py-0.5 text-xs text-muted-foreground hover:text-foreground hover:border-foreground/40 transition-colors"
-        >
-          <Plus className="h-3 w-3" />
-          Label
-        </button>
-      )}
+      {available.length > 0 && onShowAdd ? (
+        <Button variant="outline" size="xs" iconSlot={<Plus />} content="Label" onPress={() => onShowAdd(true)} />
+      ) : null}
 
-      <Dialog open={showAdd} onOpenChange={onShowAdd}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>Add Label</DialogTitle>
-          </DialogHeader>
-          <AddLabelPicker
-            personId={person.id}
-            allLabels={allLabels}
-            attachedLabelIds={attachedIds}
-            onClose={() => onShowAdd?.(false)}
-            onAdd={(labelId) => {
-              onAdd(labelId);
-              onShowAdd?.(false);
-            }}
-          />
-        </DialogContent>
-      </Dialog>
-    </div>
+      <AddLabelDialog
+        personId={person.id}
+        available={available}
+        open={showAdd}
+        onOpenChange={(open) => onShowAdd?.(open)}
+        onAdd={onAdd}
+      />
+    </View>
   );
 }

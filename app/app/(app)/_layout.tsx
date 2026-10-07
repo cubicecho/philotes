@@ -1,18 +1,20 @@
 import { Redirect, Slot } from 'expo-router';
-import { BottomNav, Header } from '@/components/layouts/header';
+import { useEffect, useState } from 'react';
+import { View } from 'react-native';
+import { AppShell } from '@/components/layouts/app-shell';
 import { isAuthenticated } from '@/lib/auth';
 
 export default function AppLayout() {
-  if (!isAuthenticated()) {
-    return <Redirect href="/login" />;
-  }
-  return (
-    <div className="h-dvh flex flex-col bg-background">
-      <Header />
-      <main className="container mx-auto px-4 flex-1 overflow-hidden pb-16 md:pb-0">
-        <Slot />
-      </main>
-      <BottomNav />
-    </div>
-  );
+  // The token lives in localStorage, which the first render cannot read during
+  // hydration — so decide after mount rather than redirecting a signed-in user
+  // to /login for one frame.
+  const [signedIn, setSignedIn] = useState<boolean | null>(null);
+  useEffect(() => {
+    setSignedIn(isAuthenticated());
+  }, []);
+
+  if (signedIn === null) return <View className="flex-1 bg-background" />;
+  if (!signedIn) return <Redirect href="/login" />;
+
+  return <AppShell contentSlot={<Slot />} />;
 }

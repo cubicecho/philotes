@@ -1,11 +1,14 @@
 import { useMutation } from '@apollo/client';
-import { Link } from 'expo-router';
-import { Check, MessageSquarePlus, Users } from 'lucide-react';
+import { useRouter } from 'expo-router';
 import { useState } from 'react';
+import { Text, View } from 'react-native';
 import { graphql } from '@/__generated__/gql';
-import { Avatar } from '@/components/ui/avatar';
+import { MessageSquarePlus, Users } from '@/components/app-icons';
+import { Avatar } from '@/components/domain/person/avatar';
+import { ListItem } from '@/components/list-item';
 import { Button } from '@/components/ui/button';
-import { AllCaughtUp, Widget } from './widget';
+import { Check } from '@/components/ui/icons';
+import { Widget } from './widget';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -61,68 +64,57 @@ interface ReachOutProps {
 }
 
 export function ReachOut({ persons, onLogged }: ReachOutProps) {
+  const router = useRouter();
   const [quickLog] = useMutation(QUICK_LOG_INTERACTION);
   const [loggedIds, setLoggedIds] = useState<Set<string>>(new Set());
+  const [loggingId, setLoggingId] = useState<string | null>(null);
 
   const handleQuickLog = async (personId: string) => {
-    await quickLog({ variables: { personId, occurredAt: new Date() } });
-    setLoggedIds((prev) => new Set(prev).add(personId));
-    onLogged?.();
+    setLoggingId(personId);
+    try {
+      await quickLog({ variables: { personId, occurredAt: new Date() } });
+      setLoggedIds((prev) => new Set(prev).add(personId));
+      onLogged?.();
+    } finally {
+      setLoggingId(null);
+    }
   };
 
   return (
     <Widget
-      icon={<Users />}
+      iconSlot={<Users />}
       title="Reach Out"
       subtitle="people waiting to hear from you"
       viewAllHref="/persons?sortField=lastContacted&sortDir=asc"
-    >
-      {persons.length === 0 ? (
-        <AllCaughtUp message="You're all caught up here" />
-      ) : (
-        <ul className="space-y-1">
-          {persons.map((p) => {
-            const logged = loggedIds.has(p.id);
-            return (
-              <li key={p.id} className="flex items-center gap-3 rounded-md px-2 py-1.5 hover:bg-muted/60">
-                <Avatar firstName={p.firstName} lastName={p.lastName} avatarPath={p.avatarPath} size="sm" />
-                <div className="min-w-0 flex-1">
-                  <Link
-                    href={`/persons/${p.id}`}
-                    className="block truncate text-sm font-medium text-foreground hover:underline"
-                  >
-                    {p.firstName} {p.lastName}
-                  </Link>
-                  <p
-                    className={`truncate text-xs ${
-                      p.isDormant ? 'text-muted-foreground' : 'text-amber-600 dark:text-amber-400'
-                    }`}
-                  >
-                    {p.statusLabel}
-                  </p>
-                </div>
-                {logged ? (
-                  <span className="inline-flex items-center gap-1 text-xs text-primary">
-                    <Check className="h-3.5 w-3.5" />
-                    Logged
-                  </span>
-                ) : (
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    className="h-7 px-2 text-xs text-muted-foreground hover:text-primary"
-                    onClick={() => handleQuickLog(p.id)}
-                    title="Log that you reached out just now"
-                  >
-                    <MessageSquarePlus className="mr-1 h-3.5 w-3.5" />
-                    Log contact
-                  </Button>
-                )}
-              </li>
-            );
-          })}
-        </ul>
-      )}
-    </Widget>
+      emptyMessage="You're all caught up here"
+      contentSlot={persons.map((p) => (
+        <ListItem
+          key={p.id}
+          leadingSlot={<Avatar firstName={p.firstName} lastName={p.lastName} avatarPath={p.avatarPath} size="sm" />}
+          title={`${p.firstName} ${p.lastName}`}
+          // Dormant entries keep the row's own muted line; overdue ones are called out.
+          description={p.isDormant ? p.statusLabel : <Text className="text-warning text-xs">{p.statusLabel}</Text>}
+          onPress={() => router.push(`/persons/${p.id}`)}
+          actionSlot={
+            loggedIds.has(p.id) ? (
+              <View className="flex-row items-center gap-1">
+                <Check className="size-3.5 text-primary" />
+                <Text className="text-primary text-xs">Logged</Text>
+              </View>
+            ) : (
+              <Button
+                size="xs"
+                variant="outline"
+                iconSlot={<MessageSquarePlus />}
+                content="Log contact"
+                accessibilityHint="Log that you reached out just now"
+                loading={loggingId === p.id}
+                onPress={() => handleQuickLog(p.id)}
+              />
+            )
+          }
+        />
+      ))}
+    />
   );
 }

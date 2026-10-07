@@ -143,7 +143,7 @@ mailed.
 | Layer    | Technology                                                  |
 | -------- | ----------------------------------------------------------- |
 | Frontend | React 19, Expo Router (web target), Apollo Client            |
-| UI       | Tailwind CSS via NativeWind, shadcn/ui, Radix UI            |
+| UI       | React Native primitives, Tailwind 4 via NativeWind 5, cubeui |
 | API      | Apollo Server 5 on Express, GraphQL                         |
 | Database | Drizzle ORM, PGlite (embedded Postgres — no server needed)  |
 | Testing  | Vitest                                                      |

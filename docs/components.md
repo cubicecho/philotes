@@ -2,55 +2,70 @@
 
 ## Overview
 
-The component tree is split into four layers:
+The component tree is split into five layers:
 
 | Layer | Location | Purpose |
 | --- | --- | --- |
-| **UI primitives** | `app/src/components/ui/` | shadcn/ui components — no app logic |
+| **UI primitives** | `app/src/components/ui/` | Vendored [cubeui](https://github.com/cubicecho/cubeui) primitives — no app logic |
+| **Shells** | `app/src/components/*.tsx` | Vendored cubeui layout shells (`PageLayout`, `Section`, `ListItem`, …) |
 | **Domain components** | `app/src/components/domain/` | Feature-specific forms and lists |
-| **Layouts** | `app/src/components/layouts/` | Structural page wrappers |
+| **Layouts** | `app/src/components/layouts/` | The app's own chrome (`AppShell`) |
 | **Settings** | `app/src/components/settings/` | Account settings panels |
 
 Routes live in `app/app/` and are **not** components in this sense — a file
 placed there becomes a URL. See [`frontend.md`](./frontend.md#routing).
 
+Everything is written with React Native primitives (`View`, `Text`,
+`Pressable`); see [`frontend.md`](./frontend.md#react-native-rules).
+
 ---
 
-## UI Primitives (`components/ui/`)
+## UI Primitives and Shells (`components/ui/`, `components/*.tsx`)
 
-Sourced from [shadcn/ui](https://ui.shadcn.com/). Do **not** add application
-logic here. Extend or compose them in `components/domain/` instead.
+Vendored from the cubeui **native** registry with
+`npx shadcn@latest add @cubeui/<item> --overwrite`, run from `app/`. Do **not**
+edit these files, add application logic to them, or wrap one to restyle it —
+use its props and variants, compose it in `components/domain/`, and report a
+missing prop upstream. The JSDoc at the top of each file is the reference; the
+ones this app leans on:
 
 | Component | File | Notes |
 | --- | --- | --- |
-| `AlertDialog` + parts | `alert-dialog.tsx` | Destructive-action confirmation |
-| `Avatar` | `avatar.tsx` | Person avatar with initials fallback |
-| `Button` | `button.tsx` | Variants: `default`, `outline`, `ghost`, `icon` |
-| `Card`, `CardHeader`, `CardContent`, … | `card.tsx` | Composable card container |
-| `Dialog` + parts | `dialog.tsx` | Modal — every form goes in one |
-| `FieldGroup` | `field.tsx` | Wraps a group of form fields |
-| `TextField`, `FormError`, `useAppForm` | `form-field.tsx` | TanStack Form integration — the app's only `createFormHook` |
-| `Input` | `input.tsx` | Base text input |
-| `Label` | `label.tsx` | Form label (wraps `<label>`) |
-| `LabelChip` | `label-chip.tsx` | Colored pill for a label/tag |
-| `Spinner` | `spinner.tsx` | Inline loading indicator |
-| `TagMultiSelect` | `tag-multi-select.tsx` | Multi-select over the caller's labels |
-| `Tooltip` + parts | `tooltip.tsx` | Hover explanation, incl. for disabled buttons |
+| `Button` | `ui/button.tsx` | `content`, `iconSlot`, `variant`, `size`, `loading`, `onPress` |
+| `ActionButton` | `action-button.tsx` | Icon-only button; `label` is its accessible name |
+| `ConfirmButton`, `ConfirmDialog` | `confirm-button.tsx`, `ui/confirm-dialog.tsx` | Destructive-action confirmation |
+| `FormDialog`, `FormDialogFooter` | `ui/form-dialog.tsx` | Modal — every form goes in one |
+| `createAppForm`, `Form` | `ui/form.tsx` | TanStack Form integration; the app's one hook is `@/components/app-form` |
+| `PageLayout` | `page-layout.tsx` | Every route: pinned title block over a scrolling body |
+| `Section` | `section.tsx` | Heading, `actionSlot`, `contentSlot`; `surface="card"` for a card |
+| `ListItem` | `list-item.tsx` | A row: `leadingSlot`, `title`, `description`, `actionSlot` |
+| `QueryState`, `QueryError` | `query-state.tsx` | Loading / error / empty for a query |
+| `EmptyState` | `page.tsx` | "Nothing here yet" |
+| `MultiSelect` | `multi-select.tsx` | Multi-select over the caller's labels |
+| `Badge` | `ui/badge.tsx` | Pill; `backgroundColor`/`textColor` for user-chosen colours |
+| `SidebarLayout`, `Sidebar`, `SidebarNavItem`, `BarNavItem` | `split-layout.tsx`, `sidebar.tsx` | What `AppShell` is built from |
+| `ThemePicker` | `ui/theme-picker.tsx` | Light / dark / system |
+| icons | `ui/icons.tsx` | The shared icon set; app-only icons are in `app-icons.tsx` |
 
-All primitives use `cn()` from `@/lib/utils` for conditional class merging and
-follow the shadcn `forwardRef` pattern.
+Shells take **no children**: content goes in `*Slot` props, and word props
+(`title`, `label`, `content`) take strings.
 
 ---
 
 ## Domain Components (`components/domain/`)
 
 One directory per entity — currently `address/`, `contact-info/`, `dashboard/`,
-`label/`, `person/`, `task/`. The directory listing is the inventory; what
+`label/`, `network/`, `person/`, `task/`. The directory listing is the inventory; what
 follows documents the conventions, using two representative components.
 
 "Label" and "tag" are the same thing in this app. `labels` is the table, and
 `label/` is the only place its components live — do not reintroduce a parallel
-`tag/` directory.
+`tag/` directory. `LabelChip` (`label/label-chip.tsx`) is the coloured pill for
+one, a cubeui `Badge` in the label's colour; `Avatar` (`person/avatar.tsx`) is a
+person's photo with an initials fallback.
+
+`network/graph.web.tsx` is the one place a DOM element is drawn: d3 owns an
+`<svg>` there. `graph.tsx` is its native twin, which says the graph is web-only.
 
 ### `PersonForm` (`domain/person/form.tsx`)
 
@@ -79,7 +94,7 @@ both. The last three person fields are per-user context stored on
 ### `PersonList` + `PersonRow` (`domain/person/list.tsx`)
 
 `PersonList` renders search, sort, an "Add Person" button and a list of
-`PersonRow` cards inside a `ListLayout`.
+`PersonRow` rows inside a `PageLayout`.
 
 It takes **plain typed props** — `PersonRowData`, `PersonContactInfo` — rather
 than a fragment. This is the default for new components: the route owns the
@@ -106,52 +121,23 @@ re-render from cache writes it did not trigger.
 
 ## Layout Preference
 
-**Prefer using a layout component whenever it makes sense.** If a component
-renders a header/body structure (e.g. a title with an action button above a
-list of items), reach for `ListLayout` instead of hand-rolling
-`<div className="space-y-2">` / `<div className="flex items-center
-justify-between">` inline. Consistent use of layout components ensures visual
-and structural uniformity across all list pages and detail-view sections, and
-makes future changes (spacing, alignment) a single-point edit.
+**Prefer a cubeui shell whenever one fits.** A screen is a `PageLayout`; a
+titled group with an action is a `Section`; a row is a `ListItem`. Do not
+hand-roll a `View` with `flex-row items-center justify-between` for a shape a
+shell already draws — using the shell is what keeps spacing and alignment a
+single-point edit.
 
 ---
 
 ## Layouts (`components/layouts/`)
 
-### `ListLayout` (`list.tsx`)
-
-```ts
-interface ListLayoutProps {
-  header?: ReactNode;
-  body: ReactNode;
-  footer?: ReactNode;
-  className?: string;
-  spacing?: boolean;   // default true
-}
-```
-
-The standard header/body/footer stack for every list page and every list
-section on a detail page.
-
-### `Section` and `SectionAction` (`section.tsx`)
-
-```ts
-interface SectionProps {
-  title: string;
-  action?: ReactNode;   // usually a <SectionAction>
-  children: ReactNode;
-}
-```
-
-One content card with a quiet uppercase heading and an optional right-aligned
-action — the shape every section on the person detail page uses. `SectionAction`
-is the small ghost icon+text button that goes in the `action` slot; see
-[Add Button Placement](#add-button-placement-in-list-sections).
-
-### `Header` and `BottomNav` (`header.tsx`)
+### `AppShell` (`app-shell.tsx`)
 
 The app chrome, rendered once by `app/app/(app)/_layout.tsx` — not by
-individual routes.
+individual routes. A cubeui `SidebarLayout`: a rail of the app's places from
+`md` up, and a bar of the same places over the page on a phone. The route
+renders into its `role="main"` view, which does not scroll — which is why every
+route is a `PageLayout`.
 
 ---
 
@@ -159,37 +145,39 @@ individual routes.
 
 `ApiKeyManager` lists the caller's API keys and revokes them;
 `CreateApiKeyDialog` mints one and shows the plaintext key exactly once. See
-[`server.md`](./server.md) for the API-key model.
+[`server.md`](./server.md) for the API-key model. `ExportCalendarCard`,
+`ExportPeopleCard` and `GoogleCsvImportCard` are the import/export tab; picking
+and downloading files works on the web only.
 
 ---
 
 ## Add Button Placement in List Sections
 
-Every list section on a detail page (Labels, Important Dates, Notes,
-Relationships, etc.) is a `Section` with its add trigger in the `action` slot:
+Every list section on a detail page (Important Dates, Notes, Relationships,
+etc.) is a `Section` with its add trigger in `actionSlot`:
 
 ```tsx
 <Section
+  surface="card"
   title="Important Dates"
-  action={<SectionAction icon={<Plus className="h-3.5 w-3.5" />} label="Add" onClick={() => setDialogOpen(true)} />}
->
-  <SectionList ... createOpen={dialogOpen} onCreateOpenChange={setDialogOpen} />
-</Section>
+  actionSlot={<Button variant="ghost" size="xs" iconSlot={<CalendarPlus />} content="Add" onPress={() => setDialogOpen(true)} />}
+  contentSlot={<SectionList ... createOpen={dialogOpen} onCreateOpenChange={setDialogOpen} />}
+/>
 ```
 
 **Rules:**
 
-- Use `Section`; do not hand-roll the `<Card><CardContent>` header row.
+- Use `Section`; do not hand-roll a card with a header row.
 - The "Add" button lives in the **section header row**, right-aligned, never
   inside the list component itself.
 - Dialog open state (`dialogOpen`, `setDialogOpen`) is owned by the **page**
   (route component), not the list component.
 - The list component receives `createOpen: boolean` and
   `onCreateOpenChange: (open: boolean) => void` as props and renders the
-  `<Dialog>` internally — keeping the Dialog markup co-located with the form
-  it opens.
-- If all items are already added (e.g. all labels attached), wrap the trigger
-  in a `<Tooltip>` and disable it, explaining why.
+  `FormDialog` internally — keeping the dialog co-located with the form it
+  opens.
+- If all items are already added (e.g. everyone is already linked), disable the
+  trigger and say why in the section.
 
 This ensures consistent UX: the add button is always in the same position
 relative to the section title across all list sections.
@@ -201,9 +189,9 @@ relative to the section title across all list sections.
 1. Create a directory under `app/src/components/domain/<entity>/`, named in
    kebab-case, as is every file in it.
 2. Add `form.tsx` — a Zod schema and `useAppForm` from
-   `@/components/ui/form-field`. Render it
-   inside a `Dialog`; see [`frontend.md`](./frontend.md#form-presentation-rule).
-3. Add `list.tsx` — a `ListLayout` and a row component taking typed props.
+   `@/components/app-form`. Render it
+   inside a `FormDialog`; see [`frontend.md`](./frontend.md#form-presentation-rule).
+3. Add `list.tsx` — `ListItem` rows taking typed props.
 4. Define the GraphQL operations in the route that uses it, under
    `app/app/(app)/<entity>/index.tsx`.
 5. Run `npm run codegen:app` to generate types.

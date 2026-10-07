@@ -1,22 +1,17 @@
 import { useMutation } from '@apollo/client';
-import {
-  Globe,
-  Instagram,
-  Linkedin,
-  Mail,
-  MoreHorizontal,
-  Phone,
-  Smartphone,
-  Star,
-  Trash2,
-  Twitter,
-} from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { Linking, Text, View } from 'react-native';
 import { graphql } from '@/__generated__/gql';
 import type { ContactInfo_ListFragment } from '@/__generated__/graphql';
 import { ContactTypeEnum } from '@/__generated__/graphql';
-import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { useAppForm } from '@/components/app-form';
+import { Globe, Mail, Phone, Share2, Smartphone } from '@/components/app-icons';
+import { ConfirmButton } from '@/components/confirm-button';
+import { ListItem } from '@/components/list-item';
+import { Badge } from '@/components/ui/badge';
+import { Form } from '@/components/ui/form';
+import { FormDialog, FormDialogFooter } from '@/components/ui/form-dialog';
+import { Ellipsis, Trash2 } from '@/components/ui/icons';
 
 // ---------------------------------------------------------------------------
 // Fragment
@@ -130,16 +125,15 @@ function ContactTypeIcon({ type, className }: { type: string; className?: string
       return <Phone className={className} />;
     case ContactTypeEnum.Mobile:
       return <Smartphone className={className} />;
+    // lucide dropped its brand glyphs, so the three networks share one.
     case ContactTypeEnum.Linkedin:
-      return <Linkedin className={className} />;
     case ContactTypeEnum.Twitter:
-      return <Twitter className={className} />;
     case ContactTypeEnum.Instagram:
-      return <Instagram className={className} />;
+      return <Share2 className={className} />;
     case ContactTypeEnum.Website:
       return <Globe className={className} />;
     default:
-      return <MoreHorizontal className={className} />;
+      return <Ellipsis className={className} />;
   }
 }
 
@@ -180,165 +174,121 @@ function ContactInfoRow({ id, type, value, label, isPrimary, onDelete }: Contact
   const href = contactHref(type, value);
 
   return (
-    <div className="flex items-center justify-between gap-3 rounded-md border border-border px-3 py-2 text-sm">
-      <div className="flex items-center gap-2 min-w-0 flex-1">
-        <ContactTypeIcon type={type} className="h-4 w-4 shrink-0 text-muted-foreground" />
-        <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-1.5 flex-wrap">
-            <span className="rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground capitalize">
-              {typeLabel}
-            </span>
-            {label && <span className="text-xs text-muted-foreground">{label}</span>}
-            {isPrimary && (
-              <span className="inline-flex items-center gap-0.5 rounded-full bg-amber-100 px-2 py-0.5 text-xs text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
-                <Star className="h-2.5 w-2.5" />
-                Primary
-              </span>
-            )}
-          </div>
-          {href ? (
-            <a
-              href={href}
-              target={href.startsWith('http') ? '_blank' : undefined}
-              rel={href.startsWith('http') ? 'noreferrer' : undefined}
-              className="mt-0.5 block truncate text-sm font-medium text-primary hover:underline"
-            >
-              {value}
-            </a>
-          ) : (
-            <p className="mt-0.5 truncate text-sm font-medium">{value}</p>
-          )}
-        </div>
-      </div>
-      <button
-        type="button"
-        onClick={handleDelete}
-        className="shrink-0 flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground/60 hover:text-destructive transition-colors"
-        aria-label="Delete contact info"
-      >
-        <Trash2 className="h-4 w-4" />
-      </button>
-    </div>
+    <ListItem
+      className="border border-border"
+      leadingSlot={<ContactTypeIcon type={type} className="h-4 w-4 text-muted-foreground" />}
+      title={value}
+      titleClassName={href ? 'text-primary' : undefined}
+      description={label || undefined}
+      meta={
+        <>
+          <Badge variant="secondary">{typeLabel}</Badge>
+          {isPrimary ? <Badge variant="warning">Primary</Badge> : null}
+        </>
+      }
+      // Pressing the row calls, mails or opens the value.
+      onPress={href ? () => void Linking.openURL(href) : undefined}
+      actionSlot={
+        <ConfirmButton
+          variant="ghost"
+          size="icon-sm"
+          label="Delete contact info"
+          title="Delete this contact info?"
+          description={`${typeLabel} ${value} is removed from this person.`}
+          onConfirm={handleDelete}
+          iconSlot={<Trash2 className="h-4 w-4" />}
+        />
+      }
+    />
   );
 }
 
 // ---------------------------------------------------------------------------
-// Add contact info form
+// Add contact info dialog
 // ---------------------------------------------------------------------------
 
-interface AddContactInfoFormProps {
+const EMPTY_CONTACT_INFO = {
+  type: ContactTypeEnum.Email as string,
+  value: '',
+  label: '',
+  isPrimary: false,
+};
+
+interface AddContactInfoDialogProps {
   personId: string;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
   onAdded: () => void;
-  onCancel: () => void;
 }
 
-function AddContactInfoForm({ personId, onAdded, onCancel }: AddContactInfoFormProps) {
-  const [type, setType] = useState<ContactTypeEnum>(ContactTypeEnum.Email);
-  const [value, setValue] = useState('');
-  const [label, setLabel] = useState('');
-  const [isPrimary, setIsPrimary] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
+function AddContactInfoDialog({ personId, open, onOpenChange, onAdded }: AddContactInfoDialogProps) {
+  const [createContactInfo, { error, reset }] = useMutation(CREATE_CONTACT_INFO);
 
-  const [createContactInfo] = useMutation(CREATE_CONTACT_INFO);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!value.trim()) return;
-    setSubmitting(true);
-    try {
-      await createContactInfo({
-        variables: {
-          personId,
-          type,
-          value: value.trim(),
-          label: label.trim() || null,
-          isPrimary,
-        },
-      });
+  const form = useAppForm({
+    defaultValues: EMPTY_CONTACT_INFO,
+    onSubmit: async ({ value }) => {
+      try {
+        await createContactInfo({
+          variables: {
+            personId,
+            type: value.type as ContactTypeEnum,
+            value: value.value.trim(),
+            label: value.label.trim() || null,
+            isPrimary: value.isPrimary,
+          },
+        });
+      } catch {
+        // Stay open with what was typed; the footer shows the mutation's error.
+        return;
+      }
+      onOpenChange(false);
       onAdded();
-    } finally {
-      setSubmitting(false);
-    }
-  };
+    },
+  });
+
+  useEffect(() => {
+    if (!open) return;
+    form.reset(EMPTY_CONTACT_INFO);
+    reset();
+  }, [open, form, reset]);
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      {/* Type */}
-      <div className="space-y-1.5">
-        <label htmlFor="contact-type" className="text-sm font-medium">
-          Type
-        </label>
-        <select
-          id="contact-type"
-          value={type}
-          onChange={(e) => {
-            setType(e.target.value as ContactTypeEnum);
-            setValue('');
-          }}
-          className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-        >
-          {CONTACT_TYPE_OPTIONS.map((opt) => (
-            <option key={opt.value} value={opt.value}>
-              {opt.label}
-            </option>
-          ))}
-        </select>
-      </div>
-
-      {/* Value */}
-      <div className="space-y-1.5">
-        <label htmlFor="contact-value" className="text-sm font-medium">
-          Value
-        </label>
-        <input
-          id="contact-value"
-          type="text"
-          value={value}
-          onChange={(e) => setValue(e.target.value)}
-          placeholder={CONTACT_TYPE_PLACEHOLDERS[type]}
-          required
-          className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-        />
-      </div>
-
-      {/* Label */}
-      <div className="space-y-1.5">
-        <label htmlFor="contact-label" className="text-sm font-medium">
-          Label <span className="text-muted-foreground font-normal">(optional)</span>
-        </label>
-        <input
-          id="contact-label"
-          type="text"
-          value={label}
-          onChange={(e) => setLabel(e.target.value)}
-          placeholder="e.g. Work, Personal"
-          className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-        />
-      </div>
-
-      {/* Primary */}
-      <div className="flex items-center gap-2">
-        <input
-          id="contact-is-primary"
-          type="checkbox"
-          checked={isPrimary}
-          onChange={(e) => setIsPrimary(e.target.checked)}
-          className="h-4 w-4 rounded border-border accent-primary"
-        />
-        <label htmlFor="contact-is-primary" className="text-sm">
-          Mark as primary
-        </label>
-      </div>
-
-      <div className="flex gap-2">
-        <Button type="submit" disabled={submitting || !value.trim()}>
-          {submitting ? 'Saving...' : 'Add Contact Info'}
-        </Button>
-        <Button type="button" variant="outline" onClick={onCancel}>
-          Cancel
-        </Button>
-      </div>
-    </form>
+    <FormDialog open={open} onOpenChange={onOpenChange} title="Add Contact Info">
+      <form.AppForm>
+        <Form className="gap-4">
+          <form.AppField
+            name="type"
+            // An email typed so far is not a phone number: a new type starts the value over.
+            listeners={{ onChange: () => form.setFieldValue('value', '') }}
+          >
+            {(field) => <field.SelectField label="Type" options={CONTACT_TYPE_OPTIONS} />}
+          </form.AppField>
+          <form.Subscribe selector={(state) => state.values.type}>
+            {(type) => (
+              <form.AppField
+                name="value"
+                validators={{ onChange: ({ value }) => (value.trim() ? undefined : 'A value is required.') }}
+              >
+                {(field) => (
+                  <field.InputField
+                    label="Value"
+                    required
+                    placeholder={CONTACT_TYPE_PLACEHOLDERS[type as ContactTypeEnum]}
+                  />
+                )}
+              </form.AppField>
+            )}
+          </form.Subscribe>
+          <form.AppField name="label">
+            {(field) => <field.InputField label="Label" description="Optional" placeholder="e.g. Work, Personal" />}
+          </form.AppField>
+          <form.AppField name="isPrimary">{(field) => <field.CheckboxField label="Mark as primary" />}</form.AppField>
+          <FormDialogFooter onCancel={() => onOpenChange(false)} error={error?.message ?? null}>
+            <form.SubmitButton createLabel="Add Contact Info" savingLabel="Saving..." />
+          </FormDialogFooter>
+        </Form>
+      </form.AppForm>
+    </FormDialog>
   );
 }
 
@@ -353,36 +303,24 @@ export function ContactInfoList({ person, onAdd, onDelete, createOpen, onCreateO
   const contactInfos = person.contactInfos ?? [];
 
   return (
-    <div className="space-y-2">
-      {contactInfos.length === 0 && <p className="text-muted-foreground text-sm">No contact info yet.</p>}
+    <>
+      <View className="gap-2">
+        {contactInfos.length === 0 ? <Text className="text-muted-foreground text-sm">No contact info yet.</Text> : null}
 
-      {contactInfos.map((info) => (
-        <ContactInfoRow
-          key={info.id}
-          id={info.id}
-          type={info.type}
-          value={info.value}
-          label={info.label}
-          isPrimary={info.isPrimary}
-          onDelete={onDelete}
-        />
-      ))}
-
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>Add Contact Info</DialogTitle>
-          </DialogHeader>
-          <AddContactInfoForm
-            personId={person.id}
-            onAdded={() => {
-              setDialogOpen(false);
-              onAdd();
-            }}
-            onCancel={() => setDialogOpen(false)}
+        {contactInfos.map((info) => (
+          <ContactInfoRow
+            key={info.id}
+            id={info.id}
+            type={info.type}
+            value={info.value}
+            label={info.label}
+            isPrimary={info.isPrimary}
+            onDelete={onDelete}
           />
-        </DialogContent>
-      </Dialog>
-    </div>
+        ))}
+      </View>
+
+      <AddContactInfoDialog personId={person.id} open={dialogOpen} onOpenChange={setDialogOpen} onAdded={onAdd} />
+    </>
   );
 }

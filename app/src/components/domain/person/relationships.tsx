@@ -1,11 +1,19 @@
 import { useMutation, useQuery } from '@apollo/client';
-import { Link } from 'expo-router';
-import { Pencil, Trash2 } from 'lucide-react';
-import { useId, useState } from 'react';
+import { useRouter } from 'expo-router';
+import { useEffect, useState } from 'react';
+import { Text, View } from 'react-native';
 import { graphql } from '@/__generated__/gql';
 import type { Person_RelationshipsFragment, PersonRelationshipEntry } from '@/__generated__/graphql';
+import { ActionButton } from '@/components/action-button';
+import { useAppForm } from '@/components/app-form';
+import { ConfirmButton } from '@/components/confirm-button';
+import { ListItem } from '@/components/list-item';
+import { OptionSelect } from '@/components/option-select';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { FieldWrapper, Form } from '@/components/ui/form';
+import { FormDialog, FormDialogFooter } from '@/components/ui/form-dialog';
+import { Pencil, Trash2 } from '@/components/ui/icons';
 
 // ---------------------------------------------------------------------------
 // Fragments & queries
@@ -111,220 +119,211 @@ export interface RelationshipsProps {
   onShowAdd?: (show: boolean) => void;
 }
 
+type EditingRelationship = Pick<
+  PersonRelationshipEntry,
+  'id' | 'type' | 'relatedPersonId' | 'relatedPersonFirstName' | 'relatedPersonLastName'
+>;
+
 // ---------------------------------------------------------------------------
-// Relationship type picker (shared between create and edit forms)
+// Add / edit dialog
 // ---------------------------------------------------------------------------
 
-interface TypePickerProps {
-  /** Id of the <select>, so a caller's <label> can point at it. */
-  id?: string;
-  value: string;
-  onChange: (v: string) => void;
-  types: Array<{ id: string; name: string }>;
-  onTypeCreated: () => void;
+interface RelationshipFormDialogProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  fromPersonId: string;
+  allPersons: Array<{ id: string; firstName: string; lastName: string }>;
+  existingRelatedIds: Set<string>;
+  onCreate?: (fromPersonId: string, toPersonId: string, type: string) => void;
+  /** Set, the dialog changes this relationship's type; the person is fixed. */
+  editing?: EditingRelationship | undefined;
+  onEdit?: (id: string, type: string) => void;
 }
 
-function RelationshipTypePicker({ id, value, onChange, types, onTypeCreated }: TypePickerProps) {
-  const [newTypeName, setNewTypeName] = useState('');
-  const [createType, { loading }] = useMutation(CREATE_RELATIONSHIP_TYPE, {
+function RelationshipFormDialog({
+  open,
+  onOpenChange,
+  fromPersonId,
+  allPersons,
+  existingRelatedIds,
+  onCreate,
+  editing,
+  onEdit,
+}: RelationshipFormDialogProps) {
+  const isEditing = editing !== undefined;
+  const { data: typesData } = useQuery(GET_RELATIONSHIP_TYPES);
+  const types = typesData?.relationshipTypes ?? [];
+  const firstType = types[0]?.name ?? '';
+
+  const [createRelationship, { error: createError, reset: resetCreate }] = useMutation(CREATE_RELATIONSHIP);
+  const [updateRelationship, { error: updateError, reset: resetUpdate }] = useMutation(UPDATE_RELATIONSHIP);
+  const [createType, { loading: creatingType }] = useMutation(CREATE_RELATIONSHIP_TYPE, {
     refetchQueries: ['GetRelationshipTypes'],
+    // The new type is selected as soon as this resolves, and the select drops a value it has no option for.
+    awaitRefetchQueries: true,
   });
   const [deleteType] = useMutation(DELETE_RELATIONSHIP_TYPE, {
     refetchQueries: ['GetRelationshipTypes'],
   });
 
-  const handleAdd = async () => {
-    const name = newTypeName.trim();
-    if (!name) return;
+  const form = useAppForm({
+    // `newTypeName` is the "add a type" box beside the picker; it is never sent with the relationship.
+    defaultValues: { toPersonId: '', type: '', newTypeName: '' },
+    onSubmit: async ({ value }) => {
+      const { toPersonId, type } = value;
+      try {
+        if (isEditing) {
+          await updateRelationship({ variables: { id: editing.id, type } });
+          onEdit?.(editing.id, type);
+        } else {
+          await createRelationship({ variables: { fromPersonId, toPersonId, type } });
+          onCreate?.(fromPersonId, toPersonId, type);
+        }
+      } catch {
+        // Stay open with what was chosen; the footer shows the mutation's error.
+        return;
+      }
+      onOpenChange(false);
+    },
+  });
+
+  // biome-ignore lint/correctness/useExhaustiveDependencies: reset on open only, not when the type list refetches
+  useEffect(() => {
+    if (!open) return;
+    form.reset({
+      toPersonId: editing?.relatedPersonId ?? '',
+      type: editing?.type ?? firstType,
+      newTypeName: '',
+    });
+    resetCreate();
+    resetUpdate();
+  }, [open, editing, form]);
+
+  const personOptions = isEditing
+    ? [
+        {
+          value: editing.relatedPersonId,
+          label: `${editing.relatedPersonFirstName} ${editing.relatedPersonLastName}`,
+        },
+      ]
+    : allPersons
+        .filter((p) => p.id !== fromPersonId && !existingRelatedIds.has(p.id))
+        .map((p) => ({ value: p.id, label: `${p.firstName} ${p.lastName}` }));
+
+  // A relationship keeps its type's name after the type is deleted, so the one being edited may
+  // no longer be in the list.
+  const typeNames = types.map((t) => t.name);
+  if (isEditing && !typeNames.includes(editing.type)) typeNames.push(editing.type);
+  const typeOptions = typeNames.map((name) => ({ value: name, label: name }));
+
+  const addType = async () => {
+    const name = form.state.values.newTypeName.trim();
+    if (!name || creatingType) return;
     const { data } = await createType({ variables: { name } });
-    setNewTypeName('');
+    form.setFieldValue('newTypeName', '');
     if (data?.createRelationshipType?.name) {
-      onChange(data.createRelationshipType.name);
+      form.setFieldValue('type', data.createRelationshipType.name);
     }
-    onTypeCreated();
   };
 
+  const error = createError ?? updateError;
+
   return (
-    <div className="space-y-2">
-      <select
-        id={id}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        className="w-full rounded-md border border-border bg-background px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-      >
-        {types.length === 0 && <option value="">No types yet — add one below</option>}
-        {types.map((t) => (
-          <option key={t.id} value={t.name}>
-            {t.name}
-          </option>
-        ))}
-      </select>
-
-      <div className="flex gap-1.5">
-        <input
-          type="text"
-          aria-label="New relationship type"
-          placeholder="New type…"
-          value={newTypeName}
-          onChange={(e) => setNewTypeName(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter') {
-              e.preventDefault();
-              handleAdd();
-            }
-          }}
-          className="flex-1 rounded-md border border-border bg-background px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-        />
-        <Button type="button" size="sm" variant="outline" disabled={!newTypeName.trim() || loading} onClick={handleAdd}>
-          Add
-        </Button>
-      </div>
-
-      {types.length > 0 && (
-        <div className="flex flex-wrap gap-1.5 pt-1">
-          {types.map((t) => (
-            <span
-              key={t.id}
-              className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground"
+    <FormDialog open={open} onOpenChange={onOpenChange} title={isEditing ? 'Edit Relationship' : 'Add Relationship'}>
+      {!isEditing && personOptions.length === 0 ? (
+        <Text className="text-muted-foreground text-sm">No other persons available to link.</Text>
+      ) : (
+        <form.AppForm>
+          <Form className="gap-4">
+            <form.AppField
+              name="toPersonId"
+              validators={{ onChange: ({ value }) => (value ? undefined : 'Please select a person.') }}
             >
-              {t.name}
-              <button
-                type="button"
-                onClick={() => deleteType({ variables: { id: t.id } })}
-                className="hover:text-destructive transition-colors"
-                aria-label={`Delete ${t.name}`}
-              >
-                ×
-              </button>
-            </span>
-          ))}
-        </div>
+              {(field) => (
+                <FieldWrapper
+                  label="Person"
+                  asGroup
+                  controlSlot={
+                    <OptionSelect
+                      options={personOptions}
+                      value={field.state.value}
+                      onValueChange={(value) => {
+                        field.handleChange(value);
+                        field.handleBlur();
+                      }}
+                      disabled={isEditing}
+                      placeholder="Select person…"
+                      searchable
+                      searchPlaceholder="Search persons…"
+                      searchLabel="Search persons"
+                      emptyMessage="No persons found."
+                    />
+                  }
+                />
+              )}
+            </form.AppField>
+
+            <form.AppField
+              name="type"
+              validators={{
+                onChange: ({ value }) => (value ? undefined : 'Please select or create a relationship type.'),
+              }}
+            >
+              {(field) => (
+                <field.SelectField
+                  label="Relationship type"
+                  options={typeOptions}
+                  placeholder={types.length === 0 ? 'No types yet — add one below' : 'Select type…'}
+                />
+              )}
+            </form.AppField>
+
+            <View className="flex-row items-end gap-2">
+              <form.AppField name="newTypeName">
+                {(field) => (
+                  <field.InputField
+                    className="flex-1"
+                    label="New relationship type"
+                    placeholder="New type…"
+                    // Enter here adds the type; it must not submit the relationship.
+                    onSubmitEditing={() => void addType()}
+                  />
+                )}
+              </form.AppField>
+              <form.Subscribe selector={(state) => state.values.newTypeName}>
+                {(newTypeName) => (
+                  <Button
+                    variant="outline"
+                    content="Add"
+                    disabled={!newTypeName.trim() || creatingType}
+                    onPress={() => void addType()}
+                  />
+                )}
+              </form.Subscribe>
+            </View>
+
+            {types.length > 0 ? (
+              <View className="flex-row flex-wrap gap-1.5">
+                {types.map((t) => (
+                  <Badge
+                    key={t.id}
+                    variant="secondary"
+                    removeLabel={`Delete ${t.name}`}
+                    onRemove={() => void deleteType({ variables: { id: t.id } })}
+                  >
+                    {t.name}
+                  </Badge>
+                ))}
+              </View>
+            ) : null}
+
+            <FormDialogFooter onCancel={() => onOpenChange(false)} error={error?.message ?? null}>
+              <form.SubmitButton isEdit={isEditing} createLabel="Add" editLabel="Save" />
+            </FormDialogFooter>
+          </Form>
+        </form.AppForm>
       )}
-    </div>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// Shared form body
-// ---------------------------------------------------------------------------
-
-interface RelationshipFormProps {
-  fromPersonId: string;
-  allPersons: Array<{ id: string; firstName: string; lastName: string }>;
-  existingRelatedIds: Set<string>;
-  onClose: () => void;
-  onCreate?: (fromPersonId: string, toPersonId: string, type: string) => void;
-  editing?: Pick<
-    PersonRelationshipEntry,
-    'id' | 'type' | 'relatedPersonId' | 'relatedPersonFirstName' | 'relatedPersonLastName'
-  >;
-  onEdit?: (id: string, type: string) => void;
-}
-
-function RelationshipForm({
-  fromPersonId,
-  allPersons,
-  existingRelatedIds,
-  onClose,
-  onCreate,
-  editing,
-  onEdit,
-}: RelationshipFormProps) {
-  const isEditing = editing !== undefined;
-  const personFieldId = useId();
-  const typeFieldId = useId();
-  const { data: typesData } = useQuery(GET_RELATIONSHIP_TYPES);
-  const types = typesData?.relationshipTypes ?? [];
-
-  const [toPersonId, setToPersonId] = useState(isEditing ? editing.relatedPersonId : '');
-  const [type, setType] = useState(isEditing ? editing.type : (types[0]?.name ?? ''));
-  const [error, setError] = useState<string | null>(null);
-
-  const [createRelationship, { loading: createLoading }] = useMutation(CREATE_RELATIONSHIP);
-  const [updateRelationship, { loading: updateLoading }] = useMutation(UPDATE_RELATIONSHIP);
-  const loading = createLoading || updateLoading;
-
-  const availablePersons = isEditing
-    ? allPersons.filter((p) => p.id === editing.relatedPersonId)
-    : allPersons.filter((p) => p.id !== fromPersonId && !existingRelatedIds.has(p.id));
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!toPersonId) {
-      setError('Please select a person.');
-      return;
-    }
-    if (!type) {
-      setError('Please select or create a relationship type.');
-      return;
-    }
-    setError(null);
-
-    if (isEditing) {
-      await updateRelationship({ variables: { id: editing.id, type } });
-      onEdit?.(editing.id, type);
-    } else {
-      await createRelationship({ variables: { fromPersonId, toPersonId, type } });
-      onCreate?.(fromPersonId, toPersonId, type);
-    }
-    onClose();
-  };
-
-  if (!isEditing && availablePersons.length === 0) {
-    return <p className="text-muted-foreground text-sm">No other persons available to link.</p>;
-  }
-
-  return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <div>
-        <label htmlFor={personFieldId} className="text-sm font-medium mb-1.5 block">
-          Person
-        </label>
-        <select
-          id={personFieldId}
-          value={toPersonId}
-          onChange={(e) => setToPersonId(e.target.value)}
-          disabled={isEditing}
-          className="w-full rounded-md border border-border bg-background px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-60"
-        >
-          {!isEditing && <option value="">Select person…</option>}
-          {availablePersons.map((p) => (
-            <option key={p.id} value={p.id}>
-              {p.firstName} {p.lastName}
-            </option>
-          ))}
-          {isEditing && (
-            <option value={editing.relatedPersonId}>
-              {editing.relatedPersonFirstName} {editing.relatedPersonLastName}
-            </option>
-          )}
-        </select>
-      </div>
-
-      <div>
-        <label htmlFor={typeFieldId} className="text-sm font-medium mb-1.5 block">
-          Relationship type
-        </label>
-        <RelationshipTypePicker
-          id={typeFieldId}
-          value={type}
-          onChange={setType}
-          types={types}
-          onTypeCreated={() => {}}
-        />
-      </div>
-
-      {error && <p className="text-destructive text-xs">{error}</p>}
-
-      <div className="flex gap-2">
-        <Button type="submit" size="sm" disabled={loading}>
-          {loading ? 'Saving…' : isEditing ? 'Save' : 'Add'}
-        </Button>
-        <Button type="button" size="sm" variant="outline" onClick={onClose}>
-          Cancel
-        </Button>
-      </div>
-    </form>
+    </FormDialog>
   );
 }
 
@@ -334,16 +333,15 @@ function RelationshipForm({
 
 interface RelationshipRowProps {
   relationship: PersonRelationshipEntry;
-  fromPersonId: string;
-  allPersons: Array<{ id: string; firstName: string; lastName: string }>;
   onDelete: (id: string) => void;
-  onEdit: (id: string, type: string) => void;
+  onEditPress: () => void;
 }
 
-function RelationshipRow({ relationship, fromPersonId, allPersons, onDelete, onEdit }: RelationshipRowProps) {
+function RelationshipRow({ relationship, onDelete, onEditPress }: RelationshipRowProps) {
   const { id, relatedPersonId, relatedPersonFirstName, relatedPersonLastName, type } = relationship;
-  const [editOpen, setEditOpen] = useState(false);
+  const router = useRouter();
   const [deleteRelationship] = useMutation(DELETE_RELATIONSHIP);
+  const name = `${relatedPersonFirstName} ${relatedPersonLastName}`;
 
   const handleDelete = async () => {
     await deleteRelationship({ variables: { id } });
@@ -351,53 +349,33 @@ function RelationshipRow({ relationship, fromPersonId, allPersons, onDelete, onE
   };
 
   return (
-    <>
-      <div className="flex items-center justify-between gap-3 rounded-md border border-border px-3 py-2 text-sm">
-        <div className="min-w-0 flex-1">
-          <Link href={`/persons/${relatedPersonId}`} className="font-medium text-foreground hover:underline">
-            {relatedPersonFirstName} {relatedPersonLastName}
-          </Link>
-          <span className="ml-2 rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">{type}</span>
-        </div>
-        <div className="flex shrink-0 gap-1 text-muted-foreground">
-          <button
-            type="button"
-            onClick={() => setEditOpen(true)}
-            className="hover:text-foreground transition-colors"
-            aria-label="Edit relationship"
-          >
-            <Pencil className="h-3.5 w-3.5" />
-          </button>
-          <button
-            type="button"
-            onClick={handleDelete}
-            className="hover:text-destructive transition-colors"
-            aria-label="Remove relationship"
-          >
-            <Trash2 className="h-3.5 w-3.5" />
-          </button>
-        </div>
-      </div>
-
-      <Dialog open={editOpen} onOpenChange={setEditOpen}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>Edit Relationship</DialogTitle>
-          </DialogHeader>
-          <RelationshipForm
-            fromPersonId={fromPersonId}
-            allPersons={allPersons}
-            existingRelatedIds={new Set()}
-            onClose={() => setEditOpen(false)}
-            editing={relationship}
-            onEdit={(editedId, editedType) => {
-              setEditOpen(false);
-              onEdit(editedId, editedType);
-            }}
+    <ListItem
+      className="border border-border"
+      title={name}
+      meta={<Badge variant="secondary">{type}</Badge>}
+      onPress={() => router.push(`/persons/${relatedPersonId}`)}
+      actionSlot={
+        <>
+          <ActionButton
+            variant="ghost"
+            size="icon-sm"
+            label="Edit relationship"
+            onPress={onEditPress}
+            iconSlot={<Pencil className="h-4 w-4" />}
           />
-        </DialogContent>
-      </Dialog>
-    </>
+          <ConfirmButton
+            variant="ghost"
+            size="icon-sm"
+            label="Remove relationship"
+            title="Remove this relationship?"
+            description={`${name} is no longer linked as ${type}. Neither person is deleted.`}
+            confirmLabel="Remove"
+            onConfirm={handleDelete}
+            iconSlot={<Trash2 className="h-4 w-4" />}
+          />
+        </>
+      }
+    />
   );
 }
 
@@ -416,39 +394,49 @@ export function PersonRelationships({
 }: RelationshipsProps) {
   const relationships = person.relationships ?? [];
   const existingRelatedIds = new Set(relationships.map((r) => r.relatedPersonId));
+  // Kept apart from the open flag so the dialog still shows the row while it closes.
+  const [editing, setEditing] = useState<EditingRelationship | undefined>();
+  const [editOpen, setEditOpen] = useState(false);
 
   return (
     <>
-      <div className="space-y-2">
+      <View className="gap-2">
         {relationships.map((r) => (
           <RelationshipRow
             key={r.id}
             relationship={r}
-            fromPersonId={person.id}
-            allPersons={allPersons}
             onDelete={onDelete}
-            onEdit={onEdit}
+            onEditPress={() => {
+              setEditing(r);
+              setEditOpen(true);
+            }}
           />
         ))}
-        {relationships.length === 0 && !showAdd && (
-          <p className="text-muted-foreground text-sm">No relationships yet.</p>
-        )}
-      </div>
+        {relationships.length === 0 && !showAdd ? (
+          <Text className="text-muted-foreground text-sm">No relationships yet.</Text>
+        ) : null}
+      </View>
 
-      <Dialog open={showAdd} onOpenChange={onShowAdd}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>Add Relationship</DialogTitle>
-          </DialogHeader>
-          <RelationshipForm
-            fromPersonId={person.id}
-            allPersons={allPersons}
-            existingRelatedIds={existingRelatedIds}
-            onClose={() => onShowAdd?.(false)}
-            onCreate={(fromId, toId, t) => onAdd(fromId, toId, t)}
-          />
-        </DialogContent>
-      </Dialog>
+      <RelationshipFormDialog
+        open={showAdd}
+        onOpenChange={(open) => onShowAdd?.(open)}
+        fromPersonId={person.id}
+        allPersons={allPersons}
+        existingRelatedIds={existingRelatedIds}
+        onCreate={onAdd}
+      />
+
+      {editing ? (
+        <RelationshipFormDialog
+          open={editOpen}
+          onOpenChange={setEditOpen}
+          fromPersonId={person.id}
+          allPersons={allPersons}
+          existingRelatedIds={existingRelatedIds}
+          editing={editing}
+          onEdit={onEdit}
+        />
+      ) : null}
     </>
   );
 }

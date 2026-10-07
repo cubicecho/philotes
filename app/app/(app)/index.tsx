@@ -1,4 +1,5 @@
 import { useQuery } from '@apollo/client';
+import { View } from 'react-native';
 import { graphql } from '@/__generated__/gql';
 import type { UpcomingDate } from '@/components/domain/dashboard/coming-up';
 import { ComingUp } from '@/components/domain/dashboard/coming-up';
@@ -8,8 +9,8 @@ import type { ReachOutPerson } from '@/components/domain/dashboard/reach-out';
 import { formatOverdueLabel, ReachOut } from '@/components/domain/dashboard/reach-out';
 import type { RecentPerson } from '@/components/domain/dashboard/recently-added';
 import { RecentlyAdded } from '@/components/domain/dashboard/recently-added';
-import { ListLayout } from '@/components/layouts/list';
-import { Spinner } from '@/components/ui/spinner.tsx';
+import { PageLayout } from '@/components/page-layout';
+import { QueryState } from '@/components/query-state';
 import { computeOverdueByDays } from '@/lib/contact-frequency';
 
 // ---------------------------------------------------------------------------
@@ -263,39 +264,43 @@ function computeRecentlyAdded(persons: DashboardPerson[]): RecentPerson[] {
 // Page
 // ---------------------------------------------------------------------------
 
+/** Two columns from `md` up; the width sits on the cell because `gap-4` is not part of a percentage. */
+const CELL = 'w-full md:w-[calc(50%-0.5rem)]';
+
 export default function DashboardPage() {
   const { data, loading, error, refetch } = useQuery(GET_DASHBOARD);
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <Spinner />
-      </div>
-    );
-  }
-
-  if (error) {
-    return <p className="text-destructive text-sm">Error loading dashboard data: {error.message}</p>;
-  }
-
   const persons = (data?.persons ?? []) as DashboardPerson[];
 
-  const reachOut = computeReachOut(persons);
-  const upcomingDates = computeUpcomingDates(persons);
-  const openTasks = computeOpenTasks(persons);
-  const recentlyAdded = computeRecentlyAdded(persons);
-
   return (
-    <ListLayout
-      header={<h1 className="font-bold text-2xl tracking-tight pt-3">Dashboard</h1>}
-      spacing={false}
-      body={
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 pb-4">
-          <ReachOut persons={reachOut} onLogged={() => refetch()} />
-          <ComingUp dates={upcomingDates} windowDays={UPCOMING_WINDOW_DAYS} />
-          <OpenTasks tasks={openTasks} />
-          <RecentlyAdded persons={recentlyAdded} />
-        </div>
+    <PageLayout
+      title="Dashboard"
+      contentSlot={
+        <View className="py-4">
+          <QueryState
+            query={{ isPending: loading && !data, isError: Boolean(error) && !data, error, refetch }}
+            what="dashboard data"
+            // The widgets say their own "all caught up", so there is no empty rung here.
+            count={1}
+            rows={4}
+          />
+          {data ? (
+            <View className="flex-row flex-wrap gap-4">
+              <View className={CELL}>
+                <ReachOut persons={computeReachOut(persons)} onLogged={() => refetch()} />
+              </View>
+              <View className={CELL}>
+                <ComingUp dates={computeUpcomingDates(persons)} windowDays={UPCOMING_WINDOW_DAYS} />
+              </View>
+              <View className={CELL}>
+                <OpenTasks tasks={computeOpenTasks(persons)} />
+              </View>
+              <View className={CELL}>
+                <RecentlyAdded persons={computeRecentlyAdded(persons)} />
+              </View>
+            </View>
+          ) : null}
+        </View>
       }
     />
   );

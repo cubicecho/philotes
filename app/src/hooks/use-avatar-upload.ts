@@ -1,11 +1,14 @@
-import { type ChangeEvent, type RefObject, useRef } from 'react';
+import type { PickedFile } from '@/components/ui/file-picker-base';
 import { getToken } from '@/lib/auth';
 
+/** What the avatar endpoint accepts, in the form a file picker's `accept` takes. */
+export const AVATAR_ACCEPT = 'image/jpeg,image/png,image/gif,image/webp';
+
 interface AvatarUpload {
-  /** Attach to the hidden file input the picker opens. */
-  inputRef: RefObject<HTMLInputElement | null>;
-  /** onChange handler for that input. */
-  onChange: (e: ChangeEvent<HTMLInputElement>) => Promise<void>;
+  /** `accept` for the picker that feeds `upload`. */
+  accept: string;
+  /** Hand to a file picker's `onPickMany`; the picker must read with `read="bytes"`. */
+  upload: (files: PickedFile[]) => Promise<void>;
 }
 
 /**
@@ -14,14 +17,13 @@ interface AvatarUpload {
  * token itself, and the caller refetches once it resolves.
  */
 export function useAvatarUpload(personId: string, onUploaded: () => void): AvatarUpload {
-  const inputRef = useRef<HTMLInputElement>(null);
-
-  const onChange = async (e: ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  const upload = async (files: PickedFile[]) => {
+    const file = files[0];
+    if (!file?.bytes) return;
 
     const formData = new FormData();
-    formData.append('file', file);
+    // Copied into a fresh buffer: the picker's view may sit on a shared one, which a Blob part cannot be.
+    formData.append('file', new Blob([new Uint8Array(file.bytes)], { type: file.type }), file.name);
     const token = getToken();
     await fetch(`/avatars/${personId}`, {
       method: 'POST',
@@ -29,10 +31,8 @@ export function useAvatarUpload(personId: string, onUploaded: () => void): Avata
       headers: token ? { authorization: `Bearer ${token}` } : {},
     });
 
-    // Reset the input so the same file can be re-selected.
-    if (inputRef.current) inputRef.current.value = '';
     onUploaded();
   };
 
-  return { inputRef, onChange };
+  return { accept: AVATAR_ACCEPT, upload };
 }

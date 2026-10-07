@@ -2,14 +2,14 @@
 
 ## Overview
 
-The frontend is a React 19 app built with **Expo Router**, targeting the web.
-Metro bundles it, NativeWind compiles Tailwind, and Apollo Client handles
-GraphQL.
+The frontend is a React 19 app built with **Expo Router**. Metro bundles it,
+NativeWind 5 compiles Tailwind 4, Apollo Client handles GraphQL, and the UI is
+[cubeui](https://github.com/cubicecho/cubeui)'s **native** registry.
 
-Expo is the toolchain, not the target: this app renders DOM elements
-(`<div>`, `<main>`, `<button>`) with Tailwind classes. `react-native` is
-imported only for `Platform`. **Do not reach for `<View>` / `<Text>`** —
-nothing else in the codebase does.
+The web is the only target shipped today, but the app is written in React
+Native primitives — `View`, `Text`, `Pressable`, `ScrollView` — which
+react-native-web turns into DOM. **Do not write `<div>` / `<span>` /
+`<button>`**; see [React Native rules](#react-native-rules).
 
 - **Entry point**: `expo-router/entry` (see `app/package.json` `main`)
 - **Root layout**: `app/app/_layout.tsx`
@@ -25,11 +25,11 @@ This split matters: putting a component under `app/app/` turns it into a route.
 ```
 app/
 ├── app/                        # Expo Router — file-based routes
-│   ├── _layout.tsx             # ApolloClient + <Stack>; global CSS imports
+│   ├── _layout.tsx             # Theme, ApolloProvider, <Stack>, ErrorBoundary; imports global.css
 │   ├── login.tsx               # /login
 │   ├── auth/verify.tsx         # /auth/verify (magic-link landing)
 │   └── (app)/                  # Authenticated group — no URL segment
-│       ├── _layout.tsx         # Redirects to /login; renders Header + BottomNav
+│       ├── _layout.tsx         # Redirects to /login; renders the AppShell
 │       ├── index.tsx           # /
 │       ├── network.tsx         # /network
 │       ├── labels/index.tsx    # /labels
@@ -39,21 +39,22 @@ app/
 │           └── [id]/           # /persons/:id
 │               ├── _layout.tsx
 │               ├── index.tsx
-│               ├── timeline.tsx
-│               └── dates/[dateId].tsx
+│               └── timeline.tsx
 └── src/
     ├── __generated__/          # Generated GraphQL types (do not edit)
     │   ├── gql.ts              # graphql() tagged template helper
     │   ├── graphql.ts          # Types for every query/mutation/fragment
     │   └── type-policies.ts    # Scalar type policies for the Apollo cache
     ├── components/
+    │   ├── *.tsx               # cubeui layout shells, vendored (page-layout, section, sidebar, …)
+    │   ├── app-form.tsx        # useAppForm — the app's one form hook
+    │   ├── app-icons(.web).tsx # Icons cubeui's set does not ship
     │   ├── domain/             # Feature components, one directory per entity
-    │   ├── layouts/            # header.tsx, list.tsx, section.tsx
-    │   ├── settings/           # API key management
-    │   └── ui/                 # shadcn/ui primitives (no app logic here)
-    ├── hooks/                  # use-dark-mode, use-query-string-state, use-avatar-upload
-    ├── lib/                    # auth, utils (cn), date-type-policy, …
-    └── index.css               # Tailwind base styles
+    │   ├── layouts/            # app-shell.tsx
+    │   ├── settings/           # API keys, imports and exports
+    │   └── ui/                 # cubeui primitives, vendored (no app logic here)
+    ├── hooks/                  # use-query-string-state, use-avatar-upload
+    └── lib/                    # auth, apollo, utils (cn), date-type-policy, …
 ```
 
 ## Routing
@@ -77,7 +78,10 @@ There is no generated route tree to keep in sync.
 `<Redirect href="/login" />`. The token itself is read and written through
 `@/lib/auth`.
 
-The root layout's Apollo link chain attaches `Authorization: Bearer <token>`
+It decides after mount, because the token lives in `localStorage` and the first
+render cannot read it.
+
+The Apollo link chain in `@/lib/apollo` attaches `Authorization: Bearer <token>`
 to every request, and an error link clears the token and sends the browser to
 `/login` on an `UNAUTHENTICATED` response.
 
@@ -135,56 +139,101 @@ export interface PersonRowData {
 }
 ```
 
+## React Native rules
+
+- **No DOM elements.** `View`, `Text`, `Pressable`, `ScrollView`, `Image`, and
+  cubeui components. `onPress`, not `onClick`; `onChangeText` / `onValueChange`,
+  not `onChange(event)`. The one exception is the d3 canvas in
+  `app/(app)/network.tsx`.
+- **Every string sits in a `<Text>`, and every `<Text>` names its colour**
+  (`text-foreground`, `text-foreground/60`, `text-destructive`, …). Text does
+  not inherit colour or font from a parent `View`.
+- **Every border names its colour** — `border border-border`, never a bare
+  `border`.
+- **A `View` is a column.** Write `flex-row` where a row is meant, `gap-*`
+  rather than `space-x/y`, and no CSS grid.
+- **Links around a control use `asChild`**:
+  `<Link href="/persons" asChild><Button content="People" /></Link>`.
+- **Icons** come from `@/components/ui/icons` or `@/components/app-icons`,
+  never from `lucide-react` directly — the native half wraps each glyph so it
+  takes a `className`.
+
+## cubeui
+
+The components are vendored, not installed as a package: `app/components.json`
+points the shadcn CLI at `https://cubicecho.github.io/cubeui/r/native/{name}.json`.
+
+```bash
+cd app
+npx shadcn@latest add @cubeui/<item> --overwrite
+```
+
+Do not edit a vendored file to fix or restyle it — change it in
+`cubicecho/cubeui` and pull it again. The rules cubeui components share:
+
+- **Shells take no children.** Content goes in `*Slot` props (`contentSlot`,
+  `actionSlot`, `iconSlot`), which take elements, never a bare string. Word
+  props — `title`, `description`, `label`, `content` — take strings.
+- **`Button` is `content` + `iconSlot`**; an icon-only button is an
+  `ActionButton` with a required `label`.
+- **Every screen is a `PageLayout`.** The shell's main area does not scroll; a
+  `PageLayout`'s body scrolls under its pinned header.
+- **Loading, error and empty are `QueryState`**, not three hand-written
+  branches.
+
 ## Form Presentation Rule
 
-**All forms must be presented inside a `Dialog`.** Never render a form inline
-on a page or expand it in-place. Always open a `Dialog` with a clear title and
-a cancel button. This keeps the UI consistent and avoids layout shift.
-
-```tsx
-// Correct — form in a Dialog
-<Dialog open={open} onOpenChange={setOpen}>
-  <DialogContent className="max-w-md">
-    <DialogHeader>
-      <DialogTitle>Add Note</DialogTitle>
-    </DialogHeader>
-    <NoteForm onSubmit={handleSubmit} onCancel={() => setOpen(false)} />
-  </DialogContent>
-</Dialog>
-
-// Wrong — inline form
-{showForm && <NoteForm onSubmit={handleSubmit} onCancel={() => setShowForm(false)} />}
-```
+**All forms are presented inside a dialog** — a `FormDialog` from
+`@/components/ui/form-dialog`. Never render a form inline on a page, and never
+make a value editable in place: editing opens the dialog. This keeps the UI
+consistent and avoids layout shift. Confirmations are a `ConfirmDialog` or a
+`ConfirmButton`.
 
 ## Form Pattern
 
-Forms use TanStack Form with Zod validation:
+Forms use TanStack Form through cubeui's `createAppForm`, called once in
+`@/components/app-form`:
 
-```ts
-import { FormError, TextField, useAppForm } from '@/components/ui/form-field';
-
-const schema = z.object({ name: z.string().min(1, 'Required') });
+```tsx
+import { useAppForm } from '@/components/app-form';
+import { Form } from '@/components/ui/form';
 
 const form = useAppForm({
   defaultValues: { name: '' },
-  validators: { onSubmit: schema },
   onSubmit: async ({ value }) => { /* call mutation */ },
 });
+
+<form.AppForm>
+  <Form className="gap-4">
+    <form.AppField name="name" validators={{ onChange: ({ value }) => (value.trim() ? undefined : 'Required') }}>
+      {(field) => <field.InputField label="Name" />}
+    </form.AppField>
+    <form.SubmitButton createLabel="Add" editLabel="Save" isEdit={isEdit} savingLabel="Saving…" />
+  </Form>
+</form.AppForm>
 ```
 
-`useAppForm` is created once, in `@/components/ui/form-field`, already wired to
-the field components there. Import it — do not call `createFormHook` again in a
-feature file; a second call mints its own contexts.
+Import `useAppForm` — do not call `createAppForm` again in a feature file; a
+second call mints its own contexts. A field cubeui does not ship is added to
+the one call in `app-form.tsx`.
 
 ## Styling
 
-Tailwind CSS v3 through NativeWind, with the shadcn/ui token set. Config is at
-`app/tailwind.config.js`; base styles are split between `app/global.css` and
-`app/src/index.css`, both imported by the root layout. Use utility classes
-directly in JSX, and `cn()` from `@/lib/utils` when merging conditional
+Tailwind CSS v4 through NativeWind 5. There is no `tailwind.config.js`: the
+theme is `app/cubeui-tokens.css` (cubeui's `tokens` item — generated, do not
+edit), imported by `app/global.css`, which the root layout imports. Use utility
+classes directly in JSX, and `cn()` from `@/lib/utils` when merging conditional
 classes.
 
-Dark mode is driven by `@/hooks/use-dark-mode`.
+Use the tokens — `bg-background`, `text-foreground/60`, `border-border`,
+`text-destructive` — never a palette class (`bg-red-50`) or a hex in a class
+name. A colour the user chose (a label's) is data, so it goes inline: `Badge
+backgroundColor`, `ColorDot`, or `style`, with `readableTextColor()` picking
+the ink on top.
+
+Light, dark and system are cubeui's `useThemePreference`, called in the root
+layout, with `ThemePicker` on the Settings page. `public/index.html` carries the
+pre-paint script that applies the stored choice before the first frame.
 
 ## Running & Building
 

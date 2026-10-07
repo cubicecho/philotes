@@ -1,8 +1,11 @@
 import { gql, useMutation, useQuery } from '@apollo/client';
-import { Key, Plus } from 'lucide-react';
 import { useState } from 'react';
+import { Text } from 'react-native';
+import { ListItem } from '@/components/list-item';
+import { EmptyState } from '@/components/page';
+import { Section } from '@/components/section';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Plus } from '@/components/ui/icons';
 import { CreateApiKeyDialog } from './create-api-key-dialog';
 
 const MY_API_KEYS = gql`
@@ -54,6 +57,16 @@ function formatDate(dateVal: string | null): string {
   return date.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
 }
 
+function keyDetails(key: ApiKeyRecord): string {
+  return [
+    `Last used: ${formatRelative(key.lastUsedAt)}`,
+    key.expiresAt ? `Expires: ${formatDate(key.expiresAt)}` : null,
+    `Created: ${formatDate(key.createdAt)}`,
+  ]
+    .filter(Boolean)
+    .join(' · ');
+}
+
 export function ApiKeyManager() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const { data, refetch } = useQuery<{ myApiKeys: ApiKeyRecord[] }>(MY_API_KEYS);
@@ -65,69 +78,44 @@ export function ApiKeyManager() {
 
   return (
     <>
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle className="flex items-center gap-2">
-                <Key className="h-4 w-4" />
-                API Keys / Calendar Access
-              </CardTitle>
-              <CardDescription className="mt-1">
-                Generate a key to subscribe your important dates (birthdays, anniversaries, etc.) into any calendar app
-                via a private URL at <code className="text-xs">/ical?key=…</code>
-              </CardDescription>
-            </div>
-            <Button size="sm" variant="outline" onClick={() => setDialogOpen(true)}>
-              <Plus className="h-4 w-4 mr-1" />
-              Generate Key
-            </Button>
-          </div>
-        </CardHeader>
-        <CardContent>
-          {keys.length === 0 ? (
-            <p className="text-sm text-muted-foreground">
-              No keys yet. Generate one to get your calendar subscription URL.
-            </p>
+      <Section
+        surface="card"
+        title="API Keys / Calendar Access"
+        description="Generate a key to subscribe your important dates (birthdays, anniversaries, etc.) into any calendar app via a private URL at /ical?key=…"
+        actionSlot={
+          <Button
+            size="sm"
+            variant="outline"
+            iconSlot={<Plus />}
+            content="Generate Key"
+            onPress={() => setDialogOpen(true)}
+          />
+        }
+        contentSlot={
+          keys.length === 0 ? (
+            <EmptyState compact title="No keys yet. Generate one to get your calendar subscription URL." />
           ) : (
-            <div className="space-y-3">
-              {keys.map((key) => (
-                <div key={key.id} className="flex items-start justify-between rounded-md border p-3 gap-4">
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="font-medium text-sm">{key.name}</span>
-                      <code className="text-xs text-muted-foreground font-mono bg-muted px-1.5 py-0.5 rounded">
-                        phlt_{key.keyPrefix}…
-                      </code>
-                    </div>
-                    <div className="mt-1.5 text-xs text-muted-foreground space-x-3">
-                      <span>
-                        Last used: <span className="text-foreground">{formatRelative(key.lastUsedAt)}</span>
-                      </span>
-                      {key.expiresAt ? (
-                        <span>
-                          Expires: <span className="text-foreground">{formatDate(key.expiresAt)}</span>
-                        </span>
-                      ) : null}
-                      <span>
-                        Created: <span className="text-foreground">{formatDate(key.createdAt)}</span>
-                      </span>
-                    </div>
-                  </div>
+            keys.map((key) => (
+              <ListItem
+                key={key.id}
+                className="rounded-lg border border-border"
+                title={key.name}
+                description={keyDetails(key)}
+                meta={<Text className="font-mono text-muted-foreground text-xs">{`phlt_${key.keyPrefix}…`}</Text>}
+                actionSlot={
                   <Button
                     size="sm"
                     variant="destructive"
                     disabled={revoking}
-                    onClick={() => revokeApiKey({ variables: { id: key.id } })}
-                  >
-                    Revoke
-                  </Button>
-                </div>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+                    content="Revoke"
+                    onPress={() => revokeApiKey({ variables: { id: key.id } })}
+                  />
+                }
+              />
+            ))
+          )
+        }
+      />
 
       <CreateApiKeyDialog open={dialogOpen} onOpenChange={setDialogOpen} onCreated={() => refetch()} />
     </>
