@@ -1,0 +1,394 @@
+/*
+ * cubesite.css — the shared stylesheet for cubicecho project sites.
+ *
+ * Source of truth: github.com/cubicecho/cubesite → theme/cubesite.css.
+ * This file is VENDORED into each project site (site/src/css/cubesite.css), so
+ * edit it there only to find out what you want changed here, then change it
+ * here and re-sync with `node scripts/scaffold.mjs <repo> --theme`.
+ *
+ * It expects the markup in cubesite's template/src/_includes/base.njk. Project
+ * rules go in a second stylesheet (site.css) loaded after this one, never in
+ * here — a project-shaped rule in the shared file is how the shared file stops
+ * being shareable.
+ */
+
+:root {
+  --bg: #fafaf9;
+  --fg: #1a1a1a;
+  --muted: #6b6b6b;
+  --line: #e5e5e3;
+  --card: #ffffff;
+  --accent: #2563eb;
+  --accent-fg: #ffffff;
+  --radius: 10px;
+  --maxw: 64rem;
+  --pad: clamp(1rem, 4vw, 2rem);
+  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, sans-serif;
+  --font-mono: ui-monospace, "JetBrains Mono", "Fira Code", Menlo, Consolas,
+    monospace;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #111113;
+    --fg: #ececec;
+    --muted: #9a9a9a;
+    --line: #26262a;
+    --card: #1a1a1d;
+    --accent: #7aa6ff;
+    --accent-fg: #0c0c0e;
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-sans);
+  font-size: 16px;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+a {
+  color: var(--accent);
+  text-decoration: none;
+}
+a:hover {
+  text-decoration: underline;
+}
+
+main {
+  flex: 1;
+  width: 100%;
+  max-width: var(--maxw);
+  margin: 0 auto;
+  padding: 0 var(--pad);
+}
+
+/* header */
+
+.site-header {
+  width: 100%;
+  max-width: var(--maxw);
+  margin: 0 auto;
+  padding: 1.5rem var(--pad);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.wordmark {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.625rem;
+  color: var(--fg);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+.wordmark:hover {
+  text-decoration: none;
+}
+/* A project site's wordmark is the project name, so it is set in mono to match
+   the card titles and project headings across the org. */
+.wordmark .name {
+  font-family: var(--font-mono);
+}
+.mark {
+  width: 40px;
+  height: 40px;
+  display: inline-block;
+  color: var(--fg);
+  flex-shrink: 0;
+}
+
+.site-header nav {
+  display: flex;
+  gap: 1.25rem;
+  font-size: 0.95rem;
+  flex-wrap: wrap;
+}
+.site-header nav a {
+  color: var(--muted);
+}
+.site-header nav a:hover,
+.site-header nav a[aria-current="page"] {
+  color: var(--fg);
+  text-decoration: none;
+}
+
+/* footer */
+
+.site-footer {
+  width: 100%;
+  max-width: var(--maxw);
+  margin: 4rem auto 0;
+  padding: 2rem var(--pad);
+  border-top: 1px solid var(--line);
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+.site-footer a {
+  color: var(--muted);
+}
+.site-footer a:hover {
+  color: var(--fg);
+}
+.footer-links {
+  display: inline-flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+/* hero */
+
+.hero {
+  padding: 3.5rem 0 2.5rem;
+  border-bottom: 1px solid var(--line);
+}
+.hero h1 {
+  font-size: clamp(2rem, 5vw, 3rem);
+  margin: 0 0 0.5rem;
+  letter-spacing: -0.02em;
+}
+/* On a project site the H1 *is* the package name, so it reads as one. */
+.hero.project-hero h1 {
+  font-family: var(--font-mono);
+}
+.hero p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 1.125rem;
+}
+.hero .meta {
+  margin: 1rem 0 0;
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  flex-wrap: wrap;
+  font-size: 0.95rem;
+}
+
+.cta {
+  margin: 1.5rem 0 0;
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+.button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.55rem 1.1rem;
+  border-radius: var(--radius);
+  border: 1px solid var(--accent);
+  background: var(--accent);
+  color: var(--accent-fg);
+  font-size: 0.95rem;
+  font-weight: 500;
+}
+.button:hover {
+  text-decoration: none;
+  filter: brightness(1.08);
+}
+.button.secondary {
+  background: transparent;
+  color: var(--fg);
+  border-color: var(--line);
+}
+.button.secondary:hover {
+  border-color: var(--fg);
+  filter: none;
+}
+
+/* sections */
+
+.section-label {
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: var(--muted);
+  margin: 2.5rem 0 1rem;
+}
+
+.section {
+  padding: 2.5rem 0 0;
+}
+.section > h2 {
+  margin: 0 0 0.35rem;
+  font-size: 1.5rem;
+  letter-spacing: -0.01em;
+}
+.section > .section-intro {
+  margin: 0 0 1.25rem;
+  color: var(--muted);
+  max-width: 42rem;
+}
+
+/* card grid — features on a project site, projects on an index */
+
+.card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 18rem), 1fr));
+  gap: 1rem;
+  list-style: none;
+  padding: 0;
+  margin: 0 0 2rem;
+}
+.card-grid > li {
+  display: flex;
+}
+
+.card {
+  position: relative;
+  flex: 1;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  transition: border-color 0.15s ease, transform 0.15s ease;
+}
+.card:hover {
+  border-color: var(--fg);
+  transform: translateY(-1px);
+}
+.card h3 {
+  margin: 0;
+  font-size: 1.1rem;
+  font-family: var(--font-mono);
+  letter-spacing: -0.01em;
+}
+.card h3 .card-link {
+  color: var(--fg);
+}
+.card h3 .card-link:hover {
+  text-decoration: none;
+}
+/* The title link is stretched over the whole card so the card is clickable;
+   anything that must stay independently clickable is lifted above it. */
+.card-link::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: var(--radius);
+}
+.card p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.95rem;
+  flex: 1;
+}
+.card .card-foot {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.85rem;
+  color: var(--muted);
+  margin-top: 0.5rem;
+}
+.card-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.85rem;
+}
+.card-site {
+  position: relative;
+  z-index: 1;
+  color: var(--muted);
+}
+.card-site:hover {
+  color: var(--accent);
+}
+
+/* prose */
+
+.prose {
+  max-width: 42rem;
+}
+.prose h2 {
+  margin-top: 2rem;
+  font-size: 1.25rem;
+  letter-spacing: -0.01em;
+}
+.prose h3 {
+  margin-top: 1.5rem;
+  font-size: 1.05rem;
+}
+.prose p,
+.prose ul,
+.prose ol {
+  margin: 1rem 0;
+}
+.prose code {
+  font-family: var(--font-mono);
+  background: var(--card);
+  border: 1px solid var(--line);
+  padding: 0.05rem 0.35rem;
+  border-radius: 4px;
+  font-size: 0.9em;
+}
+.prose pre,
+pre.code {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 1rem;
+  overflow-x: auto;
+  font-family: var(--font-mono);
+  font-size: 0.9rem;
+}
+.prose pre code,
+pre.code code {
+  border: 0;
+  padding: 0;
+  background: transparent;
+}
+.prose table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1rem 0;
+  font-size: 0.95rem;
+}
+.prose th,
+.prose td {
+  text-align: left;
+  padding: 0.5rem 0.75rem;
+  border-bottom: 1px solid var(--line);
+  vertical-align: top;
+}
+.prose th {
+  color: var(--muted);
+  font-weight: 500;
+}
+
+/* the pointer every project site ends on */
+
+.readme-link {
+  margin: 2rem 0 0;
+  padding: 1rem 1.25rem;
+  border: 1px dashed var(--line);
+  border-radius: var(--radius);
+  font-size: 0.95rem;
+  color: var(--muted);
+  max-width: 42rem;
+}

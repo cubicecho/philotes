@@ -1,0 +1,55 @@
+---
+layout: base.njk
+---
+<section class="hero project-hero">
+  <h1>{{ site.name }}</h1>
+  <p>{{ site.tagline }}</p>
+  <p class="cta">
+    <a class="button" href="#start">Get started</a>
+    <a class="button secondary" href="{{ site.repo }}" rel="noopener">GitHub ↗</a>
+  </p>
+</section>
+
+<section class="section">
+  <h2>What it does</h2>
+  <p class="section-intro">
+    Relationships slip when life gets busy: a follow-up you meant to send, how you met someone, whose
+    birthday is next week. Philotes is a quiet place to keep that context for friends, family and
+    colleagues. It runs on your own machine, with your data in your own database and nowhere else.
+  </p>
+
+  <ul class="card-grid">
+    <li>
+      <article class="card">
+        <h3>Remember the context</h3>
+        <p>People, how you met, notes, labels, contact details, and how they are connected to each other.</p>
+      </article>
+    </li>
+    <li>
+      <article class="card">
+        <h3>Stay in touch</h3>
+        <p>Log each conversation, set how often you want to reach someone, and see who is overdue and which dates are coming up.</p>
+      </article>
+    </li>
+    <li>
+      <article class="card">
+        <h3>Yours to run</h3>
+        <p>One container beside Postgres. Import from Google Contacts, export whenever you like, and script it through the GraphQL API.</p>
+      </article>
+    </li>
+  </ul>
+</section>
+
+<section class="section" id="start">
+  <h2>Get started</h2>
+  <div class="prose">
+    <pre class="code"><code>git clone https://github.com/cubicecho/philotes &amp;&amp; cd philotes
+BETTER_AUTH_SECRET=$(openssl rand -hex 32) docker compose up -d</code></pre>
+    <p>Then open <a href="http://localhost:3000">http://localhost:3000</a>. Migrations run on startup.</p>
+  </div>
+
+  <p class="readme-link">
+    Full documentation lives in the project README:
+    <a href="{{ site.repo }}#readme" rel="noopener">{{ site.repo }}</a>
+  </p>
+</section>
