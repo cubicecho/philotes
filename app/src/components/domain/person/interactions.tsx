@@ -3,10 +3,10 @@ import { useState } from 'react';
 import { Text, View } from 'react-native';
 import { graphql } from '@/__generated__/gql';
 import { ActionButton } from '@/components/action-button';
+import { ChannelIcon } from '@/components/domain/person/channel-icon';
 import {
   CHANNEL_OPTIONS,
   type Channel,
-  ChannelIcon,
   InteractionForm,
   type InteractionFormValues,
   type Sentiment,

@@ -1,10 +1,9 @@
 import { useState } from 'react';
 import { useAppForm } from '@/components/app-form';
-import { Mail, MessageSquare, Phone, Users } from '@/components/app-icons';
+import { ChannelIcon } from '@/components/domain/person/channel-icon';
 import { type TagOption, TagsField } from '@/components/domain/person/tag-picker';
 import { FieldWrapper, Form } from '@/components/ui/form';
 import { FormDialogFooter } from '@/components/ui/form-dialog';
-import { Ellipsis } from '@/components/ui/icons';
 import { SegmentedButton, SegmentedGroup } from '@/components/ui/segmented';
 
 // ---------------------------------------------------------------------------
@@ -32,21 +31,6 @@ export const SENTIMENT_OPTIONS: Array<{
   { value: 'neutral', label: 'Neutral', emoji: '😐' },
   { value: 'difficult', label: 'Difficult', emoji: '😟' },
 ];
-
-export function ChannelIcon({ channel, className }: { channel: string; className?: string }) {
-  switch (channel as Channel) {
-    case 'call':
-      return <Phone className={className} />;
-    case 'text':
-      return <MessageSquare className={className} />;
-    case 'email':
-      return <Mail className={className} />;
-    case 'in-person':
-      return <Users className={className} />;
-    default:
-      return <Ellipsis className={className} />;
-  }
-}
 
 export function sentimentEmoji(sentiment: string | null | undefined): string {
   return SENTIMENT_OPTIONS.find((s) => s.value === sentiment)?.emoji ?? '';

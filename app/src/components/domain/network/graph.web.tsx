@@ -3,17 +3,8 @@ import { useEffect, useRef, useState } from 'react';
 import { Text, View } from 'react-native';
 import { LabelChip } from '@/components/domain/label/label-chip';
 import { Button } from '@/components/ui/button';
+import { nameToColor } from '@/lib/name-color';
 import type { NetworkGraphProps, NetworkPerson } from './types';
-
-// djb2 hash → hsl color
-function nameToColor(name: string): string {
-  let hash = 5381;
-  for (let i = 0; i < name.length; i++) {
-    hash = (hash * 33) ^ name.charCodeAt(i);
-  }
-  const hue = Math.abs(hash) % 360;
-  return `hsl(${hue}, 60%, 55%)`;
-}
 
 type SimNode = d3.SimulationNodeDatum & NetworkPerson;
 

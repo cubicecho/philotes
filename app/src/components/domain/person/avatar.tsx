@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Image, Text, View } from 'react-native';
 import { avatarUrl } from '@/lib/api-url';
+import { nameToColor } from '@/lib/name-color';
 import { cn } from '@/lib/utils';
 
 interface AvatarProps {
@@ -9,27 +10,6 @@ interface AvatarProps {
   avatarPath?: string | null;
   size?: 'sm' | 'md' | 'lg';
   className?: string;
-}
-
-/** Deterministic background color from a name string. */
-export function nameToColor(name: string): string {
-  const colors = [
-    '#e2a87a',
-    '#7ab8e2',
-    '#7ae2a8',
-    '#e27ab8',
-    '#a8e27a',
-    '#b87ae2',
-    '#e2c87a',
-    '#7ae2c8',
-    '#c87ae2',
-    '#e27a7a',
-  ];
-  let hash = 0;
-  for (let i = 0; i < name.length; i++) {
-    hash = (hash * 31 + name.charCodeAt(i)) >>> 0;
-  }
-  return colors[hash % colors.length];
 }
 
 const SIZE_CLASSES: Record<NonNullable<AvatarProps['size']>, { box: string; text: string }> = {
