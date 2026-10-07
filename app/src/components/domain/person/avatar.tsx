@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Image, Text, View } from 'react-native';
+import { avatarUrl } from '@/lib/api-url';
 import { cn } from '@/lib/utils';
 
 interface AvatarProps {
@@ -49,7 +50,7 @@ export function Avatar({ firstName, lastName, avatarPath, size = 'md', className
   if (avatarPath && !failed) {
     return (
       <Image
-        source={{ uri: `/avatars/${avatarPath}` }}
+        source={{ uri: avatarUrl(avatarPath) }}
         accessibilityLabel={name}
         onError={() => setFailed(true)}
         className={cn('shrink-0 rounded-full', box, className)}

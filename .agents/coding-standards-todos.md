@@ -21,11 +21,11 @@ confirmed in code. Nothing here is implemented until approved.
 | B1 | Bug | Stops the server logging the sign-in link in every environment, which needs a mailer first because production sign-in reads that log line | No credentials in logs | A2 | declined |
 | B2 | Bug | Makes revoking an API key answer "not found" for a key that belongs to someone else, as every other resolver does | Does not reveal which key ids exist | — | done |
 | B3 | Bug | Checks who is uploading an avatar, and that the person is in their list, before the file is written; stores it under a random name with the extension of its type. Reading stays open by unguessable name until A2, because an image request cannot carry a bearer token | Closes an unauthenticated write, and one user overwriting another's picture | — | done |
-| B11 | Bug | Shows uploaded avatars: the app prefixed `/avatars/` to a path that already starts with it, so no upload ever displayed | Avatars display | B3 | approved |
+| B11 | Bug | Shows uploaded avatars: the app prefixed `/avatars/` to a path that already starts with it, so no upload ever displayed | Avatars display | B3 | done |
 | B4 | Bug | Stops contact import returning raw database error text, and scopes its duplicate check to the importing user | No schema details in responses; no cross-user dedupe | — | done |
 | B5 | Bug | Keeps the owner on the person-label rows that merging two labels re-inserts | Merge does not fail on the NOT NULL owner column | — | done |
 | B6 | Bug | Runs the postgres-js migrator when `DATABASE_URL` is a Postgres URL, not the PGlite one | Migrations apply on a real Postgres | — | approved |
-| B7 | Bug | Makes the avatar upload in the app check the response and use the configured API URL | A failed upload is reported, and works off-origin | B3 | approved |
+| B7 | Bug | Makes the avatar upload in the app check the response and use the configured API URL | A failed upload is reported, and works off-origin | B3 | done |
 | B8 | Bug | Refetches the lists that import, person delete, label merge and label delete change | No stale rows after a mutation | — | approved |
 | B9 | Bug | Shows loading and error states in the API key and export cards, which today show "empty" while loading | Honest states | — | approved |
 | F1 | Feature | Asks for confirmation before each of the seven one-click deletes | No accidental data loss | — | approved |

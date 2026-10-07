@@ -3,9 +3,8 @@ import { setContext } from '@apollo/client/link/context';
 import { onError } from '@apollo/client/link/error';
 import { Platform } from 'react-native';
 import { scalarTypePolicies } from '@/__generated__/type-policies';
+import { API_URL } from '@/lib/api-url';
 import { clearToken, getToken } from '@/lib/auth';
-
-const API_URL = process.env.EXPO_PUBLIC_API_URL ?? '';
 
 const httpLink = new HttpLink({ uri: `${API_URL}/graphql` });
 

@@ -34,6 +34,7 @@ import { EmptyState } from '@/components/page';
 import { PageLayout } from '@/components/page-layout';
 import { QueryError } from '@/components/query-state';
 import { Section } from '@/components/section';
+import { Alert } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { FormDialog } from '@/components/ui/form-dialog';
 import { ArrowLeft, Clock, Pencil, Trash2 } from '@/components/ui/icons';
@@ -718,6 +719,7 @@ export default function PersonDetailPage() {
         }
         contentSlot={
           <View className="gap-6 py-4">
+            {avatarUpload.error ? <Alert variant="destructive" title={avatarUpload.error} /> : null}
             <PersonProfileSummary
               firstName={person.firstName}
               lastName={person.lastName}
