@@ -9,7 +9,7 @@ import { daysUntilNextOccurrence } from '@/lib/next-occurrence';
 import { relativeTime } from '@/lib/relative-time';
 import { MS_PER_DAY } from '@/lib/time';
 import { cn } from '@/lib/utils';
-import { InteractionChannel, Recurrence } from '@/lib/vocabulary';
+import { InteractionChannel } from '@/lib/vocabulary';
 
 /** An interaction, as far as the brief needs it. */
 interface Interaction {
@@ -39,8 +39,10 @@ interface Task {
 interface ImportantDate {
   id: string;
   name: string;
-  /** Only its UTC month and day are used: the brief treats every date as yearly. */
+  /** The date as recorded, at local midnight. */
   date: Date;
+  /** How the date repeats; `null` for one that happens once. */
+  recurrence: string | null;
 }
 
 /** The brief's tunables, under a shorter name. */
@@ -95,14 +97,14 @@ function dueDateLabel(dueAt: Date | null): string | null {
 }
 
 /**
- * Counts the days to a date's next anniversary, when that falls inside the brief's window. Every date is read as
- * yearly here, whatever its own recurrence.
+ * Counts the days until a date next comes round, when that falls inside the brief's window.
  *
- * @param stored - The date as recorded, at local midnight.
- * @returns Days from today, 0 for today, or `null` when that is past `BRIEF.upcomingWindowDays`.
+ * @param date - The important date, with how it repeats.
+ * @returns Days from today, 0 for today, or `null` when that is past `BRIEF.upcomingWindowDays` or the date
+ *   happened once and is over.
  */
-function nextOccurrenceInWindow(stored: Date): number | null {
-  const daysAway = daysUntilNextOccurrence(stored, Recurrence.Yearly);
+function nextOccurrenceInWindow(date: ImportantDate): number | null {
+  const daysAway = daysUntilNextOccurrence(date.date, date.recurrence);
   const isInWindow = daysAway !== null && daysAway <= BRIEF.upcomingWindowDays;
   return isInWindow ? daysAway : null;
 }
@@ -166,7 +168,7 @@ export function PreContactBrief({ person }: PreContactBriefProps) {
   const openTasks = person.tasks.filter((t) => t.completedAt === null).slice(0, BRIEF.maxTasks);
 
   const upcomingDates = person.importantDates
-    .map((d) => ({ date: d, daysAway: nextOccurrenceInWindow(d.date) }))
+    .map((d) => ({ date: d, daysAway: nextOccurrenceInWindow(d) }))
     .filter((entry): entry is { date: ImportantDate; daysAway: number } => entry.daysAway !== null)
     .sort((a, b) => a.daysAway - b.daysAway);
 
