@@ -161,7 +161,7 @@ A resolver that is not plain CRUD goes in its domain's `resolvers.ts`, as one
 
 Prefer configuration over an override: a resolver written by hand does not get
 the scope, filter compilation or batching the generated one has. See
-`persons/resolvers.ts` for the two cases that genuinely need it.
+`persons/resolvers.ts` for the cases that genuinely need it: creating and deleting a shared person.
 
 A mutation that touches several tables runs in one `db.transaction` and checks
 ownership itself before it writes. `mergePersons` in `persons/duplicates.ts`

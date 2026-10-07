@@ -1,6 +1,6 @@
 import type { DB } from '@cubicecho/philotes-db';
 import * as dbSchema from '@cubicecho/philotes-db/schema';
-import { and, eq } from 'drizzle-orm';
+import { and, eq, inArray } from 'drizzle-orm';
 import { extendSchema, type GraphQLSchema, parse } from 'graphql';
 import type { Context } from '../core/context.ts';
 import { badInput, notFound, requireAuth } from '../core/errors.ts';
@@ -10,7 +10,7 @@ import { objectType } from '../graphql/object-type.ts';
 import { personInput, userPersonInput } from './input.ts';
 
 // Row scope lives in graphql/tenancy.ts. This file holds what a scope cannot say: what a user keeps
-// about a shared person (user_persons), and the two person mutations that are not plain CRUD.
+// about a shared person (user_persons), and the person mutations that are not plain CRUD.
 
 const USER_SCOPE_SDL = parse(`
   # Per-user context about a shared person, surfaced on Person so a caller
@@ -44,6 +44,8 @@ const USER_SCOPE_SDL = parse(`
 
 /** What one user keeps about a person: a `user_persons` row. */
 type PersonContext = typeof dbSchema.userPersons.$inferSelect;
+/** A shared person row. */
+type Person = typeof dbSchema.persons.$inferSelect;
 /** The columns `createPerson` takes. The GraphQL input type requires the names. */
 type NewPerson = typeof dbSchema.persons.$inferInsert;
 const personContextsByRequest = new WeakMap<Context, Promise<Map<string, PersonContext>>>();
@@ -136,8 +138,62 @@ async function insertOrFindPerson(db: DB, values: NewPerson): Promise<string> {
 }
 
 /**
- * Replaces the generated `createPerson` and `deletePerson` resolvers. A person row is shared, so creating
- * one links it to the caller, and deleting one only unlinks it.
+ * Adds one person to a user's contacts. When a person already holds the email, the user is linked to
+ * that row and no new one is made.
+ *
+ * @param db - Drizzle client.
+ * @param userId - The user whose contacts gain the person.
+ * @param values - The person columns, already validated.
+ * @returns The person row, new or existing.
+ */
+async function createLinkedPerson(db: DB, userId: string, values: NewPerson): Promise<Person> {
+  const personId = await insertOrFindPerson(db, values);
+
+  await db.insert(dbSchema.userPersons).values({ userId, personId }).onConflictDoNothing();
+
+  const [person] = await db.select().from(dbSchema.persons).where(eq(dbSchema.persons.id, personId));
+  return person;
+}
+
+/**
+ * Validates the columns a client sent for a new person.
+ *
+ * @param values - The columns as sent.
+ * @returns The columns with the parsed ones trimmed. Anything else the input carries passes through as sent.
+ * @throws BAD_USER_INPUT when a name or the email fails validation.
+ */
+function parsePersonValues(values: NewPerson): NewPerson {
+  return { ...values, ...parseOrThrow(personInput, values) };
+}
+
+/** The `where` a person delete accepts: the people named by id, and nothing else. */
+interface PersonIdFilter {
+  id?: { eq?: string; inArray?: string[] };
+}
+
+/**
+ * Reads the ids a `deletePersons` filter names.
+ *
+ * @param [where] - The filter as sent.
+ * @returns The ids, or null when the filter is missing or filters on anything but `id: { eq }` or `id: { inArray }`.
+ */
+function idsNamedBy(where: PersonIdFilter | undefined): string[] | null {
+  const filtersOnIdOnly = where !== undefined && Object.keys(where).every((key) => key === 'id');
+  if (filtersOnIdOnly === false || where.id === undefined) {
+    return null;
+  }
+  const { eq: one, inArray: several, ...otherOperators } = where.id;
+  const hasOtherOperators = Object.keys(otherOperators).length > 0;
+  const namesNoId = one === undefined && several === undefined;
+  if (hasOtherOperators || namesNoId) {
+    return null;
+  }
+  return [...(one === undefined ? [] : [one]), ...(several ?? [])];
+}
+
+/**
+ * Replaces the generated person create and delete resolvers, singular and plural. A person row is shared,
+ * so creating one links it to the caller, and deleting one only unlinks it.
  *
  * @param schema - The extended schema, changed in place.
  */
@@ -157,16 +213,30 @@ function overridePersonMutations(schema: GraphQLSchema): void {
    */
   mf.createPerson.resolve = async (_parent: unknown, args: { values: NewPerson }, ctx: Context) => {
     const userId = requireAuth(ctx);
-    const { db } = ctx;
+    return createLinkedPerson(ctx.db, userId, parsePersonValues(args.values));
+  };
 
-    // The parsed columns are the trimmed ones. Anything else the input carries passes through as sent.
-    const values = { ...args.values, ...parseOrThrow(personInput, args.values) };
-    const personId = await insertOrFindPerson(db, values);
+  /**
+   * Resolves `Mutation.createPersons`. Adds each person to the signed-in caller's contacts, the way
+   * `createPerson` adds one. Nothing is written unless every entry is valid.
+   *
+   * @param _parent - Unused.
+   * @param args.values - The people's columns, one entry each.
+   * @param ctx - Request context.
+   * @returns The person rows, in entry order.
+   * @throws UNAUTHENTICATED when nobody is signed in.
+   * @throws BAD_USER_INPUT when a name or an email fails validation.
+   */
+  mf.createPersons.resolve = async (_parent: unknown, args: { values: NewPerson[] }, ctx: Context) => {
+    const userId = requireAuth(ctx);
+    const parsed = args.values.map(parsePersonValues);
 
-    await db.insert(dbSchema.userPersons).values({ userId, personId }).onConflictDoNothing();
-
-    const [person] = await db.select().from(dbSchema.persons).where(eq(dbSchema.persons.id, personId));
-    return person;
+    const created: Person[] = [];
+    // One at a time: an email collision is answered by reading the row that holds it.
+    for (const values of parsed) {
+      created.push(await createLinkedPerson(ctx.db, userId, values));
+    }
+    return created;
   };
 
   /**
@@ -200,6 +270,41 @@ function overridePersonMutations(schema: GraphQLSchema): void {
     // has it in their contacts.
     const [person] = await db.select().from(dbSchema.persons).where(eq(dbSchema.persons.id, targetId));
     return person ?? null;
+  };
+
+  /**
+   * Resolves `Mutation.deletePersons`. Takes the named people out of the signed-in caller's contacts.
+   * The shared rows stay for the other users who have them. The filter must name ids:
+   * `{ id: { eq } }` or `{ id: { inArray } }`.
+   *
+   * @param _parent - Unused.
+   * @param [args.where] - The filter naming the people by id.
+   * @param ctx - Request context.
+   * @returns The people who were in the caller's contacts.
+   * @throws UNAUTHENTICATED when nobody is signed in.
+   * @throws BAD_USER_INPUT when the filter is missing or filters on anything but ids.
+   */
+  mf.deletePersons.resolve = async (_parent: unknown, args: { where?: PersonIdFilter }, ctx: Context) => {
+    const userId = requireAuth(ctx);
+    const { db } = ctx;
+    const ids = idsNamedBy(args.where);
+    if (ids === null) {
+      throw badInput('deletePersons takes people by id: where: { id: { inArray: […] } }.');
+    }
+    if (ids.length === 0) {
+      return [];
+    }
+
+    const removed = await db
+      .delete(dbSchema.userPersons)
+      .where(and(eq(dbSchema.userPersons.userId, userId), inArray(dbSchema.userPersons.personId, ids)))
+      .returning({ personId: dbSchema.userPersons.personId });
+    if (removed.length === 0) {
+      return [];
+    }
+
+    const removedIds = removed.map((row) => row.personId);
+    return db.select().from(dbSchema.persons).where(inArray(dbSchema.persons.id, removedIds));
   };
 }
 

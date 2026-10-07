@@ -41,9 +41,11 @@ for a caller:
   the request, so it cannot be set, and a create cannot be attributed to
   someone else.
 - `persons` rows are shared between users; a caller sees the ones in their own
-  contacts. `createPerson` links an existing person on an email collision
-  rather than duplicating them, and `deletePerson` unlinks rather than deleting
-  a row other users still have.
+  contacts. `createPerson` and `createPersons` link an existing person on an
+  email collision rather than duplicating them, and `deletePerson` and
+  `deletePersons` unlink rather than deleting a row other users still have.
+  Both deletes take people by id only: `where: { id: { eq } }`, or
+  `{ id: { inArray } }` for the plural.
 - Referencing another user's row by id — tagging your note with their label —
   fails with `<Entity> not found`, never a leak of whether it exists.
 - `users` has no generated mutations; accounts come from `signUp`, `signIn`,
