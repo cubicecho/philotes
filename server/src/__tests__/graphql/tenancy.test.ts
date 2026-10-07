@@ -12,8 +12,7 @@ import { createTestDb } from '../helpers.ts';
 const AUTH_TABLE_NAMES = new Set<string>(AUTH_TABLES);
 /** The tables the API serves. better-auth's own are excluded from it outright. */
 const TABLES = Object.entries(dbSchema)
-  // biome-ignore lint/suspicious/noExplicitAny: drizzle-orm 1.0 table type compat
-  .filter(([, value]) => is(value as any, Table))
+  .filter(([, value]) => is(value, Table))
   .map(([name]) => name)
   .filter((name) => AUTH_TABLE_NAMES.has(name) === false);
 
@@ -21,6 +20,7 @@ const TABLES = Object.entries(dbSchema)
 const allows = (feature: FeatureSwitch | undefined, table: string) =>
   typeof feature === 'function' ? feature(table) : feature;
 
+// A scope reads nothing but `userId`, so the rest of the context is left out rather than built.
 const asContext = (userId: string | null): Context => ({ db: null, userId }) as unknown as Context;
 
 describe('scope', () => {
@@ -61,10 +61,11 @@ describe('scope', () => {
 });
 
 describe('contextValues', () => {
-  const userOwned = TABLES.filter((name) =>
-    // biome-ignore lint/suspicious/noExplicitAny: drizzle-orm 1.0 table type compat
-    Object.hasOwn(getTableColumns((dbSchema as any)[name]), 'userId'),
-  );
+  const exportsByName = new Map<string, unknown>(Object.entries(dbSchema));
+  const userOwned = TABLES.filter((name) => {
+    const table = exportsByName.get(name);
+    return is(table, Table) && Object.hasOwn(getTableColumns(table), 'userId');
+  });
 
   it('claims userId on every table that has one', () => {
     // Any table left out would take userId from the client instead.

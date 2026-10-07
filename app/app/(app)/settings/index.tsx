@@ -20,12 +20,20 @@ const TABS: { id: SettingsTab; label: string }[] = [
 export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState<SettingsTab>('import-export');
 
+  const handleTabChange = (value: string): void => {
+    const tab = TABS.find((known) => known.id === value);
+    if (tab === undefined) {
+      return;
+    }
+    setActiveTab(tab.id);
+  };
+
   return (
     <PageLayout
       width="prose"
       title="Settings"
       contentSlot={
-        <Tabs value={activeTab} onValueChange={(tab) => setActiveTab(tab as SettingsTab)} className="gap-6 py-4">
+        <Tabs value={activeTab} onValueChange={handleTabChange} className="gap-6 py-4">
           <TabsList aria-label="Settings" className="self-start">
             {TABS.map((tab) => (
               <TabsTrigger key={tab.id} value={tab.id}>

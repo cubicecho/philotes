@@ -20,10 +20,26 @@ export interface ParsedContact {
   labels: string[];
 }
 
+/** What Google puts between the values of a cell that holds several. */
+const VALUE_SEPARATOR = ' ::: ';
+/** What Google puts in front of the label of an entry it marks as the default. */
+const DEFAULT_LABEL_PREFIX = '* ';
+/** The byte order mark a spreadsheet export may start with. */
+const BYTE_ORDER_MARK = '\uFEFF';
+/** Google's own "everyone" groups, which say nothing about a contact. */
+const NOISE_LABELS = new Set(['my contacts', 'mycontacts']);
+
 /** Google CSV sometimes encodes values as "val ::: val" — take only the first part. */
 function stripGoogleDuplicate(s: string): string {
-  const idx = s.indexOf(' ::: ');
-  return idx !== -1 ? s.slice(0, idx).trim() : s.trim();
+  const idx = s.indexOf(VALUE_SEPARATOR);
+  const hasSeveralValues = idx !== -1;
+  return hasSeveralValues ? s.slice(0, idx).trim() : s.trim();
+}
+
+/** Drops the "* " Google puts in front of a default entry's label. */
+function stripDefaultMarker(label: string): string {
+  const isDefault = label.startsWith(DEFAULT_LABEL_PREFIX);
+  return isDefault ? label.slice(DEFAULT_LABEL_PREFIX.length) : label;
 }
 
 /** Normalize Unicode hyphen variants (U+2010–U+2013) to ASCII hyphen-minus. */
@@ -34,7 +50,8 @@ function normalizeHyphens(s: string): string {
 /** Full RFC 4180 CSV parser. Handles BOM, quoted fields, escaped quotes, all line endings. */
 function parseCsvRfc4180(input: string): string[][] {
   // Strip BOM from start of file
-  const text = input.startsWith('\uFEFF') ? input.slice(1) : input;
+  const hasByteOrderMark = input.startsWith(BYTE_ORDER_MARK);
+  const text = hasByteOrderMark ? input.slice(BYTE_ORDER_MARK.length) : input;
 
   const rows: string[][] = [];
   let row: string[] = [];
@@ -60,6 +77,7 @@ function parseCsvRfc4180(input: string): string[][] {
         i++;
       }
     } else {
+      const isCrlf = ch === '\r' && text[i + 1] === '\n';
       if (ch === '"') {
         inQuotes = true;
         i++;
@@ -67,7 +85,7 @@ function parseCsvRfc4180(input: string): string[][] {
         row.push(field);
         field = '';
         i++;
-      } else if (ch === '\r' && text[i + 1] === '\n') {
+      } else if (isCrlf) {
         row.push(field);
         field = '';
         rows.push(row);
@@ -93,7 +111,8 @@ function parseCsvRfc4180(input: string): string[][] {
   }
 
   // Flush trailing row/field
-  if (field !== '' || row.length > 0) {
+  const hasTrailingRow = field !== '' || row.length > 0;
+  if (hasTrailingRow) {
     row.push(field);
     rows.push(row);
   }
@@ -141,7 +160,9 @@ export function parseGoogleContactsCsv(csvText: string): {
 } {
   const rows = parseCsvRfc4180(csvText);
 
-  if (rows.length < 2) {
+  // The first row is the header, so a file with fewer than two holds no contact.
+  const hasNoContactRows = rows.length < 2;
+  if (hasNoContactRows) {
     return { contacts: [], skippedCount: 0 };
   }
 
@@ -175,7 +196,8 @@ export function parseGoogleContactsCsv(csvText: string): {
     const row = rows[r];
 
     // Skip entirely empty rows
-    if (row.every((cell) => cell.trim() === '')) {
+    const isBlankRow = row.every((cell) => cell.trim() === '');
+    if (isBlankRow) {
       continue;
     }
 
@@ -184,16 +206,18 @@ export function parseGoogleContactsCsv(csvText: string): {
     const fullName = col(row, 'Name');
 
     // Skip contacts with no name data
-    if (!firstName && !lastName && !fullName) {
+    const hasNoName = firstName === '' && lastName === '' && fullName === '';
+    if (hasNoName) {
       continue;
     }
 
     // Resolve names with fallback to Name column
     const nameParts = fullName.split(' ').filter(Boolean);
     const resolvedFirstName = firstName || nameParts[0] || '';
-    const resolvedLastName = lastName || (nameParts.length > 1 ? nameParts.slice(1).join(' ') : '');
+    const resolvedLastName = lastName || nameParts.slice(1).join(' ');
 
-    if (!resolvedFirstName && !resolvedLastName) {
+    const hasNoResolvedName = resolvedFirstName === '' && resolvedLastName === '';
+    if (hasNoResolvedName) {
       continue;
     }
 
@@ -207,7 +231,7 @@ export function parseGoogleContactsCsv(csvText: string): {
       }
       const value = col(row, valueKey);
       const rawLabel = col(row, `E-mail ${n} - Label`);
-      const label = rawLabel.startsWith('* ') ? rawLabel.slice(2) : rawLabel;
+      const label = stripDefaultMarker(rawLabel);
       if (value) {
         rawEmails.push({ label, value });
       }
@@ -233,7 +257,7 @@ export function parseGoogleContactsCsv(csvText: string): {
       }
       const value = col(row, valueKey);
       const rawLabel = col(row, `Phone ${n} - Label`);
-      const label = rawLabel.startsWith('* ') ? rawLabel.slice(2) : rawLabel;
+      const label = stripDefaultMarker(rawLabel);
       if (value) {
         phones.push({ label, value });
       }
@@ -249,7 +273,7 @@ export function parseGoogleContactsCsv(csvText: string): {
       }
       const value = col(row, valueKey);
       const rawLabel = col(row, `Website ${n} - Label`);
-      const label = rawLabel.startsWith('* ') ? rawLabel.slice(2) : rawLabel;
+      const label = stripDefaultMarker(rawLabel);
       if (value) {
         websites.push({ label, value });
       }
@@ -270,7 +294,7 @@ export function parseGoogleContactsCsv(csvText: string): {
       }
 
       const rawLabel = col(row, `Address ${n} - Label`);
-      const label = rawLabel.startsWith('* ') ? rawLabel.slice(2) : rawLabel;
+      const label = stripDefaultMarker(rawLabel);
 
       addressList.push({
         label,
@@ -294,16 +318,17 @@ export function parseGoogleContactsCsv(csvText: string): {
       const rawLabelsCellIdx = headerIndex.get('Labels');
       const rawLabelsCellValue = rawLabelsCellIdx !== undefined ? (row[rawLabelsCellIdx] ?? '').trim() : '';
       const labelParts = rawLabelsCellValue
-        .split(' ::: ')
+        .split(VALUE_SEPARATOR)
         .map((s) => s.trim())
         .filter(Boolean);
 
       const seenLabels = new Set<string>();
       for (const part of labelParts) {
-        const stripped = part.startsWith('* ') ? part.slice(2) : part;
+        const stripped = stripDefaultMarker(part);
         const lower = stripped.toLowerCase();
         // Exclude "my contacts" / "mycontacts" noise labels
-        if (lower === 'my contacts' || lower === 'mycontacts') {
+        const isNoiseLabel = NOISE_LABELS.has(lower);
+        if (isNoiseLabel) {
           continue;
         }
         if (seenLabels.has(lower)) {

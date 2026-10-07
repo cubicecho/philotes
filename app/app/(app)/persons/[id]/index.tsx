@@ -1,10 +1,9 @@
-import { useMutation, useQuery } from '@apollo/client';
+import { type ApolloError, useMutation, useQuery } from '@apollo/client';
 import { Link, useLocalSearchParams, useRouter } from 'expo-router';
 import { useState } from 'react';
 import { ScrollView, Text, View } from 'react-native';
 import { graphql } from '@/__generated__/gql';
-import type { ImportantDatesMilestoneTypeEnum } from '@/__generated__/graphql';
-import { ContactTypeEnum } from '@/__generated__/graphql';
+import { ContactTypeEnum, ImportantDatesMilestoneTypeEnum } from '@/__generated__/graphql';
 import { ActionButton } from '@/components/action-button';
 import {
   BookUser,
@@ -281,11 +280,36 @@ function SectionAdd({
   return <Button size="xs" variant="ghost" iconSlot={iconSlot} content={content} onPress={onPress} />;
 }
 
+/** The contact types that can be called or texted. */
+const PHONE_TYPES: ReadonlySet<ContactTypeEnum> = new Set([ContactTypeEnum.Phone, ContactTypeEnum.Mobile]);
+
+/** Every milestone an important date can mark. */
+const MILESTONE_TYPES = Object.values(ImportantDatesMilestoneTypeEnum);
+
 const backLink = (
   <Link href="/persons" asChild>
     <Button variant="link" size="xs" iconSlot={<ArrowLeft />} content="All People" />
   </Link>
 );
+
+/** What stands in for the page until there is a person: the failure, a spinner, or "not found". */
+function PersonPlaceholder({
+  error,
+  pending,
+  onRetry,
+}: {
+  error: ApolloError | undefined;
+  pending: boolean;
+  onRetry: () => void;
+}) {
+  if (error) {
+    return <QueryError error={error} onRetry={onRetry} what="this person" />;
+  }
+  if (pending) {
+    return <Spinner />;
+  }
+  return <EmptyState icon={Users} title="Person not found." />;
+}
 
 export default function PersonDetailPage() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -342,15 +366,7 @@ export default function PersonDetailPage() {
         title="Person"
         loading={pending}
         breadcrumbsSlot={backLink}
-        contentSlot={
-          error ? (
-            <QueryError error={error} onRetry={() => refetch()} what="this person" />
-          ) : pending ? (
-            <Spinner />
-          ) : (
-            <EmptyState icon={Users} title="Person not found." />
-          )
-        }
+        contentSlot={<PersonPlaceholder error={error} pending={pending} onRetry={() => refetch()} />}
       />
     );
   }
@@ -392,6 +408,8 @@ export default function PersonDetailPage() {
   };
 
   const handleCreateDate = async (values: ImportantDateFormValue): Promise<void> => {
+    // The form carries the milestone as text, and its picker only offers the enum's members.
+    const milestoneType = MILESTONE_TYPES.find((known) => known === values.milestoneType) ?? null;
     await createImportantDate({
       variables: {
         personId: id,
@@ -399,7 +417,7 @@ export default function PersonDetailPage() {
         date: values.date,
         description: values.description ?? null,
         recurrence: values.recurrence ?? null,
-        milestoneType: (values.milestoneType as ImportantDatesMilestoneTypeEnum | null) ?? null,
+        milestoneType,
       },
     });
     setDateDialogOpen(false);
@@ -449,14 +467,11 @@ export default function PersonDetailPage() {
     router.push('/persons');
   };
 
-  const allPersonsLinked =
-    allPersonStubs.filter(
-      (p) => p.id !== person.id && person.relationships.some((r) => r.relatedPersonId === p.id) === false,
-    ).length === 0;
+  const linkedPersonIds = new Set(person.relationships.map((r) => r.relatedPersonId));
+  const otherPersonIds = allPersonStubs.map((p) => p.id).filter((otherId) => otherId !== person.id);
+  const allPersonsLinked = otherPersonIds.every((otherId) => linkedPersonIds.has(otherId));
 
-  const phones = (person.contactInfos ?? []).filter(
-    (ci) => ci.type === ContactTypeEnum.Phone || ci.type === ContactTypeEnum.Mobile,
-  );
+  const phones = (person.contactInfos ?? []).filter((ci) => PHONE_TYPES.has(ci.type));
   const primaryPhone = (phones.find((p) => p.isPrimary) ?? phones[0])?.value ?? null;
   const mentionedInNotes = person.mentionedInNotes ?? [];
 
@@ -554,7 +569,7 @@ export default function PersonDetailPage() {
               currentPersonId={person.id}
               currentPersonLabels={person.labels}
               allPersons={allPersonsWithLabels}
-              linkedPersonIds={new Set(person.relationships.map((r) => r.relatedPersonId))}
+              linkedPersonIds={linkedPersonIds}
             />
           </ScrollView>
         }

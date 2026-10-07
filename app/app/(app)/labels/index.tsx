@@ -118,7 +118,8 @@ export default function LabelsPage() {
 
   // Only the first load: a refetch after a mutation keeps the list (and any open dialog) on screen.
   const pending = loading && !data;
-  if (pending || error) {
+  const showsQueryState = pending || error !== undefined;
+  if (showsQueryState) {
     return (
       <PageLayout
         title="Labels"
@@ -147,7 +148,8 @@ export default function LabelsPage() {
       <FormDialog
         open={editingLabel !== null}
         onOpenChange={(open) => {
-          if (!open) {
+          const isClosing = open === false;
+          if (isClosing) {
             setEditingLabel(null);
           }
         }}

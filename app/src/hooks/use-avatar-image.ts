@@ -68,5 +68,6 @@ export function useAvatarImage(avatarPath: string | null): string | null {
   }, [avatarPath]);
 
   // A row reused for another person must not show the last one's photo.
-  return image !== null && image.path === avatarPath ? image.uri : null;
+  const isForThisPerson = image !== null && image.path === avatarPath;
+  return isForThisPerson ? image.uri : null;
 }

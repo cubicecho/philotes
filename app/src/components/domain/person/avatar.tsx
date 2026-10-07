@@ -29,7 +29,8 @@ export function Avatar({ firstName, lastName, avatarPath, size = 'md', className
   const name = fullName({ firstName, lastName });
   const imageUri = useAvatarImage(avatarPath ?? null);
 
-  if (imageUri !== null && failed === false) {
+  const showsPhoto = imageUri !== null && failed === false;
+  if (showsPhoto) {
     return (
       <Image
         source={{ uri: imageUri }}

@@ -65,11 +65,14 @@ export function ExportPeopleCard() {
     pageSize: PAGE_SIZE_DEFAULTS.peopleExport,
   });
 
+  const persons = exportData?.persons ?? [];
+  const isExportBlocked = exportLoading || exportError !== undefined || persons.length === 0;
+
   function handleExportPeople() {
-    if (!exportData?.persons?.length) {
+    if (persons.length === 0) {
       return;
     }
-    void downloadBlob(buildPersonsCsv(exportData.persons), 'philotes-contacts.csv', {
+    void downloadBlob(buildPersonsCsv(persons), 'philotes-contacts.csv', {
       mimeType: 'text/csv;charset=utf-8',
     });
   }
@@ -84,8 +87,8 @@ export function ExportPeopleCard() {
           {exportError ? <QueryError compact error={exportError} onRetry={() => refetch()} what="your people" /> : null}
           <Button
             iconSlot={<Download />}
-            content={exportLoading ? 'Loading…' : `Export ${exportData?.persons?.length ?? 0} People as CSV`}
-            disabled={exportLoading || exportError !== undefined || !exportData?.persons?.length}
+            content={exportLoading ? 'Loading…' : `Export ${persons.length} People as CSV`}
+            disabled={isExportBlocked}
             onPress={handleExportPeople}
           />
         </View>

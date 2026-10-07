@@ -227,10 +227,11 @@ export function TaskList({
 
   const openTasks = tasks.filter((t) => t.completedAt == null);
   const doneTasks = tasks.filter((t) => t.completedAt != null);
+  const hasNoTasks = openTasks.length === 0 && doneTasks.length === 0;
 
   return (
     <View className="gap-4">
-      {openTasks.length === 0 && doneTasks.length === 0 && <EmptyState compact title="No tasks yet." />}
+      {hasNoTasks && <EmptyState compact title="No tasks yet." />}
 
       {openTasks.length > 0 && (
         <View className="gap-2">

@@ -16,7 +16,8 @@ export default function AppLayout() {
   if (signedIn === null) {
     return <View className="flex-1 bg-background" />;
   }
-  if (!signedIn) {
+  const isSignedOut = signedIn === false;
+  if (isSignedOut) {
     return <Redirect href="/login" />;
   }
 

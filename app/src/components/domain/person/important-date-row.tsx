@@ -3,7 +3,7 @@ import { Link } from 'expo-router';
 import { useState } from 'react';
 import { Text, View } from 'react-native';
 import { graphql } from '@/__generated__/gql';
-import type { ImportantDatesMilestoneTypeEnum } from '@/__generated__/graphql';
+import { ImportantDatesMilestoneTypeEnum } from '@/__generated__/graphql';
 import { ActionButton } from '@/components/action-button';
 import { ConfirmButton } from '@/components/confirm-button';
 import {
@@ -86,6 +86,10 @@ export function ImportantDateRow({
   });
 
   const handleEdit = async (values: ImportantDateFormValue) => {
+    // The form holds the milestone as a plain string; only one the schema knows is sent.
+    const milestoneType = Object.values(ImportantDatesMilestoneTypeEnum).find(
+      (known) => known === values.milestoneType,
+    );
     await updateImportantDate({
       variables: {
         id,
@@ -93,7 +97,7 @@ export function ImportantDateRow({
         date: values.date,
         description: values.description ?? null,
         recurrence: values.recurrence ?? null,
-        milestoneType: (values.milestoneType as ImportantDatesMilestoneTypeEnum | null) ?? null,
+        milestoneType: milestoneType ?? null,
       },
     });
     setEditOpen(false);

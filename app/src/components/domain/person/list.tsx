@@ -47,7 +47,11 @@ const SORT_OPTIONS: Array<{ value: SortOption; label: string }> = [
 ];
 
 function primaryPhone(infos: PersonContactInfo[]): string | null {
-  const phones = infos.filter((i) => i.type === ContactTypeEnum.Phone || i.type === ContactTypeEnum.Mobile);
+  const phones = infos.filter((i) => {
+    const isLandline = i.type === ContactTypeEnum.Phone;
+    const isMobile = i.type === ContactTypeEnum.Mobile;
+    return isLandline || isMobile;
+  });
   if (phones.length === 0) {
     return null;
   }
@@ -57,7 +61,8 @@ function primaryPhone(infos: PersonContactInfo[]): string | null {
 function groupLetter(person: PersonRowData): string {
   const basis = person.lastName || person.firstName;
   const first = basis.charAt(0).toUpperCase();
-  return /[A-Z]/.test(first) ? first : '#';
+  const isLetter = /[A-Z]/.test(first);
+  return isLetter ? first : '#';
 }
 
 // Sticky under the page header on the web; on device the letter scrolls with its rows.
@@ -180,7 +185,8 @@ export function PersonList({
     for (const person of persons) {
       const letter = groupLetter(person);
       const last = groups[groups.length - 1];
-      if (last && last.letter === letter) {
+      const isSameLetter = last !== undefined && last.letter === letter;
+      if (isSameLetter) {
         last.rows.push(person);
       } else {
         groups.push({ letter, rows: [person] });
@@ -219,6 +225,17 @@ export function PersonList({
       ))}
     </View>
   );
+
+  const listSlot = grouped
+    ? groups.map((group) => (
+        <View key={group.letter}>
+          <View className={cn('bg-background px-3 py-1', LETTER_HEADER)}>
+            <Text className="font-semibold text-foreground text-xs">{group.letter}</Text>
+          </View>
+          {rows(group.rows)}
+        </View>
+      ))
+    : rows(persons);
 
   return (
     <PageLayout
@@ -268,22 +285,7 @@ export function PersonList({
           )}
         </View>
       }
-      contentSlot={
-        <View className={cn(loading && 'opacity-60')}>
-          {persons.length === 0
-            ? emptyState
-            : grouped
-              ? groups.map((group) => (
-                  <View key={group.letter}>
-                    <View className={cn('bg-background px-3 py-1', LETTER_HEADER)}>
-                      <Text className="font-semibold text-foreground text-xs">{group.letter}</Text>
-                    </View>
-                    {rows(group.rows)}
-                  </View>
-                ))
-              : rows(persons)}
-        </View>
-      }
+      contentSlot={<View className={cn(loading && 'opacity-60')}>{persons.length === 0 ? emptyState : listSlot}</View>}
       footerSlot={
         persons.length > 0 ? (
           <Text className="text-foreground/60 text-xs">

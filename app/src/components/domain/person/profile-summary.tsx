@@ -31,6 +31,8 @@ export function PersonProfileSummary({
   onPickAvatar,
   labelsSlot,
 }: PersonProfileSummaryProps) {
+  const hasDetails = Boolean(email || contactFrequency);
+
   return (
     <View className="flex-row items-start gap-4">
       <View className="relative shrink-0">
@@ -50,7 +52,7 @@ export function PersonProfileSummary({
         </View>
       </View>
       <View className="min-w-0 flex-1 gap-1.5">
-        {email || contactFrequency ? (
+        {hasDetails ? (
           <View className="flex-row flex-wrap items-center gap-x-3 gap-y-1">
             {email ? (
               <Text

@@ -22,7 +22,8 @@ export function LabelMergeDialog({ label, targets, onMerge, onClose }: LabelMerg
     <FormDialog
       open={label !== null}
       onOpenChange={(open) => {
-        if (!open) {
+        const isClosing = open === false;
+        if (isClosing) {
           onClose();
         }
       }}

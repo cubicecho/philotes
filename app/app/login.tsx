@@ -62,6 +62,12 @@ const MODE_COPY: Record<Mode, { title: string; submit: string; submitting: strin
   },
 };
 
+/** The form the switch button leads to from each one. */
+const OTHER_MODE: Record<Mode, Mode> = {
+  [Mode.SignIn]: Mode.SignUp,
+  [Mode.SignUp]: Mode.SignIn,
+};
+
 const SIGN_IN_FAILED = 'Could not sign in. Try again.';
 
 /**
@@ -147,6 +153,7 @@ function PasswordSignIn({ offersMagicLink }: { offersMagicLink: boolean }) {
   const [requestSignIn, { loading: sendingLink }] = useMutation(REQUEST_SIGN_IN);
   const copy = MODE_COPY[mode];
   const isSignUp = mode === Mode.SignUp;
+  const showsMagicLink = offersMagicLink && isSignUp === false;
 
   const form = useAppForm({
     defaultValues: { email: '', password: '', name: '' },
@@ -226,7 +233,7 @@ function PasswordSignIn({ offersMagicLink }: { offersMagicLink: boolean }) {
       }
       footerActionsSlot={
         <View className="flex-row flex-wrap gap-2">
-          {offersMagicLink && isSignUp === false ? (
+          {showsMagicLink ? (
             <Button
               variant="outline"
               content="Email me a sign-in link"
@@ -240,7 +247,7 @@ function PasswordSignIn({ offersMagicLink }: { offersMagicLink: boolean }) {
             content={copy.other}
             onPress={() => {
               setFailure(null);
-              setMode(isSignUp ? Mode.SignIn : Mode.SignUp);
+              setMode(OTHER_MODE[mode]);
             }}
           />
         </View>

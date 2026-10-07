@@ -29,6 +29,16 @@ export const SENTIMENT_OPTIONS: Array<{
   { value: InteractionSentiment.Difficult, label: 'Difficult', emoji: '😟' },
 ];
 
+/** The channel a segmented button reported; undefined for a value that is not one. */
+function findChannel(value: string): Channel | undefined {
+  return CHANNEL_OPTIONS.find((option) => option.value === value)?.value;
+}
+
+/** The sentiment a segmented button reported; undefined for a value that is not one. */
+function findSentiment(value: string): Sentiment | undefined {
+  return SENTIMENT_OPTIONS.find((option) => option.value === value)?.value;
+}
+
 export function sentimentEmoji(sentiment: string | null | undefined): string {
   return SENTIMENT_OPTIONS.find((s) => s.value === sentiment)?.emoji ?? '';
 }
@@ -96,7 +106,12 @@ export function InteractionForm({
                   variant="plain"
                   className="flex-wrap"
                   value={field.state.value}
-                  onValueChange={(next) => field.handleChange(next as Channel)}
+                  onValueChange={(next) => {
+                    const channel = findChannel(next);
+                    if (channel) {
+                      field.handleChange(channel);
+                    }
+                  }}
                 >
                   {CHANNEL_OPTIONS.map((opt) => (
                     <SegmentedButton key={opt.value} value={opt.value} iconSlot={<ChannelIcon channel={opt.value} />}>
@@ -120,7 +135,10 @@ export function InteractionForm({
                   className="flex-wrap"
                   value={field.state.value}
                   // Pressing the current sentiment again clears it: it is optional.
-                  onValueChange={(next) => field.handleChange(field.state.value === next ? '' : (next as Sentiment))}
+                  onValueChange={(next) => {
+                    const isCurrent = field.state.value === next;
+                    field.handleChange(isCurrent ? '' : (findSentiment(next) ?? ''));
+                  }}
                 >
                   {SENTIMENT_OPTIONS.map((opt) => (
                     <SegmentedButton key={opt.value} value={opt.value}>

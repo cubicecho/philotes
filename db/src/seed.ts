@@ -1,10 +1,19 @@
 import { faker } from '@faker-js/faker';
 import { SEED_DEFAULTS as SEED } from './defaults.ts';
-import { db as _db } from './index.ts';
-
-// biome-ignore lint/suspicious/noExplicitAny: seed script — union db type is runtime-safe
-const db = _db as any;
-
+import { db } from './index.ts';
+import type {
+  NewAddress,
+  NewContactInfo,
+  NewImportantDate,
+  NewImportantDateTag,
+  NewInteraction,
+  NewInteractionTag,
+  NewNote,
+  NewNoteMention,
+  NewNoteTag,
+  NewPersonRelationship,
+  NewTask,
+} from './schema.ts';
 import {
   AddressType,
   addresses,
@@ -140,7 +149,8 @@ async function seedPersons(userId: string) {
     let email: string;
     let attempt = 0;
     do {
-      const suffix = attempt > 0 ? attempt.toString() : '';
+      const isRetry = attempt > 0;
+      const suffix = isRetry ? attempt.toString() : '';
       email = `${firstName.toLowerCase()}.${lastName.toLowerCase()}${suffix}@${faker.internet.domainName()}`.replace(
         /\s+/g,
         '',
@@ -182,9 +192,9 @@ async function seedPersonLabels(personData: { id: string }[], labelData: { id: s
 }
 
 async function seedNotes(personData: { id: string }[], labelData: { id: string }[], userId: string) {
-  const noteData: { id: string; userId: string; body: string; personId: string }[] = [];
-  const noteTagData: { noteId: string; labelId: string }[] = [];
-  const noteMentionData: { noteId: string; mentionedPersonId: string }[] = [];
+  const noteData: NewNote[] = [];
+  const noteTagData: Omit<NewNoteTag, 'userId'>[] = [];
+  const noteMentionData: Omit<NewNoteMention, 'userId'>[] = [];
 
   for (const person of personData) {
     const noteCount = randomCount(SEED.minNotesPerPerson, SEED.maxNotesPerPerson);
@@ -230,20 +240,9 @@ async function seedNotes(personData: { id: string }[], labelData: { id: string }
 }
 
 async function seedImportantDates(personData: { id: string }[], labelData: { id: string }[], userId: string) {
-  const importantDateData: {
-    id: string;
-    userId: string;
-    personId: string;
-    name: string;
-    description: string;
-    date: string;
-    recurrence: Recurrence;
-  }[] = [];
+  const importantDateData: NewImportantDate[] = [];
 
-  const importantDateTagData: {
-    importantDateId: string;
-    labelId: string;
-  }[] = [];
+  const importantDateTagData: Omit<NewImportantDateTag, 'userId'>[] = [];
 
   for (const person of personData) {
     const dateCount = randomCount(SEED.minDatesPerPerson, SEED.maxDatesPerPerson);
@@ -282,17 +281,9 @@ async function seedImportantDates(personData: { id: string }[], labelData: { id:
 }
 
 async function seedInteractions(personData: { id: string }[], labelData: { id: string }[], userId: string) {
-  const interactionData: {
-    id: string;
-    userId: string;
-    personId: string;
-    occurredAt: Date;
-    channel: InteractionChannel;
-    sentiment: InteractionSentiment;
-    note: string;
-  }[] = [];
+  const interactionData: NewInteraction[] = [];
 
-  const interactionTagData: { interactionId: string; labelId: string }[] = [];
+  const interactionTagData: Omit<NewInteractionTag, 'userId'>[] = [];
 
   for (const person of personData) {
     const count = randomCount(SEED.minInteractionsPerPerson, SEED.maxInteractionsPerPerson);
@@ -332,13 +323,7 @@ async function seedInteractions(personData: { id: string }[], labelData: { id: s
 async function seedPersonRelationships(personData: { id: string }[], userId: string) {
   const targetCount = randomCount(SEED.minRelationships, SEED.maxRelationships);
   const usedPairs = new Set<string>();
-  const relationshipData: {
-    id: string;
-    userId: string;
-    fromPersonId: string;
-    toPersonId: string;
-    type: string;
-  }[] = [];
+  const relationshipData: NewPersonRelationship[] = [];
 
   let attempts = 0;
   const maxAttempts = targetCount * 10;
@@ -348,7 +333,8 @@ async function seedPersonRelationships(personData: { id: string }[], userId: str
     const from = pickRandom(personData);
     const to = pickRandom(personData);
 
-    if (from.id === to.id) {
+    const isSelfPair = from.id === to.id;
+    if (isSelfPair) {
       continue;
     }
 
@@ -372,15 +358,7 @@ async function seedPersonRelationships(personData: { id: string }[], userId: str
 }
 
 async function seedTasks(personData: { id: string }[], userId: string) {
-  const taskData: {
-    id: string;
-    userId: string;
-    personId: string;
-    title: string;
-    notes: string | null;
-    dueAt: Date | null;
-    completedAt: Date | null;
-  }[] = [];
+  const taskData: NewTask[] = [];
 
   for (const person of personData) {
     const count = randomCount(0, SEED.maxTasksPerPerson);
@@ -411,15 +389,7 @@ async function seedTasks(personData: { id: string }[], userId: string) {
 }
 
 async function seedContactInfos(personData: { id: string }[], userId: string) {
-  const contactInfoData: {
-    id: string;
-    userId: string;
-    personId: string;
-    type: ContactType;
-    value: string;
-    label: string | null;
-    isPrimary: boolean;
-  }[] = [];
+  const contactInfoData: NewContactInfo[] = [];
 
   for (const person of personData) {
     const count = randomCount(0, SEED.maxContactInfosPerPerson);
@@ -449,20 +419,7 @@ async function seedContactInfos(personData: { id: string }[], userId: string) {
 }
 
 async function seedAddresses(personData: { id: string }[], userId: string) {
-  const addressData: {
-    id: string;
-    userId: string;
-    personId: string;
-    type: AddressType;
-    label: string | null;
-    line1: string;
-    line2: string | null;
-    city: string;
-    state: string;
-    postalCode: string;
-    country: string;
-    isPrimary: boolean;
-  }[] = [];
+  const addressData: NewAddress[] = [];
 
   for (const person of personData) {
     const count = randomCount(0, SEED.maxAddressesPerPerson);

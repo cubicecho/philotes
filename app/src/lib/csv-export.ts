@@ -46,8 +46,12 @@ export interface ExportPerson {
   labels: ExportLabel[];
 }
 
+/** The contact types that fill the CSV's phone columns. */
+const PHONE_TYPES: ReadonlySet<string> = new Set([ContactTypeEnum.Phone, ContactTypeEnum.Mobile]);
+
 export function csvCell(value: string): string {
-  if (value.includes('"') || value.includes(',') || value.includes('\n') || value.includes('\r')) {
+  const needsQuoting = value.includes('"') || value.includes(',') || value.includes('\n') || value.includes('\r');
+  if (needsQuoting) {
     return `"${value.replace(/"/g, '""')}"`;
   }
   return value;
@@ -72,13 +76,11 @@ export function buildPersonsCsv(persons: ExportPerson[]): string {
     0,
     ...persons.map((p) => p.contactInfos.filter((c) => c.type === ContactTypeEnum.Email).length),
   );
-  const maxPhones = Math.max(
+  const maxPhones = Math.max(0, ...persons.map((p) => p.contactInfos.filter((c) => PHONE_TYPES.has(c.type)).length));
+  const maxWebsites = Math.max(
     0,
-    ...persons.map(
-      (p) => p.contactInfos.filter((c) => c.type === ContactTypeEnum.Phone || c.type === ContactTypeEnum.Mobile).length,
-    ),
+    ...persons.map((p) => p.contactInfos.filter((c) => c.type === ContactTypeEnum.Website).length),
   );
-  const maxWebsites = Math.max(0, ...persons.map((p) => p.contactInfos.filter((c) => c.type === 'website').length));
   const maxAddresses = Math.max(0, ...persons.map((p) => p.addresses.length));
 
   // 2. Build header row
@@ -119,9 +121,7 @@ export function buildPersonsCsv(persons: ExportPerson[]): string {
     }
 
     // Phones
-    const phones = person.contactInfos.filter(
-      (c) => c.type === ContactTypeEnum.Phone || c.type === ContactTypeEnum.Mobile,
-    );
+    const phones = person.contactInfos.filter((c) => PHONE_TYPES.has(c.type));
     for (let n = 0; n < maxPhones; n++) {
       const entry = phones[n];
       const defaultLabel = entry?.type === ContactTypeEnum.Mobile ? 'Mobile' : 'Phone';
@@ -129,7 +129,7 @@ export function buildPersonsCsv(persons: ExportPerson[]): string {
     }
 
     // Websites
-    const websites = person.contactInfos.filter((c) => c.type === 'website');
+    const websites = person.contactInfos.filter((c) => c.type === ContactTypeEnum.Website);
     for (let n = 0; n < maxWebsites; n++) {
       const entry = websites[n];
       cells.push(entry ? contactInfoLabel(entry, 'Website') : '', entry?.value ?? '');

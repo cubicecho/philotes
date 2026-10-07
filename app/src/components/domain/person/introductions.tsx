@@ -36,7 +36,11 @@ function computeSuggestions(
   const currentLabelIds = new Set(currentPersonLabels.map((l) => l.id));
 
   return allPersons
-    .filter((p) => p.id !== currentPersonId && linkedPersonIds.has(p.id) === false)
+    .filter((p) => {
+      const isOther = p.id !== currentPersonId;
+      const isUnlinked = linkedPersonIds.has(p.id) === false;
+      return isOther && isUnlinked;
+    })
     .map((p) => {
       const sharedLabels = p.labels.filter((l) => currentLabelIds.has(l.id));
       return { person: p, sharedLabels, overlapCount: sharedLabels.length };

@@ -118,9 +118,10 @@ function InteractionRow({ interaction, allTags, onChanged }: InteractionRowProps
   const [detachTag] = useMutation(DETACH_INTERACTION_TAG);
   const [updateInteraction] = useMutation(UPDATE_INTERACTION);
 
-  const longNote = interaction.note && interaction.note.length > interactionNoteLength;
-  const displayNote =
-    longNote && !expanded ? `${interaction.note?.slice(0, interactionNoteLength)}…` : interaction.note;
+  const note = interaction.note ?? '';
+  const isLongNote = note.length > interactionNoteLength;
+  const isTruncated = isLongNote && expanded === false;
+  const displayNote = isTruncated ? `${note.slice(0, interactionNoteLength)}…` : interaction.note;
 
   const handleDelete = async () => {
     await deleteInteraction({ variables: { id: interaction.id } });
@@ -161,13 +162,13 @@ function InteractionRow({ interaction, allTags, onChanged }: InteractionRowProps
                 </Text>
               </View>
               {displayNote && <Text className="text-sm text-foreground">{displayNote}</Text>}
-              {longNote && (
+              {isLongNote && (
                 <Button
                   variant="link"
                   size="xs"
                   className="self-start px-0"
                   content={expanded ? 'less' : 'more'}
-                  onPress={() => setExpanded(!expanded)}
+                  onPress={() => setExpanded(expanded === false)}
                 />
               )}
             </View>
@@ -206,6 +207,8 @@ function InteractionRow({ interaction, allTags, onChanged }: InteractionRowProps
           personId={interaction.personId}
           allTags={allTags}
           initialValues={{
+            // Both asserted, not narrowed: a stored value the form no longer offers (an old `video`
+            // channel) has to reach the save unchanged, and narrowing would replace it.
             channel: interaction.channel as Channel,
             occurredAt: interaction.occurredAt,
             sentiment: (interaction.sentiment as Sentiment | undefined) ?? '',

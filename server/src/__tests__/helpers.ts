@@ -1,5 +1,4 @@
 import type { Server } from 'node:http';
-import type { AddressInfo } from 'node:net';
 import { relations } from '@cubicecho/philotes-db/relations';
 import * as dbSchema from '@cubicecho/philotes-db/schema';
 import { PGlite } from '@electric-sql/pglite';
@@ -161,6 +160,7 @@ export function createClient(db: TestDb, userId: string | null, deps: TestClient
     expectOk: async <T>(source: string, variables?: Record<string, unknown>) => {
       const result = await run(source, variables);
       expect(result.errors).toBeUndefined();
+      // graphql types data as a bare record, and the caller names the shape its own query selects.
       return result.data as T;
     },
     expectError: async (code, source, variables) => {
@@ -179,5 +179,11 @@ export function createClient(db: TestDb, userId: string | null, deps: TestClient
  * @returns The port.
  */
 export function portOf(server: Server): number {
-  return (server.address() as AddressInfo).port;
+  const address = server.address();
+  // A pipe or a closed server has no port. Neither is a server a test starts.
+  const hasPort = typeof address === 'object' && address !== null;
+  if (hasPort === false) {
+    throw new Error('The server is not listening on a TCP port.');
+  }
+  return address.port;
 }

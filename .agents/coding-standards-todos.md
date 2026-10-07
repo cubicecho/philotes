@@ -39,9 +39,9 @@ confirmed in code. Nothing here is implemented until approved.
 | R3 | Refactor [sweep] | P16/P22: a `defaults.ts` per package and `as const` vocabularies for contact type, recurrence, channel and import stage | Clears most of the 118 magic-number warnings | — | done |
 | R4 | Refactor [sweep] | P4: a doc block with `@param` and `@returns` on the 188 functions without one, and the tags on 28 more | Documented code | — | approved |
 | R5 | Refactor [sweep] | P5/P19: removes 220 divider-comment lines and shortens 15 long comment runs | Less noise | — | done |
-| R6 | Refactor [sweep] | P1: names about 228 unnamed conditions before they are tested | Conditions read as English | — | approved |
-| R7 | Refactor [sweep] | P17: removes the type assertions that narrowing or a better type makes unnecessary (103, of which 28 `as any`) | Types that are checked | — | approved |
-| R8 | Refactor [sweep] | P24: turns 7 nested ternaries and the closed-set chains into lookup tables | A new member cannot fall through | R3 | approved |
+| R6 | Refactor [sweep] | P1: names about 228 unnamed conditions before they are tested | Conditions read as English | — | done |
+| R7 | Refactor [sweep] | P17: removes the type assertions that narrowing or a better type makes unnecessary (103, of which 28 `as any`) | Types that are checked | — | done |
+| R8 | Refactor [sweep] | P24: turns 7 nested ternaries and the closed-set chains into lookup tables | A new member cannot fall through | R3 | done |
 | R9 | Refactor [reuse] | One home each for the duplicated date, relative-time, name-colour, truncation and full-name helpers, and for `ChannelIcon` | One copy to fix | B10 | done |
 | B10 | Bug | The two `ChannelIcon` copies differ (one lacks "video"), and the two `nameToColor` copies give different colours for the same name | Same person, same colour | — | done |
 | B12 | Bug | Makes the CSV and calendar exports read the `Date` objects the Apollo cache hands them: the CSV export threw for anyone with a birthday, and the calendar export wrote important dates a day early east of Greenwich. Found when R12 typed the queries | Exports work | — | done |

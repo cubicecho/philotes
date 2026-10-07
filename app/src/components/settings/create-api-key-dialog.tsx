@@ -34,6 +34,13 @@ const EXPIRY_OPTIONS = [
   { label: 'No expiry', value: NO_EXPIRY },
 ] as const;
 
+interface ApiKeyFields {
+  name: string;
+  expiry: string;
+}
+
+const EMPTY_API_KEY: ApiKeyFields = { name: '', expiry: NO_EXPIRY };
+
 type Phase = { phase: 'form' } | { phase: 'reveal'; token: string };
 
 interface CreateApiKeyDialogProps {
@@ -57,7 +64,7 @@ export function CreateApiKeyDialog({ open, onOpenChange, onCreated }: CreateApiK
   const [createApiKey] = useMutation(MY_CREATE_API_KEY);
 
   const form = useAppForm({
-    defaultValues: { name: '', expiry: NO_EXPIRY as string },
+    defaultValues: EMPTY_API_KEY,
     onSubmit: async ({ value }) => {
       setSubmitError(null);
       const expiresAt = value.expiry === NO_EXPIRY ? undefined : expiryDate(Number(value.expiry));
@@ -74,7 +81,8 @@ export function CreateApiKeyDialog({ open, onOpenChange, onCreated }: CreateApiK
   });
 
   function handleClose(value: boolean) {
-    if (!value) {
+    const isClosing = value === false;
+    if (isClosing) {
       // The list only needs refreshing once a key was actually made.
       if (state.phase === 'reveal') {
         onCreated();

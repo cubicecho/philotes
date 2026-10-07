@@ -9,6 +9,7 @@ import { objectType } from '../graphql/object-type.ts';
 const { defaultPageSize, maxPageSize } = OPERATION_LIMIT_DEFAULTS;
 
 const { persons, importantDates, Recurrence } = dbSchema;
+type Recurrence = dbSchema.Recurrence;
 
 interface UpcomingDatesArgs {
   limit?: number | null;
@@ -16,23 +17,12 @@ interface UpcomingDatesArgs {
   lookaheadDays?: number | null;
 }
 
-interface ImportantDateRow {
-  id: string;
-  name: string;
-  description: string | null;
-  date: string;
-  recurrence: string | null;
-  personId: string;
-  personFirstName: string;
-  personLastName: string;
-}
-
 interface UpcomingDateEntry {
   id: string;
   name: string;
   description: string | null;
   date: string;
-  recurrence: string | null;
+  recurrence: Recurrence | null;
   daysUntil: number;
   nextDate: string;
   personId: string;
@@ -87,7 +77,7 @@ function toLocalDateString(d: Date): string {
  */
 function computeNextOccurrence(
   dateStr: string,
-  recurrence: string | null,
+  recurrence: Recurrence | null,
 ): { daysUntil: number; nextDate: Date } | null {
   const t = todayMidnight();
   const [yearStr, monthStr, dayStr] = dateStr.split('-');
@@ -98,7 +88,8 @@ function computeNextOccurrence(
   if (!recurrence) {
     const stored = new Date(storedYear, month, day);
     const daysUntil = daysBetween(t, stored);
-    if (daysUntil < 0) {
+    const hasPassed = daysUntil < 0;
+    if (hasPassed) {
       return null;
     }
     return { daysUntil, nextDate: stored };
@@ -107,7 +98,8 @@ function computeNextOccurrence(
   if (recurrence === Recurrence.Yearly) {
     const thisYear = new Date(t.getFullYear(), month, day);
     const diff = daysBetween(t, thisYear);
-    if (diff >= 0) {
+    const isStillAhead = diff >= 0;
+    if (isStillAhead) {
       return { daysUntil: diff, nextDate: thisYear };
     }
     const nextYear = new Date(t.getFullYear() + 1, month, day);
@@ -117,7 +109,8 @@ function computeNextOccurrence(
   if (recurrence === Recurrence.Monthly) {
     const thisMonth = new Date(t.getFullYear(), t.getMonth(), day);
     const diff = daysBetween(t, thisMonth);
-    if (diff >= 0) {
+    const isStillAhead = diff >= 0;
+    if (isStillAhead) {
       return { daysUntil: diff, nextDate: thisMonth };
     }
     const nextMonth = new Date(t.getFullYear(), t.getMonth() + 1, day);
@@ -150,10 +143,9 @@ export function applyUpcomingDatesExtension(schema: GraphQLSchema): GraphQLSchem
     const lookaheadDays = args.lookaheadDays ?? IMPORTANT_DATE_DEFAULTS.lookaheadDays;
     const offset = args.offset ?? 0;
 
-    // biome-ignore lint/suspicious/noExplicitAny: drizzle-orm 1.0 column type compat
-    const dbCtx = context.db as any;
+    const dbCtx = context.db;
 
-    const rows: ImportantDateRow[] = await dbCtx
+    const rows = await dbCtx
       .select({
         id: importantDates.id,
         name: importantDates.name,
@@ -170,7 +162,11 @@ export function applyUpcomingDatesExtension(schema: GraphQLSchema): GraphQLSchem
 
     const entries: UpcomingDateEntry[] = rows.flatMap((row) => {
       const occurrence = computeNextOccurrence(row.date, row.recurrence);
-      if (occurrence === null || occurrence.daysUntil > lookaheadDays) {
+      if (occurrence === null) {
+        return [];
+      }
+      const isBeyondLookahead = occurrence.daysUntil > lookaheadDays;
+      if (isBeyondLookahead) {
         return [];
       }
       return [

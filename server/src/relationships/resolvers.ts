@@ -20,6 +20,15 @@ const extensionSDL = parse(`
   }
 `);
 
+/** The person at the far end of a relationship, seen from `personId`. */
+function otherPersonId(
+  row: Pick<dbSchema.PersonRelationship, 'fromPersonId' | 'toPersonId'>,
+  personId: string,
+): string {
+  const isOutgoing = row.fromPersonId === personId;
+  return isOutgoing ? row.toPersonId : row.fromPersonId;
+}
+
 export function applyRelationshipsExtension(schema: GraphQLSchema): GraphQLSchema {
   const extendedSchema = extendSchema(schema, extensionSDL);
 
@@ -30,15 +39,9 @@ export function applyRelationshipsExtension(schema: GraphQLSchema): GraphQLSchem
     if (!context.userId) {
       return [];
     }
-    // biome-ignore lint/suspicious/noExplicitAny: drizzle-orm 1.0 column type compat
-    const dbCtx = context.db as any;
+    const dbCtx = context.db;
 
-    const rows: Array<{
-      id: string;
-      type: string;
-      fromPersonId: string;
-      toPersonId: string;
-    }> = await dbCtx
+    const rows = await dbCtx
       .select()
       .from(personRelationships)
       .where(
@@ -52,15 +55,9 @@ export function applyRelationshipsExtension(schema: GraphQLSchema): GraphQLSchem
       return [];
     }
 
-    const relatedPersonIds = [
-      ...new Set(rows.map((row) => (row.fromPersonId === parent.id ? row.toPersonId : row.fromPersonId))),
-    ];
+    const relatedPersonIds = [...new Set(rows.map((row) => otherPersonId(row, parent.id)))];
 
-    const relatedPersonRows: Array<{
-      id: string;
-      firstName: string;
-      lastName: string;
-    }> = await dbCtx
+    const relatedPersonRows = await dbCtx
       .select({
         id: persons.id,
         firstName: persons.firstName,
@@ -72,7 +69,7 @@ export function applyRelationshipsExtension(schema: GraphQLSchema): GraphQLSchem
     const personMap = new Map(relatedPersonRows.map((p) => [p.id, { firstName: p.firstName, lastName: p.lastName }]));
 
     return rows.flatMap((row) => {
-      const relatedId = row.fromPersonId === parent.id ? row.toPersonId : row.fromPersonId;
+      const relatedId = otherPersonId(row, parent.id);
       const related = personMap.get(relatedId);
       if (!related) {
         return [];

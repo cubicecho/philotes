@@ -3,10 +3,6 @@ import { eq } from 'drizzle-orm';
 import type { Context } from '../core/context.ts';
 import { requireAuth } from '../core/errors.ts';
 
-/** A table as a row scope sees it: drizzle-orm 1.0 rc doesn't type the columns of a generic table. */
-// biome-ignore lint/suspicious/noExplicitAny: see the line above
-type AnyTable = any;
-
 /** Tables scoped to their owner. A table missing from this list is visible across tenants. */
 export const USER_OWNED_TABLES = [
   'addresses',
@@ -33,7 +29,7 @@ export const USER_OWNED_TABLES = [
  * @param table - Table being queried.
  * @returns The `user_id = caller` condition.
  */
-const scopeByUserId: RowScope<Context> = (context, table) => eq((table as AnyTable).userId, requireAuth(context));
+const scopeByUserId: RowScope<Context> = (context, table) => eq(table.userId, requireAuth(context));
 
 /**
  * Restricts `users` to the caller's own row.
@@ -42,7 +38,7 @@ const scopeByUserId: RowScope<Context> = (context, table) => eq((table as AnyTab
  * @param table - The users table.
  * @returns The `id = caller` condition.
  */
-const scopeToSelf: RowScope<Context> = (context, table) => eq((table as AnyTable).id, requireAuth(context));
+const scopeToSelf: RowScope<Context> = (context, table) => eq(table.id, requireAuth(context));
 
 /**
  * Restricts `persons` to the caller's contacts. A person row is shared between users, and

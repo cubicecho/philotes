@@ -84,46 +84,59 @@ const CONTACT_TYPE_PLACEHOLDERS: Record<ContactTypeEnum, string> = {
   [ContactTypeEnum.Other]: 'Contact value',
 };
 
-/** Actionable href for a contact value — tap to call/text/email/open. */
-export function contactHref(type: string, value: string): string | null {
-  const v = value.trim();
-  switch (type as ContactTypeEnum) {
-    case ContactTypeEnum.Email:
-      return `mailto:${v}`;
-    case ContactTypeEnum.Phone:
-    case ContactTypeEnum.Mobile:
-      return `tel:${v.replace(/[^\d+]/g, '')}`;
-    case ContactTypeEnum.Linkedin:
-      return v.startsWith('http') ? v : `https://linkedin.com/in/${v.replace(/^@/, '')}`;
-    case ContactTypeEnum.Twitter:
-      return v.startsWith('http') ? v : `https://x.com/${v.replace(/^@/, '')}`;
-    case ContactTypeEnum.Instagram:
-      return v.startsWith('http') ? v : `https://instagram.com/${v.replace(/^@/, '')}`;
-    case ContactTypeEnum.Website:
-      return v.startsWith('http') ? v : `https://${v}`;
-    default:
-      return null;
-  }
+/** A phone number as a `tel:` link, without its spaces and punctuation. */
+function telHref(phoneNumber: string): string {
+  return `tel:${phoneNumber.replace(/[^\d+]/g, '')}`;
 }
 
-function ContactTypeIcon({ type, className }: { type: string; className?: string }) {
-  switch (type as ContactTypeEnum) {
-    case ContactTypeEnum.Email:
-      return <Mail className={className} />;
-    case ContactTypeEnum.Phone:
-      return <Phone className={className} />;
-    case ContactTypeEnum.Mobile:
-      return <Smartphone className={className} />;
-    // lucide dropped its brand glyphs, so the three networks share one.
-    case ContactTypeEnum.Linkedin:
-    case ContactTypeEnum.Twitter:
-    case ContactTypeEnum.Instagram:
-      return <Share2 className={className} />;
-    case ContactTypeEnum.Website:
-      return <Globe className={className} />;
-    default:
-      return <Ellipsis className={className} />;
+/** A handle as a link to its profile under `profileBase`; a value that is already a URL is kept. */
+function profileHref(profileBase: string, handle: string): string {
+  const isUrl = handle.startsWith('http');
+  return isUrl ? handle : `${profileBase}${handle.replace(/^@/, '')}`;
+}
+
+/** A site as a link; a value that is already a URL is kept. */
+function websiteHref(site: string): string {
+  const isUrl = site.startsWith('http');
+  return isUrl ? site : `https://${site}`;
+}
+
+/** What turns a trimmed value of each contact type into its href. `other` has nothing to open. */
+const CONTACT_HREF_BUILDERS: Record<string, (value: string) => string | null> = {
+  [ContactTypeEnum.Email]: (address) => `mailto:${address}`,
+  [ContactTypeEnum.Phone]: telHref,
+  [ContactTypeEnum.Mobile]: telHref,
+  [ContactTypeEnum.Linkedin]: (handle) => profileHref('https://linkedin.com/in/', handle),
+  [ContactTypeEnum.Twitter]: (handle) => profileHref('https://x.com/', handle),
+  [ContactTypeEnum.Instagram]: (handle) => profileHref('https://instagram.com/', handle),
+  [ContactTypeEnum.Website]: websiteHref,
+  [ContactTypeEnum.Other]: () => null,
+} satisfies Record<ContactTypeEnum, (value: string) => string | null>;
+
+/** Actionable href for a contact value — tap to call/text/email/open. */
+export function contactHref(type: string, value: string): string | null {
+  const buildHref = CONTACT_HREF_BUILDERS[type];
+  if (!buildHref) {
+    return null;
   }
+  return buildHref(value.trim());
+}
+
+/** The glyph for each contact type. lucide dropped its brand glyphs, so the three networks share one. */
+const CONTACT_TYPE_ICONS: Record<string, typeof Ellipsis> = {
+  [ContactTypeEnum.Email]: Mail,
+  [ContactTypeEnum.Phone]: Phone,
+  [ContactTypeEnum.Mobile]: Smartphone,
+  [ContactTypeEnum.Linkedin]: Share2,
+  [ContactTypeEnum.Twitter]: Share2,
+  [ContactTypeEnum.Instagram]: Share2,
+  [ContactTypeEnum.Website]: Globe,
+  [ContactTypeEnum.Other]: Ellipsis,
+} satisfies Record<ContactTypeEnum, typeof Ellipsis>;
+
+function ContactTypeIcon({ type, className }: { type: string; className?: string }) {
+  const Icon = CONTACT_TYPE_ICONS[type] ?? Ellipsis;
+  return <Icon className={className} />;
 }
 
 export interface ContactInfoListProps {
@@ -184,8 +197,15 @@ function ContactInfoRow({ id, type, value, label, isPrimary, onDelete }: Contact
   );
 }
 
-const EMPTY_CONTACT_INFO = {
-  type: ContactTypeEnum.Email as string,
+interface ContactInfoFields {
+  type: ContactTypeEnum;
+  value: string;
+  label: string;
+  isPrimary: boolean;
+}
+
+const EMPTY_CONTACT_INFO: ContactInfoFields = {
+  type: ContactTypeEnum.Email,
   value: '',
   label: '',
   isPrimary: false,
@@ -208,7 +228,7 @@ function AddContactInfoDialog({ personId, open, onOpenChange, onAdded }: AddCont
         await createContactInfo({
           variables: {
             personId,
-            type: value.type as ContactTypeEnum,
+            type: value.type,
             value: value.value.trim(),
             label: value.label.trim() || null,
             isPrimary: value.isPrimary,
@@ -224,7 +244,8 @@ function AddContactInfoDialog({ personId, open, onOpenChange, onAdded }: AddCont
   });
 
   useEffect(() => {
-    if (!open) {
+    const isClosed = open === false;
+    if (isClosed) {
       return;
     }
     form.reset(EMPTY_CONTACT_INFO);
@@ -248,13 +269,7 @@ function AddContactInfoDialog({ personId, open, onOpenChange, onAdded }: AddCont
                 name="value"
                 validators={{ onChange: ({ value }) => (value.trim() ? undefined : 'A value is required.') }}
               >
-                {(field) => (
-                  <field.InputField
-                    label="Value"
-                    required
-                    placeholder={CONTACT_TYPE_PLACEHOLDERS[type as ContactTypeEnum]}
-                  />
-                )}
+                {(field) => <field.InputField label="Value" required placeholder={CONTACT_TYPE_PLACEHOLDERS[type]} />}
               </form.AppField>
             )}
           </form.Subscribe>

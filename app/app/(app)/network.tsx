@@ -43,6 +43,13 @@ export default function NetworkPage() {
 
   const persons = data?.persons ?? [];
   const pending = loading && !data;
+  const showsQueryState = pending || error !== undefined;
+  const graphSlot =
+    persons.length === 0 ? (
+      <EmptyState icon={Users} title="No contacts yet." />
+    ) : (
+      <NetworkGraph persons={persons} onOpenPerson={(id) => router.push(`/persons/${id}`)} />
+    );
 
   return (
     // The graph pans and zooms inside its own box, so the page does not scroll around it.
@@ -52,16 +59,14 @@ export default function NetworkPage() {
       scroll={false}
       contentClassName="flex-1"
       contentSlot={
-        pending || error ? (
+        showsQueryState ? (
           <QueryState
             query={{ isPending: pending, isError: error !== undefined, error, refetch }}
             what="your network"
             count={persons.length}
           />
-        ) : persons.length === 0 ? (
-          <EmptyState icon={Users} title="No contacts yet." />
         ) : (
-          <NetworkGraph persons={persons} onOpenPerson={(id) => router.push(`/persons/${id}`)} />
+          graphSlot
         )
       }
     />

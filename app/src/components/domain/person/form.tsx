@@ -46,7 +46,8 @@ function parseDay(value: string | Date | null | undefined): Date | null {
     return value;
   }
   const [year, month, day] = value.split('-').map(Number);
-  if (!year || !month || !day) {
+  const isIncomplete = !year || !month || !day;
+  if (isIncomplete) {
     return null;
   }
   return new Date(year, month - 1, day);

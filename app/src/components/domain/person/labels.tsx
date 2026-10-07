@@ -103,7 +103,8 @@ function AddLabelDialog({ personId, available, open, onOpenChange, onAdd }: AddL
   });
 
   useEffect(() => {
-    if (!open) {
+    const isClosed = open === false;
+    if (isClosed) {
       return;
     }
     form.reset(NO_LABELS);
@@ -148,6 +149,7 @@ function AddLabelDialog({ personId, available, open, onOpenChange, onAdd }: AddL
 export function PersonLabels({ person, allLabels, onDelete, onAdd, showAdd = false, onShowAdd }: PersonLabelsProps) {
   const attachedIds = new Set(person.labels.map((l) => l.id));
   const available = allLabels.filter((l) => attachedIds.has(l.id) === false);
+  const hasAvailable = available.length > 0;
 
   return (
     <View className="flex-row flex-wrap items-center gap-1.5">
@@ -161,7 +163,7 @@ export function PersonLabels({ person, allLabels, onDelete, onAdd, showAdd = fal
           onDelete={onDelete}
         />
       ))}
-      {available.length > 0 && onShowAdd ? (
+      {hasAvailable && onShowAdd ? (
         <Button variant="outline" size="xs" iconSlot={<Plus />} content="Label" onPress={() => onShowAdd(true)} />
       ) : null}
 

@@ -66,6 +66,9 @@ export function ExportCalendarCard() {
   const loading = interactionsQuery.loading || importantDatesQuery.loading;
   const error = interactionsQuery.error ?? importantDatesQuery.error;
   const totalCount = interactions.length + importantDates.length;
+  const hasEvents = totalCount > 0;
+  const isLoaded = loading === false && error === undefined;
+  const isExportBlocked = isLoaded === false || hasEvents === false;
 
   /** Fetches both lists again after a failure. */
   function refetch() {
@@ -74,7 +77,7 @@ export function ExportCalendarCard() {
   }
 
   function handleExport() {
-    if (totalCount === 0) {
+    if (hasEvents === false) {
       return;
     }
     void downloadBlob(buildIcsContent({ interactions, importantDates }), 'philotes-events.ics', {
@@ -93,15 +96,15 @@ export function ExportCalendarCard() {
           <Button
             iconSlot={<Download />}
             content={loading ? 'Loading…' : `Export ${totalCount} Events as ICS`}
-            disabled={loading || error !== undefined || totalCount === 0}
+            disabled={isExportBlocked}
             onPress={handleExport}
           />
-          {!loading && !error && totalCount > 0 ? (
+          {isLoaded && hasEvents ? (
             <Text className="text-foreground/60 text-sm">
               {`${interactions.length} interactions · ${importantDates.length} important dates`}
             </Text>
           ) : null}
-          {!loading && !error && totalCount === 0 ? <EmptyState compact title="No events to export yet." /> : null}
+          {isLoaded && hasEvents === false ? <EmptyState compact title="No events to export yet." /> : null}
         </View>
       }
     />

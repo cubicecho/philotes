@@ -1,5 +1,7 @@
+import type { DB } from '@cubicecho/philotes-db';
 import * as dbSchema from '@cubicecho/philotes-db/schema';
-import { and, eq, inArray } from 'drizzle-orm';
+import { and, eq, inArray, sql } from 'drizzle-orm';
+import type { AnyPgColumn, PgTable } from 'drizzle-orm/pg-core';
 import { extendSchema, type GraphQLSchema, parse } from 'graphql';
 import type { Context } from '../core/context.ts';
 import { notFound, requireAuth } from '../core/errors.ts';
@@ -10,48 +12,74 @@ const MERGE_LABELS_SDL = `
   }
 `;
 
-interface JunctionDescriptor {
-  table: typeof dbSchema.personLabels;
-  fkColName: string;
-  fkCol: (typeof dbSchema.personLabels)['personId'];
-  labelCol: (typeof dbSchema.personLabels)['labelId'];
+/** A table that ties a label to one kind of row, and the column naming that row. */
+interface Junction {
+  table: PgTable;
+  ownerColumn: AnyPgColumn;
+  labelColumn: AnyPgColumn;
+  userColumn: AnyPgColumn;
 }
 
+const JUNCTIONS: readonly Junction[] = [
+  {
+    table: dbSchema.personLabels,
+    ownerColumn: dbSchema.personLabels.personId,
+    labelColumn: dbSchema.personLabels.labelId,
+    userColumn: dbSchema.personLabels.userId,
+  },
+  {
+    table: dbSchema.interactionTags,
+    ownerColumn: dbSchema.interactionTags.interactionId,
+    labelColumn: dbSchema.interactionTags.labelId,
+    userColumn: dbSchema.interactionTags.userId,
+  },
+  {
+    table: dbSchema.importantDateTags,
+    ownerColumn: dbSchema.importantDateTags.importantDateId,
+    labelColumn: dbSchema.importantDateTags.labelId,
+    userColumn: dbSchema.importantDateTags.userId,
+  },
+  {
+    table: dbSchema.noteTags,
+    ownerColumn: dbSchema.noteTags.noteId,
+    labelColumn: dbSchema.noteTags.labelId,
+    userColumn: dbSchema.noteTags.userId,
+  },
+];
+
+/** A transaction as `db.transaction` hands it over. */
+type Transaction = Parameters<Parameters<DB['transaction']>[0]>[0];
+
 /**
- * Reassign all junction-table rows pointing to deleteId so they point to keepId.
+ * Gives `keepId` every row of a junction table that `deleteId` has. A row `keepId` already has is
+ * left alone, which an UPDATE could not do without breaking the composite key. The rows still
+ * naming `deleteId` go when the label itself is deleted, by cascade.
  *
- * Uses insert-then-delete instead of UPDATE to avoid composite-PK violations:
- * if (personId, keepId) already exists, the insert is a no-op and the old row
- * is cleaned up. Any remaining rows pointing to deleteId are removed when the
- * label itself is deleted via CASCADE.
- *
- * @param db - The transaction to write in.
- * @param descriptor - The junction table and its columns.
+ * @param tx - The transaction to write in.
+ * @param junction - The junction table and its columns.
  * @param deleteId - The label being merged away.
  * @param keepId - The label that takes its rows.
  * @param userId - The caller, who owns both labels.
- * @returns Nothing, once every row points at `keepId`.
+ * @returns Nothing, once `keepId` has every row.
  */
-async function reassignJunctionRows(
-  // biome-ignore lint/suspicious/noExplicitAny: Drizzle dynamic table API requires any
-  db: any,
-  descriptor: JunctionDescriptor,
+async function copyJunctionRows(
+  tx: Transaction,
+  junction: Junction,
   deleteId: string,
   keepId: string,
   userId: string,
 ): Promise<void> {
-  const { table, fkColName, fkCol, labelCol } = descriptor;
+  const { table, ownerColumn, labelColumn, userColumn } = junction;
+  const columns = sql.join(
+    [ownerColumn, labelColumn, userColumn].map((column) => sql.identifier(column.name)),
+    sql`, `,
+  );
 
-  const rows: Array<{ fk: string }> = await db.select({ fk: fkCol }).from(table).where(eq(labelCol, deleteId));
-
-  for (const { fk } of rows) {
-    await db
-      .insert(table)
-      .values({ [fkColName]: fk, labelId: keepId, userId })
-      .onConflictDoNothing();
-
-    await db.delete(table).where(and(eq(fkCol, fk), eq(labelCol, deleteId)));
-  }
+  await tx.execute(sql`
+    insert into ${table} (${columns})
+    select ${ownerColumn}, ${keepId}::uuid, ${userId}::uuid from ${table} where ${labelColumn} = ${deleteId}
+    on conflict do nothing
+  `);
 }
 
 export function applyMergeLabelsExtension(schema: GraphQLSchema): GraphQLSchema {
@@ -68,10 +96,9 @@ export function applyMergeLabelsExtension(schema: GraphQLSchema): GraphQLSchema 
     context: Context,
   ) => {
     const userId = requireAuth(context);
-    // biome-ignore lint/suspicious/noExplicitAny: drizzle-orm 1.0 column type compat
-    const db = context.db as any;
+    const { db } = context;
 
-    const owned: Array<{ id: string }> = await db
+    const owned = await db
       .select({ id: dbSchema.labels.id })
       .from(dbSchema.labels)
       .where(and(inArray(dbSchema.labels.id, [keepId, deleteId]), eq(dbSchema.labels.userId, userId)));
@@ -89,52 +116,11 @@ export function applyMergeLabelsExtension(schema: GraphQLSchema): GraphQLSchema 
       return returnKept();
     }
 
-    const junctions: JunctionDescriptor[] = [
-      {
-        // biome-ignore lint/suspicious/noExplicitAny: cross-table type cast
-        table: dbSchema.personLabels as any,
-        fkColName: 'personId',
-        // biome-ignore lint/suspicious/noExplicitAny: cross-table type cast
-        fkCol: dbSchema.personLabels.personId as any,
-        // biome-ignore lint/suspicious/noExplicitAny: cross-table type cast
-        labelCol: dbSchema.personLabels.labelId as any,
-      },
-      {
-        // biome-ignore lint/suspicious/noExplicitAny: cross-table type cast
-        table: dbSchema.interactionTags as any,
-        fkColName: 'interactionId',
-        // biome-ignore lint/suspicious/noExplicitAny: cross-table type cast
-        fkCol: dbSchema.interactionTags.interactionId as any,
-        // biome-ignore lint/suspicious/noExplicitAny: cross-table type cast
-        labelCol: dbSchema.interactionTags.labelId as any,
-      },
-      {
-        // biome-ignore lint/suspicious/noExplicitAny: cross-table type cast
-        table: dbSchema.importantDateTags as any,
-        fkColName: 'importantDateId',
-        // biome-ignore lint/suspicious/noExplicitAny: cross-table type cast
-        fkCol: dbSchema.importantDateTags.importantDateId as any,
-        // biome-ignore lint/suspicious/noExplicitAny: cross-table type cast
-        labelCol: dbSchema.importantDateTags.labelId as any,
-      },
-      {
-        // biome-ignore lint/suspicious/noExplicitAny: cross-table type cast
-        table: dbSchema.noteTags as any,
-        fkColName: 'noteId',
-        // biome-ignore lint/suspicious/noExplicitAny: cross-table type cast
-        fkCol: dbSchema.noteTags.noteId as any,
-        // biome-ignore lint/suspicious/noExplicitAny: cross-table type cast
-        labelCol: dbSchema.noteTags.labelId as any,
-      },
-    ];
-
-    // biome-ignore lint/suspicious/noExplicitAny: drizzle-orm 1.0 column type compat
-    await db.transaction(async (tx: any) => {
-      for (const junction of junctions) {
-        await reassignJunctionRows(tx, junction, deleteId, keepId, userId);
+    await db.transaction(async (tx) => {
+      for (const junction of JUNCTIONS) {
+        await copyJunctionRows(tx, junction, deleteId, keepId, userId);
       }
 
-      // Delete the source label — CASCADE removes any remaining junction rows
       await tx.delete(dbSchema.labels).where(eq(dbSchema.labels.id, deleteId));
     });
 

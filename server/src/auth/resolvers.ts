@@ -197,7 +197,8 @@ export function applyAuthExtension(schema: GraphQLSchema): GraphQLSchema {
 
     const sendsLink = secureLocalNet() === false;
     if (sendsLink) {
-      if (sendsMagicLinks(ctx.auth) === false) {
+      const canEmailLinks = sendsMagicLinks(ctx.auth);
+      if (canEmailLinks === false) {
         throw badInput('This instance cannot email sign-in links. Sign in with your password.');
       }
       await ctx.auth.api.signInMagicLink({ body: { email }, headers: new Headers() });
@@ -220,7 +221,8 @@ export function applyAuthExtension(schema: GraphQLSchema): GraphQLSchema {
 
   mutations.verifyMagicLink.resolve = async (_parent: unknown, args: { token: string }, ctx: Context) => {
     throttle(ctx, AuthFlow.VerifyMagicLink);
-    if (sendsMagicLinks(ctx.auth) === false) {
+    const canEmailLinks = sendsMagicLinks(ctx.auth);
+    if (canEmailLinks === false) {
       throw unauthenticated('Invalid or expired sign-in link.');
     }
     try {

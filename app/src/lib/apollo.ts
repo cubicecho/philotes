@@ -24,7 +24,8 @@ const SIGN_IN_OPERATIONS = new Set(['SignIn', 'SignUp', 'RequestSignIn', 'Verify
 const errorLink = onError(({ graphQLErrors, operation }) => {
   const isSignedOut = graphQLErrors?.some((e) => e.extensions?.code === 'UNAUTHENTICATED') ?? false;
   const isSigningIn = SIGN_IN_OPERATIONS.has(operation.operationName);
-  if (isSignedOut && isSigningIn === false) {
+  const hasExpiredSession = isSignedOut && isSigningIn === false;
+  if (hasExpiredSession) {
     clearToken();
     if (Platform.OS === 'web') {
       window.location.replace('/login');

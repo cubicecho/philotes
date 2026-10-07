@@ -27,7 +27,8 @@ if (isProduction()) {
   const isTooShort = secret.length < AUTH_DEFAULTS.minSecretLength;
   const isPlaceholder = secret === PLACEHOLDER_SECRET;
   // A known secret means anyone can forge a session for any account.
-  if (isTooShort || isPlaceholder) {
+  const isWeakSecret = isTooShort || isPlaceholder;
+  if (isWeakSecret) {
     fatal('BETTER_AUTH_SECRET must be a strong random value. Generate one with `openssl rand -hex 32`.');
   }
 }

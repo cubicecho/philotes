@@ -30,6 +30,17 @@ const FAINT_STROKE = { width: 1.5, opacity: 0.4 };
 /** The pill behind a relationship label. */
 const EDGE_PILL = { cornerRadius: 3, strokeWidth: 0.5, strokeOpacity: 0.1, opacity: 0.9 };
 
+/** A link's end as a node. d3 holds the id the link was built with until the simulation swaps in the node. */
+function resolvedNode(end: SimLink['source']): SimNode | null {
+  const isResolved = typeof end === 'object';
+  return isResolved ? end : null;
+}
+
+/** The node id at a link's end, whether or not the simulation has swapped the node in yet. */
+function linkEndId(end: SimLink['source']): string {
+  return resolvedNode(end)?.id ?? String(end);
+}
+
 function getNodeRadius(connections: number): number {
   const { minNodeRadius, maxNodeRadius, nodeRadiusFullAt } = GRAPH;
   const counted = Math.min(connections, nodeRadiusFullAt);
@@ -63,7 +74,8 @@ export function NetworkGraph({ persons, onOpenPerson }: NetworkGraphProps) {
 
   useEffect(() => {
     const svgEl = svgRef.current;
-    if (!svgEl || !measured || persons.length === 0) {
+    const hasNothingToDraw = measured === false || persons.length === 0;
+    if (!svgEl || hasNothingToDraw) {
       return;
     }
 
@@ -140,8 +152,8 @@ export function NetworkGraph({ persons, onOpenPerson }: NetworkGraphProps) {
           .forceLink<SimNode, SimLink>(links)
           .id((d) => d.id)
           .distance((d) => {
-            const sc = connectionCount.get((d.source as SimNode).id) ?? 0;
-            const tc = connectionCount.get((d.target as SimNode).id) ?? 0;
+            const sc = connectionCount.get(linkEndId(d.source)) ?? 0;
+            const tc = connectionCount.get(linkEndId(d.target)) ?? 0;
             return GRAPH.linkDistance + (sc + tc) * GRAPH.linkDistancePerConnection;
           })
           .strength(GRAPH.linkStrength),
@@ -209,7 +221,7 @@ export function NetworkGraph({ persons, onOpenPerson }: NetworkGraphProps) {
     // Size each pill rect to fit its text (approximate via getBBox)
     edgeLabelGroups.each(function () {
       const g = d3.select(this);
-      const textEl = g.select('text').node() as SVGTextElement | null;
+      const textEl = g.select<SVGTextElement>('text').node();
       if (!textEl) {
         return;
       }
@@ -255,7 +267,8 @@ export function NetworkGraph({ persons, onOpenPerson }: NetworkGraphProps) {
       .drag<SVGGElement, SimNode>()
       .on('start', (event, d) => {
         event.sourceEvent.stopPropagation();
-        if (!event.active) {
+        const isOnlyDrag = event.active === 0;
+        if (isOnlyDrag) {
           simulation.alphaTarget(GRAPH.reheatAlpha).restart();
         }
         d.fx = d.x;
@@ -266,7 +279,8 @@ export function NetworkGraph({ persons, onOpenPerson }: NetworkGraphProps) {
         d.fy = event.y;
       })
       .on('end', (event, d) => {
-        if (!event.active) {
+        const isOnlyDrag = event.active === 0;
+        if (isOnlyDrag) {
           simulation.alphaTarget(0);
         }
         d.fx = null;
@@ -329,16 +343,18 @@ export function NetworkGraph({ persons, onOpenPerson }: NetworkGraphProps) {
     // Tick handler
     simulation.on('tick', () => {
       link
-        .attr('x1', (d) => (d.source as SimNode).x ?? 0)
-        .attr('y1', (d) => (d.source as SimNode).y ?? 0)
-        .attr('x2', (d) => (d.target as SimNode).x ?? 0)
-        .attr('y2', (d) => (d.target as SimNode).y ?? 0);
+        .attr('x1', (d) => resolvedNode(d.source)?.x ?? 0)
+        .attr('y1', (d) => resolvedNode(d.source)?.y ?? 0)
+        .attr('x2', (d) => resolvedNode(d.target)?.x ?? 0)
+        .attr('y2', (d) => resolvedNode(d.target)?.y ?? 0);
 
       edgeLabelGroups.attr('transform', (d) => {
-        const sx = (d.source as SimNode).x ?? 0;
-        const sy = (d.source as SimNode).y ?? 0;
-        const tx = (d.target as SimNode).x ?? 0;
-        const ty = (d.target as SimNode).y ?? 0;
+        const source = resolvedNode(d.source);
+        const target = resolvedNode(d.target);
+        const sx = source?.x ?? 0;
+        const sy = source?.y ?? 0;
+        const tx = target?.x ?? 0;
+        const ty = target?.y ?? 0;
         const mx = (sx + tx) / 2;
         const my = (sy + ty) / 2;
         // The label follows the edge's direction, turned over when that would leave it upside down.
@@ -361,7 +377,8 @@ export function NetworkGraph({ persons, onOpenPerson }: NetworkGraphProps) {
   // A resized box keeps the laid-out graph and pulls it toward the new middle.
   useEffect(() => {
     const simulation = simulationRef.current;
-    if (!simulation || size.width === 0 || size.height === 0) {
+    const isUnmeasured = size.width === 0 || size.height === 0;
+    if (!simulation || isUnmeasured) {
       return;
     }
     simulation.force('center', d3.forceCenter(size.width / 2, size.height / 2).strength(GRAPH.centerStrength));
@@ -382,7 +399,10 @@ export function NetworkGraph({ persons, onOpenPerson }: NetworkGraphProps) {
       className="relative min-h-96 flex-1 overflow-hidden"
       onLayout={(event) => {
         const { width, height } = event.nativeEvent.layout;
-        setSize((prev) => (prev.width === width && prev.height === height ? prev : { width, height }));
+        setSize((prev) => {
+          const isSameSize = prev.width === width && prev.height === height;
+          return isSameSize ? prev : { width, height };
+        });
       }}
     >
       {/* Sized from the measured box: an svg has no intrinsic size for flex to work from. */}

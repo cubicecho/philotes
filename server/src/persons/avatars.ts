@@ -32,6 +32,9 @@ interface AvatarLocals {
   avatarPath: string | null;
 }
 
+/** A response on the person routes: {@link requireSession} leaves the caller's id on it, and the guard the rest. */
+type AvatarResponse = Response<unknown, AvatarLocals>;
+
 /** What the avatar routes are built from. */
 export interface AvatarRouterDeps {
   /** Drizzle client. */
@@ -73,13 +76,13 @@ async function requireSession(auth: Auth, req: Request, res: Response, next: Nex
  * @param next - Continues to the handler.
  * @returns Nothing.
  */
-async function requireOwnPerson(db: DB, req: Request, res: Response, next: NextFunction): Promise<void> {
-  const userId = String(res.locals.userId);
+async function requireOwnPerson(db: DB, req: Request, res: AvatarResponse, next: NextFunction): Promise<void> {
+  const { userId } = res.locals;
 
   const personId = String(req.params.personId);
   // Postgres rejects a malformed uuid with an error, which would answer 500 where 404 is meant.
   const isUuid = UUID_PATTERN.test(personId);
-  const rows: Array<{ avatarPath: string | null }> = isUuid
+  const rows = isUuid
     ? await db
         .select({ avatarPath: dbSchema.userPersons.avatarPath })
         .from(dbSchema.userPersons)
@@ -135,7 +138,7 @@ async function saveAvatarPath(db: DB, locals: AvatarLocals, avatarPath: string |
  */
 export function createAvatarRouter(deps: AvatarRouterDeps): Router {
   const { db, auth, avatarDir } = deps;
-  const guard = (req: Request, res: Response, next: NextFunction) => requireOwnPerson(db, req, res, next);
+  const guard = (req: Request, res: AvatarResponse, next: NextFunction) => requireOwnPerson(db, req, res, next);
   const storage = multer.diskStorage({
     destination: avatarDir,
     filename: (_req, file, cb) => {
@@ -167,7 +170,7 @@ export function createAvatarRouter(deps: AvatarRouterDeps): Router {
         return;
       }
 
-      const locals = res.locals as AvatarLocals;
+      const { locals } = res;
       const avatarUrl = `${AVATAR_URL_PREFIX}${req.file.filename}`;
       await saveAvatarPath(db, locals, avatarUrl);
       if (locals.avatarPath) {
@@ -179,7 +182,7 @@ export function createAvatarRouter(deps: AvatarRouterDeps): Router {
   });
 
   router.delete('/:personId', guard, async (_req, res) => {
-    const locals = res.locals as AvatarLocals;
+    const { locals } = res;
 
     if (locals.avatarPath) {
       await removeAvatarFile(avatarDir, locals.avatarPath);

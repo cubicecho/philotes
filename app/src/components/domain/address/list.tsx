@@ -66,18 +66,7 @@ export interface AddressListProps {
   onCreateOpenChange?: (open: boolean) => void;
 }
 
-interface AddressData {
-  id: string;
-  type: AddressTypeEnum;
-  label: string | null;
-  line1: string;
-  line2: string | null;
-  city: string | null;
-  state: string | null;
-  postalCode: string | null;
-  country: string | null;
-  isPrimary: boolean;
-}
+type AddressData = AddressListFragment['addresses'][number];
 
 const TYPE_LABELS: Record<AddressTypeEnum, string> = {
   [AddressTypeEnum.Home]: 'Home',
@@ -156,8 +145,20 @@ function AddressRow({ address, onDelete }: AddressRowProps) {
   );
 }
 
-const EMPTY_ADDRESS = {
-  type: AddressTypeEnum.Home as string,
+interface AddressFields {
+  type: AddressTypeEnum;
+  label: string;
+  line1: string;
+  line2: string;
+  city: string;
+  state: string;
+  postalCode: string;
+  country: string;
+  isPrimary: boolean;
+}
+
+const EMPTY_ADDRESS: AddressFields = {
+  type: AddressTypeEnum.Home,
   label: '',
   line1: '',
   line2: '',
@@ -187,7 +188,7 @@ function AddAddressDialog({ personId, open, onOpenChange, onAdded }: AddAddressD
             values: [
               {
                 personId,
-                type: value.type as AddressTypeEnum,
+                type: value.type,
                 label: value.label.trim() || null,
                 line1: value.line1.trim(),
                 line2: value.line2.trim() || null,
@@ -210,7 +211,8 @@ function AddAddressDialog({ personId, open, onOpenChange, onAdded }: AddAddressD
   });
 
   useEffect(() => {
-    if (!open) {
+    const isClosed = open === false;
+    if (isClosed) {
       return;
     }
     form.reset(EMPTY_ADDRESS);
@@ -265,7 +267,7 @@ export function AddressList({ fragmentRef, onAdd, onDelete, createOpen, onCreate
   const dialogOpen = createOpen ?? internalOpen;
   const setDialogOpen = onCreateOpenChange ?? setInternalOpen;
   const person = fragmentRef;
-  const addresses = (person.addresses ?? []) as AddressData[];
+  const addresses = person.addresses ?? [];
 
   return (
     <>

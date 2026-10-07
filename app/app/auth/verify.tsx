@@ -34,7 +34,8 @@ export default function VerifyPage() {
   });
 
   useEffect(() => {
-    if (started.current || !token) {
+    const hasNothingToSend = started.current || !token;
+    if (hasNothingToSend) {
       return;
     }
     started.current = true;

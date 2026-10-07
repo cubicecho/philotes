@@ -1,3 +1,4 @@
+import type { DB } from '@cubicecho/philotes-db';
 import * as dbSchema from '@cubicecho/philotes-db/schema';
 import { and, eq } from 'drizzle-orm';
 import { extendSchema, type GraphQLSchema, parse } from 'graphql';
@@ -38,13 +39,12 @@ const USER_SCOPE_SDL = parse(`
   }
 `);
 
-// biome-ignore lint/suspicious/noExplicitAny: drizzle-orm 1.0 column type compat
-type AnyDB = any;
-
 // The caller's user_persons rows are read once per request and kept against the context. A user has
 // hundreds of contacts, so one indexed read beats a lookup per row of every list that shows an avatar.
 
-type PersonContext = Record<string, unknown>;
+type PersonContext = typeof dbSchema.userPersons.$inferSelect;
+/** The columns `createPerson` takes. The GraphQL input type requires the names. */
+type NewPerson = typeof dbSchema.persons.$inferInsert;
 const personContextsByRequest = new WeakMap<Context, Promise<Map<string, PersonContext>>>();
 
 function personContexts(ctx: Context): Promise<Map<string, PersonContext>> {
@@ -55,11 +55,8 @@ function personContexts(ctx: Context): Promise<Map<string, PersonContext>> {
 
   const userId = requireAuth(ctx);
   const loading = (async () => {
-    const rows: PersonContext[] = await (ctx.db as AnyDB)
-      .select()
-      .from(dbSchema.userPersons)
-      .where(eq(dbSchema.userPersons.userId, userId));
-    return new Map(rows.map((row) => [row.personId as string, row]));
+    const rows = await ctx.db.select().from(dbSchema.userPersons).where(eq(dbSchema.userPersons.userId, userId));
+    return new Map(rows.map((row) => [row.personId, row]));
   })();
 
   personContextsByRequest.set(ctx, loading);
@@ -89,7 +86,7 @@ function applyPersonContextFields(schema: GraphQLSchema): void {
  * @param values - The person columns, already validated.
  * @returns The id of the new or existing person.
  */
-async function insertOrFindPerson(db: AnyDB, values: Record<string, unknown>): Promise<string> {
+async function insertOrFindPerson(db: DB, values: NewPerson): Promise<string> {
   const { email } = values;
   try {
     const [inserted] = await db.insert(dbSchema.persons).values(values).returning({ id: dbSchema.persons.id });
@@ -116,9 +113,9 @@ async function insertOrFindPerson(db: AnyDB, values: Record<string, unknown>): P
 function overridePersonMutations(schema: GraphQLSchema): void {
   const mf = objectType(schema, 'Mutation').getFields();
 
-  mf.createPerson.resolve = async (_parent: unknown, args: { values: Record<string, unknown> }, ctx: Context) => {
+  mf.createPerson.resolve = async (_parent: unknown, args: { values: NewPerson }, ctx: Context) => {
     const userId = requireAuth(ctx);
-    const db = ctx.db as AnyDB;
+    const { db } = ctx;
 
     // The parsed columns are the trimmed ones. Anything else the input carries passes through as sent.
     const values = { ...args.values, ...parseOrThrow(personInput, args.values) };
@@ -132,7 +129,7 @@ function overridePersonMutations(schema: GraphQLSchema): void {
 
   mf.deletePerson.resolve = async (_parent: unknown, args: { where?: { id?: { eq?: string } } }, ctx: Context) => {
     const userId = requireAuth(ctx);
-    const db = ctx.db as AnyDB;
+    const { db } = ctx;
     const targetId = args.where?.id?.eq;
     if (!targetId) {
       return [];
@@ -159,7 +156,7 @@ function addUserPersonsResolvers(schema: GraphQLSchema): void {
 
   qf.myPersonContext.resolve = async (_parent: unknown, args: { personId: string }, ctx: Context) => {
     const userId = requireAuth(ctx);
-    const db = ctx.db as AnyDB;
+    const { db } = ctx;
     const [row] = await db
       .select()
       .from(dbSchema.userPersons)
@@ -169,7 +166,7 @@ function addUserPersonsResolvers(schema: GraphQLSchema): void {
 
   mf.addPersonToMyContacts.resolve = async (_parent: unknown, args: { personId: string }, ctx: Context) => {
     const userId = requireAuth(ctx);
-    const db = ctx.db as AnyDB;
+    const { db } = ctx;
 
     const [person] = await db
       .select({ id: dbSchema.persons.id })
@@ -200,7 +197,7 @@ function addUserPersonsResolvers(schema: GraphQLSchema): void {
     ctx: Context,
   ) => {
     const userId = requireAuth(ctx);
-    const db = ctx.db as AnyDB;
+    const { db } = ctx;
     const { personId, ...updates } = args;
 
     const defined = Object.fromEntries(Object.entries(updates).filter(([, v]) => v !== undefined));
@@ -220,7 +217,7 @@ function addUserPersonsResolvers(schema: GraphQLSchema): void {
 
   mf.removePersonFromMyContacts.resolve = async (_parent: unknown, args: { personId: string }, ctx: Context) => {
     const userId = requireAuth(ctx);
-    const db = ctx.db as AnyDB;
+    const { db } = ctx;
     await db
       .delete(dbSchema.userPersons)
       .where(and(eq(dbSchema.userPersons.userId, userId), eq(dbSchema.userPersons.personId, args.personId)));

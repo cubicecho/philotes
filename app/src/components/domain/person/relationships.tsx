@@ -1,6 +1,6 @@
 import { useMutation } from '@apollo/client';
 import { useRouter } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { View } from 'react-native';
 import { graphql } from '@/__generated__/gql';
 import type { Person_RelationshipsFragment, PersonRelationshipEntry } from '@/__generated__/graphql';
@@ -142,6 +142,9 @@ function RelationshipFormDialog({
   const { data: typesData } = useAllRows(GET_RELATIONSHIP_TYPES, { field: 'relationshipTypes' });
   const types = typesData?.relationshipTypes ?? [];
   const firstType = types[0]?.name ?? '';
+  // Read through a ref so the reset below runs on open only, not when the type list refetches.
+  const firstTypeRef = useRef(firstType);
+  firstTypeRef.current = firstType;
   /** The type whose delete is waiting on the confirm question, if one is. */
   const [typeToDelete, setTypeToDelete] = useState<{ id: string; name: string } | null>(null);
 
@@ -177,19 +180,19 @@ function RelationshipFormDialog({
     },
   });
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: reset on open only, not when the type list refetches
   useEffect(() => {
-    if (!open) {
+    const isClosed = open === false;
+    if (isClosed) {
       return;
     }
     form.reset({
       toPersonId: editing?.relatedPersonId ?? '',
-      type: editing?.type ?? firstType,
+      type: editing?.type ?? firstTypeRef.current,
       newTypeName: '',
     });
     resetCreate();
     resetUpdate();
-  }, [open, editing, form]);
+  }, [open, editing, form, resetCreate, resetUpdate]);
 
   const personOptions = isEditing
     ? [
@@ -199,7 +202,11 @@ function RelationshipFormDialog({
         },
       ]
     : allPersons
-        .filter((p) => p.id !== fromPersonId && existingRelatedIds.has(p.id) === false)
+        .filter((p) => {
+          const isOther = p.id !== fromPersonId;
+          const isUnrelated = existingRelatedIds.has(p.id) === false;
+          return isOther && isUnrelated;
+        })
         .map((p) => ({ value: p.id, label: fullName(p) }));
 
   // A relationship keeps its type's name after the type is deleted, so the one being edited may
@@ -213,7 +220,8 @@ function RelationshipFormDialog({
 
   const addType = async () => {
     const name = form.state.values.newTypeName.trim();
-    if (!name || creatingType) {
+    const isAddBlocked = name === '' || creatingType;
+    if (isAddBlocked) {
       return;
     }
     const { data } = await createType({ variables: { name } });
@@ -289,14 +297,12 @@ function RelationshipFormDialog({
                 )}
               </form.AppField>
               <form.Subscribe selector={(state) => state.values.newTypeName}>
-                {(newTypeName) => (
-                  <Button
-                    variant="outline"
-                    content="Add"
-                    disabled={!newTypeName.trim() || creatingType}
-                    onPress={() => void addType()}
-                  />
-                )}
+                {(newTypeName) => {
+                  const isAddBlocked = newTypeName.trim() === '' || creatingType;
+                  return (
+                    <Button variant="outline" content="Add" disabled={isAddBlocked} onPress={() => void addType()} />
+                  );
+                }}
               </form.Subscribe>
             </View>
 
@@ -318,7 +324,8 @@ function RelationshipFormDialog({
             <ConfirmDialog
               open={typeToDelete !== null}
               onOpenChange={(open) => {
-                if (open === false) {
+                const isClosing = open === false;
+                if (isClosing) {
                   setTypeToDelete(null);
                 }
               }}
@@ -406,6 +413,7 @@ export function PersonRelationships({
   // Kept apart from the open flag so the dialog still shows the row while it closes.
   const [editing, setEditing] = useState<EditingRelationship | undefined>();
   const [editOpen, setEditOpen] = useState(false);
+  const hasNothingToShow = relationships.length === 0 && showAdd === false;
 
   return (
     <>
@@ -421,7 +429,7 @@ export function PersonRelationships({
             }}
           />
         ))}
-        {relationships.length === 0 && !showAdd ? <EmptyState compact title="No relationships yet." /> : null}
+        {hasNothingToShow ? <EmptyState compact title="No relationships yet." /> : null}
       </View>
 
       <RelationshipFormDialog

@@ -87,10 +87,23 @@ function nextOccurrenceInWindow(stored: Date): number | null {
   const thisYear = new Date(Date.UTC(now.getUTCFullYear(), month, day));
   const nextYear = new Date(Date.UTC(now.getUTCFullYear() + 1, month, day));
 
-  const candidate = thisYear >= now ? thisYear : nextYear;
+  const isStillAhead = thisYear >= now;
+  const candidate = isStillAhead ? thisYear : nextYear;
   const diff = Math.ceil((candidate.getTime() - now.getTime()) / MS_PER_DAY);
 
-  return diff <= BRIEF.upcomingWindowDays ? diff : null;
+  const isInWindow = diff <= BRIEF.upcomingWindowDays;
+  return isInWindow ? diff : null;
+}
+
+/** How far off an upcoming date is, in the brief's words. */
+function daysAwayLabel(daysAway: number): string {
+  if (daysAway === 0) {
+    return 'today';
+  }
+  if (daysAway === 1) {
+    return 'tomorrow';
+  }
+  return `in ${daysAway} days`;
 }
 
 function truncate(text: string, maxLength: number): string {
@@ -208,9 +221,7 @@ export function PreContactBrief({ person }: PreContactBriefProps) {
                   {upcomingDates.map(({ date, daysAway }) => (
                     <View key={date.id} role="listitem" className="flex-row items-center justify-between gap-2">
                       <Text className="shrink text-foreground text-sm">{date.name}</Text>
-                      <Text className="shrink-0 text-foreground/60 text-xs">
-                        {daysAway === 0 ? 'today' : daysAway === 1 ? 'tomorrow' : `in ${daysAway} days`}
-                      </Text>
+                      <Text className="shrink-0 text-foreground/60 text-xs">{daysAwayLabel(daysAway)}</Text>
                     </View>
                   ))}
                 </View>

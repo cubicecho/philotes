@@ -1,5 +1,6 @@
 import { View } from 'react-native';
 import { graphql } from '@/__generated__/gql';
+import type { DashboardQuery } from '@/__generated__/graphql';
 import type { UpcomingDate } from '@/components/domain/dashboard/coming-up';
 import { ComingUp } from '@/components/domain/dashboard/coming-up';
 import type { OpenTask } from '@/components/domain/dashboard/open-tasks';
@@ -52,30 +53,8 @@ const GET_DASHBOARD = graphql(`
   }
 `);
 
-type DashboardPerson = {
-  id: string;
-  firstName: string;
-  lastName: string;
-  avatarPath?: string | null;
-  contactFrequency?: string | null;
-  createdAt: Date;
-  importantDates: Array<{
-    id: string;
-    name: string;
-    date: Date;
-    recurrence?: string | null;
-  }>;
-  tasks: Array<{
-    id: string;
-    title: string;
-    dueAt?: Date | null;
-    completedAt?: Date | null;
-    personId: string;
-  }>;
-  interactions: Array<{
-    occurredAt: Date;
-  }>;
-};
+/** One person as the dashboard query returns them. */
+type DashboardPerson = DashboardQuery['persons'][number];
 
 const { widgetLimit, upcomingWindowDays, dormantAfterDays, tasksDueWithinDays } = DASHBOARD_DEFAULTS;
 
@@ -100,13 +79,15 @@ function daysUntilNextOccurrence(storedDate: Date, recurrence: string | null | u
   if (!recurrence) {
     const stored = new Date(storedDate.getFullYear(), month, day);
     const diff = daysBetween(t, stored);
-    return diff >= 0 ? diff : null;
+    const isStillAhead = diff >= 0;
+    return isStillAhead ? diff : null;
   }
 
   if (recurrence === Recurrence.Yearly) {
     const thisYear = new Date(t.getFullYear(), month, day);
     const diff = daysBetween(t, thisYear);
-    if (diff >= 0) {
+    const isStillAhead = diff >= 0;
+    if (isStillAhead) {
       return diff;
     }
     return daysBetween(t, new Date(t.getFullYear() + 1, month, day));
@@ -115,7 +96,8 @@ function daysUntilNextOccurrence(storedDate: Date, recurrence: string | null | u
   if (recurrence === Recurrence.Monthly) {
     const thisMonth = new Date(t.getFullYear(), t.getMonth(), day);
     const diff = daysBetween(t, thisMonth);
-    if (diff >= 0) {
+    const isStillAhead = diff >= 0;
+    if (isStillAhead) {
       return diff;
     }
     return daysBetween(t, new Date(t.getFullYear(), t.getMonth() + 1, day));
@@ -128,6 +110,20 @@ function daysUntilNextOccurrence(storedDate: Date, recurrence: string | null | u
   }
 
   return null;
+}
+
+/** Whether a person last contacted this many days ago counts as a dormant tie. Never contacted is not dormant. */
+function isDormant(daysSince: number | null): boolean {
+  return daysSince !== null && daysSince >= dormantAfterDays;
+}
+
+/** What the reach-out list says about a dormant tie. */
+function dormantLabel(daysSince: number | null): string {
+  const isOverTwoYears = daysSince !== null && daysSince >= TWO_YEARS_IN_DAYS;
+  if (isOverTwoYears) {
+    return `No contact in over ${Math.floor(daysSince / DAYS_PER_YEAR)} years`;
+  }
+  return 'No contact in over a year';
 }
 
 /**
@@ -162,17 +158,14 @@ function computeReachOut(persons: DashboardPerson[]): ReachOutPerson[] {
         ? Math.floor((Date.now() - p.interactions[0].occurredAt.getTime()) / MS_PER_DAY)
         : null,
     }))
-    .filter((entry) => entry.daysSince !== null && entry.daysSince >= dormantAfterDays)
+    .filter((entry) => isDormant(entry.daysSince))
     .sort((a, b) => (b.daysSince ?? 0) - (a.daysSince ?? 0))
     .map(({ person, daysSince }) => ({
       id: person.id,
       firstName: person.firstName,
       lastName: person.lastName,
       avatarPath: person.avatarPath,
-      statusLabel:
-        daysSince && daysSince >= TWO_YEARS_IN_DAYS
-          ? `No contact in over ${Math.floor(daysSince / DAYS_PER_YEAR)} years`
-          : 'No contact in over a year',
+      statusLabel: dormantLabel(daysSince),
       isDormant: true,
     }));
 
@@ -185,7 +178,8 @@ function computeUpcomingDates(persons: DashboardPerson[]): UpcomingDate[] {
   for (const person of persons) {
     for (const importantDate of person.importantDates) {
       const daysUntil = daysUntilNextOccurrence(importantDate.date, importantDate.recurrence);
-      if (daysUntil === null || daysUntil > upcomingWindowDays) {
+      const isOutsideWindow = daysUntil === null || daysUntil > upcomingWindowDays;
+      if (isOutsideWindow) {
         continue;
       }
       results.push({
@@ -270,7 +264,9 @@ const CELL = 'w-full md:w-[calc(50%-0.5rem)]';
 export default function DashboardPage() {
   const { data, loading, error, refetch } = useAllRows(GET_DASHBOARD, { field: 'persons' });
 
-  const persons = (data?.persons ?? []) as DashboardPerson[];
+  const persons = data?.persons ?? [];
+  const pending = loading && !data;
+  const hasFailedFirstLoad = Boolean(error) && !data;
 
   return (
     <PageLayout
@@ -278,7 +274,7 @@ export default function DashboardPage() {
       contentSlot={
         <View className="py-4">
           <QueryState
-            query={{ isPending: loading && !data, isError: Boolean(error) && !data, error, refetch }}
+            query={{ isPending: pending, isError: hasFailedFirstLoad, error, refetch }}
             what="dashboard data"
             // The widgets say their own "all caught up", so there is no empty rung here.
             count={1}

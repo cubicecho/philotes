@@ -1,3 +1,4 @@
+import type { DB } from '@cubicecho/philotes-db';
 import * as dbSchema from '@cubicecho/philotes-db/schema';
 import { and, eq } from 'drizzle-orm';
 import { extendSchema, type GraphQLSchema, parse } from 'graphql';
@@ -22,14 +23,14 @@ function reportFailure(errors: string[], summary: string, err: unknown): void {
 
 function isUniqueViolation(err: unknown): boolean {
   const msg = errorMessage(err);
-  const causeMsg = err instanceof Error && err.cause instanceof Error ? err.cause.message : '';
+  const cause = err instanceof Error ? err.cause : undefined;
+  const causeMsg = cause instanceof Error ? cause.message : '';
   return (
     msg.includes('unique') || msg.includes('duplicate') || causeMsg.includes('unique') || causeMsg.includes('duplicate')
   );
 }
 
 const { AddressType, ContactType, Recurrence } = dbSchema;
-type ContactType = dbSchema.ContactType;
 
 /** A phone whose Google label holds this word is a mobile. */
 const MOBILE_LABEL_WORD = 'mobile';
@@ -75,8 +76,7 @@ export function applyImportContactsExtension(schema: GraphQLSchema): GraphQLSche
     context: Context,
   ): Promise<ImportContactsResult> => {
     const userId = requireAuth(context);
-    // biome-ignore lint/suspicious/noExplicitAny: drizzle-orm 1.0 column type compat
-    const db = context.db as any;
+    const { db } = context;
 
     // Step 1: Parse CSV
     const { contacts, skippedCount } = parseGoogleContactsCsv(args.csv);
@@ -92,7 +92,7 @@ export function applyImportContactsExtension(schema: GraphQLSchema): GraphQLSche
     const labelNameToId = new Map<string, string>();
 
     if (allLabelNames.size > 0) {
-      const existingLabels: Array<{ id: string; label: string }> = await db
+      const existingLabels = await db
         .select({ id: dbSchema.labels.id, label: dbSchema.labels.label })
         .from(dbSchema.labels)
         .where(eq(dbSchema.labels.userId, userId));
@@ -103,7 +103,8 @@ export function applyImportContactsExtension(schema: GraphQLSchema): GraphQLSche
 
       // Insert any labels not already in the DB (user-scoped)
       for (const name of allLabelNames) {
-        if (labelNameToId.has(name)) {
+        const isKnownLabel = labelNameToId.has(name);
+        if (isKnownLabel) {
           continue;
         }
 
@@ -200,32 +201,26 @@ export function applyImportContactsExtension(schema: GraphQLSchema): GraphQLSche
   return extendedSchema;
 }
 
-// biome-ignore lint/suspicious/noExplicitAny: drizzle-orm 1.0 column type compat
-async function insertContactInfos(db: any, personId: string, userId: string, contact: ParsedContact): Promise<void> {
-  const rows: Array<{
-    personId: string;
-    userId: string;
-    type: ContactType;
-    value: string;
-    label: string | undefined;
-    isPrimary: boolean;
-  }> = [];
+async function insertContactInfos(db: DB, personId: string, userId: string, contact: ParsedContact): Promise<void> {
+  const rows: dbSchema.NewContactInfo[] = [];
 
   for (let i = 0; i < contact.emails.length; i++) {
     const e = contact.emails[i];
+    const isFirstEmail = i === 0;
     rows.push({
       personId,
       userId,
       type: ContactType.Email,
       value: e.value,
       label: e.label || undefined,
-      isPrimary: i === 0,
+      isPrimary: isFirstEmail,
     });
   }
 
   for (const p of contact.phones) {
     const lower = p.label.toLowerCase();
-    const type = lower.includes(MOBILE_LABEL_WORD) ? ContactType.Mobile : ContactType.Phone;
+    const isMobile = lower.includes(MOBILE_LABEL_WORD);
+    const type = isMobile ? ContactType.Mobile : ContactType.Phone;
     rows.push({
       personId,
       userId,
@@ -240,7 +235,7 @@ async function insertContactInfos(db: any, personId: string, userId: string, con
     rows.push({
       personId,
       userId,
-      type: 'website',
+      type: ContactType.Website,
       value: w.value,
       label: w.label || undefined,
       isPrimary: false,
@@ -252,11 +247,11 @@ async function insertContactInfos(db: any, personId: string, userId: string, con
   }
 
   // Pre-filter: skip any incoming entries this user already has for this person
-  const existingInfos: Array<{ value: string }> = await db
+  const existingInfos = await db
     .select({ value: dbSchema.contactInfos.value })
     .from(dbSchema.contactInfos)
     .where(and(eq(dbSchema.contactInfos.personId, personId), eq(dbSchema.contactInfos.userId, userId)));
-  const existingValues = new Set(existingInfos.map((r: { value: string }) => r.value));
+  const existingValues = new Set(existingInfos.map((r) => r.value));
 
   const newRows = rows.filter((r) => existingValues.has(r.value) === false);
   if (newRows.length === 0) {
@@ -266,8 +261,7 @@ async function insertContactInfos(db: any, personId: string, userId: string, con
   await db.insert(dbSchema.contactInfos).values(newRows);
 }
 
-// biome-ignore lint/suspicious/noExplicitAny: drizzle-orm 1.0 column type compat
-async function insertAddresses(db: any, personId: string, userId: string, contact: ParsedContact): Promise<void> {
+async function insertAddresses(db: DB, personId: string, userId: string, contact: ParsedContact): Promise<void> {
   if (contact.addresses.length === 0) {
     return;
   }
@@ -290,11 +284,11 @@ async function insertAddresses(db: any, personId: string, userId: string, contac
   });
 
   // Pre-filter: skip any incoming addresses this user already has for this person
-  const existingAddrs: Array<{ line1: string }> = await db
+  const existingAddrs = await db
     .select({ line1: dbSchema.addresses.line1 })
     .from(dbSchema.addresses)
     .where(and(eq(dbSchema.addresses.personId, personId), eq(dbSchema.addresses.userId, userId)));
-  const existingLine1s = new Set(existingAddrs.map((r: { line1: string }) => r.line1));
+  const existingLine1s = new Set(existingAddrs.map((r) => r.line1));
 
   const newRows = rows.filter((r) => existingLine1s.has(r.line1) === false);
   if (newRows.length === 0) {
@@ -304,14 +298,13 @@ async function insertAddresses(db: any, personId: string, userId: string, contac
   await db.insert(dbSchema.addresses).values(newRows);
 }
 
-// biome-ignore lint/suspicious/noExplicitAny: drizzle-orm 1.0 column type compat
-async function insertBirthday(db: any, personId: string, userId: string, contact: ParsedContact): Promise<void> {
+async function insertBirthday(db: DB, personId: string, userId: string, contact: ParsedContact): Promise<void> {
   if (!contact.birthday) {
     return;
   }
 
   // DB wins — skip if a Birthday already exists for this person+user
-  const existing: Array<{ id: string }> = await db
+  const existing = await db
     .select({ id: dbSchema.importantDates.id })
     .from(dbSchema.importantDates)
     .where(
@@ -336,8 +329,7 @@ async function insertBirthday(db: any, personId: string, userId: string, contact
 }
 
 async function insertPersonLabels(
-  // biome-ignore lint/suspicious/noExplicitAny: drizzle-orm 1.0 column type compat
-  db: any,
+  db: DB,
   personId: string,
   userId: string,
   labelNames: string[],
@@ -347,7 +339,7 @@ async function insertPersonLabels(
     return;
   }
 
-  const rows: Array<{ personId: string; labelId: string; userId: string }> = [];
+  const rows: dbSchema.NewPersonLabel[] = [];
   for (const name of labelNames) {
     const labelId = labelNameToId.get(name);
     if (!labelId) {

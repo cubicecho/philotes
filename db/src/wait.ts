@@ -17,13 +17,12 @@ export interface Queryable {
  * @returns The code, or an empty string when there is none.
  */
 function codeOf(value: unknown): string {
-  if (typeof value !== 'object' || value === null) {
+  const isObject = typeof value === 'object' && value !== null;
+  if (isObject === false) {
     return '';
   }
-  if ('code' in value && typeof value.code === 'string') {
-    return value.code;
-  }
-  return '';
+  const code = 'code' in value ? value.code : undefined;
+  return typeof code === 'string' ? code : '';
 }
 
 /**

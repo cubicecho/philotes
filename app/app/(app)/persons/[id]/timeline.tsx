@@ -1,4 +1,4 @@
-import { useQuery } from '@apollo/client';
+import { type ApolloError, useQuery } from '@apollo/client';
 import { Link, useLocalSearchParams } from 'expo-router';
 import { View } from 'react-native';
 import { graphql } from '@/__generated__/gql';
@@ -40,6 +40,25 @@ const GET_PERSON_TIMELINE = graphql(`
   }
 `);
 
+/** What stands in for the timeline until there is a person: the failure, a spinner, or "not found". */
+function TimelinePlaceholder({
+  error,
+  pending,
+  onRetry,
+}: {
+  error: ApolloError | undefined;
+  pending: boolean;
+  onRetry: () => void;
+}) {
+  if (error) {
+    return <QueryError error={error} onRetry={onRetry} what="the timeline" />;
+  }
+  if (pending) {
+    return <Spinner />;
+  }
+  return <EmptyState icon={Users} title="Person not found." />;
+}
+
 export default function PersonTimelinePage() {
   const { id } = useLocalSearchParams<{ id: string }>();
 
@@ -73,15 +92,7 @@ export default function PersonTimelinePage() {
         title="Timeline"
         iconSlot={<Clock />}
         breadcrumbsSlot={backLink}
-        contentSlot={
-          error ? (
-            <QueryError error={error} onRetry={() => refetch()} what="the timeline" />
-          ) : pending ? (
-            <Spinner />
-          ) : (
-            <EmptyState icon={Users} title="Person not found." />
-          )
-        }
+        contentSlot={<TimelinePlaceholder error={error} pending={pending} onRetry={() => refetch()} />}
       />
     );
   }

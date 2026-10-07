@@ -57,13 +57,13 @@ export function GoogleCsvImportCard() {
       const firstComma = line.indexOf(',');
       const secondComma = line.indexOf(',', firstComma + 1);
       const first = line.slice(0, firstComma).replace(/^"|"$/g, '').trim();
-      const last =
-        firstComma !== -1 && secondComma !== -1
-          ? line
-              .slice(firstComma + 1, secondComma)
-              .replace(/^"|"$/g, '')
-              .trim()
-          : '';
+      const hasBothCommas = firstComma !== -1 && secondComma !== -1;
+      const last = hasBothCommas
+        ? line
+            .slice(firstComma + 1, secondComma)
+            .replace(/^"|"$/g, '')
+            .trim()
+        : '';
       return [first, last].filter(Boolean).join(' ') || '(unknown)';
     });
 
@@ -76,14 +76,18 @@ export function GoogleCsvImportCard() {
   }
 
   async function handleImport() {
-    if (importState.stage !== ImportStage.Preview || !importState.rawCsv) {
+    if (importState.stage !== ImportStage.Preview) {
+      return;
+    }
+    const { rawCsv } = importState;
+    if (!rawCsv) {
       return;
     }
 
     setImportState({ stage: ImportStage.Importing });
 
     try {
-      const result = await importContacts({ variables: { csv: importState.rawCsv } });
+      const result = await importContacts({ variables: { csv: rawCsv } });
 
       if (result.errors?.length) {
         setImportState({
@@ -126,7 +130,7 @@ export function GoogleCsvImportCard() {
               {importState.previewNames.length > 0 ? (
                 <View className="gap-1">
                   {importState.previewNames.map((name, i) => (
-                    // biome-ignore lint/suspicious/noArrayIndexKey: static preview list
+                    // biome-ignore lint/suspicious/noArrayIndexKey: two contacts can share a name, and the list is never reordered
                     <Text key={i} className="text-foreground/60 text-sm">{`• ${name}`}</Text>
                   ))}
                   {importState.contactCount > previewNameCount ? (
@@ -155,7 +159,7 @@ export function GoogleCsvImportCard() {
               {importState.errors.length > 0 ? (
                 <View className="gap-0.5">
                   {importState.errors.map((e, i) => (
-                    // biome-ignore lint/suspicious/noArrayIndexKey: static error list
+                    // biome-ignore lint/suspicious/noArrayIndexKey: the same error can repeat, and the list is never reordered
                     <Text key={i} className="text-negative text-sm">
                       {e}
                     </Text>

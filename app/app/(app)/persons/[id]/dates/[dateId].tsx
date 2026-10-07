@@ -1,4 +1,4 @@
-import { useQuery } from '@apollo/client';
+import { type ApolloError, useQuery } from '@apollo/client';
 import { Link, useLocalSearchParams } from 'expo-router';
 import { Text, View } from 'react-native';
 import { graphql } from '@/__generated__/gql';
@@ -40,6 +40,25 @@ function formatDate(date: Date): string {
   });
 }
 
+/** What stands in for the page until there is a date: the failure, a spinner, or "not found". */
+function DatePlaceholder({
+  error,
+  loading,
+  onRetry,
+}: {
+  error: ApolloError | undefined;
+  loading: boolean;
+  onRetry: () => void;
+}) {
+  if (error) {
+    return <QueryError error={error} onRetry={onRetry} what="this date" />;
+  }
+  if (loading) {
+    return <Spinner />;
+  }
+  return <EmptyState icon={CalendarDays} title="Date not found." />;
+}
+
 export default function ImportantDateDetailPage() {
   const { id: personId, dateId } = useLocalSearchParams<{ id: string; dateId: string }>();
 
@@ -66,26 +85,19 @@ export default function ImportantDateDetailPage() {
         title="Important date"
         iconSlot={<CalendarDays />}
         breadcrumbsSlot={backLink}
-        contentSlot={
-          error ? (
-            <QueryError error={error} onRetry={() => refetch()} what="this date" />
-          ) : loading ? (
-            <Spinner />
-          ) : (
-            <EmptyState icon={CalendarDays} title="Date not found." />
-          )
-        }
+        contentSlot={<DatePlaceholder error={error} loading={loading} onRetry={() => refetch()} />}
       />
     );
   }
 
-  const dateLabelIds = new Set((date.labels ?? []).map((l) => l.id));
+  const dateLabels = date.labels ?? [];
+  const dateLabelIds = new Set(dateLabels.map((l) => l.id));
   const recurrenceLabel = RECURRENCE_OPTIONS.find((o) => o.value === date.recurrence)?.label;
 
   // Notes that share at least one tag with this date
-  const relatedNotes = (notesQuery.data?.notes ?? []).filter((note) =>
-    (note.labels ?? []).some((l) => dateLabelIds.has(l.id)),
-  );
+  const relatedNotes = (notesQuery.data?.notes ?? [])
+    .map((note) => ({ id: note.id, body: note.body, labels: note.labels ?? [] }))
+    .filter((note) => note.labels.some((l) => dateLabelIds.has(l.id)));
 
   return (
     <PageLayout
@@ -97,9 +109,9 @@ export default function ImportantDateDetailPage() {
         <View className="gap-6 py-4">
           {date.description ? <Text className="text-foreground/60 text-sm">{date.description}</Text> : null}
 
-          {date.labels && date.labels.length > 0 ? (
+          {dateLabels.length > 0 ? (
             <View className="flex-row flex-wrap gap-1.5">
-              {date.labels.map((l) => (
+              {dateLabels.map((l) => (
                 <LabelChip key={l.id} label={l.label} color={l.color} />
               ))}
             </View>
@@ -121,7 +133,7 @@ export default function ImportantDateDetailPage() {
                   {relatedNotes.map((note) => (
                     <View key={note.id} className="gap-1.5 rounded-md border border-foreground/10 px-3 py-2">
                       <Text className="text-foreground text-sm">{note.body}</Text>
-                      {note.labels && note.labels.length > 0 ? (
+                      {note.labels.length > 0 ? (
                         <View className="flex-row flex-wrap gap-1">
                           {note.labels.map((l) => (
                             // The tags this note shares with the date are the reason it is listed; the rest are dimmed.

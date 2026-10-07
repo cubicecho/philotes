@@ -73,8 +73,13 @@ const DELETE_PERSON = graphql(`
   }
 `);
 
-type SortField = 'name' | 'lastContacted';
-type SortDir = 'asc' | 'desc';
+/** What the list can be ordered by, as the sort picker and the URL spell it. */
+const SORT_FIELDS = ['name', 'lastContacted'] as const;
+type SortField = (typeof SORT_FIELDS)[number];
+
+/** The two directions of a sort, as the sort picker and the URL spell them. */
+const SORT_DIRS = ['asc', 'desc'] as const;
+type SortDir = (typeof SORT_DIRS)[number];
 
 interface PersonsUrlState {
   q: string;
@@ -109,7 +114,6 @@ export default function PersonsPage() {
   const debouncedSetUrlQ = useCallback(
     debounce((q: string) => setUrlState({ q }), SEARCH_DEFAULTS.debounceMs),
     // debounce returns a new function only once; setUrlState is stable
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     [],
   );
 
@@ -187,7 +191,8 @@ export default function PersonsPage() {
     : [...rawPersons].sort((a, b) => {
         const aTime = a.lastContactedAt ? a.lastContactedAt.getTime() : null;
         const bTime = b.lastContactedAt ? b.lastContactedAt.getTime() : null;
-        if (aTime === null && bTime === null) {
+        const isNeitherContacted = aTime === null && bTime === null;
+        if (isNeitherContacted) {
           return 0;
         }
         if (aTime === null) {
@@ -200,10 +205,10 @@ export default function PersonsPage() {
       });
 
   // Label filtering (client-side — server cannot filter by nested relation)
-  const filteredPersons =
-    activeLabelIds.length > 0
-      ? sortedPersons.filter((p) => activeLabelIds.every((id) => p.labels.some((l) => l.id === id)))
-      : sortedPersons;
+  const hasLabelFilter = activeLabelIds.length > 0;
+  const filteredPersons = hasLabelFilter
+    ? sortedPersons.filter((p) => activeLabelIds.every((id) => p.labels.some((l) => l.id === id)))
+    : sortedPersons;
 
   const allLabels = (labelsData?.labels ?? []).map((l) => ({ id: l.id, label: l.label, color: l.color }));
 
@@ -231,12 +236,18 @@ export default function PersonsPage() {
 
   const handleSortChange = (value: string): void => {
     const dashIndex = value.lastIndexOf('-');
-    const field = value.slice(0, dashIndex) as SortField;
-    const dir = value.slice(dashIndex + 1) as SortDir;
+    const field = SORT_FIELDS.find((known) => known === value.slice(0, dashIndex));
+    const dir = SORT_DIRS.find((known) => known === value.slice(dashIndex + 1));
+    // The picker only offers pairs of the two lists above, so anything else is not a sort to apply.
+    const isUnknownSort = field === undefined || dir === undefined;
+    if (isUnknownSort) {
+      return;
+    }
     setUrlState({ sortField: field, sortDir: dir });
   };
 
   const pending = !displayData && loading;
+  const showsQueryState = pending || error !== undefined;
 
   return (
     <>
@@ -255,7 +266,7 @@ export default function PersonsPage() {
         />
       </FormDialog>
 
-      {pending || error ? (
+      {showsQueryState ? (
         <PageLayout
           title="People"
           contentSlot={

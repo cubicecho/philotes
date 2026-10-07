@@ -2,36 +2,43 @@ import { useLocalSearchParams, usePathname, useRouter } from 'expo-router';
 
 type HistoryChangeType = 'replace' | 'push';
 
+/** How a query-string value is read back. A key with no entry in the type map is read as a string. */
+type ParamType = 'number' | 'string' | 'boolean' | 'stringArray';
+
 type TypeMap<T extends object> = {
-  [K in keyof T]?: 'number' | 'string' | 'boolean' | 'stringArray';
+  [K in keyof T]?: ParamType;
 };
 
 interface UseQueryStringStateOptions<T extends object> {
   typeMap?: TypeMap<T>;
 }
 
+/** Turns the text of one query-string value into the value its type names. */
+const PARSE_BY_PARAM_TYPE: Record<ParamType, (rawValue: string) => unknown> = {
+  number: (rawValue) => Number(rawValue),
+  string: (rawValue) => rawValue,
+  boolean: (rawValue) => rawValue === 'true',
+  stringArray: (rawValue) => rawValue.split(',').filter((s) => s.length > 0),
+};
+
 export function parseSearch<T extends object>(search: string, typeMap?: TypeMap<T>): Partial<T> {
   const params = new URLSearchParams(search);
+  const paramTypes = new Map<string, ParamType | undefined>(Object.entries(typeMap ?? {}));
   const result: Record<string, unknown> = {};
   for (const [key, rawValue] of params.entries()) {
-    const hint = typeMap?.[key as keyof T];
-    if (hint === 'number') {
-      result[key] = Number(rawValue);
-    } else if (hint === 'boolean') {
-      result[key] = rawValue === 'true';
-    } else if (hint === 'stringArray') {
-      result[key] = rawValue === '' ? [] : rawValue.split(',').filter((s) => s.length > 0);
-    } else {
-      result[key] = rawValue;
-    }
+    const paramType = paramTypes.get(key) ?? 'string';
+    result[key] = PARSE_BY_PARAM_TYPE[paramType](rawValue);
   }
+  // The one assertion: a URL is text, so nothing here can prove its keys and values are the caller's T.
   return result as Partial<T>;
 }
 
-export function stringifyState(state: Record<string, unknown>): string {
+export function stringifyState(state: object): string {
   const params = new URLSearchParams();
-  for (const [key, value] of Object.entries(state)) {
-    if (value === undefined || value === null || value === '') {
+  const entries: [string, unknown][] = Object.entries(state);
+  for (const [key, value] of entries) {
+    const isBlank = value === undefined || value === null || value === '';
+    if (isBlank) {
       continue;
     }
     if (Array.isArray(value)) {
@@ -50,26 +57,24 @@ export function stringifyState(state: Record<string, unknown>): string {
 export function useQueryStringState<T extends object>(
   defaultState: Partial<T> = {},
   options?: UseQueryStringStateOptions<T>,
-): [T, (newState: Partial<T>, historyChangeType?: HistoryChangeType) => void] {
+): [Partial<T>, (newState: Partial<T>, historyChangeType?: HistoryChangeType) => void] {
   const router = useRouter();
   const pathname = usePathname();
   const rawParams = useLocalSearchParams<Record<string, string>>();
 
-  const searchStr = Object.keys(rawParams).length
-    ? `?${new URLSearchParams(rawParams as Record<string, string>).toString()}`
-    : '';
+  const searchStr = Object.keys(rawParams).length ? `?${new URLSearchParams(rawParams).toString()}` : '';
 
   const parsed = parseSearch<T>(searchStr, options?.typeMap);
-  const state = { ...defaultState, ...parsed } as T;
+  const state = { ...defaultState, ...parsed };
 
   const setState = (newState: Partial<T>, historyChangeType: HistoryChangeType = 'replace') => {
-    const merged = { ...(state as Record<string, unknown>), ...(newState as Record<string, unknown>) };
+    const merged = { ...state, ...newState };
     const newSearch = stringifyState(merged);
     const newPath = `${pathname}${newSearch}`;
     if (historyChangeType === 'replace') {
-      router.replace(newPath as never);
+      router.replace(newPath);
     } else {
-      router.push(newPath as never);
+      router.push(newPath);
     }
   };
 

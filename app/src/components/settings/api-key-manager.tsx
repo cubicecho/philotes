@@ -64,6 +64,7 @@ export function ApiKeyManager() {
   const keys = data?.myApiKeys ?? [];
   // Only the first load: a refetch after a key is made or revoked keeps the list on screen.
   const pending = loading && !data;
+  const showsQueryState = pending || error !== undefined || keys.length === 0;
 
   return (
     <>
@@ -81,7 +82,7 @@ export function ApiKeyManager() {
           />
         }
         contentSlot={
-          pending || error || keys.length === 0 ? (
+          showsQueryState ? (
             <QueryState
               compact
               query={{ isPending: pending, isError: error !== undefined, error, refetch }}

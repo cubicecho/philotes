@@ -52,7 +52,8 @@ interface OperationStart {
  */
 function refuseCostly({ args, setResultAndStopExecution }: OperationStart): void {
   const cost = costOf(args);
-  if (cost <= maxCost) {
+  const isAffordable = cost <= maxCost;
+  if (isAffordable) {
     return;
   }
   const advice = 'Ask for fewer rows (limit) or fewer nested lists.';
