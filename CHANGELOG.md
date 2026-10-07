@@ -1,3 +1,10 @@
+## [3.1.3](https://github.com/cubicecho/philotes/compare/v3.1.2...v3.1.3) (2026-10-07)
+
+
+### Bug Fixes
+
+* **server:** unlink, not delete, in deletePersons; link in createPersons ([0bee095](https://github.com/cubicecho/philotes/commit/0bee09505f7cea4f16454fabf5362c701720882c)), closes [#10](https://github.com/cubicecho/philotes/issues/10)
+
 ## [3.1.2](https://github.com/cubicecho/philotes/compare/v3.1.1...v3.1.2) (2026-10-07)
 
 
