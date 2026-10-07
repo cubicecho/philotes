@@ -27,7 +27,11 @@ export const addresses = pgTable(
     postalCode: text('postal_code'),
     country: text('country').default('US'),
     isPrimary: boolean('is_primary').notNull().default(false),
-    createdAt: timestamp('created_at').notNull().defaultNow(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true })
+      .notNull()
+      .defaultNow()
+      .$onUpdate(() => new Date()),
   },
   (t) => [index('idx_addresses_person_id').on(t.personId), index('idx_addresses_user_id').on(t.userId)],
 );

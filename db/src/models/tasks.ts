@@ -15,9 +15,14 @@ export const tasks = pgTable(
       .references(() => users.id, { onDelete: 'cascade' }),
     title: text('title').notNull(),
     notes: text('notes'),
-    dueAt: timestamp('due_at'),
-    completedAt: timestamp('completed_at'),
-    createdAt: timestamp('created_at').notNull().defaultNow(),
+    dueAt: timestamp('due_at', { withTimezone: true }),
+    /** null while open. */
+    completedAt: timestamp('completed_at', { withTimezone: true }),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true })
+      .notNull()
+      .defaultNow()
+      .$onUpdate(() => new Date()),
   },
   (t) => [
     index('idx_tasks_person_id').on(t.personId),

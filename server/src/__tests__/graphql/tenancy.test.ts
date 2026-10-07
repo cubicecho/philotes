@@ -5,7 +5,7 @@ import { printSchema } from 'graphql';
 import { describe, expect, it } from 'vitest';
 import type { Context } from '../../core/context.ts';
 import { createSchema } from '../../graphql/build-schema.ts';
-import { AUTH_TABLES, contextValues, exclude, features, scope } from '../../graphql/tenancy.ts';
+import { AUTH_TABLES, contextValues, exclude, features, scope, USER_OWNED_TABLES } from '../../graphql/tenancy.ts';
 import { onWrite, writtenRows } from '../../graphql/write-guards.ts';
 import { createTestDb } from '../helpers.ts';
 
@@ -43,6 +43,13 @@ describe('scope', () => {
     expect(condition).toBeDefined();
   });
 
+  it('scopes a junction table by its own userId, like any other owned table', () => {
+    for (const name of ['noteTags', 'noteMentions', 'interactionTags', 'importantDateTags'] as const) {
+      expect(USER_OWNED_TABLES).toContain(name);
+      expect(scope[name]).toBe(scope.notes);
+    }
+  });
+
   it('scopes persons through the caller’s user_persons rows', () => {
     expect(scope.persons?.(asContext('user-1'), dbSchema.persons)).toEqual({
       userPersons: { some: { userId: { eq: 'user-1' } } },
@@ -70,6 +77,10 @@ describe('contextValues', () => {
   it('claims userId on every table that has one', () => {
     // Any table left out would take userId from the client instead.
     expect(userOwned.filter((name) => name in contextValues === false)).toEqual([]);
+  });
+
+  it('lists exactly the tables that carry a userId', () => {
+    expect([...USER_OWNED_TABLES].sort()).toEqual([...userOwned].sort());
   });
 
   it('stamps the authenticated user', () => {

@@ -15,8 +15,6 @@ interface JunctionDescriptor {
   fkColName: string;
   fkCol: (typeof dbSchema.personLabels)['personId'];
   labelCol: (typeof dbSchema.personLabels)['labelId'];
-  /** Whether the table has its own `userId` column, which a new row must then carry. */
-  hasOwner: boolean;
 }
 
 /**
@@ -42,15 +40,14 @@ async function reassignJunctionRows(
   keepId: string,
   userId: string,
 ): Promise<void> {
-  const { table, fkColName, fkCol, labelCol, hasOwner } = descriptor;
-  const owner = hasOwner ? { userId } : {};
+  const { table, fkColName, fkCol, labelCol } = descriptor;
 
   const rows: Array<{ fk: string }> = await db.select({ fk: fkCol }).from(table).where(eq(labelCol, deleteId));
 
   for (const { fk } of rows) {
     await db
       .insert(table)
-      .values({ [fkColName]: fk, labelId: keepId, ...owner })
+      .values({ [fkColName]: fk, labelId: keepId, userId })
       .onConflictDoNothing();
 
     await db.delete(table).where(and(eq(fkCol, fk), eq(labelCol, deleteId)));
@@ -101,7 +98,6 @@ export function applyMergeLabelsExtension(schema: GraphQLSchema): GraphQLSchema 
         fkCol: dbSchema.personLabels.personId as any,
         // biome-ignore lint/suspicious/noExplicitAny: cross-table type cast
         labelCol: dbSchema.personLabels.labelId as any,
-        hasOwner: true,
       },
       {
         // biome-ignore lint/suspicious/noExplicitAny: cross-table type cast
@@ -111,7 +107,6 @@ export function applyMergeLabelsExtension(schema: GraphQLSchema): GraphQLSchema 
         fkCol: dbSchema.interactionTags.interactionId as any,
         // biome-ignore lint/suspicious/noExplicitAny: cross-table type cast
         labelCol: dbSchema.interactionTags.labelId as any,
-        hasOwner: false,
       },
       {
         // biome-ignore lint/suspicious/noExplicitAny: cross-table type cast
@@ -121,7 +116,6 @@ export function applyMergeLabelsExtension(schema: GraphQLSchema): GraphQLSchema 
         fkCol: dbSchema.importantDateTags.importantDateId as any,
         // biome-ignore lint/suspicious/noExplicitAny: cross-table type cast
         labelCol: dbSchema.importantDateTags.labelId as any,
-        hasOwner: false,
       },
       {
         // biome-ignore lint/suspicious/noExplicitAny: cross-table type cast
@@ -131,7 +125,6 @@ export function applyMergeLabelsExtension(schema: GraphQLSchema): GraphQLSchema 
         fkCol: dbSchema.noteTags.noteId as any,
         // biome-ignore lint/suspicious/noExplicitAny: cross-table type cast
         labelCol: dbSchema.noteTags.labelId as any,
-        hasOwner: false,
       },
     ];
 

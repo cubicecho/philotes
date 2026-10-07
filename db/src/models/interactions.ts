@@ -24,6 +24,11 @@ export const interactions = pgTable(
     channel: text('channel').$type<InteractionChannel>().notNull(),
     sentiment: text('sentiment').$type<InteractionSentiment>(),
     note: text('note'),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true })
+      .notNull()
+      .defaultNow()
+      .$onUpdate(() => new Date()),
   },
   (t) => [
     index('idx_interactions_person_id').on(t.personId),
@@ -41,8 +46,15 @@ export const interactionTags = pgTable(
     labelId: uuid('label_id')
       .notNull()
       .references(() => labels.id, { onDelete: 'cascade' }),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
   },
-  (t) => [primaryKey({ columns: [t.interactionId, t.labelId] })],
+  (t) => [
+    primaryKey({ columns: [t.interactionId, t.labelId] }),
+    index('idx_interaction_tags_label_id').on(t.labelId),
+    index('idx_interaction_tags_user_id').on(t.userId),
+  ],
 );
 
 export type Interaction = typeof interactions.$inferSelect;

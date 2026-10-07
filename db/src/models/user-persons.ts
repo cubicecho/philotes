@@ -20,6 +20,10 @@ export const userPersons = pgTable(
     firstMetDate: date('first_met_date'),
     avatarPath: text('avatar_path'),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true })
+      .notNull()
+      .defaultNow()
+      .$onUpdate(() => new Date()),
   },
   (t) => [
     primaryKey({ columns: [t.userId, t.personId] }),

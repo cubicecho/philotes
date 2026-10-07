@@ -1,4 +1,4 @@
-import { index, pgTable, text, uuid } from 'drizzle-orm/pg-core';
+import { index, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core';
 
 import { persons } from './persons.ts';
 import { users } from './users.ts';
@@ -17,6 +17,11 @@ export const personRelationships = pgTable(
       .notNull()
       .references(() => users.id, { onDelete: 'cascade' }),
     type: text('type').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true })
+      .notNull()
+      .defaultNow()
+      .$onUpdate(() => new Date()),
   },
   (t) => [
     index('idx_person_relationships_from_person_id').on(t.fromPersonId),

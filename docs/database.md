@@ -63,13 +63,13 @@ Seventeen tables, plus `api_keys`:
 | `addresses` | `models/addresses.ts` | `user_id` |
 | `contact_infos` | `models/contact-infos.ts` | `user_id` |
 | `important_dates` | `models/important-dates.ts` | `user_id` |
-| `important_date_tags` | `models/important-dates.ts` | via `important_dates` |
+| `important_date_tags` | `models/important-dates.ts` | `user_id` |
 | `interactions` | `models/interactions.ts` | `user_id` |
-| `interaction_tags` | `models/interactions.ts` | via `interactions` |
+| `interaction_tags` | `models/interactions.ts` | `user_id` |
 | `labels` | `models/labels.ts` | `user_id` |
 | `notes` | `models/notes.ts` | `user_id` |
-| `note_tags` | `models/notes.ts` | via `notes` |
-| `note_mentions` | `models/notes.ts` | via `notes` |
+| `note_tags` | `models/notes.ts` | `user_id` |
+| `note_mentions` | `models/notes.ts` | `user_id` |
 | `person_labels` | `models/person-labels.ts` | `user_id` |
 | `person_relationships` | `models/person-relationships.ts` | `user_id` |
 | `relationship_types` | `models/relationship-types.ts` | `user_id` |
@@ -92,19 +92,18 @@ than simply inserts, and deleting one unlinks rather than deletes — see
 ## Tenancy
 
 Every new table needs an ownership story, and it must be registered in
-`server/src/tenancy.ts` or the API will not expose it safely:
+`server/src/graphql/tenancy.ts` or the API will not expose it safely:
 
 - **The common case**: give the table a `user_id` column
   (`.notNull().references(() => users.id, { onDelete: 'cascade' })`) and add
   its name to `USER_OWNED_TABLES`. That both scopes reads and stamps the column
   on write, so `userId` never appears in a GraphQL input.
-- **A junction table** with no `user_id` of its own: add it to
-  `JUNCTION_PARENTS`, naming the foreign key and the user-owned parent it
-  points at, and add its foreign keys to `FOREIGN_KEYS` in
-  `server/src/resolvers/junction-ownership.ts` so a create cannot reference
-  another user's row.
+- **A junction table** carries `user_id` too, and joins `USER_OWNED_TABLES`
+  like any other table. Add its foreign keys to `FOREIGN_KEYS` in
+  `server/src/graphql/write-guards.ts` so a create cannot reference another
+  user's row.
 
-`server/src/__tests__/tenancy.test.ts` fails if a table exists with no scope
+`server/src/__tests__/graphql/tenancy.test.ts` fails if a table exists with no scope
 entry, so a table added without this step breaks the build rather than leaking
 quietly.
 
@@ -140,7 +139,10 @@ export const things = pgTable(
     id: uuid('id').primaryKey().defaultRandom(),
     name: text('name').notNull(),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
-    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true })
+      .notNull()
+      .defaultNow()
+      .$onUpdate(() => new Date()),
     userId: uuid('user_id')
       .notNull()
       .references(() => users.id, { onDelete: 'cascade' }),
@@ -156,7 +158,7 @@ export type NewThing = typeof things.$inferInsert;
 
 1. `id` — primary key, always first
 2. Domain / business columns
-3. `createdAt` / `updatedAt` timestamps (omit on simple join tables)
+3. `createdAt` / `updatedAt` timestamps (omit on simple join tables). Every timestamp is `withTimezone`
 4. Foreign key columns, `user_id` last
 
 ## Column Types
@@ -185,10 +187,11 @@ export type NewThing = typeof things.$inferInsert;
 - **Primary key**: always `uuid('id').primaryKey().defaultRandom()` — do not use `serial()`.
 - **Composite key** on a junction table: `primaryKey({ columns: [t.a, t.b] })`.
 - **Not-null**: mark required columns `.notNull()`. Leave optional columns without it.
-- **Unique**: use `.unique()` where applicable (e.g. `users.email`).
+- **Unique**: a named `uniqueIndex('uq_<table>_<columns>')` in the table's third argument.
 - **Cascade deletes**: join tables, child records and every `user_id` use
-  `{ onDelete: 'cascade' }`.
-- **Index** every foreign key you filter or join on.
+  `{ onDelete: 'cascade' }`. An optional reference uses `{ onDelete: 'set null' }`.
+- **Index** every foreign key, as `idx_<table>_<column>`. A composite primary key
+  covers its first column only.
 
 ## Type Exports
 

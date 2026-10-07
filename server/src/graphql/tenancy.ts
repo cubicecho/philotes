@@ -1,31 +1,23 @@
-import * as dbSchema from '@cubicecho/philotes-db/schema';
 import type { BuildSchemaConfig, RowScope } from '@vantreeseba/drizzle-graphql';
-import { eq, inArray } from 'drizzle-orm';
+import { eq } from 'drizzle-orm';
 import type { Context } from '../core/context.ts';
 import { requireAuth } from '../core/errors.ts';
 
-// Multi-tenancy, expressed as drizzle-graphql configuration rather than as
-// resolver wrappers. `scope` is ANDed into the SQL of every read, update and
-// delete the library generates — list and single queries, aggregates, groupBy,
-// relation fields (batched and eager), cursor pages — after the client's own
-// `where`, so a client filter can only narrow it. `contextValues` is the
-// write-side half: it takes the column out of the create and update inputs and
-// stamps it from the request, so ownership is never something a caller states.
-//
-// `scope` cannot reach a plain insert, so a table whose ownership flows through
-// a foreign key rather than a column of its own still needs its keys checked on
-// create — see the onWrite hooks in resolvers/junction-ownership.ts.
-
-// biome-ignore lint/suspicious/noExplicitAny: drizzle-orm 1.0 table/column type compat
+/** A table as a row scope sees it: drizzle-orm 1.0 rc doesn't type the columns of a generic table. */
+// biome-ignore lint/suspicious/noExplicitAny: see the line above
 type AnyTable = any;
 
-/** Tables carrying their own `user_id`. */
-const USER_OWNED_TABLES = [
+/** Tables scoped to their owner. A table missing from this list is visible across tenants. */
+export const USER_OWNED_TABLES = [
   'addresses',
   'contactInfos',
+  'importantDateTags',
   'importantDates',
+  'interactionTags',
   'interactions',
   'labels',
+  'noteMentions',
+  'noteTags',
   'notes',
   'personLabels',
   'personRelationships',
@@ -35,54 +27,44 @@ const USER_OWNED_TABLES = [
 ] as const;
 
 /**
- * Junction tables carry no `user_id`; ownership flows through a parent row.
- * Each entry names the junction's foreign key and the user-owned parent it
- * points at, compiled to `fk IN (SELECT id FROM parent WHERE user_id = $1)`.
+ * Restricts a table to the caller's rows.
+ *
+ * @param context - Request context.
+ * @param table - Table being queried.
+ * @returns The `user_id = caller` condition.
  */
-const JUNCTION_PARENTS: Record<string, { fk: string; parent: AnyTable }> = {
-  noteTags: { fk: 'noteId', parent: dbSchema.notes },
-  noteMentions: { fk: 'noteId', parent: dbSchema.notes },
-  interactionTags: { fk: 'interactionId', parent: dbSchema.interactions },
-  importantDateTags: { fk: 'importantDateId', parent: dbSchema.importantDates },
-};
-
 const scopeByUserId: RowScope<Context> = (context, table) => eq((table as AnyTable).userId, requireAuth(context));
 
-const scopeByParent =
-  (fk: string, parent: AnyTable): RowScope<Context> =>
-  (context, table) =>
-    inArray(
-      (table as AnyTable)[fk],
-      context.db
-        .select({ id: parent.id })
-        .from(parent)
-        .where(eq(parent.userId, requireAuth(context))),
-    );
-
-export const scope: NonNullable<BuildSchemaConfig['scope']> = {
-  // A user row is only ever visible to its owner.
-  users: (context, table) => eq((table as AnyTable).id, requireAuth(context as Context)),
-
-  // persons rows are shared between users. A user sees the ones they have added
-  // to their contacts, which is what user_persons records — expressed as a
-  // relation filter so the library compiles it the same way it compiles a
-  // client `where`.
-  persons: (context) => ({ userPersons: { some: { userId: { eq: requireAuth(context as Context) } } } }),
-
-  ...Object.fromEntries(USER_OWNED_TABLES.map((name) => [name, scopeByUserId])),
-  ...Object.fromEntries(
-    Object.entries(JUNCTION_PARENTS).map(([name, { fk, parent }]) => [name, scopeByParent(fk, parent)]),
-  ),
-};
+/**
+ * Restricts `users` to the caller's own row.
+ *
+ * @param context - Request context.
+ * @param table - The users table.
+ * @returns The `id = caller` condition.
+ */
+const scopeToSelf: RowScope<Context> = (context, table) => eq((table as AnyTable).id, requireAuth(context));
 
 /**
- * Columns the server owns: removed from every create and update input, stamped
- * from the request on insert. This is what makes `userId` unstatable rather
- * than merely overwritten, and it retires the nullable-userId patch the schema
- * used to apply to every generated input type.
+ * Restricts `persons` to the caller's contacts. A person row is shared between users, and
+ * `user_persons` records who has added it.
+ *
+ * @param context - Request context.
+ * @returns A relation filter, compiled the way a client `where` is.
  */
+const scopeToContacts: RowScope<Context> = (context) => ({
+  userPersons: { some: { userId: { eq: requireAuth(context) } } },
+});
+
+/** Row scope per table, ANDed into every generated read, update and delete after the client's own `where`. */
+export const scope: NonNullable<BuildSchemaConfig['scope']> = {
+  users: scopeToSelf,
+  persons: scopeToContacts,
+  ...Object.fromEntries(USER_OWNED_TABLES.map((name) => [name, scopeByUserId])),
+};
+
+/** Stamps `userId` from the request and removes it from inputs, so ownership is never caller-stated. */
 export const contextValues: NonNullable<BuildSchemaConfig['contextValues']> = Object.fromEntries(
-  USER_OWNED_TABLES.map((name) => [name, { userId: (context: Context) => requireAuth(context) }]),
+  USER_OWNED_TABLES.map((name) => [name, { userId: requireAuth }]),
 );
 
 /** better-auth's tables: sessions, credentials, one-time tokens and API key hashes. */

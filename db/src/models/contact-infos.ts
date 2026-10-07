@@ -31,7 +31,11 @@ export const contactInfos = pgTable(
     value: text('value').notNull(),
     label: text('label'),
     isPrimary: boolean('is_primary').notNull().default(false),
-    createdAt: timestamp('created_at').notNull().defaultNow(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true })
+      .notNull()
+      .defaultNow()
+      .$onUpdate(() => new Date()),
   },
   (t) => [index('idx_contact_infos_person_id').on(t.personId), index('idx_contact_infos_user_id').on(t.userId)],
 );

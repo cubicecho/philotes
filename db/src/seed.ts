@@ -198,12 +198,12 @@ async function seedNotes(personData: { id: string }[], labelData: { id: string }
   console.log(`Inserted ${noteData.length} notes`);
 
   if (noteMentionData.length > 0) {
-    await db.insert(noteMentions).values(noteMentionData);
+    await db.insert(noteMentions).values(noteMentionData.map((row) => ({ ...row, userId })));
     console.log(`Inserted ${noteMentionData.length} note mentions`);
   }
 
   if (noteTagData.length > 0) {
-    await db.insert(noteTags).values(noteTagData);
+    await db.insert(noteTags).values(noteTagData.map((row) => ({ ...row, userId })));
     console.log(`Inserted ${noteTagData.length} note tags`);
   }
 }
@@ -255,7 +255,7 @@ async function seedImportantDates(personData: { id: string }[], labelData: { id:
   console.log(`Inserted ${importantDateData.length} important dates`);
 
   if (importantDateTagData.length > 0) {
-    await db.insert(importantDateTags).values(importantDateTagData);
+    await db.insert(importantDateTags).values(importantDateTagData.map((row) => ({ ...row, userId })));
     console.log(`Inserted ${importantDateTagData.length} important date tags`);
   }
 }
@@ -303,7 +303,7 @@ async function seedInteractions(personData: { id: string }[], labelData: { id: s
   console.log(`Inserted ${interactionData.length} interactions`);
 
   if (interactionTagData.length > 0) {
-    await db.insert(interactionTags).values(interactionTagData);
+    await db.insert(interactionTags).values(interactionTagData.map((row) => ({ ...row, userId })));
     console.log(`Inserted ${interactionTagData.length} interaction tags`);
   }
 }
