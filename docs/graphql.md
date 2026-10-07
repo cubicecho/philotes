@@ -46,8 +46,9 @@ for a caller:
   a row other users still have.
 - Referencing another user's row by id — tagging your note with their label —
   fails with `<Entity> not found`, never a leak of whether it exists.
-- `users` has no generated mutations; accounts come from the magic-link flow.
-  `passwordHash` is not in the schema at all.
+- `users` has no generated mutations; accounts come from `signUp`, `signIn`,
+  `requestSignIn` and `verifyMagicLink`. Sessions, password hashes and API key
+  hashes are not in the schema at all.
 
 ## Filtering
 

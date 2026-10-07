@@ -1,8 +1,10 @@
 // Getters, not constants, so a test (or a reload) sees the current environment.
 import { createRequire } from 'node:module';
 import { DATABASE_DEFAULTS } from '@cubicecho/philotes-db/defaults';
-import { HTTP_DEFAULTS } from './defaults.ts';
+import { AUTH_DEFAULTS, type AuthSettings, HTTP_DEFAULTS } from './defaults.ts';
 
+/** Env values that count as on, in lower case. */
+const TRUTHY = ['1', 'true', 'yes'];
 const NODE_ENV_PRODUCTION = 'production';
 /** The TRUST_PROXY value that trusts no hop. */
 const TRUST_PROXY_OFF = 'false';
@@ -11,6 +13,26 @@ const HOP_COUNT = /^\d+$/;
 const UNKNOWN_VERSION = 'unknown';
 /** Where `npm run dev` serves the app, a different origin from the server. */
 const DEV_APP_ORIGIN = 'http://localhost:3000';
+
+/** Where better-auth keeps sessions. */
+export type SessionStore = AuthSettings['sessionStore'];
+export const SESSION_STORE_MEMORY = 'memory' as const satisfies SessionStore;
+export const SESSION_STORE_DATABASE = 'database' as const satisfies SessionStore;
+
+/**
+ * Reads an on/off flag.
+ *
+ * @param value - The raw env value. "1", "true" and "yes" count as on, in any case. Any other word is off.
+ * @param fallback - Used when the value is unset or empty.
+ * @returns Whether the flag is on.
+ */
+export function envFlag(value: string | undefined, fallback: boolean): boolean {
+  const normalised = (value ?? '').trim().toLowerCase();
+  if (normalised === '') {
+    return fallback;
+  }
+  return TRUTHY.includes(normalised);
+}
 
 /**
  * Reads a positive number.
@@ -55,11 +77,57 @@ export const isProduction = (): boolean => process.env.NODE_ENV === NODE_ENV_PRO
 export const allowedOrigins = (): string[] => (isProduction() ? [appUrl()] : [appUrl(), DEV_APP_ORIGIN]);
 
 /**
- * The secret sign-in tokens are signed with.
+ * Whether typing an email signs in. Unsafe on a public network: on only where nothing hostile can reach the port.
  *
- * @returns `JWT_SECRET`, or an empty string when unset.
+ * @returns `SECURE_LOCAL_NET` as a flag, or `AUTH_DEFAULTS.secureLocalNet`.
  */
-export const jwtSecret = (): string => process.env.JWT_SECRET ?? '';
+export const secureLocalNet = (): boolean => envFlag(process.env.SECURE_LOCAL_NET, AUTH_DEFAULTS.secureLocalNet);
+
+/**
+ * Whether a public `APP_URL` is accepted alongside `SECURE_LOCAL_NET`. Unsafe: it lets anyone who can reach the port sign in as anyone.
+ *
+ * @returns `I_KNOW_SECURE_LOCAL_NET_IS_PUBLIC` as a flag, off when unset.
+ */
+export const allowsPublicLocalNet = (): boolean => envFlag(process.env.I_KNOW_SECURE_LOCAL_NET_IS_PUBLIC, false);
+
+/**
+ * Where sessions are kept.
+ *
+ * @returns `SESSION_STORE` when it names a store, otherwise `AUTH_DEFAULTS.sessionStore`.
+ */
+export const sessionStore = (): SessionStore => {
+  const raw = process.env.SESSION_STORE;
+  const isKnown = raw === SESSION_STORE_MEMORY || raw === SESSION_STORE_DATABASE;
+  return isKnown ? raw : AUTH_DEFAULTS.sessionStore;
+};
+
+/**
+ * The better-auth signing secret.
+ *
+ * @returns `BETTER_AUTH_SECRET`, or an empty string when unset.
+ */
+export const authSecret = (): string => process.env.BETTER_AUTH_SECRET ?? '';
+
+/**
+ * Where email is sent through.
+ *
+ * @returns `SMTP_URL`, or an empty string when unset.
+ */
+export const smtpUrl = (): string => process.env.SMTP_URL ?? '';
+
+/**
+ * The address sign-in email comes from.
+ *
+ * @returns `SMTP_FROM`, or `philotes@` the host of `APP_URL`.
+ */
+export const smtpFrom = (): string => process.env.SMTP_FROM ?? `philotes@${new URL(appUrl()).hostname}`;
+
+/**
+ * Whether email (magic links) can be sent.
+ *
+ * @returns True when `SMTP_URL` is set.
+ */
+export const smtpConfigured = (): boolean => smtpUrl() !== '';
 
 /**
  * How long boot waits for Postgres before exiting.

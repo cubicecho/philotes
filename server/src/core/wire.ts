@@ -4,6 +4,7 @@ export const HttpStatus = {
   BadRequest: 400,
   Unauthorized: 401,
   NotFound: 404,
+  TooManyRequests: 429,
   PayloadTooLarge: 413,
   ServiceUnavailable: 503,
 } as const;

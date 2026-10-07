@@ -24,7 +24,7 @@ birthday or their kid's birthday. Philotes gives you a quiet place to keep that
 context — so you can show up for the people in your life.
 
 It runs 100% locally. No cloud to trust, no vendor to worry about. Sign-in is
-a magic link handled by your own instance, and your data lives on your machine,
+handled by your own instance, and your data lives on your machine,
 in an embedded Postgres database, and nowhere else.
 
 ---
@@ -132,9 +132,8 @@ npm run dev
 ```
 
 The app opens at [http://localhost:3000](http://localhost:3000). That's it — no
-database to set up, no environment variables required. Enter an email on the
-login page; in development the magic link is shown to you directly rather than
-mailed.
+database to set up, no environment variables required. Create an account
+on the login page with an email and a password.
 
 ---
 
@@ -175,7 +174,7 @@ docker build -t philotes .
 
 **Run it with its database:**
 ```bash
-JWT_SECRET=$(openssl rand -hex 32) docker compose up -d
+BETTER_AUTH_SECRET=$(openssl rand -hex 32) docker compose up -d
 ```
 
 Then open [http://localhost:3001](http://localhost:3001).
@@ -193,7 +192,11 @@ Then open [http://localhost:3001](http://localhost:3001).
 | Variable | Default | Description |
 | --- | --- | --- |
 | `DATABASE_URL` | none, required | A `postgres://` connection string |
-| `JWT_SECRET` | none, required in production | Signs sign-in tokens |
+| `BETTER_AUTH_SECRET` | none, required in production | Signs sessions |
+| `SECURE_LOCAL_NET` | `false` | Any email signs in at once. Private networks only |
+| `SESSION_STORE` | `memory` | `database` keeps sessions across restarts |
+| `SMTP_URL` | none | SMTP server for sign-in links. Unset, sign-in is by password only |
+| `SMTP_FROM` | `philotes@<APP_URL host>` | From address of sign-in emails |
 | `APP_URL` | `http://localhost:<PORT>` | Public URL the app is served at |
 | `PORT` | `3001` | Port the server listens on |
 | `DB_CONNECT_TIMEOUT_MS` | `60000` | How long boot waits for Postgres |

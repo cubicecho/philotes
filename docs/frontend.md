@@ -27,7 +27,7 @@ app/
 ├── app/                        # Expo Router — file-based routes
 │   ├── _layout.tsx             # Theme, ApolloProvider, <Stack>, ErrorBoundary; imports global.css
 │   ├── login.tsx               # /login
-│   ├── auth/verify.tsx         # /auth/verify (magic-link landing)
+│   ├── auth/verify.tsx         # /auth/verify (sign-in link landing)
 │   └── (app)/                  # Authenticated group — no URL segment
 │       ├── _layout.tsx         # Redirects to /login; renders the AppShell
 │       ├── index.tsx           # /

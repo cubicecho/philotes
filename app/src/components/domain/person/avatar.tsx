@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Image, Text, View } from 'react-native';
-import { avatarUrl } from '@/lib/api-url';
+import { useAvatarImage } from '@/hooks/use-avatar-image';
 import { nameToColor } from '@/lib/name-color';
 import { fullName } from '@/lib/person-name';
 import { cn } from '@/lib/utils';
@@ -20,18 +20,19 @@ const SIZE_CLASSES: Record<NonNullable<AvatarProps['size']>, { box: string; text
 };
 
 /**
- * A person's photo if there is one, otherwise a deterministic initials circle —
- * which is also what a photo that fails to load falls back to.
+ * A person's photo if there is one, otherwise a deterministic initials circle, which is also
+ * what shows while a photo loads and when it fails to.
  */
 export function Avatar({ firstName, lastName, avatarPath, size = 'md', className }: AvatarProps) {
   const [failed, setFailed] = useState(false);
   const { box, text } = SIZE_CLASSES[size];
   const name = fullName({ firstName, lastName });
+  const imageUri = useAvatarImage(avatarPath ?? null);
 
-  if (avatarPath && !failed) {
+  if (imageUri !== null && failed === false) {
     return (
       <Image
-        source={{ uri: avatarUrl(avatarPath) }}
+        source={{ uri: imageUri }}
         accessibilityLabel={name}
         onError={() => setFailed(true)}
         className={cn('shrink-0 rounded-full', box, className)}

@@ -7,8 +7,8 @@
     ".": "./src/index.ts",
     "./schema": "./src/schema.ts",
     "./relations": "./src/relations.ts",
-    "./api-keys": "./src/api-keys.ts",
     "./wait": "./src/wait.ts",
+    "./ssl": "./src/ssl.ts",
     "./defaults": "./src/defaults.ts"
   },
   "scripts": {
@@ -26,8 +26,6 @@
   },
   "devDependencies": {
     "@faker-js/faker": "^10.3.0",
-    "@types/bcryptjs": "^2.4.6",
-    "bcryptjs": "^3.0.3",
     "drizzle-kit": "1.0.0-rc.4"
   }
 }

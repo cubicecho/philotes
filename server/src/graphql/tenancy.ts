@@ -85,12 +85,15 @@ export const contextValues: NonNullable<BuildSchemaConfig['contextValues']> = Ob
   USER_OWNED_TABLES.map((name) => [name, { userId: (context: Context) => requireAuth(context) }]),
 );
 
-/** passwordHash must never cross the API — neither readable nor filterable. */
+/** better-auth's tables: sessions, credentials, one-time tokens and API key hashes. */
+export const AUTH_TABLES = ['sessions', 'accounts', 'verifications', 'apikeys'] as const;
+
+/** Auth tables never cross the API: not readable, not filterable, not reachable as a relation. */
 export const exclude: NonNullable<BuildSchemaConfig['exclude']> = {
-  columns: { users: ['passwordHash'] },
+  tables: [...AUTH_TABLES],
 };
 
-/** User lifecycle belongs to the auth flow (magic links), not generated CRUD. */
+/** User lifecycle belongs to the auth flow, not generated CRUD. */
 export const features: NonNullable<BuildSchemaConfig['features']> = {
   insert: (table) => table !== 'users',
   update: (table) => table !== 'users',

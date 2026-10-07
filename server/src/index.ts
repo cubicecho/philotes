@@ -5,7 +5,8 @@ import { fileURLToPath } from 'node:url';
 import { closeDatabase, db } from '@cubicecho/philotes-db';
 import { waitForDatabase } from '@cubicecho/philotes-db/wait';
 import { migrate } from 'drizzle-orm/postgres-js/migrator';
-import { appUrl, dbConnectTimeoutMs, port } from './core/config.ts';
+import { createAuth } from './auth/better-auth.ts';
+import { appUrl, dbConnectTimeoutMs, port, secureLocalNet } from './core/config.ts';
 import { errorMessage } from './core/errors.ts';
 import { createApp } from './http/app.ts';
 import { stopOnSignals } from './http/shutdown.ts';
@@ -30,8 +31,13 @@ try {
 // At boot, so `docker compose up` on a fresh volume is the whole install.
 await migrate(db, { migrationsFolder: join(__dirname, '../../db/drizzle') });
 
+if (secureLocalNet()) {
+  console.warn('[auth] SECURE_LOCAL_NET is on: any email signs in without a link. Private networks only.');
+}
+
 const app = createApp({
   db,
+  auth: createAuth(db),
   avatarDir: join(__dirname, '../../avatars'),
   staticDir: join(__dirname, '../../app/dist'),
 });

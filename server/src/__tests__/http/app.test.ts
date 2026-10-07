@@ -1,11 +1,11 @@
 import type { Server } from 'node:http';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { signToken } from '../../auth/resolvers.ts';
+import type { Auth } from '../../auth/better-auth.ts';
 import { OPERATION_LIMIT_DEFAULTS } from '../../core/defaults.ts';
 import { ErrorCode } from '../../core/errors.ts';
 import { HttpStatus } from '../../core/wire.ts';
 import { createApp } from '../../http/app.ts';
-import { createTestDb, createUser, portOf } from '../helpers.ts';
+import { createSessionToken, createTestAuth, createTestDb, createUser, portOf } from '../helpers.ts';
 
 const UNKNOWN_ID = '00000000-0000-4000-8000-000000000000';
 /** Just past `HTTP_DEFAULTS.bodyLimit`. */
@@ -26,6 +26,7 @@ describe('the app over HTTP', () => {
   let server: Server;
   let baseUrl: string;
   let userId: string;
+  let auth: Auth;
 
   /**
    * Posts one operation to /graphql.
@@ -34,10 +35,10 @@ describe('the app over HTTP', () => {
    * @param asUserId - Who is asking, or null to send no token.
    * @returns The response.
    */
-  function post(query: string, asUserId: string | null = null): Promise<Response> {
+  async function post(query: string, asUserId: string | null = null): Promise<Response> {
     const headers: Record<string, string> = { 'content-type': 'application/json' };
     if (asUserId !== null) {
-      headers.authorization = `Bearer ${signToken(asUserId)}`;
+      headers.authorization = `Bearer ${await createSessionToken(auth, asUserId)}`;
     }
     return fetch(`${baseUrl}/graphql`, { method: 'POST', headers, body: JSON.stringify({ query }) });
   }
@@ -45,7 +46,8 @@ describe('the app over HTTP', () => {
   beforeAll(async () => {
     const db = await createTestDb();
     userId = await createUser(db, 'http@example.com');
-    server = createApp({ db }).listen(0, '127.0.0.1');
+    ({ auth } = createTestAuth(db));
+    server = createApp({ db, auth }).listen(0, '127.0.0.1');
     await new Promise((resolve) => server.once('listening', resolve));
     baseUrl = `http://127.0.0.1:${portOf(server)}`;
   });
@@ -65,6 +67,16 @@ describe('the app over HTTP', () => {
     const response = await post(ME, userId);
 
     expect(await response.json()).toEqual({ data: { me: { id: userId } } });
+  });
+
+  it('treats a token nobody was issued as signed out', async () => {
+    const response = await fetch(`${baseUrl}/graphql`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', authorization: 'Bearer not-a-session' },
+      body: JSON.stringify({ query: ME }),
+    });
+
+    expect(await response.json()).toEqual({ data: { me: null } });
   });
 
   it('keeps the code of an error a resolver threw on purpose', async () => {

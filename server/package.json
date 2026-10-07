@@ -11,10 +11,12 @@
     "codegen": "node --import=./src/core/preload-env.ts src/graphql/write-schema.ts && graphql-codegen-esm"
   },
   "dependencies": {
+    "@better-auth/api-key": "^1.7.7",
     "@cubicecho/philotes-db": "*",
     "@escape.tech/graphql-armor-max-aliases": "^2.6.2",
     "@escape.tech/graphql-armor-max-depth": "^2.4.2",
     "@vantreeseba/drizzle-graphql": "^13.0.0",
+    "better-auth": "^1.7.7",
     "cors": "^2.8.6",
     "drizzle-orm": "1.0.0-rc.4",
     "express": "^5.2.1",
@@ -24,15 +26,16 @@
     "graphql-scalars": "^2.0.0",
     "graphql-yoga": "^5.24.2",
     "ical-generator": "^10.2.0",
-    "jsonwebtoken": "^9.0.3",
-    "multer": "^2.1.1"
+    "multer": "^2.1.1",
+    "nodemailer": "^8.0.11",
+    "zod": "^4.6.5"
   },
   "devDependencies": {
     "@electric-sql/pglite": "^0.3.15",
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
-    "@types/jsonwebtoken": "^9.0.10",
     "@types/multer": "^2.1.0",
+    "@types/nodemailer": "^8.0.2",
     "drizzle-kit": "1.0.0-rc.4"
   }
 }

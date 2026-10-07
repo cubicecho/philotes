@@ -1,13 +1,22 @@
+import { useApolloClient, useMutation } from '@apollo/client';
 import { Link, usePathname, useRouter } from 'expo-router';
 import { Text, View } from 'react-native';
+import { graphql } from '@/__generated__/gql';
 import { ActionButton } from '@/components/action-button';
 import { House, LogOut, Share2, UserRoundPlus, Users } from '@/components/app-icons';
 import { BarNavItem, Sidebar, SidebarNavItem, SidebarSection } from '@/components/sidebar';
 import { SidebarLayout } from '@/components/split-layout';
 import { Button } from '@/components/ui/button';
 import { Settings, Tag } from '@/components/ui/icons';
+import { forgetAvatarImages } from '@/hooks/use-avatar-image';
 import { clearToken } from '@/lib/auth';
 import type { SlotNode } from '@/lib/utils';
+
+const SIGN_OUT = graphql(`
+  mutation SignOut {
+    signOut
+  }
+`);
 
 /** The app's places, mapped once into the rail and once into the phone's bar. */
 const PLACES = [
@@ -26,8 +35,16 @@ export function AppShell({ contentSlot }: { contentSlot: SlotNode }) {
   const pathname = usePathname() ?? '';
   const router = useRouter();
 
-  function signOut() {
+  const [endSession] = useMutation(SIGN_OUT);
+  const apollo = useApolloClient();
+
+  /** Ends the session on the server, then forgets it and everything fetched with it. */
+  async function signOut() {
+    // A server that can't be reached must not keep the user signed in on this device.
+    await endSession().catch(() => null);
     clearToken();
+    forgetAvatarImages();
+    await apollo.clearStore();
     router.replace('/login');
   }
 

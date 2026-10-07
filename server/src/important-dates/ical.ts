@@ -1,44 +1,44 @@
 import type { DB } from '@cubicecho/philotes-db';
-import { apiKeys } from '@cubicecho/philotes-db/api-keys';
 import { importantDates, persons } from '@cubicecho/philotes-db/schema';
-import { and, eq, isNull } from 'drizzle-orm';
+import { eq } from 'drizzle-orm';
 import type { Request, RequestHandler, Response } from 'express';
 import ical, { ICalEventRepeatingFreq } from 'ical-generator';
-import { hashApiKey, isApiKey } from '../api-keys/tokens.ts';
+import { API_KEY_PREFIX, type Auth } from '../auth/better-auth.ts';
 import { HttpStatus } from '../core/wire.ts';
+
+/** What the feed is built from. */
+export interface IcalDeps {
+  /** Drizzle client. */
+  db: DB;
+  /** Verifies the API key. */
+  auth: Auth;
+}
 
 /**
  * Writes the caller's important dates as an iCalendar feed. The caller is identified by the API
  * key in `?key=`, because a calendar client cannot send a header.
  *
- * @param db - Drizzle client.
+ * @param deps - The database and the auth instance.
  * @param req - The request, with the API key in its query.
  * @param res - The response the feed is written to.
  * @returns Nothing.
  */
-async function sendCalendar(db: DB, req: Request, res: Response): Promise<void> {
+async function sendCalendar({ db, auth }: IcalDeps, req: Request, res: Response): Promise<void> {
   const { key } = req.query;
 
-  if (!key || typeof key !== 'string' || isApiKey(key) === false) {
-    res.status(HttpStatus.BadRequest).send('Missing or invalid API key. Use ?key=phlt_...');
+  const isApiKey = typeof key === 'string' && key.startsWith(API_KEY_PREFIX);
+  if (isApiKey === false) {
+    res.status(HttpStatus.BadRequest).send(`Missing or invalid API key. Use ?key=${API_KEY_PREFIX}...`);
     return;
   }
 
-  const hash = hashApiKey(key);
-  const now = new Date();
-
-  const [apiKey] = await db
-    .select()
-    .from(apiKeys)
-    .where(and(eq(apiKeys.keyHash, hash), isNull(apiKeys.revokedAt)))
-    .limit(1);
-
-  if (!apiKey || (apiKey.expiresAt !== null && apiKey.expiresAt < now)) {
+  // Also records the use, which is what the settings page shows as "last used".
+  const { valid, key: verified } = await auth.api.verifyApiKey({ body: { key } });
+  const isRefused = valid === false || verified === null;
+  if (isRefused) {
     res.status(HttpStatus.Unauthorized).send('Invalid or expired API key');
     return;
   }
-
-  db.update(apiKeys).set({ lastUsedAt: now }).where(eq(apiKeys.id, apiKey.id)).catch(console.error);
 
   const rows = await db
     .select({
@@ -52,7 +52,7 @@ async function sendCalendar(db: DB, req: Request, res: Response): Promise<void> 
     })
     .from(importantDates)
     .leftJoin(persons, eq(importantDates.personId, persons.id))
-    .where(eq(importantDates.userId, apiKey.userId));
+    .where(eq(importantDates.userId, verified.referenceId));
 
   const cal = ical({ name: 'Philotes – Important Dates' });
 
@@ -88,11 +88,11 @@ async function sendCalendar(db: DB, req: Request, res: Response): Promise<void> 
 }
 
 /**
- * Builds the `/ical` handler over one database.
+ * Builds the `/ical` handler.
  *
- * @param db - Drizzle client.
+ * @param deps - The database and the auth instance.
  * @returns The handler.
  */
-export function createIcalHandler(db: DB): RequestHandler {
-  return (req, res) => sendCalendar(db, req, res);
+export function createIcalHandler(deps: IcalDeps): RequestHandler {
+  return (req, res) => sendCalendar(deps, req, res);
 }

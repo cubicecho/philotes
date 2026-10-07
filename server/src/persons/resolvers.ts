@@ -24,7 +24,6 @@ const USER_SCOPE_SDL = parse(`
   }
 
   extend type Query {
-    me: User
     myPersonContext(personId: UUID!): UserPerson
   }
 
@@ -157,29 +156,11 @@ function overridePersonMutations(schema: GraphQLSchema): void {
   };
 }
 
-// ── me and user_persons resolvers ────────────────────────────────────────────
+// ── user_persons resolvers ────────────────────────────────────────────
 
 function addUserPersonsResolvers(schema: GraphQLSchema): void {
   const qf = (schema.getQueryType() as GraphQLObjectType).getFields();
   const mf = (schema.getMutationType() as GraphQLObjectType).getFields();
-
-  qf.me.resolve = async (_parent: unknown, _args: unknown, ctx: Context) => {
-    if (!ctx.userId) {
-      return null;
-    }
-    const db = ctx.db as AnyDB;
-    const [user] = await db
-      .select({
-        id: dbSchema.users.id,
-        email: dbSchema.users.email,
-        name: dbSchema.users.name,
-        createdAt: dbSchema.users.createdAt,
-        updatedAt: dbSchema.users.updatedAt,
-      })
-      .from(dbSchema.users)
-      .where(eq(dbSchema.users.id, ctx.userId));
-    return user ?? null;
-  };
 
   qf.myPersonContext.resolve = async (_parent: unknown, args: { personId: string }, ctx: Context) => {
     const userId = requireAuth(ctx);

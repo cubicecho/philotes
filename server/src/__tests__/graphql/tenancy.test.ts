@@ -1,15 +1,21 @@
 import * as dbSchema from '@cubicecho/philotes-db/schema';
 import type { FeatureSwitch } from '@vantreeseba/drizzle-graphql';
 import { getTableColumns, is, Table } from 'drizzle-orm';
+import { printSchema } from 'graphql';
 import { describe, expect, it } from 'vitest';
 import type { Context } from '../../core/context.ts';
-import { contextValues, exclude, features, scope } from '../../graphql/tenancy.ts';
+import { createSchema } from '../../graphql/build-schema.ts';
+import { AUTH_TABLES, contextValues, exclude, features, scope } from '../../graphql/tenancy.ts';
 import { onWrite, writtenRows } from '../../graphql/write-guards.ts';
+import { createTestDb } from '../helpers.ts';
 
+const AUTH_TABLE_NAMES = new Set<string>(AUTH_TABLES);
+/** The tables the API serves. better-auth's own are excluded from it outright. */
 const TABLES = Object.entries(dbSchema)
   // biome-ignore lint/suspicious/noExplicitAny: drizzle-orm 1.0 table type compat
   .filter(([, value]) => is(value as any, Table))
-  .map(([name]) => name);
+  .map(([name]) => name)
+  .filter((name) => AUTH_TABLE_NAMES.has(name) === false);
 
 /** A feature switch is a boolean or a per-table predicate. */
 const allows = (feature: FeatureSwitch | undefined, table: string) =>
@@ -80,8 +86,17 @@ describe('exclude and features', () => {
     expect(features.nestedWrites).toBe(false);
   });
 
-  it('keeps passwordHash out of the schema', () => {
-    expect(exclude.columns?.users).toContain('passwordHash');
+  it('excludes every auth table', () => {
+    expect(exclude.tables).toEqual([...AUTH_TABLES]);
+  });
+
+  it('serves no type, field or argument for sessions, credentials, tokens or API key hashes', async () => {
+    const { schema } = createSchema(await createTestDb());
+    const printed = printSchema(schema);
+
+    // ApiKeyRecord is the hand-written, hash-free view of a key.
+    expect(printed).not.toMatch(/\b(Session|Account|Verification|Apikey)s?(\b|[A-Z_])/);
+    expect(printed).not.toMatch(/\b(sessions|accounts|verifications|apikeys)\b/);
   });
 
   it('leaves user rows to the auth flow', () => {

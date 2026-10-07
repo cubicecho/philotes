@@ -13,7 +13,6 @@ const VERIFY_MAGIC_LINK = graphql(`
   mutation VerifyMagicLink($token: String!) {
     verifyMagicLink(token: $token) {
       token
-      userId
     }
   }
 `);
@@ -21,7 +20,7 @@ const VERIFY_MAGIC_LINK = graphql(`
 export default function VerifyPage() {
   const router = useRouter();
   const { token } = useLocalSearchParams<{ token?: string }>();
-  // A magic token is spent on first use, so a re-run effect must not send it twice.
+  // A link's token is spent on first use, so a re-run effect must not send it twice.
   const started = useRef(false);
 
   const [verify, { error }] = useMutation(VERIFY_MAGIC_LINK, {
@@ -48,11 +47,7 @@ export default function VerifyPage() {
         <EmptyState
           icon={CircleAlert}
           level={1}
-          title={
-            error.message.includes('expired')
-              ? 'This link has expired. Please request a new one.'
-              : 'Invalid magic link.'
-          }
+          title="This sign-in link is invalid or has expired. Request a new one."
           actionSlot={<Button variant="outline" linkSlot={<Link href="/login" />} content="Back to sign in" />}
         />
       ) : (

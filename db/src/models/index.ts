@@ -1,4 +1,6 @@
+export * from './accounts.ts';
 export * from './addresses.ts';
+export * from './apikeys.ts';
 export * from './contact-infos.ts';
 export * from './important-dates.ts';
 export * from './interactions.ts';
@@ -8,6 +10,8 @@ export * from './person-labels.ts';
 export * from './person-relationships.ts';
 export * from './persons.ts';
 export * from './relationship-types.ts';
+export * from './sessions.ts';
 export * from './tasks.ts';
 export * from './user-persons.ts';
 export * from './users.ts';
+export * from './verifications.ts';

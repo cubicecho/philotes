@@ -7,7 +7,7 @@ services:
     depends_on:
       postgres: { condition: service_healthy }
     environment:
-      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required. Generate one with `openssl rand -hex 32`}
+      BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:?BETTER_AUTH_SECRET is required. Generate one with `openssl rand -hex 32`}
       DATABASE_URL: postgres://philotes:${POSTGRES_PASSWORD:-philotes}@postgres:5432/philotes
       APP_URL: ${APP_URL:-http://localhost:3001}
       TRUST_PROXY: ${TRUST_PROXY:-false}

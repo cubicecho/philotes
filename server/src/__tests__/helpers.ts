@@ -1,6 +1,5 @@
 import type { Server } from 'node:http';
 import type { AddressInfo } from 'node:net';
-import { apiKeys } from '@cubicecho/philotes-db/api-keys';
 import { relations } from '@cubicecho/philotes-db/relations';
 import * as dbSchema from '@cubicecho/philotes-db/schema';
 import { PGlite } from '@electric-sql/pglite';
@@ -8,6 +7,9 @@ import { pushSchema } from 'drizzle-kit/api-postgres';
 import { drizzle } from 'drizzle-orm/pglite';
 import { type ExecutionResult, type GraphQLError, graphql } from 'graphql';
 import { expect } from 'vitest';
+import { type Auth, createAuth, type MagicLink } from '../auth/better-auth.ts';
+import { createRateLimiter, type RateLimiter } from '../auth/rate-limit.ts';
+import type { Context } from '../core/context.ts';
 import type { ErrorCode } from '../core/errors.ts';
 import { createSchema } from '../graphql/build-schema.ts';
 
@@ -17,6 +19,39 @@ import { createSchema } from '../graphql/build-schema.ts';
  */
 // biome-ignore lint/suspicious/noExplicitAny: the two drivers have no common Drizzle type
 export type TestDb = any;
+
+/** Long enough for better-auth, and never a real secret. */
+export const TEST_SECRET = 'test-secret-0123456789abcdef0123456789';
+/** The address test requests come from. */
+export const TEST_IP = '127.0.0.1';
+
+/** What a test client's context is built from, where the defaults don't do. */
+export interface TestClientDeps {
+  /**
+   * The auth instance.
+   *
+   * @defaultValue `createTestAuth(db).auth`
+   */
+  auth?: Auth;
+  /**
+   * The sign-in rate limiter.
+   *
+   * @defaultValue `createRateLimiter()`
+   */
+  limiter?: RateLimiter;
+  /**
+   * The caller's address.
+   *
+   * @defaultValue `TEST_IP`
+   */
+  ip?: string;
+  /**
+   * The request's headers, for resolvers that read the session themselves.
+   *
+   * @defaultValue no headers
+   */
+  headers?: Headers;
+}
 
 /** What a test drives the schema through, as one user. */
 export interface TestClient {
@@ -36,9 +71,39 @@ export interface TestClient {
  */
 export async function createTestDb(): Promise<TestDb> {
   const db = drizzle({ client: new PGlite('memory://'), relations });
-  const { apply } = await pushSchema({ ...dbSchema, apiKeys }, db);
+  const { apply } = await pushSchema(dbSchema, db);
   await apply();
   return db;
+}
+
+/**
+ * Builds an auth instance that captures magic links where production would email them.
+ *
+ * @param db - The test database.
+ * @returns The auth instance, and the links it was asked to deliver, oldest first.
+ */
+export function createTestAuth(db: TestDb): { auth: Auth; links: MagicLink[] } {
+  const links: MagicLink[] = [];
+  const auth = createAuth(db, {
+    secret: TEST_SECRET,
+    sendMagicLink: async (link) => {
+      links.push(link);
+    },
+  });
+  return { auth, links };
+}
+
+/**
+ * Signs a user in the way SECURE_LOCAL_NET does, without a password.
+ *
+ * @param auth - The auth instance the session is made on.
+ * @param userId - The user to sign in.
+ * @returns The session token, to send as `Authorization: Bearer`.
+ */
+export async function createSessionToken(auth: Auth, userId: string): Promise<string> {
+  const { internalAdapter } = await auth.$context;
+  const session = await internalAdapter.createSession(userId);
+  return session.token;
 }
 
 /**
@@ -49,7 +114,7 @@ export async function createTestDb(): Promise<TestDb> {
  * @returns The new user's id.
  */
 export async function createUser(db: TestDb, email: string): Promise<string> {
-  const [user] = await db.insert(dbSchema.users).values({ email }).returning({ id: dbSchema.users.id });
+  const [user] = await db.insert(dbSchema.users).values({ email, name: email }).returning({ id: dbSchema.users.id });
   return user.id;
 }
 
@@ -75,12 +140,21 @@ export async function createPerson(db: TestDb, userId: string, firstName: string
  *
  * @param db - The test database.
  * @param userId - The signed-in user, or null for an anonymous request.
+ * @param [deps] - Context values that differ from the defaults.
  * @returns The client.
  */
-export function createClient(db: TestDb, userId: string | null): TestClient {
+export function createClient(db: TestDb, userId: string | null, deps: TestClientDeps = {}): TestClient {
   const { schema } = createSchema(db);
+  const contextValue: Context = {
+    db,
+    auth: deps.auth ?? createTestAuth(db).auth,
+    limiter: deps.limiter ?? createRateLimiter(),
+    ip: deps.ip ?? TEST_IP,
+    userId,
+    headers: deps.headers ?? new Headers(),
+  };
   const run: TestClient['run'] = (source, variableValues = {}) =>
-    graphql({ schema, source, variableValues, contextValue: { db, userId } });
+    graphql({ schema, source, variableValues, contextValue });
 
   return {
     run,

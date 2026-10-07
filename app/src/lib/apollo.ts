@@ -18,8 +18,13 @@ const authLink = setContext((_, { headers }) => {
   };
 });
 
-const errorLink = onError(({ graphQLErrors }) => {
-  if (graphQLErrors?.some((e) => e.extensions?.code === 'UNAUTHENTICATED')) {
+/** The sign-in operations, where UNAUTHENTICATED means wrong credentials and the page shows it. */
+const SIGN_IN_OPERATIONS = new Set(['SignIn', 'SignUp', 'RequestSignIn', 'VerifyMagicLink']);
+
+const errorLink = onError(({ graphQLErrors, operation }) => {
+  const isSignedOut = graphQLErrors?.some((e) => e.extensions?.code === 'UNAUTHENTICATED') ?? false;
+  const isSigningIn = SIGN_IN_OPERATIONS.has(operation.operationName);
+  if (isSignedOut && isSigningIn === false) {
     clearToken();
     if (Platform.OS === 'web') {
       window.location.replace('/login');

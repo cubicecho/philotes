@@ -1,9 +1,10 @@
 // Runs before anything connects or signs a token, so a misconfigured instance fails with a sentence, not a stack trace.
-import { isProduction, jwtSecret } from './config.ts';
+import { isPrivateHost } from '@cubicecho/philotes-db/ssl';
+import { allowsPublicLocalNet, appUrl, authSecret, isProduction, secureLocalNet } from './config.ts';
 import { AUTH_DEFAULTS } from './defaults.ts';
 
-/** The secrets .env.example and the development fallback ship with. */
-const PLACEHOLDER_SECRETS = ['change-me-to-a-long-random-string', 'dev-secret-change-in-production'];
+/** The secret .env.example ships with. */
+const PLACEHOLDER_SECRET = 'change-me-to-a-long-random-string';
 
 /**
  * Logs and exits 1.
@@ -22,11 +23,22 @@ if (databaseUrl === '') {
 }
 
 if (isProduction()) {
-  const secret = jwtSecret();
+  const secret = authSecret();
   const isTooShort = secret.length < AUTH_DEFAULTS.minSecretLength;
-  const isPlaceholder = PLACEHOLDER_SECRETS.includes(secret);
+  const isPlaceholder = secret === PLACEHOLDER_SECRET;
   // A known secret means anyone can forge a session for any account.
   if (isTooShort || isPlaceholder) {
-    fatal('JWT_SECRET must be a strong random value. Generate one with `openssl rand -hex 32`.');
+    fatal('BETTER_AUTH_SECRET must be a strong random value. Generate one with `openssl rand -hex 32`.');
+  }
+}
+
+if (secureLocalNet()) {
+  const hostname = new URL(appUrl()).hostname.toLowerCase().replace(/^\[|\]$/g, '');
+  const isExposed = isPrivateHost(hostname) === false && allowsPublicLocalNet() === false;
+  // With SECURE_LOCAL_NET, typing any email signs in as that account.
+  if (isExposed) {
+    fatal(
+      `SECURE_LOCAL_NET is on but APP_URL (${appUrl()}) is not a private address. Turn it off, or set I_KNOW_SECURE_LOCAL_NET_IS_PUBLIC=true if nothing hostile can reach this port.`,
+    );
   }
 }

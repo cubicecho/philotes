@@ -6,13 +6,23 @@ import * as dbSchema from '@cubicecho/philotes-db/schema';
 import { and, eq } from 'drizzle-orm';
 import express from 'express';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
-import { signToken } from '../../auth/resolvers.ts';
+import type { Auth } from '../../auth/better-auth.ts';
 import { HttpStatus } from '../../core/wire.ts';
 import { createAvatarRouter } from '../../persons/avatars.ts';
-import { createPerson, createTestDb, createUser, portOf, type TestDb } from '../helpers.ts';
+import {
+  createPerson,
+  createSessionToken,
+  createTestAuth,
+  createTestDb,
+  createUser,
+  portOf,
+  type TestDb,
+} from '../helpers.ts';
 
 describe('avatar routes', () => {
   let db: TestDb;
+  let auth: Auth;
+  let ownerHeaders: Record<string, string>;
   let avatarDir: string;
   let server: Server;
   let baseUrl: string;
@@ -31,7 +41,8 @@ describe('avatar routes', () => {
   async function uploadAvatar(userId: string | null, mimeType = 'image/png', fileName = 'me.png'): Promise<Response> {
     const body = new FormData();
     body.append('file', new Blob([new Uint8Array([1, 2, 3])], { type: mimeType }), fileName);
-    const headers: Record<string, string> = userId ? { authorization: `Bearer ${signToken(userId)}` } : {};
+    const headers: Record<string, string> =
+      userId === null ? {} : { authorization: `Bearer ${await createSessionToken(auth, userId)}` };
     return fetch(`${baseUrl}/avatars/${personId}`, { method: 'POST', body, headers });
   }
 
@@ -50,13 +61,15 @@ describe('avatar routes', () => {
 
   beforeAll(async () => {
     db = await createTestDb();
+    ({ auth } = createTestAuth(db));
     ownerId = await createUser(db, 'avatar-owner@example.com');
     strangerId = await createUser(db, 'avatar-stranger@example.com');
     personId = await createPerson(db, ownerId, 'Grace');
+    ownerHeaders = { authorization: `Bearer ${await createSessionToken(auth, ownerId)}` };
     avatarDir = await mkdtemp(join(tmpdir(), 'philotes-avatars-'));
 
     const app = express();
-    app.use('/avatars', createAvatarRouter({ db, avatarDir }));
+    app.use('/avatars', createAvatarRouter({ db, auth, avatarDir }));
     server = app.listen(0, '127.0.0.1');
     await new Promise((resolve) => server.once('listening', resolve));
     baseUrl = `http://127.0.0.1:${portOf(server)}`;
@@ -65,7 +78,7 @@ describe('avatar routes', () => {
   beforeEach(async () => {
     await fetch(`${baseUrl}/avatars/${personId}`, {
       method: 'DELETE',
-      headers: { authorization: `Bearer ${signToken(ownerId)}` },
+      headers: ownerHeaders,
     });
   });
 
@@ -92,7 +105,7 @@ describe('avatar routes', () => {
   it("answers 'not found' for an id that is not a uuid", async () => {
     const response = await fetch(`${baseUrl}/avatars/not-a-uuid`, {
       method: 'DELETE',
-      headers: { authorization: `Bearer ${signToken(ownerId)}` },
+      headers: ownerHeaders,
     });
 
     expect(response.status).toBe(HttpStatus.NotFound);
@@ -115,6 +128,17 @@ describe('avatar routes', () => {
     expect(await readdir(avatarDir)).toEqual([]);
   });
 
+  it('serves a stored avatar only to a signed-in caller', async () => {
+    const { url } = (await (await uploadAvatar(ownerId)).json()) as { url: string };
+
+    const anonymous = await fetch(`${baseUrl}${url}`);
+    const signedIn = await fetch(`${baseUrl}${url}`, { headers: ownerHeaders });
+
+    expect(anonymous.status).toBe(HttpStatus.Unauthorized);
+    expect(signedIn.status).toBe(HttpStatus.Ok);
+    expect(signedIn.headers.get('content-type')).toBe('image/png');
+  });
+
   it('removes the old file when a new one is uploaded', async () => {
     await uploadAvatar(ownerId);
     const [firstName] = await readdir(avatarDir);
@@ -131,7 +155,7 @@ describe('avatar routes', () => {
 
     const response = await fetch(`${baseUrl}/avatars/${personId}`, {
       method: 'DELETE',
-      headers: { authorization: `Bearer ${signToken(ownerId)}` },
+      headers: ownerHeaders,
     });
 
     expect(response.status).toBe(HttpStatus.Ok);

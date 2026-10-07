@@ -13,7 +13,7 @@ const PRIVATE_IPV6 = /^(::1$|f[cd][0-9a-f]{2}:|fe[89ab][0-9a-f]:)/;
  * @param hostname - The host from the URL, lower case, without IPv6 brackets.
  * @returns true for localhost, a dotless name such as a compose service, a private address or a private suffix.
  */
-function isPrivateHost(hostname: string): boolean {
+export function isPrivateHost(hostname: string): boolean {
   const isIpv6 = hostname.includes(':');
   if (isIpv6) {
     return PRIVATE_IPV6.test(hostname);

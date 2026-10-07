@@ -3,10 +3,11 @@ import { unlink } from 'node:fs/promises';
 import { basename, join } from 'node:path';
 import type { DB } from '@cubicecho/philotes-db';
 import * as dbSchema from '@cubicecho/philotes-db/schema';
+import { fromNodeHeaders } from 'better-auth/node';
 import { and, eq } from 'drizzle-orm';
-import { type NextFunction, type Request, type Response, Router } from 'express';
+import express, { type NextFunction, type Request, type Response, Router } from 'express';
 import multer from 'multer';
-import { extractUserId } from '../auth/resolvers.ts';
+import { type Auth, sessionUserId } from '../auth/better-auth.ts';
 import { HttpStatus } from '../core/wire.ts';
 
 /** The URL prefix the stored `avatarPath` carries, and the mount the files are served under. */
@@ -35,27 +36,45 @@ interface AvatarLocals {
 export interface AvatarRouterDeps {
   /** Drizzle client. */
   db: DB;
+  /** Reads the caller's session. */
+  auth: Auth;
   /** The directory avatars are stored in. */
   avatarDir: string;
 }
 
 /**
- * Lets a request through only when the caller is signed in and has the person in their own list.
- * It runs before the upload is parsed, so nothing is written to disk for anyone else. A person
- * that belongs to another user answers "not found", as the resolvers do.
+ * Lets a request through only when the caller is signed in. Reading an avatar needs this too:
+ * a file name is random, but it is not a credential.
+ *
+ * @param auth - The auth instance.
+ * @param req - The request, carrying `Authorization: Bearer`.
+ * @param res - The response; `res.locals.userId` receives the caller's id.
+ * @param next - Continues to the handler.
+ * @returns Nothing.
+ */
+async function requireSession(auth: Auth, req: Request, res: Response, next: NextFunction): Promise<void> {
+  const userId = await sessionUserId(auth, fromNodeHeaders(req.headers));
+  if (userId === null) {
+    res.status(HttpStatus.Unauthorized).json({ error: 'Unauthenticated' });
+    return;
+  }
+  res.locals.userId = userId;
+  next();
+}
+
+/**
+ * Lets a request through only when the caller has the person in their own list. It runs before
+ * the upload is parsed, so nothing is written to disk for anyone else. A person that belongs to
+ * another user answers "not found", as the resolvers do.
  *
  * @param db - Drizzle client.
  * @param req - The request, with `personId` in its path.
- * @param res - The response; `res.locals` receives the {@link AvatarLocals}.
+ * @param res - The response; `res.locals` holds the caller's id and receives the {@link AvatarLocals}.
  * @param next - Continues to the handler.
  * @returns Nothing.
  */
 async function requireOwnPerson(db: DB, req: Request, res: Response, next: NextFunction): Promise<void> {
-  const userId = extractUserId(req);
-  if (!userId) {
-    res.status(HttpStatus.Unauthorized).json({ error: 'Unauthenticated' });
-    return;
-  }
+  const userId = String(res.locals.userId);
 
   const personId = String(req.params.personId);
   // Postgres rejects a malformed uuid with an error, which would answer 500 where 404 is meant.
@@ -111,11 +130,11 @@ async function saveAvatarPath(db: DB, locals: AvatarLocals, avatarPath: string |
  * Each file gets a random name, so two users who share a person never overwrite each other's
  * picture and a name cannot be guessed from a person id.
  *
- * @param deps - The database and the avatar directory.
+ * @param deps - The database, the auth instance and the avatar directory.
  * @returns The router, to mount at `/avatars`.
  */
 export function createAvatarRouter(deps: AvatarRouterDeps): Router {
-  const { db, avatarDir } = deps;
+  const { db, auth, avatarDir } = deps;
   const guard = (req: Request, res: Response, next: NextFunction) => requireOwnPerson(db, req, res, next);
   const storage = multer.diskStorage({
     destination: avatarDir,
@@ -133,6 +152,8 @@ export function createAvatarRouter(deps: AvatarRouterDeps): Router {
   }).single('file');
 
   const router = Router();
+  router.use((req, res, next) => requireSession(auth, req, res, next));
+  router.use(express.static(avatarDir));
 
   router.post('/:personId', guard, (req, res) => {
     upload(req, res, async (uploadError: unknown) => {

@@ -29,10 +29,10 @@ confirmed in code. Nothing here is implemented until approved.
 | B8 | Bug | Refetches the lists that import, person delete, label merge and label delete change | No stale rows after a mutation | — | done |
 | B9 | Bug | Shows loading and error states in the API key and export cards, which today show "empty" while loading | Honest states | — | done |
 | F1 | Feature | Asks for confirmation before each of the seven one-click deletes | No accidental data loss | — | done |
-| A1 | API change | Moves the server to graphql-yoga on Express 5 with `createApp(deps)`, the `core/ http/ graphql/ auth/` layout, `/healthz`, graceful shutdown, body cap and operation limits | The cubicecho backend shape; injection replaces `vi.mock` of own modules | — | approved |
-| A2 | API change | Replaces the hand-rolled JWT magic link and API keys with better-auth, and puts `/avatars` behind the session cookie; every user signs in again and existing API keys stop working | One audited auth stack, with rate limiting | A1 | approved |
-| A3 | API change | Makes Postgres the only production database (PGlite for tests), loads the db package from source, and adds `waitForDatabase`; a deployment now needs a Postgres | Production runs what CI tests | A1 | approved |
-| A4 | API change | Moves to drizzle-graphql 13 with `nestedWrites: false`, list bounds and complexity limits; unbounded list queries get a default page size | Bounded queries | A1 | approved |
+| A1 | API change | Moves the server to graphql-yoga on Express 5 with `createApp(deps)`, the `core/ http/ graphql/ auth/` layout, `/healthz`, graceful shutdown, body cap and operation limits | The cubicecho backend shape; injection replaces `vi.mock` of own modules | — | done |
+| A2 | API change | Replaces the hand-rolled JWT magic link and API keys with better-auth, and puts `/avatars` behind the session; every user signs in again and existing API keys stop working | One audited auth stack, with rate limiting | A1 | done |
+| A3 | API change | Makes Postgres the only production database (PGlite for tests), loads the db package from source, and adds `waitForDatabase`; a deployment now needs a Postgres | Production runs what CI tests | A1 | done |
+| A4 | API change | Moves to drizzle-graphql 13 with `nestedWrites: false`, list bounds and complexity limits; unbounded list queries get a default page size | Bounded queries | A1 | done |
 | A5 | API change | Rewrites the Dockerfile, compose files, CI (`postgres` and `boot` jobs) and release (GHCR) to the standard, on port 3000 as a non-root user | Standard deployment; image published without Docker Hub secrets | A1, A3 | approved |
 | R1 | Refactor [pattern] | Introduces an `ErrorCode` vocabulary and one `errorMessage`, with zod validating resolver input | One error contract | A1 | approved |
 | R2 | Refactor [consistency] | Brings the tables to the conventions: timestamps with time zone, `createdAt`/`updatedAt`, indexed foreign keys, named unique constraints | Standard schema; needs a migration | A3 | approved |
@@ -60,7 +60,7 @@ Status is `open`, `approved`, `declined` or `done`.
 ## Conventions
 
 - Missing lookups and failures throw a `GraphQLError`; a row that belongs to another user is "not found", never "forbidden"
-- Multi-tenancy is configuration in `server/src/tenancy.ts`, not resolver code
+- Multi-tenancy is configuration in `server/src/graphql/tenancy.ts`, not resolver code
 - Vendored cubeui (`app/src/components/ui/`, the shells in `app/src/components/`, `app/src/lib/{utils,format,color,cubeui-theme,readable-text-color}.ts`) is not edited here; fix it upstream
 - App components take no `children`; content goes in `*Slot` props typed `SlotNode`
 - Generated files and the command that rebuilds them: `server/__generated__/`, `app/src/__generated__/` → `npm run codegen`

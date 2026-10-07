@@ -86,7 +86,6 @@ async function seedUser() {
     .values({
       email: 'seed@philotes.local',
       name: 'Seed User',
-      passwordHash: 'seed-placeholder-not-for-auth',
     })
     .returning({ id: users.id });
   console.log(`Inserted seed user (id: ${user.id})`);

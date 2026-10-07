@@ -66,9 +66,10 @@ falling back to an unscoped query.
 stamps it from the request. Ownership is therefore unstatable rather than
 merely overwritten.
 
-**`exclude`** drops `passwordHash` from the schema entirely — not readable,
-not filterable. **`features`** removes generated `users` mutations; accounts
-belong to the magic-link flow.
+**`exclude`** drops better-auth's tables (`sessions`, `accounts`,
+`verifications`, `apikeys`) from the schema entirely: not readable, not
+filterable. **`features`** removes generated `users` mutations; accounts
+belong to the auth flow in `auth/resolvers.ts`.
 
 A scope cannot reach a plain insert, and says nothing about the rows a foreign
 key *points at*. `resolvers/junction-ownership.ts` closes that half with

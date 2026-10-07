@@ -33,6 +33,5 @@ export type DB = typeof db;
  */
 export const closeDatabase = (): Promise<void> => db.$client.end({ timeout: DATABASE_DEFAULTS.closeTimeoutSeconds });
 
-export * from './api-keys.ts';
 export * from './schema.ts';
 export { relations, schema };
