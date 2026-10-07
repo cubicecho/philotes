@@ -17,10 +17,6 @@ import { Pencil, Trash2 } from '@/components/ui/icons';
 import { type MentionablePerson, parseMentionedPersonIds } from '@/lib/mentions';
 import { fullName } from '@/lib/person-name';
 
-// ---------------------------------------------------------------------------
-// Mutations
-// ---------------------------------------------------------------------------
-
 const CREATE_NOTE = graphql(`
   mutation CreateNote($body: String!, $personId: UUID!) {
     createNote(values: { body: $body, personId: $personId }) {
@@ -71,10 +67,6 @@ const DELETE_NOTE_MENTIONS = graphql(`
   }
 `);
 
-// ---------------------------------------------------------------------------
-// Types
-// ---------------------------------------------------------------------------
-
 export interface NoteData {
   id: string;
   body: string;
@@ -91,10 +83,6 @@ export interface PersonNotesProps {
   createOpen: boolean;
   onCreateOpenChange: (open: boolean) => void;
 }
-
-// ---------------------------------------------------------------------------
-// Note form (body, plus a tag picker when creating)
-// ---------------------------------------------------------------------------
 
 interface NoteFormValues {
   body: string;
@@ -162,10 +150,6 @@ function NoteForm({
     </form.AppForm>
   );
 }
-
-// ---------------------------------------------------------------------------
-// Note row
-// ---------------------------------------------------------------------------
 
 interface NoteRowProps {
   note: NoteData;
@@ -260,10 +244,6 @@ function NoteRow({ note, allTags, allPersons, onChanged }: NoteRowProps) {
     </>
   );
 }
-
-// ---------------------------------------------------------------------------
-// Main export
-// ---------------------------------------------------------------------------
 
 export function PersonNotes({
   personId,

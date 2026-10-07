@@ -120,7 +120,7 @@ export function NetworkGraph({ persons, onOpenPerson }: NetworkGraphProps) {
         .translate(-width / 2, -height / 2),
     );
 
-    // ── Force simulation ────────────────────────────────────────────────────
+    // Force simulation
     // Longer link distances for well-connected nodes so clusters breathe
     const simulation = d3
       .forceSimulation<SimNode, SimLink>(nodes)
@@ -147,7 +147,7 @@ export function NetworkGraph({ persons, onOpenPerson }: NetworkGraphProps) {
 
     simulationRef.current = simulation;
 
-    // ── Edge lines ──────────────────────────────────────────────────────────
+    // Edge lines
     const link = container
       .append('g')
       .attr('class', 'links')
@@ -159,7 +159,7 @@ export function NetworkGraph({ persons, onOpenPerson }: NetworkGraphProps) {
       .attr('stroke-opacity', 0.4)
       .style('cursor', 'default');
 
-    // ── Edge label groups (pill background + rotated text) ──────────────────
+    // Edge label groups (pill background + rotated text)
     const edgeLabelGroups = container
       .append('g')
       .attr('class', 'edge-labels')
@@ -211,7 +211,7 @@ export function NetworkGraph({ persons, onOpenPerson }: NetworkGraphProps) {
       return { x, y };
     };
 
-    // ── Node groups ─────────────────────────────────────────────────────────
+    // Node groups
     const nodeGroup = container
       .append('g')
       .attr('class', 'nodes')
@@ -309,7 +309,7 @@ export function NetworkGraph({ persons, onOpenPerson }: NetworkGraphProps) {
       .style('stroke-width', '3px')
       .style('stroke-linejoin', 'round');
 
-    // ── Tick handler ────────────────────────────────────────────────────────
+    // Tick handler
     simulation.on('tick', () => {
       link
         .attr('x1', (d) => (d.source as SimNode).x ?? 0)

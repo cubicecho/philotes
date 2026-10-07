@@ -46,10 +46,6 @@ import { fullName } from '@/lib/person-name';
 import { useAllRows } from '@/lib/use-all-rows';
 import type { SlotNode } from '@/lib/utils';
 
-// ---------------------------------------------------------------------------
-// GraphQL
-// ---------------------------------------------------------------------------
-
 const GET_PERSON_DETAIL = graphql(`
   query GetPersonDetail($id: UUID!) {
     person(where: { id: { eq: $id } }) {
@@ -269,10 +265,6 @@ const DELETE_PERSON = graphql(`
     }
   }
 `);
-
-// ---------------------------------------------------------------------------
-// Page
-// ---------------------------------------------------------------------------
 
 /** The quiet add trigger every section header carries. */
 function SectionAdd({

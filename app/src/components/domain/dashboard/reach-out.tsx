@@ -11,10 +11,6 @@ import { Check } from '@/components/ui/icons';
 import { fullName } from '@/lib/person-name';
 import { Widget } from './widget';
 
-// ---------------------------------------------------------------------------
-// Types
-// ---------------------------------------------------------------------------
-
 export type ReachOutPerson = {
   id: string;
   firstName: string;
@@ -25,10 +21,6 @@ export type ReachOutPerson = {
   /** Dormant entries render quieter than overdue ones. */
   isDormant: boolean;
 };
-
-// ---------------------------------------------------------------------------
-// Quick log
-// ---------------------------------------------------------------------------
 
 const QUICK_LOG_INTERACTION = graphql(`
   mutation QuickLogInteraction($personId: UUID!, $occurredAt: DateTime!) {
@@ -65,10 +57,6 @@ export function formatOverdueLabel(days: number): string {
   }
   return `${months} months overdue`;
 }
-
-// ---------------------------------------------------------------------------
-// Component
-// ---------------------------------------------------------------------------
 
 interface ReachOutProps {
   persons: ReachOutPerson[];

@@ -5,10 +5,6 @@ import { useAppForm } from '@/components/app-form';
 import { Form } from '@/components/ui/form';
 import { FormDialogFooter } from '@/components/ui/form-dialog';
 
-// ---------------------------------------------------------------------------
-// Recurrence
-// ---------------------------------------------------------------------------
-
 export const RECURRENCE_OPTIONS = [
   { value: '', label: 'Does not repeat' },
   { value: 'yearly', label: 'Every year' },
@@ -17,10 +13,6 @@ export const RECURRENCE_OPTIONS = [
 ] as const;
 
 export type RecurrenceValue = '' | 'yearly' | 'monthly' | 'weekly';
-
-// ---------------------------------------------------------------------------
-// Milestone type
-// ---------------------------------------------------------------------------
 
 export const MILESTONE_TYPE_OPTIONS = [
   { value: '', label: 'None (regular date)' },
@@ -50,10 +42,6 @@ export type MilestoneTypeValue =
   | 'graduation'
   | 'loss'
   | 'other';
-
-// ---------------------------------------------------------------------------
-// Schema & types
-// ---------------------------------------------------------------------------
 
 // The select cannot hold an empty-string value, so "no recurrence" and "no
 // milestone" travel through the form as this and are stripped on the way out.
@@ -98,10 +86,6 @@ interface ImportantDateFormProps {
   onCancel: () => void;
   initialValues?: ImportantDateFormValue;
 }
-
-// ---------------------------------------------------------------------------
-// Form
-// ---------------------------------------------------------------------------
 
 export function ImportantDateForm({ onSubmit, onCancel, initialValues }: ImportantDateFormProps) {
   const [formError, setFormError] = useState<string | null>(null);

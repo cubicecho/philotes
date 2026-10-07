@@ -15,10 +15,6 @@ import { ArrowLeft } from '@/components/ui/icons';
 import { Spinner } from '@/components/ui/spinner';
 import { useAllRows } from '@/lib/use-all-rows';
 
-// ---------------------------------------------------------------------------
-// GraphQL
-// ---------------------------------------------------------------------------
-
 const GET_DATE_DETAIL = graphql(`
   query GetImportantDateDetail($dateId: UUID!) {
     importantDates(where: { id: { eq: $dateId } }, limit: 1) {
@@ -36,10 +32,6 @@ const GET_DATE_DETAIL = graphql(`
   }
 `);
 
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
 function formatDate(date: Date): string {
   return date.toLocaleDateString(undefined, {
     month: 'long',
@@ -47,10 +39,6 @@ function formatDate(date: Date): string {
     year: 'numeric',
   });
 }
-
-// ---------------------------------------------------------------------------
-// Page
-// ---------------------------------------------------------------------------
 
 export default function ImportantDateDetailPage() {
   const { id: personId, dateId } = useLocalSearchParams<{ id: string; dateId: string }>();

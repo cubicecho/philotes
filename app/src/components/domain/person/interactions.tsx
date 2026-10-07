@@ -21,10 +21,6 @@ import { FormDialog } from '@/components/ui/form-dialog';
 import { Pencil, Trash2 } from '@/components/ui/icons';
 import { relativeTime } from '@/lib/relative-time';
 
-// ---------------------------------------------------------------------------
-// Mutations
-// ---------------------------------------------------------------------------
-
 const CREATE_INTERACTION = graphql(`
   mutation CreateInteraction(
     $personId: UUID!
@@ -86,10 +82,6 @@ const DELETE_INTERACTION = graphql(`
   }
 `);
 
-// ---------------------------------------------------------------------------
-// Types
-// ---------------------------------------------------------------------------
-
 export interface InteractionData {
   id: string;
   personId: string;
@@ -108,10 +100,6 @@ export interface PersonInteractionsProps {
   createOpen: boolean;
   onCreateOpenChange: (open: boolean) => void;
 }
-
-// ---------------------------------------------------------------------------
-// Interaction row
-// ---------------------------------------------------------------------------
 
 const NOTE_TRUNCATE = 80;
 
@@ -230,10 +218,6 @@ function InteractionRow({ interaction, allTags, onChanged }: InteractionRowProps
     </>
   );
 }
-
-// ---------------------------------------------------------------------------
-// Main export
-// ---------------------------------------------------------------------------
 
 export function PersonInteractions({
   personId,

@@ -6,10 +6,6 @@ import { FieldWrapper, Form } from '@/components/ui/form';
 import { FormDialogFooter } from '@/components/ui/form-dialog';
 import { SegmentedButton, SegmentedGroup } from '@/components/ui/segmented';
 
-// ---------------------------------------------------------------------------
-// Channel / Sentiment helpers
-// ---------------------------------------------------------------------------
-
 export type Channel = 'call' | 'text' | 'email' | 'in-person' | 'other';
 export type Sentiment = 'great' | 'good' | 'neutral' | 'difficult';
 
@@ -35,10 +31,6 @@ export const SENTIMENT_OPTIONS: Array<{
 export function sentimentEmoji(sentiment: string | null | undefined): string {
   return SENTIMENT_OPTIONS.find((s) => s.value === sentiment)?.emoji ?? '';
 }
-
-// ---------------------------------------------------------------------------
-// Interaction form (create + edit)
-// ---------------------------------------------------------------------------
 
 export interface InteractionFormValues {
   channel: Channel;

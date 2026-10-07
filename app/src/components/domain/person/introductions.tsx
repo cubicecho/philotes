@@ -4,10 +4,6 @@ import { LabelChip } from '@/components/domain/label/label-chip';
 import { Avatar } from '@/components/domain/person/avatar';
 import { EmptyState } from '@/components/page';
 
-// ---------------------------------------------------------------------------
-// Types
-// ---------------------------------------------------------------------------
-
 export interface PersonWithLabels {
   id: string;
   firstName: string;
@@ -23,10 +19,6 @@ export interface PersonIntroductionsProps {
   allPersons: PersonWithLabels[];
   linkedPersonIds: Set<string>;
 }
-
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
 
 interface SuggestedPerson {
   person: PersonWithLabels;
@@ -53,10 +45,6 @@ function computeSuggestions(
     .slice(0, 5);
 }
 
-// ---------------------------------------------------------------------------
-// Suggestion row
-// ---------------------------------------------------------------------------
-
 interface SuggestionRowProps {
   suggestion: SuggestedPerson;
 }
@@ -82,10 +70,6 @@ function SuggestionRow({ suggestion }: SuggestionRowProps) {
     </View>
   );
 }
-
-// ---------------------------------------------------------------------------
-// Main export
-// ---------------------------------------------------------------------------
 
 export function PersonIntroductions({
   currentPersonId,

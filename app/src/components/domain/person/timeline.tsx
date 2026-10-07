@@ -7,10 +7,6 @@ import { formatDate } from '@/lib/format';
 import { relativeTime } from '@/lib/relative-time';
 import { cn } from '@/lib/utils';
 
-// ---------------------------------------------------------------------------
-// Types
-// ---------------------------------------------------------------------------
-
 type TimelineLabel = { id: string; label: string; color: string };
 
 export interface TimelineInteraction {
@@ -34,10 +30,6 @@ export interface PersonTimelineProps {
   interactions: TimelineInteraction[];
   importantDates: TimelineImportantDate[];
 }
-
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
 
 type TimelineItem =
   | { id: string; type: 'interaction'; date: Date; data: TimelineInteraction }
@@ -71,10 +63,6 @@ function formatMonthYear(date: Date): string {
 function monthYearKey(date: Date): string {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
 }
-
-// ---------------------------------------------------------------------------
-// Individual entry renderers
-// ---------------------------------------------------------------------------
 
 function EntryLabels({ labels }: { labels: TimelineLabel[] }) {
   if (labels.length === 0) {
@@ -122,10 +110,6 @@ function ImportantDateEntry({ item }: { item: TimelineImportantDate }) {
     </View>
   );
 }
-
-// ---------------------------------------------------------------------------
-// Main export
-// ---------------------------------------------------------------------------
 
 export function PersonTimeline({ interactions, importantDates }: PersonTimelineProps) {
   const items: TimelineItem[] = [

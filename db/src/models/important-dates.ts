@@ -4,11 +4,7 @@ import { labels } from './labels.ts';
 import { persons } from './persons.ts';
 import { users } from './users.ts';
 
-// Recurrence values mirror Google Calendar's model.
-// null = one-time event (only appears if the original date is upcoming).
-// "yearly"  = repeats every year on the same month + day (e.g. birthdays).
-// "monthly" = repeats every month on the same day-of-month.
-// "weekly"  = repeats every week on the same day-of-week.
+/** How a date repeats: on the same month and day, day of the month, or weekday. A null recurrence is a one-time date. */
 export const RECURRENCE_VALUES = ['yearly', 'monthly', 'weekly'] as const;
 export type Recurrence = (typeof RECURRENCE_VALUES)[number];
 

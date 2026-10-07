@@ -6,8 +6,6 @@ import { errorMessage, requireAuth } from '../core/errors.ts';
 import { objectType } from '../graphql/object-type.ts';
 import { type ParsedContact, parseGoogleContactsCsv } from './google-contacts-csv.ts';
 
-// ── Error utilities ──────────────────────────────────────────────────────────
-
 /**
  * Records a failed step for the caller and logs why. The database's own message names tables,
  * columns and constraints, so it goes to the log and never into the response.
@@ -29,8 +27,6 @@ function isUniqueViolation(err: unknown): boolean {
     msg.includes('unique') || msg.includes('duplicate') || causeMsg.includes('unique') || causeMsg.includes('duplicate')
   );
 }
-
-// ── GraphQL extension ────────────────────────────────────────────────────────
 
 const IMPORT_CONTACTS_SDL = parse(`
   type ImportContactsResult {
@@ -70,10 +66,10 @@ export function applyImportContactsExtension(schema: GraphQLSchema): GraphQLSche
     // biome-ignore lint/suspicious/noExplicitAny: drizzle-orm 1.0 column type compat
     const db = context.db as any;
 
-    // ── Step 1: Parse CSV ─────────────────────────────────────────────────
+    // Step 1: Parse CSV
     const { contacts, skippedCount } = parseGoogleContactsCsv(args.csv);
 
-    // ── Step 2: Upsert Labels (user-scoped) ──────────────────────────────
+    // Step 2: Upsert Labels (user-scoped)
     const allLabelNames = new Set<string>();
     for (const contact of contacts) {
       for (const name of contact.labels) {
@@ -110,7 +106,7 @@ export function applyImportContactsExtension(schema: GraphQLSchema): GraphQLSche
       }
     }
 
-    // ── Step 3 & 4: Insert persons and related data ───────────────────────
+    // Step 3 & 4: Insert persons and related data
     let importedCount = 0;
     let mergedCount = 0;
     const errors: string[] = [];
@@ -162,7 +158,7 @@ export function applyImportContactsExtension(schema: GraphQLSchema): GraphQLSche
       // Ensure user_persons link exists (idempotent)
       await db.insert(dbSchema.userPersons).values({ userId, personId }).onConflictDoNothing();
 
-      // ── Step 4: Insert related data in parallel ──────────────────────
+      // Step 4: Insert related data in parallel
       // Each helper is isolated with .catch() so a failure in one (e.g. a
       // duplicate address) does not roll back an otherwise-successful import.
       await Promise.all([
@@ -191,8 +187,6 @@ export function applyImportContactsExtension(schema: GraphQLSchema): GraphQLSche
 
   return extendedSchema;
 }
-
-// ── Related data inserters ───────────────────────────────────────────────────
 
 // biome-ignore lint/suspicious/noExplicitAny: drizzle-orm 1.0 column type compat
 async function insertContactInfos(db: any, personId: string, userId: string, contact: ParsedContact): Promise<void> {

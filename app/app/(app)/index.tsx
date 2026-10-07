@@ -13,10 +13,6 @@ import { QueryState } from '@/components/query-state';
 import { computeOverdueByDays } from '@/lib/contact-frequency';
 import { useAllRows } from '@/lib/use-all-rows';
 
-// ---------------------------------------------------------------------------
-// GraphQL — one query feeds every widget
-// ---------------------------------------------------------------------------
-
 const GET_DASHBOARD = graphql(`
   query Dashboard($limit: Int!, $offset: Int!) {
     persons(
@@ -53,10 +49,6 @@ const GET_DASHBOARD = graphql(`
   }
 `);
 
-// ---------------------------------------------------------------------------
-// Types
-// ---------------------------------------------------------------------------
-
 type DashboardPerson = {
   id: string;
   firstName: string;
@@ -82,18 +74,10 @@ type DashboardPerson = {
   }>;
 };
 
-// ---------------------------------------------------------------------------
-// Constants
-// ---------------------------------------------------------------------------
-
 const WIDGET_LIMIT = 6;
 const UPCOMING_WINDOW_DAYS = 30;
 const DORMANT_THRESHOLD_DAYS = 365;
 const MS_PER_DAY = 1000 * 60 * 60 * 24;
-
-// ---------------------------------------------------------------------------
-// Date utilities
-// ---------------------------------------------------------------------------
 
 function todayMidnight(): Date {
   const d = new Date();
@@ -142,10 +126,6 @@ function daysUntilNextOccurrence(storedDate: Date, recurrence: string | null | u
 
   return null;
 }
-
-// ---------------------------------------------------------------------------
-// Derived data
-// ---------------------------------------------------------------------------
 
 /**
  * One merged "who should I contact" list: people past their check-in window
@@ -280,10 +260,6 @@ function computeRecentlyAdded(persons: DashboardPerson[]): RecentPerson[] {
       createdAt: p.createdAt,
     }));
 }
-
-// ---------------------------------------------------------------------------
-// Page
-// ---------------------------------------------------------------------------
 
 /** Two columns from `md` up; the width sits on the cell because `gap-4` is not part of a percentage. */
 const CELL = 'w-full md:w-[calc(50%-0.5rem)]';

@@ -23,8 +23,6 @@ import {
   users,
 } from './schema.ts';
 
-// ── helpers ────────────────────────────────────────────────────────────────
-
 function randomId(): string {
   return crypto.randomUUID();
 }
@@ -54,8 +52,6 @@ function toIsoDate(d: Date): string {
   return d.toISOString().slice(0, 10);
 }
 
-// ── constants ──────────────────────────────────────────────────────────────
-
 const INTERACTION_CHANNELS = ['call', 'text', 'email', 'in-person', 'other'] as const;
 
 const INTERACTION_SENTIMENTS = ['great', 'good', 'neutral', 'difficult'] as const;
@@ -77,8 +73,6 @@ const IMPORTANT_DATE_NAMES = [
   'Promotion Day',
   'Moving Day',
 ];
-
-// ── seed functions ─────────────────────────────────────────────────────────
 
 async function seedUser() {
   const [user] = await db
@@ -492,8 +486,6 @@ async function seedAddresses(personData: { id: string }[], userId: string) {
   await db.insert(addresses).values(addressData);
   console.log(`Inserted ${addressData.length} addresses`);
 }
-
-// ── main ───────────────────────────────────────────────────────────────────
 
 console.log('Starting seed...');
 

@@ -12,10 +12,6 @@ import { Form } from '@/components/ui/form';
 import { FormDialog, FormDialogFooter } from '@/components/ui/form-dialog';
 import { Trash2 } from '@/components/ui/icons';
 
-// ---------------------------------------------------------------------------
-// Fragment
-// ---------------------------------------------------------------------------
-
 export const TASK_LIST = graphql(`
   fragment Person_Tasks on Person {
     id
@@ -29,10 +25,6 @@ export const TASK_LIST = graphql(`
     }
   }
 `);
-
-// ---------------------------------------------------------------------------
-// Mutations
-// ---------------------------------------------------------------------------
 
 const CREATE_TASK = graphql(`
   mutation CreateTask(
@@ -80,10 +72,6 @@ const DELETE_TASK = graphql(`
   }
 `);
 
-// ---------------------------------------------------------------------------
-// Types
-// ---------------------------------------------------------------------------
-
 export interface TaskData {
   id: string;
   title: string;
@@ -103,10 +91,6 @@ export interface TaskListProps {
   onCreateOpenChange?: (open: boolean) => void;
 }
 
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
 function formatDueDate(dueAt: Date): string {
   return dueAt.toLocaleDateString(undefined, {
     month: 'short',
@@ -114,10 +98,6 @@ function formatDueDate(dueAt: Date): string {
     year: 'numeric',
   });
 }
-
-// ---------------------------------------------------------------------------
-// Task row
-// ---------------------------------------------------------------------------
 
 interface TaskRowProps {
   task: TaskData;
@@ -171,10 +151,6 @@ function TaskRow({ task, onDelete, onUpdate }: TaskRowProps) {
     />
   );
 }
-
-// ---------------------------------------------------------------------------
-// Add task form
-// ---------------------------------------------------------------------------
 
 interface AddTaskFormProps {
   personId: string;
@@ -235,10 +211,6 @@ function AddTaskForm({ personId, onAdded, onCancel }: AddTaskFormProps) {
     </form.AppForm>
   );
 }
-
-// ---------------------------------------------------------------------------
-// Main export
-// ---------------------------------------------------------------------------
 
 export function TaskList({
   personId,

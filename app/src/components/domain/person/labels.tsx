@@ -11,10 +11,6 @@ import { FieldWrapper, Form } from '@/components/ui/form';
 import { FormDialog, FormDialogFooter } from '@/components/ui/form-dialog';
 import { Plus } from '@/components/ui/icons';
 
-// ---------------------------------------------------------------------------
-// Fragment
-// ---------------------------------------------------------------------------
-
 export const PERSON_LABELS = graphql(`
   fragment Person_Labels on Person {
     id
@@ -25,10 +21,6 @@ export const PERSON_LABELS = graphql(`
     }
   }
 `);
-
-// ---------------------------------------------------------------------------
-// Mutations
-// ---------------------------------------------------------------------------
 
 const ATTACH_LABEL = graphql(`
   mutation AttachLabelToPerson($personId: UUID!, $labelId: UUID!) {
@@ -50,10 +42,6 @@ const DETACH_LABEL = graphql(`
   }
 `);
 
-// ---------------------------------------------------------------------------
-// Types
-// ---------------------------------------------------------------------------
-
 type LabelOption = { id: string; label: string; color: string };
 
 export interface PersonLabelsProps {
@@ -64,10 +52,6 @@ export interface PersonLabelsProps {
   showAdd?: boolean;
   onShowAdd?: (show: boolean) => void;
 }
-
-// ---------------------------------------------------------------------------
-// Attached label chip (detaches on remove)
-// ---------------------------------------------------------------------------
 
 interface AttachedLabelChipProps {
   personId: string;
@@ -87,10 +71,6 @@ function AttachedLabelChip({ personId, labelId, label, color, onDelete }: Attach
 
   return <LabelChip label={label} color={color} onRemove={handleDetach} />;
 }
-
-// ---------------------------------------------------------------------------
-// Add-label dialog
-// ---------------------------------------------------------------------------
 
 interface AddLabelDialogProps {
   personId: string;
@@ -164,10 +144,6 @@ function AddLabelDialog({ personId, available, open, onOpenChange, onAdd }: AddL
     </FormDialog>
   );
 }
-
-// ---------------------------------------------------------------------------
-// Main export
-// ---------------------------------------------------------------------------
 
 export function PersonLabels({ person, allLabels, onDelete, onAdd, showAdd = false, onShowAdd }: PersonLabelsProps) {
   const attachedIds = new Set(person.labels.map((l) => l.id));

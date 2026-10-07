@@ -16,10 +16,6 @@ import { fullName } from '@/lib/person-name';
 import { relativeTime } from '@/lib/relative-time';
 import { cn } from '@/lib/utils';
 
-// ---------------------------------------------------------------------------
-// Types
-// ---------------------------------------------------------------------------
-
 export interface PersonContactInfo {
   id: string;
   type: string;
@@ -49,10 +45,6 @@ const SORT_OPTIONS: Array<{ value: SortOption; label: string }> = [
   { value: 'lastContacted-desc', label: 'Last contacted (recent first)' },
 ];
 
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
 function primaryPhone(infos: PersonContactInfo[]): string | null {
   const phones = infos.filter((i) => i.type === 'phone' || i.type === 'mobile');
   if (phones.length === 0) {
@@ -69,10 +61,6 @@ function groupLetter(person: PersonRowData): string {
 
 // Sticky under the page header on the web; on device the letter scrolls with its rows.
 const LETTER_HEADER = Platform.select({ web: 'sticky top-0 z-10', default: '' });
-
-// ---------------------------------------------------------------------------
-// PersonRow — one compact row: the middle opens the person, the ends act on them
-// ---------------------------------------------------------------------------
 
 interface PersonRowProps {
   person: PersonRowData;
@@ -142,10 +130,6 @@ function PersonRow({ person, divided, onDeletePress, activeLabelIds }: PersonRow
     />
   );
 }
-
-// ---------------------------------------------------------------------------
-// PersonList — pure display component
-// ---------------------------------------------------------------------------
 
 export interface PersonListProps {
   persons: PersonRowData[];

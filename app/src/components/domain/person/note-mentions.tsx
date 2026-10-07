@@ -6,10 +6,6 @@ import { Textarea, type TextareaHandle } from '@/components/ui/textarea';
 import type { MentionablePerson } from '@/lib/mentions';
 import { fullName } from '@/lib/person-name';
 
-// ---------------------------------------------------------------------------
-// @-Mention dropdown
-// ---------------------------------------------------------------------------
-
 interface MentionDropdownProps {
   query: string;
   allPersons: MentionablePerson[];
@@ -36,10 +32,6 @@ export function MentionDropdown({ query, allPersons, onSelect }: MentionDropdown
     </View>
   );
 }
-
-// ---------------------------------------------------------------------------
-// Mention-aware textarea field
-// ---------------------------------------------------------------------------
 
 // The textarea reports its text but not its caret, so a mention is the `@word`
 // the text currently ends with.

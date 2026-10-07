@@ -15,10 +15,6 @@ import { FieldRow, Form } from '@/components/ui/form';
 import { FormDialog, FormDialogFooter } from '@/components/ui/form-dialog';
 import { Trash2 } from '@/components/ui/icons';
 
-// ---------------------------------------------------------------------------
-// Fragment
-// ---------------------------------------------------------------------------
-
 export const ADDRESS_LIST_FRAGMENT = graphql(`
   fragment AddressList on Person {
     id
@@ -36,10 +32,6 @@ export const ADDRESS_LIST_FRAGMENT = graphql(`
     }
   }
 `);
-
-// ---------------------------------------------------------------------------
-// Mutations
-// ---------------------------------------------------------------------------
 
 const CREATE_ADDRESSES = graphql(`
   mutation CreateAddresses($values: [CreateAddressInput!]!) {
@@ -66,10 +58,6 @@ const DELETE_ADDRESSES = graphql(`
   }
 `);
 
-// ---------------------------------------------------------------------------
-// Types
-// ---------------------------------------------------------------------------
-
 export interface AddressListProps {
   fragmentRef: AddressListFragment;
   onAdd: () => void;
@@ -90,10 +78,6 @@ interface AddressData {
   country: string | null;
   isPrimary: boolean;
 }
-
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
 
 const TYPE_LABELS: Record<AddressTypeEnum, string> = {
   [AddressTypeEnum.Home]: 'Home',
@@ -124,10 +108,6 @@ function formatAddress(address: AddressData): string {
   }
   return parts.join('\n');
 }
-
-// ---------------------------------------------------------------------------
-// Address row
-// ---------------------------------------------------------------------------
 
 interface AddressRowProps {
   address: AddressData;
@@ -175,10 +155,6 @@ function AddressRow({ address, onDelete }: AddressRowProps) {
     />
   );
 }
-
-// ---------------------------------------------------------------------------
-// Add address dialog
-// ---------------------------------------------------------------------------
 
 const EMPTY_ADDRESS = {
   type: AddressTypeEnum.Home as string,
@@ -283,10 +259,6 @@ function AddAddressDialog({ personId, open, onOpenChange, onAdded }: AddAddressD
     </FormDialog>
   );
 }
-
-// ---------------------------------------------------------------------------
-// Main export
-// ---------------------------------------------------------------------------
 
 export function AddressList({ fragmentRef, onAdd, onDelete, createOpen, onCreateOpenChange }: AddressListProps) {
   const [internalOpen, setInternalOpen] = useState(false);

@@ -14,10 +14,6 @@ import { Form } from '@/components/ui/form';
 import { FormDialog, FormDialogFooter } from '@/components/ui/form-dialog';
 import { Ellipsis, Trash2 } from '@/components/ui/icons';
 
-// ---------------------------------------------------------------------------
-// Fragment
-// ---------------------------------------------------------------------------
-
 export const CONTACT_INFO_LIST_FRAGMENT = graphql(`
   fragment ContactInfo_List on Person {
     id
@@ -30,10 +26,6 @@ export const CONTACT_INFO_LIST_FRAGMENT = graphql(`
     }
   }
 `);
-
-// ---------------------------------------------------------------------------
-// Mutations
-// ---------------------------------------------------------------------------
 
 const CREATE_CONTACT_INFO = graphql(`
   mutation CreateContactInfo(
@@ -69,10 +61,6 @@ const DELETE_CONTACT_INFO = graphql(`
     }
   }
 `);
-
-// ---------------------------------------------------------------------------
-// Contact type helpers
-// ---------------------------------------------------------------------------
 
 const CONTACT_TYPE_OPTIONS: Array<{ value: ContactTypeEnum; label: string }> = [
   { value: ContactTypeEnum.Email, label: 'Email' },
@@ -138,10 +126,6 @@ function ContactTypeIcon({ type, className }: { type: string; className?: string
   }
 }
 
-// ---------------------------------------------------------------------------
-// Types
-// ---------------------------------------------------------------------------
-
 export interface ContactInfoListProps {
   person: ContactInfo_ListFragment;
   onAdd: () => void;
@@ -149,10 +133,6 @@ export interface ContactInfoListProps {
   createOpen?: boolean;
   onCreateOpenChange?: (open: boolean) => void;
 }
-
-// ---------------------------------------------------------------------------
-// ContactInfoRow
-// ---------------------------------------------------------------------------
 
 interface ContactInfoRowProps {
   id: string;
@@ -203,10 +183,6 @@ function ContactInfoRow({ id, type, value, label, isPrimary, onDelete }: Contact
     />
   );
 }
-
-// ---------------------------------------------------------------------------
-// Add contact info dialog
-// ---------------------------------------------------------------------------
 
 const EMPTY_CONTACT_INFO = {
   type: ContactTypeEnum.Email as string,
@@ -294,10 +270,6 @@ function AddContactInfoDialog({ personId, open, onOpenChange, onAdded }: AddCont
     </FormDialog>
   );
 }
-
-// ---------------------------------------------------------------------------
-// Main export
-// ---------------------------------------------------------------------------
 
 export function ContactInfoList({ person, onAdd, onDelete, createOpen, onCreateOpenChange }: ContactInfoListProps) {
   const [internalOpen, setInternalOpen] = useState(false);

@@ -1,9 +1,5 @@
-// Google Contacts-compatible CSV export.
-//
-// The shapes below are what the exporter reads, not the GraphQL schema — the
-// `ExportPersons` query in `components/settings/export-people-card.tsx` must
-// select every field named here. Dates arrive as `Date` objects: the Apollo
-// cache's scalar policies turn the wire strings into them.
+// Google Contacts-compatible CSV export. The `ExportPersons` query in export-people-card.tsx must select
+// every field these shapes name. Dates arrive as `Date` objects, made by the Apollo cache's scalar policies.
 
 import { localIsoDate } from '@/lib/local-date';
 

@@ -7,10 +7,6 @@ import { Separator } from '@/components/ui/separator';
 import { relativeTime } from '@/lib/relative-time';
 import { cn } from '@/lib/utils';
 
-// ---------------------------------------------------------------------------
-// Types
-// ---------------------------------------------------------------------------
-
 interface Interaction {
   id: string;
   occurredAt: Date;
@@ -48,10 +44,6 @@ export interface PreContactBriefProps {
     importantDates: ImportantDate[];
   };
 }
-
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
 
 function daysUntil(date: Date): number {
   const now = new Date();
@@ -113,10 +105,6 @@ function channelLabel(channel: string): string {
   };
   return labels[channel] ?? channel;
 }
-
-// ---------------------------------------------------------------------------
-// Main component
-// ---------------------------------------------------------------------------
 
 export function PreContactBrief({ person }: PreContactBriefProps) {
   const sortedInteractions = [...person.interactions].sort((a, b) => b.occurredAt.getTime() - a.occurredAt.getTime());

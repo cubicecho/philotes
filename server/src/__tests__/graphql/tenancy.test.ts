@@ -23,10 +23,6 @@ const allows = (feature: FeatureSwitch | undefined, table: string) =>
 
 const asContext = (userId: string | null): Context => ({ db: null, userId }) as unknown as Context;
 
-// ---------------------------------------------------------------------------
-// 1. Row scope coverage
-// ---------------------------------------------------------------------------
-
 describe('scope', () => {
   it('covers every table in the schema', () => {
     // A table with no scope entry is readable and writable across tenants, so
@@ -63,10 +59,6 @@ describe('scope', () => {
     expect(() => scope.persons?.(asContext(null), dbSchema.persons)).toThrow();
   });
 });
-
-// ---------------------------------------------------------------------------
-// 2. Server-owned columns
-// ---------------------------------------------------------------------------
 
 describe('contextValues', () => {
   const userOwned = TABLES.filter((name) =>
@@ -117,10 +109,6 @@ describe('exclude and features', () => {
     }
   });
 });
-
-// ---------------------------------------------------------------------------
-// 3. Foreign-key ownership hooks
-// ---------------------------------------------------------------------------
 
 describe('onWrite', () => {
   it('guards the writes of every table that takes generated ones', () => {

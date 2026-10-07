@@ -19,10 +19,6 @@ import { Pencil, Trash2 } from '@/components/ui/icons';
 import { fullName } from '@/lib/person-name';
 import { useAllRows } from '@/lib/use-all-rows';
 
-// ---------------------------------------------------------------------------
-// Fragments & queries
-// ---------------------------------------------------------------------------
-
 export const PERSON_RELATIONSHIPS = graphql(`
   fragment Person_Relationships on Person {
     id
@@ -44,10 +40,6 @@ const GET_RELATIONSHIP_TYPES = graphql(`
     }
   }
 `);
-
-// ---------------------------------------------------------------------------
-// Mutations
-// ---------------------------------------------------------------------------
 
 const CREATE_RELATIONSHIP = graphql(`
   mutation CreatePersonRelationship(
@@ -109,10 +101,6 @@ const DELETE_RELATIONSHIP_TYPE = graphql(`
   }
 `);
 
-// ---------------------------------------------------------------------------
-// Types
-// ---------------------------------------------------------------------------
-
 export interface RelationshipsProps {
   person: Person_RelationshipsFragment;
   allPersons: Array<{ id: string; firstName: string; lastName: string }>;
@@ -127,10 +115,6 @@ type EditingRelationship = Pick<
   PersonRelationshipEntry,
   'id' | 'type' | 'relatedPersonId' | 'relatedPersonFirstName' | 'relatedPersonLastName'
 >;
-
-// ---------------------------------------------------------------------------
-// Add / edit dialog
-// ---------------------------------------------------------------------------
 
 interface RelationshipFormDialogProps {
   open: boolean;
@@ -360,10 +344,6 @@ function RelationshipFormDialog({
   );
 }
 
-// ---------------------------------------------------------------------------
-// Relationship row
-// ---------------------------------------------------------------------------
-
 interface RelationshipRowProps {
   relationship: PersonRelationshipEntry;
   onDelete: (id: string) => void;
@@ -411,10 +391,6 @@ function RelationshipRow({ relationship, onDelete, onEditPress }: RelationshipRo
     />
   );
 }
-
-// ---------------------------------------------------------------------------
-// Main export
-// ---------------------------------------------------------------------------
 
 export function PersonRelationships({
   person,

@@ -23,20 +23,6 @@ const config: CodegenConfig = {
         },
       },
     },
-    //     'server/src/__generated__/schema.graphql': {
-    //       plugins: ['schema-ast'],
-    //       config: {
-    //         inputMaybeValue: 'T | undefined',
-    //         contextType: '../src/core/context.ts#Context',
-    //         includeDirectives: true,
-    //         avoidOptionals: {
-    //           // Use `null` for nullable fields instead of optionals
-    //           field: true,
-    //           // Allow nullable input fields to remain unspecified
-    //           inputValue: false,
-    //         },
-    //       },
-    //     },
   },
 };
 

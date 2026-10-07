@@ -18,10 +18,6 @@ import { Spinner } from '@/components/ui/spinner';
 import { fullName } from '@/lib/person-name';
 import { useAllRows } from '@/lib/use-all-rows';
 
-// ---------------------------------------------------------------------------
-// GraphQL
-// ---------------------------------------------------------------------------
-
 const GET_PERSON_TIMELINE = graphql(`
   query GetPersonTimeline($id: UUID!) {
     persons(where: { id: { eq: $id } }, limit: 1) {
@@ -42,10 +38,6 @@ const GET_PERSON_TIMELINE = graphql(`
     }
   }
 `);
-
-// ---------------------------------------------------------------------------
-// Page
-// ---------------------------------------------------------------------------
 
 /** An interaction row is small, so its pages are twice the default. */
 const INTERACTIONS_PAGE_SIZE = 100;

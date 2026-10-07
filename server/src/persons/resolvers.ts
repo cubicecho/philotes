@@ -8,14 +8,8 @@ import { parseOrThrow } from '../core/validation.ts';
 import { objectType } from '../graphql/object-type.ts';
 import { personInput, userPersonInput } from './input.ts';
 
-// Row-level tenancy — which rows a user may read and write, and the userId
-// stamped on the rows they create — is configured on buildSchema itself; see
-// ../tenancy.ts. What is left here is the part that is not a scope: the
-// per-user *context* a user keeps about a shared person, which lives in
-// user_persons, and the two person mutations whose meaning is not the
-// generated one.
-
-// ── SDL extensions ───────────────────────────────────────────────────────────
+// Row scope lives in graphql/tenancy.ts. This file holds what a scope cannot say: what a user keeps
+// about a shared person (user_persons), and the two person mutations that are not plain CRUD.
 
 const USER_SCOPE_SDL = parse(`
   # Per-user context about a shared person, surfaced on Person so a caller
@@ -47,13 +41,8 @@ const USER_SCOPE_SDL = parse(`
 // biome-ignore lint/suspicious/noExplicitAny: drizzle-orm 1.0 column type compat
 type AnyDB = any;
 
-// ── Per-user person context ──────────────────────────────────────────────────
-//
-// The four extension fields above come from one user_persons row each. Rather
-// than one lookup per person in a list, the whole of the caller's user_persons
-// is read once per request and memoised on the context object — a personal CRM
-// holds hundreds of contacts, not millions, and one indexed read on user_id
-// beats a query per row of every list that selects an avatar.
+// The caller's user_persons rows are read once per request and kept against the context. A user has
+// hundreds of contacts, so one indexed read beats a lookup per row of every list that shows an avatar.
 
 type PersonContext = Record<string, unknown>;
 const personContextsByRequest = new WeakMap<Context, Promise<Map<string, PersonContext>>>();
@@ -89,13 +78,8 @@ function applyPersonContextFields(schema: GraphQLSchema): void {
   }
 }
 
-// ── persons: the two mutations the generated ones cannot express ─────────────
-//
-// Reads, updates and deletes of persons are scoped through user_persons by the
-// row scope, so the generated resolvers are correct as they stand. Creating and
-// removing a person are not CRUD on the shared row: a create links the person
-// to the caller's contacts (reusing an existing person on an email collision),
-// and a delete unlinks rather than deleting a row other users can still see.
+// A person row is shared, so creating one links it to the caller (reusing the row that already holds
+// the email), and deleting one unlinks it and leaves the row for the other users who can see it.
 
 /**
  * Inserts a person, or finds the one that already holds the email. `persons` is shared, so two
@@ -168,8 +152,6 @@ function overridePersonMutations(schema: GraphQLSchema): void {
     return person ? [person] : [];
   };
 }
-
-// ── user_persons resolvers ────────────────────────────────────────────
 
 function addUserPersonsResolvers(schema: GraphQLSchema): void {
   const qf = objectType(schema, 'Query').getFields();
@@ -245,8 +227,6 @@ function addUserPersonsResolvers(schema: GraphQLSchema): void {
     return true;
   };
 }
-
-// ── Main export ──────────────────────────────────────────────────────────────
 
 export function applyUserScopeExtensions(schema: GraphQLSchema): GraphQLSchema {
   const extendedSchema = extendSchema(schema, USER_SCOPE_SDL);

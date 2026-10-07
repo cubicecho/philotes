@@ -12,10 +12,6 @@ import { useQueryStringState } from '@/hooks/use-query-string-state';
 import { invalidateQueryFields } from '@/lib/invalidate';
 import { useAllRows } from '@/lib/use-all-rows';
 
-// ---------------------------------------------------------------------------
-// Utilities
-// ---------------------------------------------------------------------------
-
 function debounce<T extends (...args: Parameters<T>) => void>(fn: T, delay: number): (...args: Parameters<T>) => void {
   let timer: ReturnType<typeof setTimeout>;
   return (...args) => {
@@ -23,10 +19,6 @@ function debounce<T extends (...args: Parameters<T>) => void>(fn: T, delay: numb
     timer = setTimeout(() => fn(...args), delay);
   };
 }
-
-// ---------------------------------------------------------------------------
-// GraphQL documents
-// ---------------------------------------------------------------------------
 
 const GET_PERSONS = graphql(`
   query GetPersons($where: PersonFilters, $orderBy: PersonOrderBy, $limit: Int!, $offset: Int!) {
@@ -80,10 +72,6 @@ const DELETE_PERSON = graphql(`
   }
 `);
 
-// ---------------------------------------------------------------------------
-// URL state types
-// ---------------------------------------------------------------------------
-
 type SortField = 'name' | 'lastContacted';
 type SortDir = 'asc' | 'desc';
 
@@ -94,15 +82,11 @@ interface PersonsUrlState {
   sortDir: SortDir;
 }
 
-// ---------------------------------------------------------------------------
-// Page
-// ---------------------------------------------------------------------------
-
 export default function PersonsPage() {
   const router = useRouter();
   const { new: newParam } = useLocalSearchParams<{ new?: string }>();
 
-  // ── URL state ──────────────────────────────────────────────────────────────
+  // URL state
   const [urlState, setUrlState] = useQueryStringState<PersonsUrlState>(
     {
       q: '',
@@ -118,7 +102,7 @@ export default function PersonsPage() {
   const sortField: SortField = urlState.sortField ?? 'name';
   const sortDir: SortDir = urlState.sortDir ?? 'asc';
 
-  // ── Local search state — instant input feedback, debounced URL/query update
+  // Local search state — instant input feedback, debounced URL/query update
   const [searchValue, setSearchValue] = useState(urlQ);
 
   const debouncedSetUrlQ = useCallback(
@@ -133,7 +117,7 @@ export default function PersonsPage() {
     debouncedSetUrlQ(value);
   };
 
-  // ── Build GraphQL query variables ─────────────────────────────────────────
+  // Build GraphQL query variables
   const trimmedQ = urlQ.trim();
 
   const where: PersonFilters | undefined = trimmedQ
@@ -149,7 +133,7 @@ export default function PersonsPage() {
   const isNameSort = sortField === 'name';
   const orderDirection = sortDir === 'asc' ? OrderDirection.Asc : OrderDirection.Desc;
 
-  // ── Data fetching — the whole (searched) list; sorting by name on the server
+  // Data fetching — the whole (searched) list; sorting by name on the server
   const { data, previousData, loading, error, refetch } = useAllRows(GET_PERSONS, {
     field: 'persons',
     variables: {
@@ -184,7 +168,7 @@ export default function PersonsPage() {
     }
   }, [newParam, router]);
 
-  // ── Shape raw data ─────────────────────────────────────────────────────────
+  // Shape raw data
   const rawPersons: PersonRowData[] = (displayData?.persons ?? []).map((p) => ({
     id: p.id,
     firstName: p.firstName,
@@ -196,7 +180,7 @@ export default function PersonsPage() {
     lastContactedAt: p.interactions[0]?.occurredAt ?? null,
   }));
 
-  // ── Client-side sort for lastContacted (server can't sort by relation) ────
+  // Client-side sort for lastContacted (server can't sort by relation)
   const sortedPersons = isNameSort
     ? rawPersons
     : [...rawPersons].sort((a, b) => {
@@ -214,7 +198,7 @@ export default function PersonsPage() {
         return sortDir === 'asc' ? aTime - bTime : bTime - aTime;
       });
 
-  // ── Label filtering (client-side — server cannot filter by nested relation)
+  // Label filtering (client-side — server cannot filter by nested relation)
   const filteredPersons =
     activeLabelIds.length > 0
       ? sortedPersons.filter((p) => activeLabelIds.every((id) => p.labels.some((l) => l.id === id)))
@@ -222,7 +206,7 @@ export default function PersonsPage() {
 
   const allLabels = (labelsData?.labels ?? []).map((l) => ({ id: l.id, label: l.label, color: l.color }));
 
-  // ── Handlers ───────────────────────────────────────────────────────────────
+  // Handlers
 
   const handleDelete = async (id: string): Promise<void> => {
     await deletePerson({ variables: { id } });
