@@ -48,10 +48,27 @@ export const scope: NonNullable<BuildSchemaConfig['scope']> = {
   ...Object.fromEntries(USER_OWNED_TABLES.map((name) => [name, scopeByUserId])),
 };
 
-/** Stamps `userId` from the request and removes it from inputs, so ownership is never caller-stated. */
-export const contextValues: NonNullable<BuildSchemaConfig['contextValues']> = Object.fromEntries(
-  USER_OWNED_TABLES.map((name) => [name, { userId: requireAuth }]),
-);
+/** What a new contact detail's `normalizedValue` holds until the `after` hook has worked it out. */
+export const UNNORMALIZED_VALUE = '';
+
+/**
+ * Leaves a column to the database on insert: its default, or the expression it is generated from.
+ *
+ * @returns Nothing, which the insert reads as "not given".
+ */
+const databaseOwned = (): undefined => undefined;
+
+/**
+ * Columns the server owns: removed from inputs and stamped on insert. `userId` comes from the request,
+ * so ownership is never caller-stated. A person's `uid` is the id a phone knows the contact by, and
+ * their display and sort names are generated from the name columns. A contact detail's
+ * `normalizedValue` is derived from its value by the `after` hook in `persons/hooks.ts`.
+ */
+export const contextValues: NonNullable<BuildSchemaConfig['contextValues']> = {
+  ...Object.fromEntries(USER_OWNED_TABLES.map((name) => [name, { userId: requireAuth }])),
+  persons: { userId: requireAuth, uid: databaseOwned, displayName: databaseOwned, sortName: databaseOwned },
+  contactInfos: { userId: requireAuth, normalizedValue: () => UNNORMALIZED_VALUE },
+};
 
 /** better-auth's tables: sessions, credentials, one-time tokens and API key hashes. */
 export const AUTH_TABLES = ['sessions', 'accounts', 'verifications', 'apikeys'] as const;
@@ -59,6 +76,8 @@ export const AUTH_TABLES = ['sessions', 'accounts', 'verifications', 'apikeys'] 
 /** Auth tables never cross the API: not readable, not filterable, not reachable as a relation. */
 export const exclude: NonNullable<BuildSchemaConfig['exclude']> = {
   tables: [...AUTH_TABLES],
+  // What a phone sent that Philotes has no field for. Only the vCard codec reads or writes it.
+  columns: { persons: ['vcardExtra'] },
 };
 
 /** User lifecycle belongs to the auth flow, not generated CRUD. */

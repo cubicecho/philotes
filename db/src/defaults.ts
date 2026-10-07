@@ -23,6 +23,17 @@ export const DATABASE_DEFAULTS: Readonly<DatabaseSettings> = Object.freeze({
   closeTimeoutSeconds: 5,
 });
 
+/** What a new account starts with. */
+export interface UserSettings {
+  /** The country a phone number written without a country code is read as: an ISO 3166-1 alpha-2 code. */
+  country: string;
+}
+
+/** The account settings as shipped. */
+export const USER_DEFAULTS: Readonly<UserSettings> = Object.freeze({
+  country: 'US',
+});
+
 /** How much the development seed writes, and how often it fills the optional parts. A chance is from 0 to 1. */
 export interface SeedSettings {
   /** Fewest labels a person gets. */

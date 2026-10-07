@@ -119,8 +119,10 @@ export const OPERATION_LIMIT_DEFAULTS: Readonly<OperationLimitSettings> = Object
 
 /** Limits on what a person may hold. */
 export interface PersonSettings {
-  /** Longest first or last name, in characters. */
+  /** Longest name part, nickname, organization, job title or department, in characters. */
   maxNameLength: number;
+  /** Longest "about" text, in characters. */
+  maxAboutLength: number;
   /** Longest "how we met", in characters. */
   maxHowWeMetLength: number;
 }
@@ -128,6 +130,7 @@ export interface PersonSettings {
 /** The person limits as shipped. */
 export const PERSON_DEFAULTS: Readonly<PersonSettings> = Object.freeze({
   maxNameLength: 200,
+  maxAboutLength: 10_000,
   maxHowWeMetLength: 2_000,
 });
 

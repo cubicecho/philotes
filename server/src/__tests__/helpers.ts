@@ -1,4 +1,6 @@
 import type { Server } from 'node:http';
+import { USER_DEFAULTS } from '@cubicecho/philotes-db/defaults';
+import { withNormalizedValue } from '@cubicecho/philotes-db/normalize';
 import { relations } from '@cubicecho/philotes-db/relations';
 import * as dbSchema from '@cubicecho/philotes-db/schema';
 import { PGlite } from '@electric-sql/pglite';
@@ -131,6 +133,25 @@ export async function createPerson(db: TestDb, userId: string, firstName: string
     .values({ userId, firstName, lastName: 'Test' })
     .returning({ id: dbSchema.persons.id });
   return person.id;
+}
+
+/**
+ * Inserts a contact detail, with its normalized value worked out as the server would for a user in the
+ * default country.
+ *
+ * @param db - The test database.
+ * @param row - The detail: its owner, person, type and value, and anything else the table takes.
+ * @returns The new row's id.
+ */
+export async function createContactInfo(
+  db: TestDb,
+  row: Omit<dbSchema.NewContactInfo, 'normalizedValue'>,
+): Promise<string> {
+  const [created] = await db
+    .insert(dbSchema.contactInfos)
+    .values(withNormalizedValue(row, USER_DEFAULTS.country))
+    .returning({ id: dbSchema.contactInfos.id });
+  return created.id;
 }
 
 /**

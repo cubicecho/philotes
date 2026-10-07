@@ -17,9 +17,21 @@ describe('/ical', () => {
     const ownerId = await createUser(db, 'ical-owner@example.com');
     const strangerId = await createUser(db, 'ical-stranger@example.com');
     const personId = await createPerson(db, ownerId, 'Grace');
-    await db
-      .insert(dbSchema.importantDates)
-      .values({ userId: ownerId, personId, name: 'Birthday', date: '1990-12-09', recurrence: 'yearly' });
+    const [company] = await db
+      .insert(dbSchema.persons)
+      .values({ userId: ownerId, organization: 'Analytical Engines' })
+      .returning({ id: dbSchema.persons.id });
+    await db.insert(dbSchema.importantDates).values([
+      { userId: ownerId, personId, name: 'Birthday', date: '1990-12-09', recurrence: 'yearly' },
+      {
+        userId: ownerId,
+        personId: company.id,
+        name: 'Founding',
+        date: `${dbSchema.YEARLESS_DATE_YEAR}-03-04`,
+        hasYear: false,
+        recurrence: 'yearly',
+      },
+    ]);
     ({ key: ownerKey } = await auth.api.createApiKey({ body: { userId: ownerId, name: 'owner' } }));
     ({ key: strangerKey } = await auth.api.createApiKey({ body: { userId: strangerId, name: 'stranger' } }));
 
@@ -40,6 +52,14 @@ describe('/ical', () => {
     expect(response.headers.get('content-type')).toContain('text/calendar');
     expect(body).toContain('SUMMARY:Birthday (Grace Test)');
     expect(body).toContain('RRULE:FREQ=YEARLY');
+  });
+
+  it('starts a date with no year in this year, and names a company by its organization', async () => {
+    const body = await (await fetch(`${baseUrl}/ical?key=${ownerKey}`)).text();
+
+    expect(body).toContain('SUMMARY:Founding (Analytical Engines)');
+    expect(body).toContain(`DTSTART;VALUE=DATE:${new Date().getUTCFullYear()}0304`);
+    expect(body).toContain('DTSTART;VALUE=DATE:19901209');
   });
 
   it('serves another user’s key none of them', async () => {

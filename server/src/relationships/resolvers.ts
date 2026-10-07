@@ -11,8 +11,8 @@ const extensionSDL = parse(`
     id: String!
     type: String!
     relatedPersonId: String!
-    relatedPersonFirstName: String!
-    relatedPersonLastName: String!
+    """The other person's name as shown: the empty string when they have no name, nickname or organization."""
+    relatedPersonDisplayName: String!
   }
 
   extend type Person {
@@ -81,18 +81,17 @@ export function applyRelationshipsExtension(schema: GraphQLSchema): GraphQLSchem
     const relatedPersonRows = await dbCtx
       .select({
         id: persons.id,
-        firstName: persons.firstName,
-        lastName: persons.lastName,
+        displayName: persons.displayName,
       })
       .from(persons)
       .where(or(...relatedPersonIds.map((pid) => eq(persons.id, pid))));
 
-    const personMap = new Map(relatedPersonRows.map((p) => [p.id, { firstName: p.firstName, lastName: p.lastName }]));
+    const personMap = new Map(relatedPersonRows.map((p) => [p.id, p.displayName]));
 
     return rows.flatMap((row) => {
       const relatedId = otherPersonId(row, parent.id);
       const related = personMap.get(relatedId);
-      if (!related) {
+      if (related === undefined) {
         return [];
       }
       return [
@@ -100,8 +99,7 @@ export function applyRelationshipsExtension(schema: GraphQLSchema): GraphQLSchem
           id: row.id,
           type: row.type,
           relatedPersonId: relatedId,
-          relatedPersonFirstName: related.firstName,
-          relatedPersonLastName: related.lastName,
+          relatedPersonDisplayName: related,
         },
       ];
     });

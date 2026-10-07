@@ -63,33 +63,45 @@ const AUTH_SDL = parse(`
 const emailInput = z.email('Enter a valid email address.');
 const nameInput = z.string().trim().min(1, 'Name is required.');
 
-/** The user columns better-auth and the users table agree on. */
-interface UserRow {
-  id: string;
-  email: string;
-  name: string;
-  emailVerified: boolean;
-  image?: string | null;
-  createdAt: Date;
-  updatedAt: Date;
+/**
+ * Reads a user as the generated `User` type serves it. better-auth's own copy of a user lacks the columns
+ * it does not know, so a sign-in reads the row.
+ *
+ * @param ctx - Request context.
+ * @param userId - The user.
+ * @returns The fields the `User` type resolves, or null when the row is gone.
+ */
+export async function loadUserNode(ctx: Context, userId: string) {
+  const [user] = await ctx.db
+    .select({
+      id: users.id,
+      email: users.email,
+      name: users.name,
+      emailVerified: users.emailVerified,
+      image: users.image,
+      defaultCountry: users.defaultCountry,
+      createdAt: users.createdAt,
+      updatedAt: users.updatedAt,
+    })
+    .from(users)
+    .where(eq(users.id, userId));
+  return user ?? null;
 }
 
 /**
- * Picks the fields the generated `User` type serves, so nothing else better-auth returns rides along.
+ * Reads the user a sign-in just produced.
  *
- * @param user - A row from the users table, or better-auth's copy of one.
+ * @param ctx - Request context.
+ * @param userId - The user better-auth signed in.
  * @returns The fields the `User` type resolves.
+ * @throws When the row is gone, which a sign-in that just succeeded rules out.
  */
-function toUserNode(user: UserRow) {
-  return {
-    id: user.id,
-    email: user.email,
-    name: user.name,
-    emailVerified: user.emailVerified,
-    image: user.image ?? null,
-    createdAt: user.createdAt,
-    updatedAt: user.updatedAt,
-  };
+async function signedInUser(ctx: Context, userId: string) {
+  const user = await loadUserNode(ctx, userId);
+  if (user === null) {
+    throw new Error(`User ${userId} signed in but has no row.`);
+  }
+  return user;
 }
 
 /**
@@ -157,8 +169,7 @@ export function applyAuthExtension(schema: GraphQLSchema): GraphQLSchema {
     if (ctx.userId === null) {
       return null;
     }
-    const [user] = await ctx.db.select().from(users).where(eq(users.id, ctx.userId));
-    return user === undefined ? null : toUserNode(user);
+    return loadUserNode(ctx, ctx.userId);
   };
 
   /**
@@ -204,7 +215,7 @@ export function applyAuthExtension(schema: GraphQLSchema): GraphQLSchema {
       if (token === null) {
         throw new Error('Sign-up returned no session token.');
       }
-      return { token, user: toUserNode(result.user) };
+      return { token, user: await signedInUser(ctx, result.user.id) };
     } catch (error) {
       throw toGraphQLError(error);
     }
@@ -229,7 +240,7 @@ export function applyAuthExtension(schema: GraphQLSchema): GraphQLSchema {
       const result = await ctx.auth.api.signInEmail({
         body: { email: normalizeEmail(args.email), password: args.password },
       });
-      return { token: result.token, user: toUserNode(result.user) };
+      return { token: result.token, user: await signedInUser(ctx, result.user.id) };
     } catch (error) {
       throw toGraphQLError(error);
     }
@@ -272,7 +283,7 @@ export function applyAuthExtension(schema: GraphQLSchema): GraphQLSchema {
         { method: LOCAL_NET_METHOD },
       ));
     const session = await internalAdapter.createSession(user.id);
-    return { sent: false, session: { token: session.token, user: toUserNode(user) } };
+    return { sent: false, session: { token: session.token, user: await signedInUser(ctx, user.id) } };
   };
 
   /**
@@ -294,7 +305,7 @@ export function applyAuthExtension(schema: GraphQLSchema): GraphQLSchema {
     }
     try {
       const result = await ctx.auth.api.magicLinkVerify({ query: { token: args.token }, headers: new Headers() });
-      return { token: result.token, user: toUserNode(result.user) };
+      return { token: result.token, user: await signedInUser(ctx, result.user.id) };
     } catch {
       // Expired, used and unknown tokens answer the same.
       throw unauthenticated('Invalid or expired sign-in link.');
