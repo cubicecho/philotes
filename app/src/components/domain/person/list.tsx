@@ -2,7 +2,7 @@ import { Link, useRouter } from 'expo-router';
 import { Linking, Platform, Text, View } from 'react-native';
 import { ContactTypeEnum } from '@/__generated__/graphql';
 import { ActionButton } from '@/components/action-button';
-import { Mail, Phone, UserPlus, Users } from '@/components/app-icons';
+import { GitMerge, Mail, Phone, UserPlus, Users } from '@/components/app-icons';
 import { ConfirmButton } from '@/components/confirm-button';
 import { LabelChip } from '@/components/domain/label/label-chip';
 import { Avatar } from '@/components/domain/person/avatar';
@@ -274,10 +274,15 @@ export function PersonList({
     <PageLayout
       title="People"
       actionSlot={
-        // Below `md` the app shell's own bar carries the add button.
-        onAddPress ? (
-          <Button className="hidden md:flex" content="Add Person" iconSlot={<UserPlus />} onPress={onAddPress} />
-        ) : undefined
+        <View className="flex-row items-center gap-2">
+          <Link href="/persons/dedupe" asChild>
+            <Button variant="outline" content="Find duplicates" iconSlot={<GitMerge />} />
+          </Link>
+          {/* Below `md` the app shell's own bar carries the add button. */}
+          {onAddPress && (
+            <Button className="hidden md:flex" content="Add Person" iconSlot={<UserPlus />} onPress={onAddPress} />
+          )}
+        </View>
       }
       headerContentSlot={
         <View className="gap-3">

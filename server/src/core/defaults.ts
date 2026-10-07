@@ -128,6 +128,17 @@ export const PERSON_DEFAULTS: Readonly<PersonSettings> = Object.freeze({
   maxAvatarPathLength: 500,
 });
 
+/** Limits on the search for duplicate people. */
+export interface DuplicateSettings {
+  /** Most groups of duplicates one search returns. */
+  maxGroups: number;
+}
+
+/** The duplicate search limits as shipped. */
+export const DUPLICATE_DEFAULTS: Readonly<DuplicateSettings> = Object.freeze({
+  maxGroups: 100,
+});
+
 /** Limits on what an address may hold. */
 export interface AddressSettings {
   /** Longest label, city, state or country, in characters. */

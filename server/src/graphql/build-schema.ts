@@ -13,6 +13,7 @@ import { interactionWriteHooks } from '../interactions/hooks.ts';
 import { labelWriteHooks } from '../labels/hooks.ts';
 import { applyMergeLabelsExtension } from '../labels/resolvers.ts';
 import { noteWriteHooks } from '../notes/hooks.ts';
+import { applyDuplicatesExtension } from '../persons/duplicates.ts';
 import { personWriteHooks } from '../persons/hooks.ts';
 import { applyUserScopeExtensions } from '../persons/resolvers.ts';
 import { relationshipWriteHooks } from '../relationships/hooks.ts';
@@ -44,6 +45,7 @@ const EXTENSIONS: Array<(schema: GraphQLSchema) => GraphQLSchema> = [
   applyUpcomingDatesExtension,
   applyImportContactsExtension,
   applyMergeLabelsExtension,
+  applyDuplicatesExtension,
   applyApiKeysExtension,
 ];
 

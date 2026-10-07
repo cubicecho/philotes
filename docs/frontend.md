@@ -37,6 +37,7 @@ app/
 │       ├── settings/index.tsx  # /settings
 │       └── persons/
 │           ├── index.tsx       # /persons
+│           ├── dedupe.tsx      # /persons/dedupe (find and merge duplicates)
 │           └── [id]/           # /persons/:id
 │               ├── _layout.tsx
 │               ├── index.tsx
