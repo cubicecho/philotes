@@ -1,3 +1,13 @@
+# [3.1.0](https://github.com/cubicecho/philotes/compare/v3.0.0...v3.1.0) (2026-10-07)
+
+
+### Features
+
+* find and merge duplicate people ([356b2ee](https://github.com/cubicecho/philotes/commit/356b2ee427d5644ff9aa6488f3eb8895ded7ce2d))
+* log an interaction from the people list ([3275992](https://github.com/cubicecho/philotes/commit/32759921146fcd02847f3931b5cfa865a0983f81))
+* record gratitudes on a person ([608aacd](https://github.com/cubicecho/philotes/commit/608aacd8af1af89825cacf051cd9a15ea061f482))
+* tag other people on an important date ([874684b](https://github.com/cubicecho/philotes/commit/874684b6d6d4c732272ee62c014e9395eceed367))
+
 # [3.0.0](https://github.com/cubicecho/philotes/compare/v2.1.0...v3.0.0) (2026-10-07)
 
 
