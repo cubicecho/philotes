@@ -4,9 +4,9 @@ import { getTableColumns, is, Table } from 'drizzle-orm';
 import { printSchema } from 'graphql';
 import { describe, expect, it } from 'vitest';
 import type { Context } from '../../core/context.ts';
-import { createSchema } from '../../graphql/build-schema.ts';
+import { createSchema, WRITE_HOOKS } from '../../graphql/build-schema.ts';
 import { AUTH_TABLES, contextValues, exclude, features, scope, USER_OWNED_TABLES } from '../../graphql/tenancy.ts';
-import { onWrite, writtenRows } from '../../graphql/write-guards.ts';
+import { writtenRows } from '../../graphql/write-guards.ts';
 import { createTestDb } from '../helpers.ts';
 
 const AUTH_TABLE_NAMES = new Set<string>(AUTH_TABLES);
@@ -123,14 +123,10 @@ describe('exclude and features', () => {
 // ---------------------------------------------------------------------------
 
 describe('onWrite', () => {
-  it('guards every junction table that references another user-owned row', () => {
-    expect(Object.keys(onWrite).sort()).toEqual([
-      'importantDateTags',
-      'interactionTags',
-      'noteMentions',
-      'noteTags',
-      'personLabels',
-    ]);
+  it('guards the writes of every table that takes generated ones', () => {
+    // A table left out would skip input validation and the check on the rows its foreign keys name.
+    const writable = TABLES.filter((name) => allows(features.insert, name));
+    expect(writable.filter((name) => name in WRITE_HOOKS === false)).toEqual([]);
   });
 });
 

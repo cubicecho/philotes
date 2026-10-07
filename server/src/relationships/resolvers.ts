@@ -1,7 +1,8 @@
 import * as dbSchema from '@cubicecho/philotes-db/schema';
 import { and, eq, or } from 'drizzle-orm';
-import { extendSchema, type GraphQLObjectType, type GraphQLSchema, parse } from 'graphql';
+import { extendSchema, type GraphQLSchema, parse } from 'graphql';
 import type { Context } from '../core/context.ts';
+import { objectType } from '../graphql/object-type.ts';
 
 const { persons, personRelationships } = dbSchema;
 
@@ -22,7 +23,7 @@ const extensionSDL = parse(`
 export function applyRelationshipsExtension(schema: GraphQLSchema): GraphQLSchema {
   const extendedSchema = extendSchema(schema, extensionSDL);
 
-  const personType = extendedSchema.getType('Person') as GraphQLObjectType;
+  const personType = objectType(extendedSchema, 'Person');
   const personFields = personType.getFields();
 
   personFields.relationships.resolve = async (parent: { id: string }, _args: unknown, context: Context) => {

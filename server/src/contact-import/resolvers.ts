@@ -1,8 +1,9 @@
 import * as dbSchema from '@cubicecho/philotes-db/schema';
 import { and, eq } from 'drizzle-orm';
-import { extendSchema, type GraphQLObjectType, type GraphQLSchema, parse } from 'graphql';
+import { extendSchema, type GraphQLSchema, parse } from 'graphql';
 import type { Context } from '../core/context.ts';
 import { errorMessage, requireAuth } from '../core/errors.ts';
+import { objectType } from '../graphql/object-type.ts';
 import { type ParsedContact, parseGoogleContactsCsv } from './google-contacts-csv.ts';
 
 // ── Error utilities ──────────────────────────────────────────────────────────
@@ -58,7 +59,7 @@ interface ImportContactsResult {
 export function applyImportContactsExtension(schema: GraphQLSchema): GraphQLSchema {
   const extendedSchema = extendSchema(schema, IMPORT_CONTACTS_SDL);
 
-  const mutationType = extendedSchema.getType('Mutation') as GraphQLObjectType;
+  const mutationType = objectType(extendedSchema, 'Mutation');
 
   mutationType.getFields().importGoogleContacts.resolve = async (
     _parent: unknown,

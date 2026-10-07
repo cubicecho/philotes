@@ -1,8 +1,12 @@
 import * as dbSchema from '@cubicecho/philotes-db/schema';
 import { and, eq } from 'drizzle-orm';
-import { extendSchema, type GraphQLObjectType, type GraphQLSchema, parse } from 'graphql';
+import { extendSchema, type GraphQLSchema, parse } from 'graphql';
 import type { Context } from '../core/context.ts';
-import { errorMessage, notFound, requireAuth } from '../core/errors.ts';
+import { notFound, requireAuth } from '../core/errors.ts';
+import { violatedUniqueConstraint } from '../core/pg-errors.ts';
+import { parseOrThrow } from '../core/validation.ts';
+import { objectType } from '../graphql/object-type.ts';
+import { personInput, userPersonInput } from './input.ts';
 
 // Row-level tenancy — which rows a user may read and write, and the userId
 // stamped on the rows they create — is configured on buildSchema itself; see
@@ -74,7 +78,7 @@ function personContexts(ctx: Context): Promise<Map<string, PersonContext>> {
 }
 
 function applyPersonContextFields(schema: GraphQLSchema): void {
-  const personFields = (schema.getType('Person') as GraphQLObjectType).getFields();
+  const personFields = objectType(schema, 'Person').getFields();
   for (const field of ['avatarPath', 'contactFrequency', 'howWeMet', 'firstMetDate'] as const) {
     personFields[field].resolve = async (parent: { id?: string }, _args: unknown, ctx: Context) => {
       if (!parent.id) {
@@ -93,39 +97,48 @@ function applyPersonContextFields(schema: GraphQLSchema): void {
 // to the caller's contacts (reusing an existing person on an email collision),
 // and a delete unlinks rather than deleting a row other users can still see.
 
+/**
+ * Inserts a person, or finds the one that already holds the email. `persons` is shared, so two
+ * users who add the same email share one row.
+ *
+ * @param db - Drizzle client.
+ * @param values - The person columns, already validated.
+ * @returns The id of the new or existing person.
+ */
+async function insertOrFindPerson(db: AnyDB, values: Record<string, unknown>): Promise<string> {
+  const { email } = values;
+  try {
+    const [inserted] = await db.insert(dbSchema.persons).values(values).returning({ id: dbSchema.persons.id });
+    if (inserted === undefined) {
+      throw new Error('The person insert returned no row.');
+    }
+    return inserted.id;
+  } catch (error) {
+    const isEmailTaken = violatedUniqueConstraint(error) !== null && typeof email === 'string';
+    if (isEmailTaken === false) {
+      throw error;
+    }
+    const [existing] = await db
+      .select({ id: dbSchema.persons.id })
+      .from(dbSchema.persons)
+      .where(eq(dbSchema.persons.email, email));
+    if (existing === undefined) {
+      throw error;
+    }
+    return existing.id;
+  }
+}
+
 function overridePersonMutations(schema: GraphQLSchema): void {
-  const mf = (schema.getMutationType() as GraphQLObjectType).getFields();
+  const mf = objectType(schema, 'Mutation').getFields();
 
   mf.createPerson.resolve = async (_parent: unknown, args: { values: Record<string, unknown> }, ctx: Context) => {
     const userId = requireAuth(ctx);
     const db = ctx.db as AnyDB;
 
-    let personId: string;
-    try {
-      const [inserted] = await db
-        .insert(dbSchema.persons)
-        .values({ ...args.values })
-        .returning({ id: dbSchema.persons.id });
-      if (!inserted) {
-        throw new Error('The person insert returned no row.');
-      }
-      personId = inserted.id;
-    } catch (err: unknown) {
-      const msg = errorMessage(err);
-      const isOtherFailure = msg.includes('unique') === false && msg.includes('duplicate') === false;
-      if (isOtherFailure) {
-        throw err;
-      }
-      // Email collision — the person already exists; link to that row.
-      const [existing] = await db
-        .select({ id: dbSchema.persons.id })
-        .from(dbSchema.persons)
-        .where(eq(dbSchema.persons.email, args.values.email as string));
-      if (!existing) {
-        throw err;
-      }
-      personId = existing.id;
-    }
+    // The parsed columns are the trimmed ones. Anything else the input carries passes through as sent.
+    const values = { ...args.values, ...parseOrThrow(personInput, args.values) };
+    const personId = await insertOrFindPerson(db, values);
 
     await db.insert(dbSchema.userPersons).values({ userId, personId }).onConflictDoNothing();
 
@@ -159,8 +172,8 @@ function overridePersonMutations(schema: GraphQLSchema): void {
 // ── user_persons resolvers ────────────────────────────────────────────
 
 function addUserPersonsResolvers(schema: GraphQLSchema): void {
-  const qf = (schema.getQueryType() as GraphQLObjectType).getFields();
-  const mf = (schema.getMutationType() as GraphQLObjectType).getFields();
+  const qf = objectType(schema, 'Query').getFields();
+  const mf = objectType(schema, 'Mutation').getFields();
 
   qf.myPersonContext.resolve = async (_parent: unknown, args: { personId: string }, ctx: Context) => {
     const userId = requireAuth(ctx);
@@ -209,6 +222,7 @@ function addUserPersonsResolvers(schema: GraphQLSchema): void {
     const { personId, ...updates } = args;
 
     const defined = Object.fromEntries(Object.entries(updates).filter(([, v]) => v !== undefined));
+    parseOrThrow(userPersonInput, defined);
 
     const [row] = await db
       .update(dbSchema.userPersons)

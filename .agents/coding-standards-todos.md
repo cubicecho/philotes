@@ -34,7 +34,7 @@ confirmed in code. Nothing here is implemented until approved.
 | A3 | API change | Makes Postgres the only production database (PGlite for tests), loads the db package from source, and adds `waitForDatabase`; a deployment now needs a Postgres | Production runs what CI tests | A1 | done |
 | A4 | API change | Moves to drizzle-graphql 13 with `nestedWrites: false`, list bounds and complexity limits; unbounded list queries get a default page size | Bounded queries | A1 | done |
 | A5 | API change | Rewrites the Dockerfile, compose files, CI (`postgres` and `boot` jobs) and release (GHCR) to the standard, on port 3000 as a non-root user | Standard deployment; image published without Docker Hub secrets | A1, A3 | done |
-| R1 | Refactor [pattern] | Introduces an `ErrorCode` vocabulary and one `errorMessage`, with zod validating resolver input | One error contract | A1 | approved |
+| R1 | Refactor [pattern] | Introduces an `ErrorCode` vocabulary and one `errorMessage`, with zod validating resolver input | One error contract | A1 | done |
 | R2 | Refactor [consistency] | Brings the tables to the conventions: timestamps with time zone, `createdAt`/`updatedAt`, indexed foreign keys, named unique constraints | Standard schema; needs a migration | A3 | done |
 | R3 | Refactor [sweep] | P16/P22: a `defaults.ts` per package and `as const` vocabularies for contact type, recurrence, channel and import stage | Clears most of the 118 magic-number warnings | — | approved |
 | R4 | Refactor [sweep] | P4: a doc block with `@param` and `@returns` on the 188 functions without one, and the tags on 28 more | Documented code | — | approved |

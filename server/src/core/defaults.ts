@@ -101,3 +101,120 @@ export const OPERATION_LIMIT_DEFAULTS: Readonly<OperationLimitSettings> = Object
   maxCost: 10_000,
   defaultFieldCost: 1,
 });
+
+/** Limits on what a person may hold. */
+export interface PersonSettings {
+  /** Longest first or last name, in characters. */
+  maxNameLength: number;
+  /** Longest email address, in characters. */
+  maxEmailLength: number;
+  /** Longest "how we met", in characters. */
+  maxHowWeMetLength: number;
+  /** Longest stored avatar path, in characters. */
+  maxAvatarPathLength: number;
+}
+
+export const PERSON_DEFAULTS: Readonly<PersonSettings> = Object.freeze({
+  maxNameLength: 200,
+  maxEmailLength: 320,
+  maxHowWeMetLength: 2_000,
+  maxAvatarPathLength: 500,
+});
+
+/** Limits on what an address may hold. */
+export interface AddressSettings {
+  /** Longest label, city, state or country, in characters. */
+  maxPartLength: number;
+  /** Longest street line, in characters. */
+  maxLineLength: number;
+  /** Longest postal code, in characters. */
+  maxPostalCodeLength: number;
+}
+
+export const ADDRESS_DEFAULTS: Readonly<AddressSettings> = Object.freeze({
+  maxPartLength: 100,
+  maxLineLength: 300,
+  maxPostalCodeLength: 20,
+});
+
+/** Limits on what a contact detail (phone, handle, URL) may hold. */
+export interface ContactInfoSettings {
+  /** Longest value, in characters. */
+  maxValueLength: number;
+  /** Longest label, in characters. */
+  maxLabelLength: number;
+}
+
+export const CONTACT_INFO_DEFAULTS: Readonly<ContactInfoSettings> = Object.freeze({
+  maxValueLength: 500,
+  maxLabelLength: 100,
+});
+
+/** Limits on what a note may hold. */
+export interface NoteSettings {
+  /** Longest body, in characters. */
+  maxBodyLength: number;
+}
+
+export const NOTE_DEFAULTS: Readonly<NoteSettings> = Object.freeze({
+  maxBodyLength: 20_000,
+});
+
+/** Limits on what an interaction may hold. */
+export interface InteractionSettings {
+  /** Longest note, in characters. */
+  maxNoteLength: number;
+}
+
+export const INTERACTION_DEFAULTS: Readonly<InteractionSettings> = Object.freeze({
+  maxNoteLength: 10_000,
+});
+
+/** Limits on what a task may hold. */
+export interface TaskSettings {
+  /** Longest title, in characters. */
+  maxTitleLength: number;
+  /** Longest notes, in characters. */
+  maxNotesLength: number;
+}
+
+export const TASK_DEFAULTS: Readonly<TaskSettings> = Object.freeze({
+  maxTitleLength: 500,
+  maxNotesLength: 10_000,
+});
+
+/** Limits on what an important date may hold. */
+export interface ImportantDateSettings {
+  /** Longest name, in characters. */
+  maxNameLength: number;
+  /** Longest description, in characters. */
+  maxDescriptionLength: number;
+}
+
+export const IMPORTANT_DATE_DEFAULTS: Readonly<ImportantDateSettings> = Object.freeze({
+  maxNameLength: 200,
+  maxDescriptionLength: 2_000,
+});
+
+/** Limits on what a label may hold. */
+export interface LabelSettings {
+  /** Longest label text, in characters. */
+  maxLabelLength: number;
+  /** Longest colour value, in characters. */
+  maxColorLength: number;
+}
+
+export const LABEL_DEFAULTS: Readonly<LabelSettings> = Object.freeze({
+  maxLabelLength: 100,
+  maxColorLength: 32,
+});
+
+/** Limits on what a relationship or relationship type may hold. */
+export interface RelationshipSettings {
+  /** Longest type name, in characters. */
+  maxTypeLength: number;
+}
+
+export const RELATIONSHIP_DEFAULTS: Readonly<RelationshipSettings> = Object.freeze({
+  maxTypeLength: 100,
+});

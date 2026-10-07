@@ -99,9 +99,8 @@ Every new table needs an ownership story, and it must be registered in
   its name to `USER_OWNED_TABLES`. That both scopes reads and stamps the column
   on write, so `userId` never appears in a GraphQL input.
 - **A junction table** carries `user_id` too, and joins `USER_OWNED_TABLES`
-  like any other table. Add its foreign keys to `FOREIGN_KEYS` in
-  `server/src/graphql/write-guards.ts` so a create cannot reference another
-  user's row.
+  like any other table. List its foreign keys in the domain's
+  `hooks.ts` so a create cannot reference another user's row.
 
 `server/src/__tests__/graphql/tenancy.test.ts` fails if a table exists with no scope
 entry, so a table added without this step breaks the build rather than leaking

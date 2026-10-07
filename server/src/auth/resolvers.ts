@@ -1,13 +1,14 @@
 import { users } from '@cubicecho/philotes-db/schema';
 import { APIError } from 'better-auth/api';
 import { eq } from 'drizzle-orm';
-import { extendSchema, type GraphQLError, type GraphQLObjectType, type GraphQLSchema, parse } from 'graphql';
+import { extendSchema, type GraphQLError, type GraphQLSchema, parse } from 'graphql';
 import { z } from 'zod';
 import { secureLocalNet } from '../core/config.ts';
 import type { Context } from '../core/context.ts';
 import { badInput, unauthenticated } from '../core/errors.ts';
 import { parseOrThrow } from '../core/validation.ts';
 import { HttpStatus } from '../core/wire.ts';
+import { objectType } from '../graphql/object-type.ts';
 import { sendsMagicLinks, sessionUserId } from './better-auth.ts';
 
 /** The flows a caller can be throttled on. Each has its own budget per address and per account. */
@@ -141,8 +142,8 @@ function toGraphQLError(error: unknown): GraphQLError {
  */
 export function applyAuthExtension(schema: GraphQLSchema): GraphQLSchema {
   const extendedSchema = extendSchema(schema, AUTH_SDL);
-  const queries = (extendedSchema.getType('Query') as GraphQLObjectType).getFields();
-  const mutations = (extendedSchema.getType('Mutation') as GraphQLObjectType).getFields();
+  const queries = objectType(extendedSchema, 'Query').getFields();
+  const mutations = objectType(extendedSchema, 'Mutation').getFields();
 
   queries.me.resolve = async (_parent: unknown, _args: unknown, ctx: Context) => {
     if (ctx.userId === null) {

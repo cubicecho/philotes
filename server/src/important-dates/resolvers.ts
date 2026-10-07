@@ -1,8 +1,9 @@
 import * as dbSchema from '@cubicecho/philotes-db/schema';
 import { eq } from 'drizzle-orm';
-import { extendSchema, type GraphQLObjectType, type GraphQLSchema, parse } from 'graphql';
+import { extendSchema, type GraphQLSchema, parse } from 'graphql';
 import type { Context } from '../core/context.ts';
 import { OPERATION_LIMIT_DEFAULTS } from '../core/defaults.ts';
+import { objectType } from '../graphql/object-type.ts';
 
 const { defaultPageSize, maxPageSize } = OPERATION_LIMIT_DEFAULTS;
 
@@ -138,7 +139,7 @@ function computeNextOccurrence(
 export function applyUpcomingDatesExtension(schema: GraphQLSchema): GraphQLSchema {
   const extendedSchema = extendSchema(schema, upcomingDatesExtensionSDL);
 
-  const queryType = extendedSchema.getType('Query') as GraphQLObjectType;
+  const queryType = objectType(extendedSchema, 'Query');
 
   const upcomingDatesField = queryType.getFields().upcomingDates;
   upcomingDatesField.resolve = async (_parent: unknown, args: UpcomingDatesArgs, context: Context) => {

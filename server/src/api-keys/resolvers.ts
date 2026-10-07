@@ -1,12 +1,13 @@
 import { apikeys } from '@cubicecho/philotes-db/schema';
 import { APIError } from 'better-auth/api';
 import { and, desc, eq } from 'drizzle-orm';
-import { extendSchema, type GraphQLObjectType, type GraphQLSchema, parse } from 'graphql';
+import { extendSchema, type GraphQLSchema, parse } from 'graphql';
 import { z } from 'zod';
 import type { Context } from '../core/context.ts';
 import { badInput, notFound, requireAuth } from '../core/errors.ts';
 import { parseOrThrow } from '../core/validation.ts';
 import { MS_PER_SECOND } from '../core/wire.ts';
+import { objectType } from '../graphql/object-type.ts';
 
 const API_KEYS_SDL = parse(`
   type ApiKeyRecord {
@@ -98,8 +99,8 @@ function lifetimeSeconds(expiresAt: string | null | undefined): number | null {
  */
 export function applyApiKeysExtension(schema: GraphQLSchema): GraphQLSchema {
   const extended = extendSchema(schema, API_KEYS_SDL);
-  const queries = (extended.getType('Query') as GraphQLObjectType).getFields();
-  const mutations = (extended.getType('Mutation') as GraphQLObjectType).getFields();
+  const queries = objectType(extended, 'Query').getFields();
+  const mutations = objectType(extended, 'Mutation').getFields();
 
   queries.myApiKeys.resolve = async (_parent: unknown, _args: unknown, ctx: Context) => {
     const userId = requireAuth(ctx);

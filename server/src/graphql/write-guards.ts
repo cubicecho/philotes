@@ -1,112 +1,181 @@
+import type { DB } from '@cubicecho/philotes-db';
 import * as dbSchema from '@cubicecho/philotes-db/schema';
-import type { BuildSchemaConfig } from '@vantreeseba/drizzle-graphql';
+import type { WriteHookPayload, WriteHookPositions, WriteOperation } from '@vantreeseba/drizzle-graphql';
 import { and, eq, inArray } from 'drizzle-orm';
-import type { Context } from '../core/context.ts';
-import { notFound, requireAuth } from '../core/errors.ts';
+import type { z } from 'zod';
+import { badInput, notFound, requireAuth } from '../core/errors.ts';
+import { violatedUniqueConstraint } from '../core/pg-errors.ts';
+import { parseOrThrow } from '../core/validation.ts';
 
-// A row scope confines reads, updates and deletes, but it cannot reach a plain
-// insert, and it says nothing about the rows a foreign key *points at*. These
-// hooks close that half: on every create and update of a table that references
-// another user's data by id, each referenced id must belong to the caller.
-//
-// They run at the `before` position, inside the mutation's own transaction, so
-// a throw rolls the write back and there is no window between check and write.
+/** One written row: column values by TS key. */
+export type Row = Record<string, unknown>;
+/** The transaction a mutation and its hooks run in. */
+export type Transaction = Parameters<Parameters<DB['transaction']>[0]>[0];
+/** A user-owned table that other tables point at. */
+type OwnedParent =
+  | typeof dbSchema.notes
+  | typeof dbSchema.labels
+  | typeof dbSchema.interactions
+  | typeof dbSchema.importantDates;
+/** `persons` is shared between users. A person is the caller's when a `user_persons` row links the two. */
+type SharedParent = typeof dbSchema.persons;
 
-// biome-ignore lint/suspicious/noExplicitAny: drizzle-orm 1.0 table/column type compat
-type AnyTable = any;
-type Row = Record<string, unknown>;
-
-/** A foreign key and the query that says which of its values the user owns. */
-interface ForeignKey {
-  /** Column property name on the referencing table. */
+/** A column that references a parent the caller must own. */
+export interface ForeignKey {
+  /** The referencing column's TS key. */
   key: string;
-  /** Name used in the "not found" a caller sees — never leak another user's row. */
+  /** What the parent is called in error messages. */
   entity: string;
-  /** Ids among `ids` that belong to `userId`. */
-  owned: (tx: AnyTable, userId: string, ids: string[]) => Promise<string[]>;
+  parent: OwnedParent | SharedParent;
 }
 
-/** A parent table owned outright through its own `user_id`. */
-const ownedDirectly = (key: string, entity: string, parent: AnyTable): ForeignKey => ({
-  key,
-  entity,
-  owned: async (tx, userId, ids) => {
-    const rows: Array<{ id: string }> = await tx
-      .select({ id: parent.id })
-      .from(parent)
-      .where(and(inArray(parent.id, ids), eq(parent.userId, userId)));
-    return rows.map((row) => row.id);
-  },
-});
+/** Writes that supply no rows, so there is nothing to check before them. */
+export const WRITES_WITHOUT_ROWS = new Set<WriteOperation>(['delete', 'restore']);
 
-/** persons are shared; a user owns the ones in their contacts. */
-const ownedThroughContacts = (key: string): ForeignKey => ({
-  key,
-  entity: 'Person',
-  owned: async (tx, userId, ids) => {
-    const rows: Array<{ id: string }> = await tx
-      .select({ id: dbSchema.userPersons.personId })
-      .from(dbSchema.userPersons)
-      .where(and(inArray(dbSchema.userPersons.personId, ids), eq(dbSchema.userPersons.userId, userId)));
-    return rows.map((row) => row.id);
-  },
-});
-
-const note = ownedDirectly('noteId', 'Note', dbSchema.notes);
-const label = ownedDirectly('labelId', 'Label', dbSchema.labels);
-const interaction = ownedDirectly('interactionId', 'Interaction', dbSchema.interactions);
-const importantDate = ownedDirectly('importantDateId', 'ImportantDate', dbSchema.importantDates);
-
-const FOREIGN_KEYS: Record<string, ForeignKey[]> = {
-  noteTags: [note, label],
-  noteMentions: [note, ownedThroughContacts('mentionedPersonId')],
-  interactionTags: [interaction, label],
-  importantDateTags: [importantDate, label],
-  personLabels: [ownedThroughContacts('personId'), label],
-};
+/** The arguments a generated write can carry rows in. */
+interface WriteArgs {
+  /** Rows on create. */
+  values?: Row | Row[];
+  /** The changed columns on update. */
+  set?: Row;
+  /** One entry per statement on batch update. */
+  updates?: Array<{ set?: Row }>;
+}
 
 /**
- * The rows a mutation is about to write: `values` on a create (one row or a
- * list), `set` on an update, one `set` per entry on a batch update. A delete
- * writes nothing and so has nothing to check.
+ * Collects the rows a write supplies.
+ *
+ * @param args - Mutation args.
+ * @returns One row per written set.
  */
-export function writtenRows(args: { values?: Row | Row[]; set?: Row; updates?: Array<{ set?: Row }> }): Row[] {
-  if (args.values) {
+export function writtenRows(args: WriteArgs): Row[] {
+  if (args.values !== undefined) {
     return Array.isArray(args.values) ? args.values : [args.values];
   }
-  if (args.updates) {
-    return args.updates.flatMap((entry) => (entry.set ? [entry.set] : []));
+  if (args.updates !== undefined) {
+    return args.updates.flatMap((update) => (update.set === undefined ? [] : [update.set]));
   }
-  return args.set ? [args.set] : [];
+  if (args.set !== undefined) {
+    return [args.set];
+  }
+  return [];
 }
 
-async function assertForeignKeysOwned(
-  tx: AnyTable,
+/**
+ * Tells the shared `persons` table from the tables a user owns outright.
+ *
+ * @param parent - The table a foreign key points at.
+ * @returns Whether it is `persons`.
+ */
+function isSharedParent(parent: ForeignKey['parent']): parent is SharedParent {
+  return parent === dbSchema.persons;
+}
+
+/**
+ * Finds which of the referenced parents belong to the caller.
+ *
+ * @param tx - Mutation transaction.
+ * @param userId - Caller.
+ * @param parent - The table the ids point at.
+ * @param ids - Referenced ids.
+ * @returns The ids the caller owns, or for `persons`, has in their contacts.
+ */
+async function ownedIds(
+  tx: Transaction,
+  userId: string,
+  parent: ForeignKey['parent'],
+  ids: string[],
+): Promise<Set<string>> {
+  if (isSharedParent(parent)) {
+    const { userPersons } = dbSchema;
+    const isLinkedToCaller = and(inArray(userPersons.personId, ids), eq(userPersons.userId, userId));
+    const linked = await tx.select({ id: userPersons.personId }).from(userPersons).where(isLinkedToCaller);
+    return new Set(linked.map((row) => row.id));
+  }
+  const isOwnedByCaller = and(inArray(parent.id, ids), eq(parent.userId, userId));
+  const owned = await tx.select({ id: parent.id }).from(parent).where(isOwnedByCaller);
+  return new Set(owned.map((row) => row.id));
+}
+
+/**
+ * Checks that every parent the rows point at belongs to the caller.
+ *
+ * @param tx - Mutation transaction.
+ * @param userId - Caller.
+ * @param rows - Written rows.
+ * @param foreignKeys - Foreign keys to check.
+ * @throws A NOT_FOUND error naming the parent when one is someone else's or missing.
+ */
+export async function assertForeignKeysOwned(
+  tx: Transaction,
   userId: string,
   rows: Row[],
   foreignKeys: ForeignKey[],
 ): Promise<void> {
-  for (const fk of foreignKeys) {
-    const referenced = [
-      ...new Set(rows.map((row) => row[fk.key]).filter((id): id is string => typeof id === 'string')),
-    ];
+  for (const { key, entity, parent } of foreignKeys) {
+    const ids = rows.map((row) => row[key]).filter((id) => typeof id === 'string');
+    const referenced = [...new Set(ids)];
     if (referenced.length === 0) {
       continue;
     }
-    const owned = new Set(await fk.owned(tx, userId, referenced));
-    const missing = referenced.find((id) => owned.has(id) === false);
-    if (missing !== undefined) {
-      throw notFound(`${fk.entity} not found`);
+    const owned = await ownedIds(tx, userId, parent, referenced);
+    const hasForeignParent = referenced.some((id) => owned.has(id) === false);
+    if (hasForeignParent) {
+      // NOT_FOUND, not FORBIDDEN: "you may not touch this" would confirm the row exists.
+      throw notFound(`${entity} not found`);
     }
   }
 }
 
-export const onWrite: NonNullable<BuildSchemaConfig['onWrite']> = Object.fromEntries(
-  Object.entries(FOREIGN_KEYS).map(([table, foreignKeys]) => [
-    table,
-    {
-      before: async ({ args, context, tx }: { args: Row; context: unknown; tx: AnyTable }) =>
-        assertForeignKeysOwned(tx, requireAuth(context as Context), writtenRows(args), foreignKeys),
+/** What a table checks before each of its generated writes. */
+export interface WriteGuard {
+  /** The table's input schema. A junction table of ids has none. */
+  input?: z.ZodType;
+  /** The parents its rows point at. */
+  foreignKeys?: ForeignKey[];
+}
+
+/**
+ * Builds a table's `before` hook: every written row is validated, then every parent it names must be the caller's.
+ *
+ * @param guard - The table's input schema and foreign keys.
+ * @returns The hook positions for `onWrite`.
+ */
+export function guardWrites({ input, foreignKeys = [] }: WriteGuard): WriteHookPositions {
+  return {
+    /**
+     * Validates input and parent ownership.
+     *
+     * @param payload - The write about to run.
+     */
+    before: async ({ args, context, tx }: WriteHookPayload) => {
+      const rows = writtenRows(args);
+      if (input !== undefined) {
+        for (const row of rows) {
+          parseOrThrow(input, row);
+        }
+      }
+      await assertForeignKeysOwned(tx, requireAuth(context), rows, foreignKeys);
     },
-  ]),
-);
+  };
+}
+
+/** What a caller is told when a write repeats a value that must be unique, by constraint name. */
+const UNIQUE_VIOLATION_MESSAGES: Record<string, string> = {
+  uq_persons_email: 'Another contact already uses that email.',
+};
+const UNIQUE_VIOLATION_FALLBACK = 'That already exists.';
+
+/**
+ * Turns a unique violation from a generated write into BAD_USER_INPUT. Passed to drizzle-graphql as `onError`.
+ *
+ * @param error - What the generated resolver threw.
+ * @returns The coded error, or undefined to keep drizzle-graphql's default handling.
+ */
+export function mapWriteError(error: unknown): unknown {
+  const constraint = violatedUniqueConstraint(error);
+  if (constraint === null) {
+    return undefined;
+  }
+  return badInput(UNIQUE_VIOLATION_MESSAGES[constraint] ?? UNIQUE_VIOLATION_FALLBACK);
+}

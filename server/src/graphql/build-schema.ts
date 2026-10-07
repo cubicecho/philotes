@@ -1,20 +1,38 @@
 import type { DB } from '@cubicecho/philotes-db';
-import { buildSchema } from '@vantreeseba/drizzle-graphql';
+import { buildSchema, type OnWriteConfig } from '@vantreeseba/drizzle-graphql';
 import { GraphQLObjectType, GraphQLSchema } from 'graphql';
 import { GraphQLDateTime } from 'graphql-scalars';
 import { applyApiKeysExtension } from '../api-keys/resolvers.ts';
 import { applyAuthExtension } from '../auth/resolvers.ts';
 import { applyImportContactsExtension } from '../contact-import/resolvers.ts';
 import { OPERATION_LIMIT_DEFAULTS } from '../core/defaults.ts';
+import { importantDateWriteHooks } from '../important-dates/hooks.ts';
 import { applyUpcomingDatesExtension } from '../important-dates/resolvers.ts';
+import { interactionWriteHooks } from '../interactions/hooks.ts';
+import { labelWriteHooks } from '../labels/hooks.ts';
 import { applyMergeLabelsExtension } from '../labels/resolvers.ts';
+import { noteWriteHooks } from '../notes/hooks.ts';
+import { personWriteHooks } from '../persons/hooks.ts';
 import { applyUserScopeExtensions } from '../persons/resolvers.ts';
+import { relationshipWriteHooks } from '../relationships/hooks.ts';
 import { applyRelationshipsExtension } from '../relationships/resolvers.ts';
+import { taskWriteHooks } from '../tasks/hooks.ts';
 import { contextValues, exclude, features, scope } from './tenancy.ts';
-import { onWrite } from './write-guards.ts';
+import { mapWriteError } from './write-guards.ts';
 
 /** Drizzle's name for a Postgres timestamp column. */
 const TIMESTAMP_COLUMN = 'PgTimestamp';
+
+/** Every table's write hooks. A table missing here takes generated writes unchecked. */
+export const WRITE_HOOKS: OnWriteConfig = {
+  ...personWriteHooks,
+  ...noteWriteHooks,
+  ...interactionWriteHooks,
+  ...taskWriteHooks,
+  ...importantDateWriteHooks,
+  ...labelWriteHooks,
+  ...relationshipWriteHooks,
+};
 
 /** The hand-written extensions, in the order they are applied. */
 const EXTENSIONS: Array<(schema: GraphQLSchema) => GraphQLSchema> = [
@@ -45,8 +63,10 @@ export function createSchema(db: DB) {
     exclude,
     // Which generated writes exist, per table. Nested writes are off.
     features,
-    // Before hooks per table, inside the mutation's transaction.
-    onWrite,
+    // Before hooks per table, inside the mutation's transaction. Each domain folder exports its own.
+    onWrite: WRITE_HOOKS,
+    // A repeated unique value is the caller's to fix. Every other database error stays masked.
+    onError: mapWriteError,
     // Every list, root or relation, gets a page size.
     limits: {
       defaultLimit: OPERATION_LIMIT_DEFAULTS.defaultPageSize,
