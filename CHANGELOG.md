@@ -1,3 +1,11 @@
+## [3.1.2](https://github.com/cubicecho/philotes/compare/v3.1.1...v3.1.2) (2026-10-07)
+
+
+### Bug Fixes
+
+* **app:** use each date's own recurrence in the pre-contact brief ([7c07cac](https://github.com/cubicecho/philotes/commit/7c07cac655e2457434d0c4a0e40350c8707e5300)), closes [#13](https://github.com/cubicecho/philotes/issues/13)
+* **server:** read the second address line on Google CSV import ([c7392a4](https://github.com/cubicecho/philotes/commit/c7392a4457e5918bc1f7261521dfe9e121b501b0)), closes [#14](https://github.com/cubicecho/philotes/issues/14)
+
 ## [3.1.1](https://github.com/cubicecho/philotes/compare/v3.1.0...v3.1.1) (2026-10-07)
 
 
