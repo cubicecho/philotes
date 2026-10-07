@@ -15,11 +15,21 @@ export interface HttpSettings {
 }
 
 export const HTTP_DEFAULTS: Readonly<HttpSettings> = Object.freeze({
-  port: 3001,
+  port: 3000,
   bodyLimit: '1mb',
   drainSeconds: 5,
   shutdownDeadlineSeconds: 8,
   trustProxy: false,
+});
+
+/** Where the server keeps the files it writes. */
+export interface StorageSettings {
+  /** The directory uploaded avatars are kept in. A relative path starts at the repo root. `AVATAR_DIR` overrides it. */
+  avatarDir: string;
+}
+
+export const STORAGE_DEFAULTS: Readonly<StorageSettings> = Object.freeze({
+  avatarDir: 'avatars',
 });
 
 /** The sign-in throttle. */

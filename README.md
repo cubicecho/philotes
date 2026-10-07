@@ -25,7 +25,7 @@ context — so you can show up for the people in your life.
 
 It runs 100% locally. No cloud to trust, no vendor to worry about. Sign-in is
 handled by your own instance, and your data lives on your machine,
-in an embedded Postgres database, and nowhere else.
+in your own Postgres database, and nowhere else.
 
 ---
 
@@ -81,7 +81,7 @@ surfaces upcoming ones in the Review page. The automation doesn't reduce the
 warmth. It just removes the cognitive friction between caring and acting on it.
 
 Finally, privacy as a design constraint. The decision to store everything
-locally — in an embedded Postgres database, on your machine, with no cloud
+locally — in your own Postgres database, on your machine, with no cloud
 sync — is architectural, but it's also philosophical. Intimate relationship
 data is some of the most sensitive information a person generates. Who you know,
 how often you talk, what you remember about them. That data shouldn't be a
@@ -128,12 +128,15 @@ You'll need **Node.js 26+** and **npm**.
 git clone https://github.com/vantreeseba/philotes.git
 cd philotes
 npm install
+cp .env.example .env
+npm run db:up
 npm run dev
 ```
 
-The app opens at [http://localhost:3000](http://localhost:3000). That's it — no
-database to set up, no environment variables required. Create an account
-on the login page with an email and a password.
+`npm run dev` needs a Postgres to talk to. Copy `.env.example` to `.env`, then
+start the local one with `npm run db:up` (Docker). The app opens at
+[http://localhost:8081](http://localhost:8081) and the API listens on port 3000.
+Create an account on the login page with an email and a password.
 
 ---
 
@@ -143,7 +146,7 @@ on the login page with an email and a password.
 | -------- | ----------------------------------------------------------- |
 | Frontend | React 19, Expo Router (web target), Apollo Client            |
 | UI       | React Native primitives, Tailwind 4 via NativeWind 5, cubeui |
-| API      | Apollo Server 5 on Express, GraphQL                         |
+| API      | GraphQL Yoga on Express 5, better-auth                      |
 | Database | Drizzle ORM on PostgreSQL                                    |
 | Testing  | Vitest                                                      |
 | Linting  | Biome                                                       |
@@ -164,7 +167,7 @@ npm run db:studio    # Open Drizzle Studio to browse the local database
 
 ## Running with Docker
 
-Philotes ships with a multi-stage Alpine-based Dockerfile. The container runs the
+Philotes ships with a multi-stage `node:26-slim` Dockerfile. The container runs the
 GraphQL API and serves the built frontend — no separate web server needed.
 
 **Build the image:**
@@ -177,7 +180,7 @@ docker build -t philotes .
 BETTER_AUTH_SECRET=$(openssl rand -hex 32) docker compose up -d
 ```
 
-Then open [http://localhost:3001](http://localhost:3001).
+Then open [http://localhost:3000](http://localhost:3000).
 
 [`docker-compose.yml`](docker-compose.yml) starts Philotes beside a
 `postgres:17-alpine` container. Migrations run automatically on startup.
@@ -186,7 +189,7 @@ Then open [http://localhost:3001](http://localhost:3001).
 | Volume | Purpose |
 | --- | --- |
 | `philotes_pgdata` | The Postgres data (your contacts) |
-| `philotes_avatars` | Uploaded avatar images |
+| `philotes_data` | Uploaded avatar images (`/data/avatars`) |
 
 **Environment variables:**
 | Variable | Default | Description |
@@ -198,7 +201,8 @@ Then open [http://localhost:3001](http://localhost:3001).
 | `SMTP_URL` | none | SMTP server for sign-in links. Unset, sign-in is by password only |
 | `SMTP_FROM` | `philotes@<APP_URL host>` | From address of sign-in emails |
 | `APP_URL` | `http://localhost:<PORT>` | Public URL the app is served at |
-| `PORT` | `3001` | Port the server listens on |
+| `PORT` | `3000` | Port the server listens on |
+| `AVATAR_DIR` | `./avatars`, `/data/avatars` in the image | Where uploaded avatars are kept |
 | `DB_CONNECT_TIMEOUT_MS` | `60000` | How long boot waits for Postgres |
 | `TRUST_PROXY` | `false` | Proxy hops that may set `X-Forwarded-For` |
 
@@ -209,6 +213,13 @@ off for local and private addresses unless the URL sets `sslmode`.
 > **Upgrading from a release that stored data in PGlite (`/data/pgdata`):**
 > that data is not migrated automatically. Keep the old volume until you have
 > moved what you need.
+>
+> **Upgrading from an image that kept avatars in `philotes_avatars`:** the
+> server now runs as the `node` user and keeps avatars in the `philotes_data`
+> volume. Upload avatars again, or copy the old files into the new volume.
+
+Released images are published to Docker Hub (`vantreeseba/philotes`) and to
+GHCR (`ghcr.io/cubicecho/philotes`).
 
 ---
 

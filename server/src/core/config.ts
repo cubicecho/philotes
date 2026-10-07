@@ -1,7 +1,9 @@
 // Getters, not constants, so a test (or a reload) sees the current environment.
 import { createRequire } from 'node:module';
+import { resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { DATABASE_DEFAULTS } from '@cubicecho/philotes-db/defaults';
-import { AUTH_DEFAULTS, type AuthSettings, HTTP_DEFAULTS } from './defaults.ts';
+import { AUTH_DEFAULTS, type AuthSettings, HTTP_DEFAULTS, STORAGE_DEFAULTS } from './defaults.ts';
 
 /** Env values that count as on, in lower case. */
 const TRUTHY = ['1', 'true', 'yes'];
@@ -12,7 +14,9 @@ const TRUST_PROXY_OFF = 'false';
 const HOP_COUNT = /^\d+$/;
 const UNKNOWN_VERSION = 'unknown';
 /** Where `npm run dev` serves the app, a different origin from the server. */
-const DEV_APP_ORIGIN = 'http://localhost:3000';
+const DEV_APP_ORIGIN = 'http://localhost:8081';
+/** The repo root, which relative storage paths start from. */
+const REPO_ROOT = fileURLToPath(new URL('../../../', import.meta.url));
 
 /** Where better-auth keeps sessions. */
 export type SessionStore = AuthSettings['sessionStore'];
@@ -77,6 +81,13 @@ export const isProduction = (): boolean => process.env.NODE_ENV === NODE_ENV_PRO
 export const allowedOrigins = (): string[] => (isProduction() ? [appUrl()] : [appUrl(), DEV_APP_ORIGIN]);
 
 /**
+ * Where uploaded avatars are kept. The Docker image points it at its `/data` volume.
+ *
+ * @returns `AVATAR_DIR`, or `STORAGE_DEFAULTS.avatarDir`, as an absolute path.
+ */
+export const avatarDir = (): string => resolve(REPO_ROOT, process.env.AVATAR_DIR ?? STORAGE_DEFAULTS.avatarDir);
+
+/**
  * Whether typing an email signs in. Unsafe on a public network: on only where nothing hostile can reach the port.
  *
  * @returns `SECURE_LOCAL_NET` as a flag, or `AUTH_DEFAULTS.secureLocalNet`.
@@ -120,7 +131,7 @@ export const smtpUrl = (): string => process.env.SMTP_URL ?? '';
  *
  * @returns `SMTP_FROM`, or `philotes@` the host of `APP_URL`.
  */
-export const smtpFrom = (): string => process.env.SMTP_FROM ?? `philotes@${new URL(appUrl()).hostname}`;
+export const smtpFrom = (): string => process.env.SMTP_FROM || `philotes@${new URL(appUrl()).hostname}`;
 
 /**
  * Whether email (magic links) can be sent.

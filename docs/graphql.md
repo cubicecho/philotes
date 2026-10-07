@@ -9,7 +9,7 @@ SDL is written to `server/__generated__/schema.graphql` on every codegen run —
 **that file, not this page, is the reference for exact names and arguments.**
 What follows is the shape of it.
 
-Endpoint: `POST /graphql` (port 3001).
+Endpoint: `POST /graphql` (port 3000).
 
 ## Naming
 

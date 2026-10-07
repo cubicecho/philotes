@@ -13,9 +13,10 @@ react-native-web turns into DOM. **Do not write `<div>` / `<span>` /
 
 - **Entry point**: `expo-router/entry` (see `app/package.json` `main`)
 - **Root layout**: `app/app/_layout.tsx`
-- **Dev server**: `http://localhost:3000`
-- **GraphQL endpoint**: `${EXPO_PUBLIC_API_URL}/graphql` — unset in dev, so the
-  request is same-origin and the API is expected at the app's own host
+- **Dev server**: `http://localhost:8081`
+- **GraphQL endpoint**: `${EXPO_PUBLIC_API_URL}/graphql`. `app/.env.development`
+  points it at `http://localhost:3000` for `npm run dev`; a production build
+  leaves it unset, so the request goes to the origin that served the app
 
 ## Directory Structure
 
@@ -238,7 +239,7 @@ pre-paint script that applies the stored choice before the first frame.
 ## Running & Building
 
 ```bash
-npm run dev:app        # Expo dev server (port 3000)
+npm run dev:app        # Expo dev server (port 8081)
 npm run build:app      # Static web export → app/dist/
 ```
 

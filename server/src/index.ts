@@ -6,7 +6,7 @@ import { closeDatabase, db } from '@cubicecho/philotes-db';
 import { waitForDatabase } from '@cubicecho/philotes-db/wait';
 import { migrate } from 'drizzle-orm/postgres-js/migrator';
 import { createAuth } from './auth/better-auth.ts';
-import { appUrl, dbConnectTimeoutMs, port, secureLocalNet } from './core/config.ts';
+import { appUrl, avatarDir, dbConnectTimeoutMs, port, secureLocalNet } from './core/config.ts';
 import { errorMessage } from './core/errors.ts';
 import { createApp } from './http/app.ts';
 import { stopOnSignals } from './http/shutdown.ts';
@@ -38,7 +38,7 @@ if (secureLocalNet()) {
 const app = createApp({
   db,
   auth: createAuth(db),
-  avatarDir: join(__dirname, '../../avatars'),
+  avatarDir: avatarDir(),
   staticDir: join(__dirname, '../../app/dist'),
 });
 

@@ -8,7 +8,7 @@ hand-written resolvers for standard CRUD, and none for tenancy either — see
 [Tenancy](#tenancy).
 
 - **Entry point**: `server/src/index.ts`
-- **Port**: `3001`
+- **Port**: `3000`
 - **Protocol**: GraphQL over HTTP (Apollo Server 5 on Express)
 
 ## Key Files

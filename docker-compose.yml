@@ -9,13 +9,17 @@ services:
     environment:
       BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:?BETTER_AUTH_SECRET is required. Generate one with `openssl rand -hex 32`}
       DATABASE_URL: postgres://philotes:${POSTGRES_PASSWORD:-philotes}@postgres:5432/philotes
-      APP_URL: ${APP_URL:-http://localhost:3001}
+      APP_URL: ${APP_URL:-http://localhost:3000}
+      SECURE_LOCAL_NET: ${SECURE_LOCAL_NET:-false}
+      SESSION_STORE: ${SESSION_STORE:-memory}
+      SMTP_URL: ${SMTP_URL:-}
+      SMTP_FROM: ${SMTP_FROM:-}
       TRUST_PROXY: ${TRUST_PROXY:-false}
       NODE_ENV: production
-      PORT: 3001
     ports:
-      - "${PORT:-3001}:3001"
-    volumes: [philotes_avatars:/avatars]
+      - "${PORT:-3000}:3000"
+    # Uploaded avatars.
+    volumes: [philotes_data:/data]
   postgres:
     image: postgres:17-alpine
     restart: unless-stopped
@@ -29,4 +33,4 @@ services:
       retries: 10
 volumes:
   philotes_pgdata:
-  philotes_avatars:
+  philotes_data:

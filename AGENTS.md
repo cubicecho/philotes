@@ -44,7 +44,7 @@ philotes/
 ├── server/                  # GraphQL API (Apollo Server 5 on Express)
 │   ├── __generated__/       # Generated SDL + resolver types (do not edit)
 │   └── src/
-│       ├── index.ts         # Server entry point (port 3001)
+│       ├── index.ts         # Server entry point (port 3000)
 │       ├── routes/          # graphql, avatars, ical
 │       ├── schema.ts        # Calls buildSchema(db), then applies each extension
 │       ├── tenancy.ts       # Row scope + server-owned columns, as buildSchema config
@@ -86,8 +86,8 @@ All commands run from the **project root**.
 ### Development
 ```bash
 npm run dev              # Start both server and app concurrently
-npm run dev:app          # Start only the Expo dev server (port 3000)
-npm run dev:server       # Start only the Apollo Server (port 3001, with watch)
+npm run dev:app          # Start only the Expo dev server (port 8081)
+npm run dev:server       # Start only the Apollo Server (port 3000, with watch)
 ```
 
 ### Building
@@ -264,7 +264,7 @@ Do not hand-format — run `npm run check:biome`. The settings, from `biome.json
   `server/src/__tests__/tenancy.test.ts` fails until it has one
 - To add custom mutations/queries, extend the generated schema (see
   [`docs/server.md`](docs/server.md) for the extension pattern)
-- Server runs on port **3001**; the app reaches it via `EXPO_PUBLIC_API_URL`
+- Server runs on port **3000**; the app reaches it via `EXPO_PUBLIC_API_URL`
 - See [`docs/server.md`](docs/server.md) and [`docs/graphql.md`](docs/graphql.md)
 
 ### Database / Drizzle
