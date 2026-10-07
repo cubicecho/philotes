@@ -1,13 +1,14 @@
-import { gql, useQuery } from '@apollo/client';
+import { useQuery } from '@apollo/client';
 import { View } from 'react-native';
+import { graphql } from '@/__generated__/gql';
 import { QueryError } from '@/components/query-state';
 import { Section } from '@/components/section';
 import { Button } from '@/components/ui/button';
 import { downloadBlob } from '@/components/ui/download-button';
 import { Download } from '@/components/ui/icons';
-import { buildPersonsCsv, type ExportPerson } from '@/lib/csv-export';
+import { buildPersonsCsv } from '@/lib/csv-export';
 
-const GET_EXPORT_PERSONS = gql`
+const GET_EXPORT_PERSONS = graphql(`
   query ExportPersons {
     persons(
       orderBy: {
@@ -47,19 +48,10 @@ const GET_EXPORT_PERSONS = gql`
       }
     }
   }
-`;
-
-interface ExportPersonsQueryResult {
-  persons: ExportPerson[];
-}
+`);
 
 export function ExportPeopleCard() {
-  const {
-    data: exportData,
-    loading: exportLoading,
-    error: exportError,
-    refetch,
-  } = useQuery<ExportPersonsQueryResult>(GET_EXPORT_PERSONS);
+  const { data: exportData, loading: exportLoading, error: exportError, refetch } = useQuery(GET_EXPORT_PERSONS);
 
   function handleExportPeople() {
     if (!exportData?.persons?.length) {

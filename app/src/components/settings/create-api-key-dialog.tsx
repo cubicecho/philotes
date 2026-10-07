@@ -1,6 +1,7 @@
-import { gql, useMutation } from '@apollo/client';
+import { useMutation } from '@apollo/client';
 import { useState } from 'react';
 import { View } from 'react-native';
+import { graphql } from '@/__generated__/gql';
 import { useAppForm } from '@/components/app-form';
 import { DescriptionList, PropertyRow } from '@/components/description-list';
 import { Alert } from '@/components/ui/alert';
@@ -9,7 +10,7 @@ import { CopyButton } from '@/components/ui/copy-button';
 import { Form } from '@/components/ui/form';
 import { FormDialog, FormDialogFooter } from '@/components/ui/form-dialog';
 
-const MY_CREATE_API_KEY = gql`
+const MY_CREATE_API_KEY = graphql(`
   mutation MyCreateApiKey($input: CreateApiKeyInput!) {
     myCreateApiKey(input: $input) {
       apiKey {
@@ -21,7 +22,7 @@ const MY_CREATE_API_KEY = gql`
       token
     }
   }
-`;
+`);
 
 /** Days until the key expires; `never` sends no `expiresAt` at all. */
 const NO_EXPIRY = 'never';
@@ -53,9 +54,7 @@ export function CreateApiKeyDialog({ open, onOpenChange, onCreated }: CreateApiK
   const [state, setState] = useState<Phase>({ phase: 'form' });
   const [submitError, setSubmitError] = useState<string | null>(null);
 
-  const [createApiKey] = useMutation<{
-    myCreateApiKey: { apiKey: { id: string; name: string; keyPrefix: string }; token: string };
-  }>(MY_CREATE_API_KEY);
+  const [createApiKey] = useMutation(MY_CREATE_API_KEY);
 
   const form = useAppForm({
     defaultValues: { name: '', expiry: NO_EXPIRY as string },

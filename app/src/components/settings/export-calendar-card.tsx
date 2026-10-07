@@ -1,13 +1,14 @@
-import { gql, useQuery } from '@apollo/client';
+import { useQuery } from '@apollo/client';
 import { Text, View } from 'react-native';
+import { graphql } from '@/__generated__/gql';
 import { QueryError } from '@/components/query-state';
 import { Section } from '@/components/section';
 import { Button } from '@/components/ui/button';
 import { downloadBlob } from '@/components/ui/download-button';
 import { Download } from '@/components/ui/icons';
-import { buildIcsContent, type CalendarEventsData } from '@/lib/ics-export';
+import { buildIcsContent } from '@/lib/ics-export';
 
-const GET_ALL_EVENTS_FOR_EXPORT = gql`
+const GET_ALL_EVENTS_FOR_EXPORT = graphql(`
   query GetAllEventsForExport {
     interactions {
       id
@@ -34,10 +35,10 @@ const GET_ALL_EVENTS_FOR_EXPORT = gql`
       }
     }
   }
-`;
+`);
 
 export function ExportCalendarCard() {
-  const { data, loading, error, refetch } = useQuery<CalendarEventsData>(GET_ALL_EVENTS_FOR_EXPORT);
+  const { data, loading, error, refetch } = useQuery(GET_ALL_EVENTS_FOR_EXPORT);
 
   const totalCount = (data?.interactions?.length ?? 0) + (data?.importantDates?.length ?? 0);
 

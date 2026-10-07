@@ -1,6 +1,7 @@
-import { gql, useMutation, useQuery } from '@apollo/client';
+import { useMutation, useQuery } from '@apollo/client';
 import { useState } from 'react';
 import { Text } from 'react-native';
+import { graphql } from '@/__generated__/gql';
 import { ConfirmButton } from '@/components/confirm-button';
 import { ListItem } from '@/components/list-item';
 import { EmptyState } from '@/components/page';
@@ -12,7 +13,7 @@ import { formatDate } from '@/lib/format';
 import { relativeTime } from '@/lib/relative-time';
 import { CreateApiKeyDialog } from './create-api-key-dialog';
 
-const MY_API_KEYS = gql`
+const MY_API_KEYS = graphql(`
   query MyApiKeys {
     myApiKeys {
       id
@@ -23,13 +24,13 @@ const MY_API_KEYS = gql`
       createdAt
     }
   }
-`;
+`);
 
-const MY_REVOKE_API_KEY = gql`
+const MY_REVOKE_API_KEY = graphql(`
   mutation MyRevokeApiKey($id: ID!) {
     myRevokeApiKey(id: $id)
   }
-`;
+`);
 
 interface ApiKeyRecord {
   id: string;
@@ -55,7 +56,7 @@ function keyDetails(key: ApiKeyRecord): string {
 
 export function ApiKeyManager() {
   const [dialogOpen, setDialogOpen] = useState(false);
-  const { data, loading, error, refetch } = useQuery<{ myApiKeys: ApiKeyRecord[] }>(MY_API_KEYS);
+  const { data, loading, error, refetch } = useQuery(MY_API_KEYS);
   const [revokeApiKey, { loading: revoking }] = useMutation(MY_REVOKE_API_KEY, {
     refetchQueries: ['MyApiKeys'],
   });

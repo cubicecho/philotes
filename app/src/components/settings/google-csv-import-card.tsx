@@ -1,6 +1,7 @@
-import { gql, useMutation } from '@apollo/client';
+import { useMutation } from '@apollo/client';
 import { useState } from 'react';
 import { Text, View } from 'react-native';
+import { graphql } from '@/__generated__/gql';
 import { Section } from '@/components/section';
 import { Alert } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
@@ -9,7 +10,7 @@ import { Upload } from '@/components/ui/icons';
 import { Spinner } from '@/components/ui/spinner';
 import { invalidateQueryFields } from '@/lib/invalidate';
 
-const IMPORT_GOOGLE_CONTACTS = gql`
+const IMPORT_GOOGLE_CONTACTS = graphql(`
   mutation ImportGoogleContacts($csv: String!) {
     importGoogleContacts(csv: $csv) {
       imported
@@ -18,7 +19,7 @@ const IMPORT_GOOGLE_CONTACTS = gql`
       errors
     }
   }
-`;
+`);
 
 type ImportState =
   | { stage: 'idle' }
@@ -30,9 +31,7 @@ type ImportState =
 export function GoogleCsvImportCard() {
   const [importState, setImportState] = useState<ImportState>({ stage: 'idle' });
 
-  const [importContacts] = useMutation<{
-    importGoogleContacts: { imported: number; merged: number; skipped: number; errors: string[] };
-  }>(IMPORT_GOOGLE_CONTACTS, {
+  const [importContacts] = useMutation(IMPORT_GOOGLE_CONTACTS, {
     update: (cache) => invalidateQueryFields(cache, ['persons', 'labels']),
   });
 
