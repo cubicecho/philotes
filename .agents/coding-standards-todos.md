@@ -27,7 +27,7 @@ confirmed in code. Nothing here is implemented until approved.
 | B6 | Refactor [reuse] | Chooses the migrator by `DATABASE_URL` in one function in the db package, used by the server, the `migrate` script and the tests. Not a bug after all: on drizzle-orm 1.0.0-rc.4 the PGlite migrator also applied all 18 tables to a real Postgres 17, so the server only worked by the two migrators sharing an implementation | The server no longer depends on that accident | — | done |
 | B7 | Bug | Makes the avatar upload in the app check the response and use the configured API URL | A failed upload is reported, and works off-origin | B3 | done |
 | B8 | Bug | Refetches the lists that import, person delete, label merge and label delete change | No stale rows after a mutation | — | done |
-| B9 | Bug | Shows loading and error states in the API key and export cards, which today show "empty" while loading | Honest states | — | approved |
+| B9 | Bug | Shows loading and error states in the API key and export cards, which today show "empty" while loading | Honest states | — | done |
 | F1 | Feature | Asks for confirmation before each of the seven one-click deletes | No accidental data loss | — | approved |
 | A1 | API change | Moves the server to graphql-yoga on Express 5 with `createApp(deps)`, the `core/ http/ graphql/ auth/` layout, `/healthz`, graceful shutdown, body cap and operation limits | The cubicecho backend shape; injection replaces `vi.mock` of own modules | — | approved |
 | A2 | API change | Replaces the hand-rolled JWT magic link and API keys with better-auth, and puts `/avatars` behind the session cookie; every user signs in again and existing API keys stop working | One audited auth stack, with rate limiting | A1 | approved |

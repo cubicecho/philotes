@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { Text } from 'react-native';
 import { ListItem } from '@/components/list-item';
 import { EmptyState } from '@/components/page';
+import { QueryState } from '@/components/query-state';
 import { Section } from '@/components/section';
 import { Button } from '@/components/ui/button';
 import { Plus } from '@/components/ui/icons';
@@ -85,12 +86,14 @@ function keyDetails(key: ApiKeyRecord): string {
 
 export function ApiKeyManager() {
   const [dialogOpen, setDialogOpen] = useState(false);
-  const { data, refetch } = useQuery<{ myApiKeys: ApiKeyRecord[] }>(MY_API_KEYS);
+  const { data, loading, error, refetch } = useQuery<{ myApiKeys: ApiKeyRecord[] }>(MY_API_KEYS);
   const [revokeApiKey, { loading: revoking }] = useMutation(MY_REVOKE_API_KEY, {
     refetchQueries: ['MyApiKeys'],
   });
 
   const keys = data?.myApiKeys ?? [];
+  // Only the first load: a refetch after a key is made or revoked keeps the list on screen.
+  const pending = loading && !data;
 
   return (
     <>
@@ -108,8 +111,16 @@ export function ApiKeyManager() {
           />
         }
         contentSlot={
-          keys.length === 0 ? (
-            <EmptyState compact title="No keys yet. Generate one to get your calendar subscription URL." />
+          pending || error || keys.length === 0 ? (
+            <QueryState
+              compact
+              query={{ isPending: pending, isError: error !== undefined, error, refetch }}
+              what="your API keys"
+              count={keys.length}
+              emptySlot={
+                <EmptyState compact title="No keys yet. Generate one to get your calendar subscription URL." />
+              }
+            />
           ) : (
             keys.map((key) => (
               <ListItem

@@ -1,5 +1,6 @@
 import { gql, useQuery } from '@apollo/client';
 import { Text, View } from 'react-native';
+import { QueryError } from '@/components/query-state';
 import { Section } from '@/components/section';
 import { Button } from '@/components/ui/button';
 import { downloadBlob } from '@/components/ui/download-button';
@@ -36,7 +37,7 @@ const GET_ALL_EVENTS_FOR_EXPORT = gql`
 `;
 
 export function ExportCalendarCard() {
-  const { data, loading, error } = useQuery<CalendarEventsData>(GET_ALL_EVENTS_FOR_EXPORT);
+  const { data, loading, error, refetch } = useQuery<CalendarEventsData>(GET_ALL_EVENTS_FOR_EXPORT);
 
   const totalCount = (data?.interactions?.length ?? 0) + (data?.importantDates?.length ?? 0);
 
@@ -54,7 +55,7 @@ export function ExportCalendarCard() {
       description="Download all your interactions and important dates as an ICS file. You can import this into Google Calendar, Apple Calendar, Outlook, or any other calendar application."
       contentSlot={
         <View className="items-start gap-3">
-          {error ? <Text className="text-destructive text-sm">{`Failed to load events: ${error.message}`}</Text> : null}
+          {error ? <QueryError compact error={error} onRetry={() => refetch()} what="your events" /> : null}
           <Button
             iconSlot={<Download />}
             content={loading ? 'Loading…' : `Export ${totalCount} Events as ICS`}

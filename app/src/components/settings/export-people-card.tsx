@@ -1,5 +1,6 @@
 import { gql, useQuery } from '@apollo/client';
-import { Text, View } from 'react-native';
+import { View } from 'react-native';
+import { QueryError } from '@/components/query-state';
 import { Section } from '@/components/section';
 import { Button } from '@/components/ui/button';
 import { downloadBlob } from '@/components/ui/download-button';
@@ -57,6 +58,7 @@ export function ExportPeopleCard() {
     data: exportData,
     loading: exportLoading,
     error: exportError,
+    refetch,
   } = useQuery<ExportPersonsQueryResult>(GET_EXPORT_PERSONS);
 
   function handleExportPeople() {
@@ -75,9 +77,7 @@ export function ExportPeopleCard() {
       description="Download all your contacts as a CSV file compatible with Google Contacts, Apple Contacts, and other applications."
       contentSlot={
         <View className="items-start gap-3">
-          {exportError ? (
-            <Text className="text-destructive text-sm">{`Failed to load people: ${exportError.message}`}</Text>
-          ) : null}
+          {exportError ? <QueryError compact error={exportError} onRetry={() => refetch()} what="your people" /> : null}
           <Button
             iconSlot={<Download />}
             content={exportLoading ? 'Loading…' : `Export ${exportData?.persons?.length ?? 0} People as CSV`}
