@@ -2,6 +2,8 @@
 
 **A personal CRM for the people who matter to you — not your pipeline.**
 
+**[cubicecho.github.io/philotes](https://cubicecho.github.io/philotes/)**
+
 Most CRMs are built for sales. Philotes is built for life. It helps you stay
 connected to the people you actually care about: friends, family, colleagues,
 mentors. No quotas, no funnels, no subscriptions. Just your relationships, on
