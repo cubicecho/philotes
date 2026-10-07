@@ -1,3 +1,21 @@
+# [4.0.0](https://github.com/cubicecho/philotes/compare/v3.2.1...v4.0.0) (2026-10-07)
+
+
+* feat!: give each user their own person rows ([491af2c](https://github.com/cubicecho/philotes/commit/491af2c9e2b1bf1431c1d9774ce70e8721d5cb5e)), closes [#29](https://github.com/cubicecho/philotes/issues/29)
+
+
+### Bug Fixes
+
+* **server:** stop charging query cost for __typename ([12cb479](https://github.com/cubicecho/philotes/commit/12cb4796185cc5e58698f2695f944f318db6ea0f)), closes [#29](https://github.com/cubicecho/philotes/issues/29)
+
+
+### BREAKING CHANGES
+
+* Person.email, the UserPerson type, updateMyPersonContext
+and the link-on-email-collision behaviour of createPerson are gone. Persons
+that no user had in their contacts are deleted by the migration, along with
+rows a user had left on a person they had removed.
+
 ## [3.2.1](https://github.com/cubicecho/philotes/compare/v3.2.0...v3.2.1) (2026-10-07)
 
 
