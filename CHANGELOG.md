@@ -1,3 +1,17 @@
+# [2.1.0](https://github.com/cubicecho/philotes/compare/v2.0.1...v2.1.0) (2026-10-07)
+
+
+### Features
+
+* **app:** vendor the cubeui native primitives and shells ([32f3804](https://github.com/cubicecho/philotes/commit/32f380417a1239907752014015db46dd9be88610))
+
+## [2.0.1](https://github.com/cubicecho/philotes/compare/v2.0.0...v2.0.1) (2026-08-31)
+
+
+### Bug Fixes
+
+* get `npm run check` green ([c89b5cf](https://github.com/cubicecho/philotes/commit/c89b5cf7060251b0fd34b29b8a49bc90367dfc59))
+
 # [2.0.0](https://github.com/cubicecho/philotes/compare/v1.9.0...v2.0.0) (2026-08-30)
 
 
