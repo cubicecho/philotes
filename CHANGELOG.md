@@ -1,3 +1,19 @@
+# [5.0.0](https://github.com/cubicecho/philotes/compare/v4.0.0...v5.0.0) (2026-10-07)
+
+
+* feat!: let a person hold what a phone contact holds ([3926ac2](https://github.com/cubicecho/philotes/commit/3926ac2369de7b15e286cd8355ebf28f6ad02d40)), closes [#30](https://github.com/cubicecho/philotes/issues/30)
+* feat!: show and edit the phone contact fields in the app ([aa4d351](https://github.com/cubicecho/philotes/commit/aa4d35142e39cb5e03f6ea5ab3813d9186215fed)), closes [#30](https://github.com/cubicecho/philotes/issues/30)
+
+
+### BREAKING CHANGES
+
+* the app needs a server with the phone contact fields.
+* the mobile contact type is gone; such a row is a phone of
+kind mobile. Person.firstName and Person.lastName are nullable.
+personFirstName and personLastName on an upcoming date are replaced by
+personDisplayName, and relatedPersonFirstName and relatedPersonLastName on
+a relationship by relatedPersonDisplayName.
+
 # [4.0.0](https://github.com/cubicecho/philotes/compare/v3.2.1...v4.0.0) (2026-10-07)
 
 
