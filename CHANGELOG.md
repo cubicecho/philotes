@@ -1,3 +1,10 @@
+# [5.2.0](https://github.com/cubicecho/philotes/compare/v5.1.0...v5.2.0) (2026-10-07)
+
+
+### Features
+
+* read and write vCards, with import and export in Settings ([5412a17](https://github.com/cubicecho/philotes/commit/5412a17ee51314b4fe507e4a21aa10dfd71c5a88)), closes [#31](https://github.com/cubicecho/philotes/issues/31)
+
 # [5.1.0](https://github.com/cubicecho/philotes/compare/v5.0.0...v5.1.0) (2026-10-07)
 
 
