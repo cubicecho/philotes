@@ -104,4 +104,5 @@ const handleAddFoo    = () => refetch();
 | --- | --- |
 | Relationships | `app/src/components/domain/person/relationships.tsx` |
 | Labels | `app/src/components/domain/person/labels.tsx` |
-| Call site | `app/app/(app)/persons/[id]/index.tsx` |
+| Call site | `app/app/(app)/persons/[id]/index.tsx`, which hands its `reload` to the two columns (`detail-contact-column.tsx`, `detail-activity-column.tsx`) as `onChanged` |
+| The page's documents | `app/src/components/domain/person/detail-queries.ts` |
