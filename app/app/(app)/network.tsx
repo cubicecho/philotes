@@ -18,8 +18,13 @@ const GET_NETWORK_DATA = graphql(`
       id
       firstName
       lastName
-      email
       avatarPath
+      contactInfos(where: { type: { eq: email } }, limit: 5) {
+        id
+        type
+        value
+        isPrimary
+      }
       labels(limit: 20) {
         id
         label

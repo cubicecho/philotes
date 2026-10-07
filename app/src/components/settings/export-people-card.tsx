@@ -24,7 +24,6 @@ const GET_EXPORT_PERSONS = graphql(`
       id
       firstName
       lastName
-      email
       contactInfos(limit: 20) {
         type
         label

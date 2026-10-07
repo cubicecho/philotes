@@ -24,13 +24,17 @@ describe('importGoogleContacts', () => {
     secondUserId = await createUser(db, 'second@example.com');
   });
 
-  it('gives each user their own contact details for a person they share', async () => {
+  it('gives each user their own person for a contact both import', async () => {
     await createClient(db, firstUserId).run(IMPORT, { csv: CSV });
 
     const result = await createClient(db, secondUserId).run(IMPORT, { csv: CSV });
 
     expect(result.errors).toBeUndefined();
-    expect(result.data?.importGoogleContacts).toEqual({ imported: 0, merged: 1, errors: [] });
+    expect(result.data?.importGoogleContacts).toEqual({ imported: 1, merged: 0, errors: [] });
+    const people: Array<{ userId: string }> = await db
+      .select({ userId: dbSchema.persons.userId })
+      .from(dbSchema.persons);
+    expect(people.map((row) => row.userId).sort()).toEqual([firstUserId, secondUserId].sort());
     const details: Array<{ value: string }> = await db
       .select({ value: dbSchema.contactInfos.value })
       .from(dbSchema.contactInfos)
@@ -41,6 +45,16 @@ describe('importGoogleContacts', () => {
       .from(dbSchema.addresses)
       .where(eq(dbSchema.addresses.userId, secondUserId));
     expect(addresses).toEqual([{ line1: '1 Analytical Way', line2: 'Flat 2' }]);
+  });
+
+  it('merges into the person who has the email when the same user imports twice', async () => {
+    const result = await createClient(db, firstUserId).run(IMPORT, {
+      csv: CSV.replace(SHARED_EMAIL, 'ADA@example.com'),
+    });
+
+    expect(result.data?.importGoogleContacts).toEqual({ imported: 0, merged: 1, errors: [] });
+    const people = await db.select().from(dbSchema.persons).where(eq(dbSchema.persons.userId, firstUserId));
+    expect(people).toHaveLength(1);
   });
 
   it('does not duplicate details when the same user imports twice', async () => {

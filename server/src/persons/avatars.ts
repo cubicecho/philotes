@@ -59,8 +59,7 @@ export interface AvatarRouterDeps {
 }
 
 /**
- * Lets a request through only when the caller is signed in. Reading an avatar needs this too:
- * a file name is random, but it is not a credential.
+ * Lets a request through only when the caller is signed in.
  *
  * @param auth - The auth instance.
  * @param req - The request, carrying `Authorization: Bearer`.
@@ -79,7 +78,7 @@ async function requireSession(auth: Auth, req: Request, res: Response, next: Nex
 }
 
 /**
- * Lets a request through only when the caller has the person in their own list. It runs before
+ * Lets a request through only when the person is the caller's. It runs before
  * the upload is parsed, so nothing is written to disk for anyone else. A person that belongs to
  * another user answers "not found", as the resolvers do.
  *
@@ -97,18 +96,18 @@ async function requireOwnPerson(db: DB, req: Request, res: AvatarResponse, next:
   const isUuid = UUID_PATTERN.test(personId);
   const rows = isUuid
     ? await db
-        .select({ avatarPath: dbSchema.userPersons.avatarPath })
-        .from(dbSchema.userPersons)
-        .where(and(eq(dbSchema.userPersons.personId, personId), eq(dbSchema.userPersons.userId, userId)))
+        .select({ avatarPath: dbSchema.persons.avatarPath })
+        .from(dbSchema.persons)
+        .where(and(eq(dbSchema.persons.id, personId), eq(dbSchema.persons.userId, userId)))
     : [];
 
-  const [link] = rows;
-  if (!link) {
+  const [person] = rows;
+  if (!person) {
     res.status(HttpStatus.NotFound).json({ error: 'Person not found' });
     return;
   }
 
-  const locals: AvatarLocals = { userId, personId, avatarPath: link.avatarPath };
+  const locals: AvatarLocals = { userId, personId, avatarPath: person.avatarPath };
   Object.assign(res.locals, locals);
   next();
 }
@@ -130,19 +129,40 @@ async function removeAvatarFile(store: AvatarStore, avatarPath: string): Promise
 }
 
 /**
- * Sends a stored avatar. Only a plain file name with an image extension is looked up, so a
- * request can never name anything else in the store.
+ * Whether one of the caller's people has the file as their picture.
  *
- * @param store - Where the images are kept.
+ * @param db - Drizzle client.
+ * @param userId - The caller.
+ * @param name - The file's name.
+ * @returns True when the picture is the caller's to see.
+ */
+async function isOwnAvatar(db: DB, userId: string, name: string): Promise<boolean> {
+  const { persons } = dbSchema;
+  const [owner] = await db
+    .select({ id: persons.id })
+    .from(persons)
+    .where(and(eq(persons.userId, userId), eq(persons.avatarPath, `${AVATAR_URL_PREFIX}${name}`)))
+    .limit(1);
+  return owner !== undefined;
+}
+
+/**
+ * Sends a stored avatar to the user whose person it pictures. Only a plain file name with an image
+ * extension is looked up, so a request can never name anything else in the store. Another user's
+ * picture answers "not found", as a missing one does.
+ *
+ * @param deps - The database and the avatar store.
  * @param req - The request, with the file's `name` in its path.
- * @param res - The response the image is streamed to.
+ * @param res - The response the image is streamed to; `res.locals.userId` holds the caller's id.
  * @returns Nothing.
  */
-async function sendAvatar(store: AvatarStore, req: Request, res: Response): Promise<void> {
+async function sendAvatar(deps: Pick<AvatarRouterDeps, 'db' | 'store'>, req: Request, res: Response): Promise<void> {
+  const { db, store } = deps;
   const name = String(req.params.name);
   const contentType = MIME_TYPE_BY_EXTENSION[extname(name).toLowerCase()];
   const isServable = FILE_NAME_PATTERN.test(name) && contentType !== undefined;
-  const body = isServable ? await store.read(name) : null;
+  const isReadable = isServable && (await isOwnAvatar(db, String(res.locals.userId), name));
+  const body = isReadable ? await store.read(name) : null;
   if (body === null) {
     res.status(HttpStatus.NotFound).json({ error: 'Avatar not found' });
     return;
@@ -153,7 +173,7 @@ async function sendAvatar(store: AvatarStore, req: Request, res: Response): Prom
 }
 
 /**
- * Stores the avatar path on the caller's own link to the person.
+ * Stores the avatar path on the caller's person.
  *
  * @param db - Drizzle client.
  * @param locals - Who is asking, and about which person.
@@ -162,16 +182,16 @@ async function sendAvatar(store: AvatarStore, req: Request, res: Response): Prom
  */
 async function saveAvatarPath(db: DB, locals: AvatarLocals, avatarPath: string | null): Promise<void> {
   await db
-    .update(dbSchema.userPersons)
+    .update(dbSchema.persons)
     .set({ avatarPath })
-    .where(and(eq(dbSchema.userPersons.personId, locals.personId), eq(dbSchema.userPersons.userId, locals.userId)));
+    .where(and(eq(dbSchema.persons.id, locals.personId), eq(dbSchema.persons.userId, locals.userId)));
 }
 
 /**
  * Builds the routes that upload, serve and remove a person's avatar.
  *
- * Each file gets a random name, so two users who share a person never overwrite each other's
- * picture and a name cannot be guessed from a person id.
+ * Each file gets a random name, so a name cannot be guessed from a person id. A name is not a
+ * credential either: a picture is only served to the user whose person has it.
  *
  * @param deps - The database, the auth instance and the avatar store.
  * @returns The router, to mount at `/avatars`.
@@ -202,7 +222,7 @@ export function createAvatarRouter(deps: AvatarRouterDeps): Router {
 
   const router = Router();
   router.use((req, res, next) => requireSession(auth, req, res, next));
-  router.get('/:name', (req, res) => sendAvatar(store, req, res));
+  router.get('/:name', (req, res) => sendAvatar(deps, req, res));
 
   router.post('/:personId', guard, parseUpload, async (req, res: AvatarResponse) => {
     if (!req.file) {

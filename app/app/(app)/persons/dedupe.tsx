@@ -10,6 +10,7 @@ import { PageLayout } from '@/components/page-layout';
 import { QueryState } from '@/components/query-state';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft } from '@/components/ui/icons';
+import { primaryEmail } from '@/lib/primary-contact';
 import { useAllRows } from '@/lib/use-all-rows';
 
 const GET_POTENTIAL_DUPLICATES = graphql(`
@@ -32,7 +33,12 @@ const GET_PERSONS_FOR_DEDUPE = graphql(`
       id
       firstName
       lastName
-      email
+      contactInfos(where: { type: { eq: email } }, limit: 5) {
+        id
+        type
+        value
+        isPrimary
+      }
     }
   }
 `);
@@ -45,7 +51,9 @@ export default function DedupePage() {
   // Dismissals last for the visit; nothing is stored.
   const [dismissed, setDismissed] = useState<Set<string>>(new Set());
 
-  const personById = new Map<string, DuplicatePerson>((people.data?.persons ?? []).map((p) => [p.id, p]));
+  const personById = new Map<string, DuplicatePerson>(
+    (people.data?.persons ?? []).map((p) => [p.id, { ...p, email: primaryEmail(p.contactInfos ?? []) }]),
+  );
   const groups = (duplicates.data?.potentialDuplicates ?? [])
     .map((group) => ({
       ...group,

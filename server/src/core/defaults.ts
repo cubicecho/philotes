@@ -121,20 +121,14 @@ export const OPERATION_LIMIT_DEFAULTS: Readonly<OperationLimitSettings> = Object
 export interface PersonSettings {
   /** Longest first or last name, in characters. */
   maxNameLength: number;
-  /** Longest email address, in characters. */
-  maxEmailLength: number;
   /** Longest "how we met", in characters. */
   maxHowWeMetLength: number;
-  /** Longest stored avatar path, in characters. */
-  maxAvatarPathLength: number;
 }
 
 /** The person limits as shipped. */
 export const PERSON_DEFAULTS: Readonly<PersonSettings> = Object.freeze({
   maxNameLength: 200,
-  maxEmailLength: 320,
   maxHowWeMetLength: 2_000,
-  maxAvatarPathLength: 500,
 });
 
 /** Limits on the search for duplicate people. */

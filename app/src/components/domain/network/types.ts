@@ -1,3 +1,5 @@
+import type { ContactValue } from '@/lib/primary-contact';
+
 /** A label as the graph needs it: its name and hex colour. */
 export type NetworkPersonLabel = {
   id: string;
@@ -10,7 +12,8 @@ export type NetworkPerson = {
   id: string;
   firstName: string;
   lastName: string;
-  email?: string | null;
+  /** The person's email addresses; the main one is shown when they are pointed at. */
+  contactInfos?: ContactValue[];
   /** The person's labels; the first one's colour fills their node. */
   labels: NetworkPersonLabel[];
   /** The relationships this person is the `from` side of; `type` is the name drawn on the edge. */

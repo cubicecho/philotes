@@ -10,25 +10,18 @@ import { ADDRESS_DEFAULTS, CONTACT_INFO_DEFAULTS, PERSON_DEFAULTS } from '../cor
  */
 const nameSchema = (label: string) =>
   z.string().trim().min(1, `${label} cannot be empty.`).max(PERSON_DEFAULTS.maxNameLength, `${label} is too long.`);
-const emailSchema = z
-  .string()
-  .trim()
-  .max(PERSON_DEFAULTS.maxEmailLength, 'Email is too long.')
-  .pipe(z.email('Enter a valid email address.'))
-  .nullable();
 
-/** Partial, since an update's `set` carries only the changed columns. */
+/**
+ * What a person may hold. Partial, since an update's `set` carries only the changed columns. The avatar is
+ * not here: only the upload route sets it.
+ */
 export const personInput = z
-  .object({ firstName: nameSchema('First name'), lastName: nameSchema('Last name'), email: emailSchema })
-  .partial();
-
-/** What a user keeps about a person in their contacts. */
-export const userPersonInput = z
   .object({
+    firstName: nameSchema('First name'),
+    lastName: nameSchema('Last name'),
     contactFrequency: z.enum(ContactFrequency, 'Choose weekly, monthly, quarterly or yearly.').nullable(),
     howWeMet: z.string().max(PERSON_DEFAULTS.maxHowWeMetLength, 'How we met is too long.').nullable(),
     firstMetDate: z.iso.date('First met date must be a day, as YYYY-MM-DD.').nullable(),
-    avatarPath: z.string().max(PERSON_DEFAULTS.maxAvatarPathLength, 'Avatar path is too long.').nullable(),
   })
   .partial();
 

@@ -1,7 +1,6 @@
 import { Link, useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Linking, Platform, Text, View } from 'react-native';
-import { ContactTypeEnum } from '@/__generated__/graphql';
 import { ActionButton } from '@/components/action-button';
 import { GitMerge, Mail, MessageSquarePlus, Phone, UserPlus, Users } from '@/components/app-icons';
 import { ConfirmButton } from '@/components/confirm-button';
@@ -16,16 +15,13 @@ import { Button } from '@/components/ui/button';
 import { Search, Trash2, X } from '@/components/ui/icons';
 import { SearchInput } from '@/components/ui/search-input';
 import { fullName } from '@/lib/person-name';
+import { type ContactValue, primaryEmail, primaryPhone } from '@/lib/primary-contact';
 import { relativeTime } from '@/lib/relative-time';
 import { cn } from '@/lib/utils';
 
 /** One of a person's contact values, as far as the list needs it. */
-export interface PersonContactInfo {
+export interface PersonContactInfo extends ContactValue {
   id: string;
-  /** The contact type, one of the `ContactTypeEnum` values. */
-  type: string;
-  value: string;
-  isPrimary?: boolean | null;
 }
 
 /** A person as a row of the list shows them. */
@@ -33,7 +29,6 @@ export interface PersonRowData {
   id: string;
   firstName: string;
   lastName: string;
-  email: string | null;
   avatarPath?: string | null;
   labels: Array<{ id: string; label: string; color: string }>;
   /** When they were last contacted; `null` or left out when never. */
@@ -55,24 +50,6 @@ const SORT_OPTIONS: Array<{ value: SortOption; label: string }> = [
   { value: 'lastContacted-asc', label: 'Last contacted (oldest first)' },
   { value: 'lastContacted-desc', label: 'Last contacted (recent first)' },
 ];
-
-/**
- * The number to call a person on.
- *
- * @param infos - The person's contact values.
- * @returns The phone or mobile marked primary, else the first of either; `null` when the person has none.
- */
-function primaryPhone(infos: PersonContactInfo[]): string | null {
-  const phones = infos.filter((i) => {
-    const isLandline = i.type === ContactTypeEnum.Phone;
-    const isMobile = i.type === ContactTypeEnum.Mobile;
-    return isLandline || isMobile;
-  });
-  if (phones.length === 0) {
-    return null;
-  }
-  return (phones.find((p) => p.isPrimary) ?? phones[0]).value;
-}
 
 /**
  * The letter a person is grouped under in the name-sorted list.
@@ -109,7 +86,7 @@ interface PersonRowProps {
 function PersonRow({ person, divided, onDeletePress, onLogPress, activeLabelIds }: PersonRowProps) {
   const router = useRouter();
   const phone = primaryPhone(person.contactInfos);
-  const { email } = person;
+  const email = primaryEmail(person.contactInfos);
 
   return (
     <ListItem
@@ -119,9 +96,7 @@ function PersonRow({ person, divided, onDeletePress, onLogPress, activeLabelIds 
         <Avatar firstName={person.firstName} lastName={person.lastName} avatarPath={person.avatarPath} size="md" />
       }
       title={fullName(person)}
-      description={
-        person.lastContactedAt ? `Last contact: ${relativeTime(person.lastContactedAt)}` : (person.email ?? '')
-      }
+      description={person.lastContactedAt ? `Last contact: ${relativeTime(person.lastContactedAt)}` : (email ?? '')}
       meta={
         person.labels.length > 0 ? (
           <View className="hidden max-w-64 flex-row flex-wrap justify-end gap-1 sm:flex">
@@ -316,7 +291,7 @@ export function PersonList({
               <View className="min-w-0 flex-1">
                 <SearchInput
                   label="Search people"
-                  placeholder="Search by name or email…"
+                  placeholder="Search by name, email or phone…"
                   value={q}
                   onChangeText={onSearchChange}
                 />

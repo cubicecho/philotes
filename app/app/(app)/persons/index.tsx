@@ -35,7 +35,6 @@ const GET_PERSONS = graphql(`
       id
       firstName
       lastName
-      email
       avatarPath
       labels(limit: 20) {
         id
@@ -68,6 +67,14 @@ const GET_LABELS = graphql(`
 const CREATE_PERSON = graphql(`
   mutation CreatePerson($values: CreatePersonInput!) {
     createPerson(values: $values) {
+      id
+    }
+  }
+`);
+
+const CREATE_PERSON_EMAIL = graphql(`
+  mutation CreatePersonEmail($personId: UUID!, $value: String!) {
+    createContactInfo(values: { personId: $personId, type: email, value: $value, isPrimary: true }) {
       id
     }
   }
@@ -142,7 +149,7 @@ export default function PersonsPage() {
         OR: [
           { firstName: { ilike: `%${trimmedQ}%` } },
           { lastName: { ilike: `%${trimmedQ}%` } },
-          { email: { ilike: `%${trimmedQ}%` } },
+          { contactInfos: { some: { value: { ilike: `%${trimmedQ}%` } } } },
         ],
       }
     : undefined;
@@ -171,6 +178,9 @@ export default function PersonsPage() {
   const [createPerson] = useMutation(CREATE_PERSON, {
     update: (cache) => invalidateQueryFields(cache, ['persons']),
   });
+  const [createPersonEmail] = useMutation(CREATE_PERSON_EMAIL, {
+    update: (cache) => invalidateQueryFields(cache, ['persons']),
+  });
   const [deletePerson] = useMutation(DELETE_PERSON, {
     update: (cache) => invalidateQueryFields(cache, ['persons']),
   });
@@ -190,7 +200,6 @@ export default function PersonsPage() {
     id: p.id,
     firstName: p.firstName,
     lastName: p.lastName,
-    email: p.email,
     avatarPath: p.avatarPath,
     labels: p.labels ?? [],
     contactInfos: p.contactInfos ?? [],
@@ -230,9 +239,13 @@ export default function PersonsPage() {
     await deletePerson({ variables: { id } });
   };
 
-  const handleSubmit = async ({ person }: PersonFormValue): Promise<void> => {
-    const { firstName, lastName, email } = person;
-    await createPerson({ variables: { values: { firstName, lastName, email } } });
+  const handleSubmit = async ({ person, email }: PersonFormValue): Promise<void> => {
+    const { data: created } = await createPerson({ variables: { values: person } });
+    const personId = created?.createPerson?.id;
+    if (personId && email) {
+      // The person is saved by now. A refused address is reported, and can be added on their page.
+      await createPersonEmail({ variables: { personId, value: email } });
+    }
     setDialogOpen(false);
   };
 

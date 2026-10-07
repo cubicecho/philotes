@@ -20,6 +20,8 @@ const TOO_DEEP = `{ ${'notes(limit: 1) { person { '.repeat(maxDepth)} id ${'} } 
 const TOO_ALIASED = `{ ${Array.from({ length: maxAliases + 1 }, (_, index) => `a${index}: me { id }`).join(' ')} }`;
 /** Three full pages multiplied together, far past `maxCost`. */
 const TOO_COSTLY = `{ persons(limit: ${maxPageSize}) { notes(limit: ${maxPageSize}) { labels(limit: ${maxPageSize}) { id } } } }`;
+/** Within `maxCost` as written, and past it if every `__typename` were charged like a column. */
+const TYPE_NAMES_THROUGHOUT = `{ persons(limit: 100) { __typename id notes(limit: 45) { __typename id body } } }`;
 const REVOKE = `mutation { myRevokeApiKey(id: "${UNKNOWN_ID}") }`;
 
 describe('the app over HTTP', () => {
@@ -101,6 +103,12 @@ describe('the app over HTTP', () => {
 
   it('serves a page at the cap', async () => {
     const body = await (await post(`{ persons(limit: ${maxPageSize}) { id } }`, userId)).json();
+
+    expect(body).toEqual({ data: { persons: [] } });
+  });
+
+  it('does not charge for __typename, which Apollo Client adds to every selection', async () => {
+    const body = await (await post(TYPE_NAMES_THROUGHOUT, userId)).json();
 
     expect(body).toEqual({ data: { persons: [] } });
   });

@@ -1,7 +1,7 @@
 import type { DB } from '@cubicecho/philotes-db';
+import type { ContactType } from '@cubicecho/philotes-db/schema';
 import * as dbSchema from '@cubicecho/philotes-db/schema';
-import { ContactType } from '@cubicecho/philotes-db/schema';
-import { and, eq, inArray, isNotNull, sql } from 'drizzle-orm';
+import { and, eq, inArray, sql } from 'drizzle-orm';
 import type { AnyPgColumn, PgTable } from 'drizzle-orm/pg-core';
 import { extendSchema, type GraphQLSchema, parse } from 'graphql';
 import type { Context } from '../core/context.ts';
@@ -96,12 +96,8 @@ export const PERSON_JUNCTIONS: readonly PersonJunction[] = [
   },
 ];
 
-/** The tables a merge handles with its own rules: de-duplicated details, repointed relationships, the contact link. */
-export const SPECIALLY_MERGED_TABLES: readonly PgTable[] = [
-  dbSchema.contactInfos,
-  dbSchema.personRelationships,
-  dbSchema.userPersons,
-];
+/** The tables a merge handles with its own rules: de-duplicated details and repointed relationships. */
+export const SPECIALLY_MERGED_TABLES: readonly PgTable[] = [dbSchema.contactInfos, dbSchema.personRelationships];
 
 /**
  * Puts a contact detail in the form two entries of it are compared in.
@@ -114,8 +110,7 @@ function normalizeDetail(value: string): string {
 }
 
 /**
- * Finds the people in a user's contacts who share a contact detail. A person's own email counts as
- * an email detail.
+ * Finds the people in a user's contacts who share a contact detail.
  *
  * @param db - Drizzle client.
  * @param userId - The user whose contacts are searched.
@@ -130,16 +125,10 @@ export async function findPotentialDuplicates(db: DB, userId: string): Promise<D
     })
     .from(dbSchema.contactInfos)
     .where(eq(dbSchema.contactInfos.userId, userId));
-  const emails = await db
-    .select({ personId: dbSchema.persons.id, value: dbSchema.persons.email })
-    .from(dbSchema.persons)
-    .innerJoin(dbSchema.userPersons, eq(dbSchema.userPersons.personId, dbSchema.persons.id))
-    .where(and(eq(dbSchema.userPersons.userId, userId), isNotNull(dbSchema.persons.email)));
 
   const groups = new Map<string, { matchType: ContactType; personIds: Set<string> }>();
-  const entries = [...details, ...emails.map((row) => ({ ...row, type: ContactType.Email }))];
-  for (const { personId, type, value } of entries) {
-    const matchValue = normalizeDetail(value ?? '');
+  for (const { personId, type, value } of details) {
+    const matchValue = normalizeDetail(value);
     if (!matchValue) {
       continue;
     }
@@ -156,35 +145,36 @@ export async function findPotentialDuplicates(db: DB, userId: string): Promise<D
 }
 
 /**
- * Fills what the user has not recorded about the kept person from what they recorded about the
- * merged one: contact frequency, how they met, when, and the avatar.
+ * Fills what the kept person lacks from the merged one: contact frequency, how they met, when, and
+ * the avatar.
  *
  * @param tx - The transaction to write in.
  * @param userId - The caller.
  * @param keepId - The person who stays.
  * @param mergeId - The person merged away.
- * @returns Nothing, once the kept person's context is written.
+ * @returns Nothing, once the kept person's fields are written.
  */
-async function mergePersonContext(tx: Transaction, userId: string, keepId: string, mergeId: string): Promise<void> {
-  const links = await tx
+async function mergePersonFields(tx: Transaction, userId: string, keepId: string, mergeId: string): Promise<void> {
+  const { persons } = dbSchema;
+  const rows = await tx
     .select()
-    .from(dbSchema.userPersons)
-    .where(and(eq(dbSchema.userPersons.userId, userId), inArray(dbSchema.userPersons.personId, [keepId, mergeId])));
-  const kept = links.find((link) => link.personId === keepId);
-  const merged = links.find((link) => link.personId === mergeId);
+    .from(persons)
+    .where(and(eq(persons.userId, userId), inArray(persons.id, [keepId, mergeId])));
+  const kept = rows.find((row) => row.id === keepId);
+  const merged = rows.find((row) => row.id === mergeId);
   if (!kept || !merged) {
     return;
   }
 
   await tx
-    .update(dbSchema.userPersons)
+    .update(persons)
     .set({
       contactFrequency: kept.contactFrequency ?? merged.contactFrequency,
       howWeMet: kept.howWeMet ?? merged.howWeMet,
       firstMetDate: kept.firstMetDate ?? merged.firstMetDate,
       avatarPath: kept.avatarPath ?? merged.avatarPath,
     })
-    .where(and(eq(dbSchema.userPersons.userId, userId), eq(dbSchema.userPersons.personId, keepId)));
+    .where(eq(persons.id, keepId));
 }
 
 /**
@@ -333,19 +323,18 @@ async function removeSelfTaggedDates(tx: Transaction, userId: string, keepId: st
 }
 
 /**
- * Folds one person in a user's contacts into another, in one transaction: everything the user
- * recorded about the merged person moves to the kept one, and the merged person leaves the user's
- * contacts. The shared person row stays for the other users who have it.
+ * Folds one of a user's people into another, in one transaction: everything recorded about the
+ * merged person moves to the kept one, and the merged person is deleted.
  *
  * @param db - Drizzle client.
- * @param userId - The caller, who has both people in their contacts.
+ * @param userId - The caller, who owns both people.
  * @param keepId - The person who stays.
  * @param mergeId - The person merged away.
  * @returns Nothing, once the merge is committed.
  */
 export async function mergePersons(db: DB, userId: string, keepId: string, mergeId: string): Promise<void> {
   await db.transaction(async (tx) => {
-    await mergePersonContext(tx, userId, keepId, mergeId);
+    await mergePersonFields(tx, userId, keepId, mergeId);
 
     for (const { table, personColumn, userColumn } of PERSON_OWNED_TABLES) {
       await tx.execute(sql`
@@ -361,9 +350,8 @@ export async function mergePersons(db: DB, userId: string, keepId: string, merge
     await removeSelfTaggedDates(tx, userId, keepId);
     await mergeRelationships(tx, userId, keepId, mergeId);
 
-    await tx
-      .delete(dbSchema.userPersons)
-      .where(and(eq(dbSchema.userPersons.userId, userId), eq(dbSchema.userPersons.personId, mergeId)));
+    const { persons } = dbSchema;
+    await tx.delete(persons).where(and(eq(persons.userId, userId), eq(persons.id, mergeId)));
   });
 }
 
@@ -398,12 +386,12 @@ export function applyDuplicatesExtension(schema: GraphQLSchema): GraphQLSchema {
    *
    * @param _parent - Unused.
    * @param args.keepId - The person who stays.
-   * @param args.mergeId - The person merged into them and removed from the caller's contacts.
+   * @param args.mergeId - The person merged into them and deleted.
    * @param context - Request context.
    * @returns The kept person's id.
    * @throws UNAUTHENTICATED when nobody is signed in.
    * @throws BAD_USER_INPUT when both ids name the same person.
-   * @throws NOT_FOUND when either person is not in the caller's contacts.
+   * @throws NOT_FOUND when either person is not the caller's.
    */
   mutationType.getFields().mergePersons.resolve = async (
     _parent: unknown,
@@ -416,11 +404,12 @@ export function applyDuplicatesExtension(schema: GraphQLSchema): GraphQLSchema {
       throw badInput('A person cannot be merged into themselves.');
     }
 
-    const links = await db
-      .select({ personId: dbSchema.userPersons.personId })
-      .from(dbSchema.userPersons)
-      .where(and(eq(dbSchema.userPersons.userId, userId), inArray(dbSchema.userPersons.personId, [keepId, mergeId])));
-    const hasBoth = links.length === 2;
+    const { persons } = dbSchema;
+    const owned = await db
+      .select({ id: persons.id })
+      .from(persons)
+      .where(and(eq(persons.userId, userId), inArray(persons.id, [keepId, mergeId])));
+    const hasBoth = owned.length === 2;
     if (hasBoth === false) {
       throw notFound('Person not found');
     }

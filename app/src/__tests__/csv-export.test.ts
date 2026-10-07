@@ -1,5 +1,4 @@
 import { describe, expect, it } from 'vitest';
-import { ContactTypeEnum } from '../__generated__/graphql';
 import { buildPersonsCsv, csvCell, type ExportPerson } from '../lib/csv-export';
 
 function person(overrides: Partial<ExportPerson> = {}): ExportPerson {
@@ -7,7 +6,6 @@ function person(overrides: Partial<ExportPerson> = {}): ExportPerson {
     id: '1',
     firstName: 'Ada',
     lastName: 'Lovelace',
-    email: null,
     contactInfos: [],
     addresses: [],
     importantDates: [],
@@ -120,26 +118,6 @@ describe('buildPersonsCsv', () => {
     ]);
     expect(rows(csv)[0]).toContain('Address 1 - Street,Address 1 - Extended Address');
     expect(rows(csv)[1]).toContain('Home,1 Main St,Flat 2,London');
-  });
-
-  it("writes the person's own e-mail address first", () => {
-    const csv = buildPersonsCsv([
-      person({
-        email: 'ada@example.com',
-        contactInfos: [{ type: ContactTypeEnum.Email, label: 'Work', value: 'ada@work.example', isPrimary: false }],
-      }),
-    ]);
-    expect(rows(csv)[1]).toBe('Ada,Lovelace,,,Home,ada@example.com,Work,ada@work.example');
-  });
-
-  it("does not repeat the person's own address when a contact detail holds it", () => {
-    const csv = buildPersonsCsv([
-      person({
-        email: 'Ada@Example.com',
-        contactInfos: [{ type: ContactTypeEnum.Email, label: 'Work', value: 'ada@example.com', isPrimary: false }],
-      }),
-    ]);
-    expect(rows(csv)[1]).toBe('Ada,Lovelace,,,Work,ada@example.com');
   });
 
   it('quotes a value that contains a comma', () => {

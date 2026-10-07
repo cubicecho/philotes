@@ -142,15 +142,15 @@ describe.each(STORES)('avatar routes, kept in $kind', ({ makeStore }) => {
   }
 
   /**
-   * Reads the avatar path stored for the owner's link to the person.
+   * Reads the avatar path stored on the owner's person.
    *
    * @returns The stored path, or `null` when there is none.
    */
   async function storedAvatarPath(): Promise<string | null> {
     const rows: Array<{ avatarPath: string | null }> = await db
-      .select({ avatarPath: dbSchema.userPersons.avatarPath })
-      .from(dbSchema.userPersons)
-      .where(and(eq(dbSchema.userPersons.personId, personId), eq(dbSchema.userPersons.userId, ownerId)));
+      .select({ avatarPath: dbSchema.persons.avatarPath })
+      .from(dbSchema.persons)
+      .where(and(eq(dbSchema.persons.id, personId), eq(dbSchema.persons.userId, ownerId)));
     return rows[0]?.avatarPath ?? null;
   }
 
@@ -222,6 +222,15 @@ describe.each(STORES)('avatar routes, kept in $kind', ({ makeStore }) => {
 
     expect(response.status).toBe(HttpStatus.BadRequest);
     expect(await stored.names()).toEqual([]);
+  });
+
+  it("answers 'not found' for another user's avatar", async () => {
+    const { url } = (await (await uploadAvatar(ownerId)).json()) as { url: string };
+    const strangerHeaders = { authorization: `Bearer ${await createSessionToken(auth, strangerId)}` };
+
+    const response = await fetch(`${baseUrl}${url}`, { headers: strangerHeaders });
+
+    expect(response.status).toBe(HttpStatus.NotFound);
   });
 
   it('serves a stored avatar only to a signed-in caller', async () => {

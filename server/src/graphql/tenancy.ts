@@ -19,9 +19,9 @@ export const USER_OWNED_TABLES = [
   'notes',
   'personLabels',
   'personRelationships',
+  'persons',
   'relationshipTypes',
   'tasks',
-  'userPersons',
 ] as const;
 
 /**
@@ -42,21 +42,9 @@ const scopeByUserId: RowScope<Context> = (context, table) => eq(table.userId, re
  */
 const scopeToSelf: RowScope<Context> = (context, table) => eq(table.id, requireAuth(context));
 
-/**
- * Restricts `persons` to the caller's contacts. A person row is shared between users, and
- * `user_persons` records who has added it.
- *
- * @param context - Request context.
- * @returns A relation filter, compiled the way a client `where` is.
- */
-const scopeToContacts: RowScope<Context> = (context) => ({
-  userPersons: { some: { userId: { eq: requireAuth(context) } } },
-});
-
 /** Row scope per table, ANDed into every generated read, update and delete after the client's own `where`. */
 export const scope: NonNullable<BuildSchemaConfig['scope']> = {
   users: scopeToSelf,
-  persons: scopeToContacts,
   ...Object.fromEntries(USER_OWNED_TABLES.map((name) => [name, scopeByUserId])),
 };
 
@@ -73,18 +61,14 @@ export const exclude: NonNullable<BuildSchemaConfig['exclude']> = {
   tables: [...AUTH_TABLES],
 };
 
-/**
- * Tables with no generated create. A `user_persons` row is what puts a person in a user's contacts, so
- * a generated create would let a caller take any person by id. `createPerson` and the import write it.
- */
-const TABLES_WITHOUT_INSERT = new Set(['users', 'userPersons']);
-
 /** User lifecycle belongs to the auth flow, not generated CRUD. */
 export const features: NonNullable<BuildSchemaConfig['features']> = {
-  insert: (table) => TABLES_WITHOUT_INSERT.has(table) === false,
+  insert: (table) => table !== 'users',
   update: (table) => table !== 'users',
   updateMany: (table) => table !== 'users',
   delete: (table) => table !== 'users',
+  // Deleting a person takes everything recorded about them, so a delete or update of people names which.
+  requireWhere: (table) => table === 'persons',
   // The default, but stated. Nested writes bypass the child table's onWrite hooks.
   nestedWrites: false,
 };

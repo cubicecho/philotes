@@ -31,7 +31,7 @@ const FREQUENCY_SELECT_OPTIONS = CONTACT_FREQUENCY_OPTIONS.map((opt) => ({
 const personSchema = z.object({
   firstName: z.string().min(1, 'First name is required.'),
   lastName: z.string().min(1, 'Last name is required.'),
-  email: z.string().min(1, 'Email is required.').email('Please enter a valid email address.'),
+  email: z.union([z.literal(''), z.string().trim().email('Please enter a valid email address.')]),
   contactFrequency: z.string(),
   howWeMet: z.string(),
   firstMetDate: z.date().nullable(),
@@ -78,7 +78,6 @@ function formatDay(date: Date): string {
 export interface PersonFormPerson {
   firstName: string;
   lastName: string;
-  email: string;
   /** `null` when no cadence is chosen. */
   contactFrequency?: string | null;
   howWeMet?: string | null;
@@ -86,9 +85,11 @@ export interface PersonFormPerson {
   firstMetDate?: string | null;
 }
 
-/** What the form submits: the person, and the ids of the labels chosen for them. */
+/** What the form submits: the person, the address typed for a new one, and the ids of the labels chosen for them. */
 export interface PersonFormValue {
   person: PersonFormPerson;
+  /** A new person's email address, to keep as a contact detail; `null` when none was typed, and on an edit. */
+  email: string | null;
   labelIds: string[];
 }
 
@@ -96,7 +97,6 @@ export interface PersonFormValue {
 export interface PersonFormInitialValues {
   firstName: string;
   lastName: string;
-  email: string | null;
   labelIds?: string[];
   contactFrequency?: string | null;
   howWeMet?: string | null;
@@ -122,7 +122,7 @@ export function PersonForm({ availableLabels, initialValues, submitLabel, onSubm
   const defaultValues: PersonFormFields = {
     firstName: initialValues?.firstName ?? '',
     lastName: initialValues?.lastName ?? '',
-    email: initialValues?.email ?? '',
+    email: '',
     contactFrequency: initialValues?.contactFrequency || NO_FREQUENCY,
     howWeMet: initialValues?.howWeMet ?? '',
     firstMetDate: parseDay(initialValues?.firstMetDate),
@@ -141,11 +141,11 @@ export function PersonForm({ availableLabels, initialValues, submitLabel, onSubm
           person: {
             firstName: value.firstName,
             lastName: value.lastName,
-            email: value.email,
             contactFrequency: value.contactFrequency === NO_FREQUENCY ? null : value.contactFrequency,
             howWeMet: value.howWeMet || null,
             firstMetDate: value.firstMetDate ? formatDay(value.firstMetDate) : null,
           },
+          email: value.email.trim() || null,
           labelIds: value.labelIds,
         });
         if (!initialValues) {
@@ -171,9 +171,12 @@ export function PersonForm({ availableLabels, initialValues, submitLabel, onSubm
           <form.AppField name="firstName">{(field) => <field.InputField label="First Name" />}</form.AppField>
           <form.AppField name="lastName">{(field) => <field.InputField label="Last Name" />}</form.AppField>
         </FieldRow>
-        <form.AppField name="email">
-          {(field) => <field.InputField label="Email" type="email" autoCapitalize="none" />}
-        </form.AppField>
+        {/* A stored person's addresses are edited with their other contact details, on their page. */}
+        {isEdit ? null : (
+          <form.AppField name="email">
+            {(field) => <field.InputField label="Email (optional)" type="email" autoCapitalize="none" />}
+          </form.AppField>
+        )}
         <form.AppField name="contactFrequency">
           {(field) => <field.SelectField label="Contact Frequency" options={FREQUENCY_SELECT_OPTIONS} />}
         </form.AppField>

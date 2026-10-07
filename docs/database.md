@@ -54,13 +54,12 @@ database from `createTestDb()` in `server/src/__tests__/helpers.ts`. See
 
 ## Tables
 
-Nineteen tables, plus `api_keys`:
+Eighteen tables, plus `api_keys`:
 
 | Table | File | Ownership |
 | --- | --- | --- |
 | `users` | `models/users.ts` | own `id` |
-| `persons` | `models/persons.ts` | shared, via `user_persons` |
-| `user_persons` | `models/user-persons.ts` | `user_id` |
+| `persons` | `models/persons.ts` | `user_id` |
 | `addresses` | `models/addresses.ts` | `user_id` |
 | `contact_infos` | `models/contact-infos.ts` | `user_id` |
 | `gratitudes` | `models/gratitudes.ts` | `user_id` |
@@ -83,14 +82,16 @@ Nineteen tables, plus `api_keys`:
 generated GraphQL schema, and is reached only through the hand-written API-key
 resolvers.
 
-### `persons` is shared
+### A person belongs to one user
 
-`persons` carries no `user_id`. A person row is shared between every user who
-has that person in their contacts, and `user_persons` is both the membership
-record and the place per-user context lives (`contact_frequency`, `how_we_met`,
-`first_met_date`, `avatar_path`). This is why creating a person links rather
-than simply inserts, and deleting one unlinks rather than deletes — see
-[`server.md`](./server.md).
+`persons` carries a `user_id` like every other table. Two users who know the
+same human each have their own row, with their own name for them, their own
+details and their own picture. Deleting a person deletes the row, and the rows
+recorded about them go with it (a note is kept, without its person).
+
+A person has no email column. Their addresses are `contact_infos` rows of type
+`email`, any number of them, and the one marked `is_primary` is the one the app
+writes to. Nothing makes an address unique: two people may share one.
 
 ## Tenancy
 

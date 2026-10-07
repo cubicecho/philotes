@@ -75,9 +75,7 @@ client filter can only narrow it:
 
 - every table in `USER_OWNED_TABLES` carries `user_id` and scopes on it
   directly, junction tables included;
-- `users` scopes to the caller's own row;
-- `persons` are shared between users, and scope through `user_persons` with a
-  relation filter.
+- `users` scopes to the caller's own row.
 
 Each one calls `requireAuth`, so an unauthenticated request throws rather than
 falling back to an unscoped query.
@@ -131,7 +129,8 @@ value)` from `core/validation.ts`.
 A list returns `defaultPageSize` rows when the request passes no `limit`, and
 refuses a `limit` above `maxPageSize`. `graphql/operation-limits.ts` refuses an
 operation that nests too deep, uses too many aliases or costs more than
-`maxCost`, where a list costs its page size times one row. The numbers are
+`maxCost`, where a list costs its page size times one row. `__typename` is
+free, since Apollo Client adds it to every selection set. The numbers are
 `OPERATION_LIMIT_DEFAULTS` in `core/defaults.ts`. A client that needs every row
 pages through them — see `useAllRows` in [frontend.md](./frontend.md#data-fetching).
 
@@ -156,8 +155,10 @@ when `S3_ENDPOINT` is set, otherwise `createDiskAvatarStore` on `AVATAR_DIR`. It
 calls `prepare()` at boot, which makes the directory or the missing bucket.
 
 The stored `avatarPath` is `/avatars/<name>` with either store. `GET /avatars/<name>`
-checks the session and streams the image from the store, so a bucket stays
-private. `npm run storage:up` starts a MinIO for development.
+checks the session, answers 404 unless one of the caller's people has that
+picture, and streams the image from the store, so a bucket stays private. The
+path is written by the upload route only; `persons/hooks.ts` refuses it in a
+GraphQL write, or a user could point a person at someone else's file. `npm run storage:up` starts a MinIO for development.
 
 The route tests run once per store. To run them against a real S3-compatible
 store as well, set `TEST_S3_ENDPOINT`, `TEST_S3_ACCESS_KEY_ID` and
@@ -177,7 +178,7 @@ A resolver that is not plain CRUD goes in its domain's `resolvers.ts`, as one
 
 Prefer configuration over an override: a resolver written by hand does not get
 the scope, filter compilation or batching the generated one has. See
-`persons/resolvers.ts` for the cases that genuinely need it: creating and deleting a shared person.
+`relationships/resolvers.ts` for a case that genuinely needs it.
 
 A mutation that touches several tables runs in one `db.transaction` and checks
 ownership itself before it writes. `mergePersons` in `persons/duplicates.ts`

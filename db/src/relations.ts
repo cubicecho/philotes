@@ -4,9 +4,9 @@ import * as schema from './schema.ts';
 /** How the tables join. drizzle-graphql builds its relation fields from this, so a table left out gets none. */
 export const relations = defineRelations(schema, (r) => ({
   users: {
-    userPersons: r.many.userPersons({
+    persons: r.many.persons({
       from: r.users.id,
-      to: r.userPersons.userId,
+      to: r.persons.userId,
     }),
     notes: r.many.notes({
       from: r.users.id,
@@ -45,20 +45,10 @@ export const relations = defineRelations(schema, (r) => ({
       to: r.contactInfos.userId,
     }),
   },
-  userPersons: {
-    user: r.one.users({
-      from: r.userPersons.userId,
-      to: r.users.id,
-    }),
-    person: r.one.persons({
-      from: r.userPersons.personId,
-      to: r.persons.id,
-    }),
-  },
   persons: {
-    userPersons: r.many.userPersons({
-      from: r.persons.id,
-      to: r.userPersons.personId,
+    user: r.one.users({
+      from: r.persons.userId,
+      to: r.users.id,
     }),
     notes: r.many.notes({
       from: r.persons.id,
