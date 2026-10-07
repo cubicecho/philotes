@@ -15,7 +15,6 @@ import { applyMergeLabelsExtension } from '../labels/resolvers.ts';
 import { noteWriteHooks } from '../notes/hooks.ts';
 import { applyDuplicatesExtension } from '../persons/duplicates.ts';
 import { personWriteHooks } from '../persons/hooks.ts';
-import { applyUserScopeExtensions } from '../persons/resolvers.ts';
 import { relationshipWriteHooks } from '../relationships/hooks.ts';
 import { applyRelationshipsExtension } from '../relationships/resolvers.ts';
 import { taskWriteHooks } from '../tasks/hooks.ts';
@@ -40,7 +39,6 @@ export const WRITE_HOOKS: OnWriteConfig = {
 /** The hand-written extensions, in the order they are applied. */
 const EXTENSIONS: Array<(schema: GraphQLSchema) => GraphQLSchema> = [
   applyAuthExtension,
-  applyUserScopeExtensions,
   applyRelationshipsExtension,
   applyUpcomingDatesExtension,
   applyImportContactsExtension,

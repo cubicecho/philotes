@@ -1,9 +1,9 @@
+import type { DB } from '@cubicecho/philotes-db';
 import * as dbSchema from '@cubicecho/philotes-db/schema';
-import { eq } from 'drizzle-orm';
+import { and, eq, sql } from 'drizzle-orm';
 import { extendSchema, type GraphQLSchema, parse } from 'graphql';
 import type { Context } from '../core/context.ts';
 import { requireAuth } from '../core/errors.ts';
-import { violatedUniqueConstraint } from '../core/pg-errors.ts';
 import { objectType } from '../graphql/object-type.ts';
 import { parseGoogleContactsCsv } from './google-contacts-csv.ts';
 import { insertAddresses, insertBirthday, insertContactInfos, insertPersonLabels } from './person-details.ts';
@@ -20,6 +20,31 @@ import { insertAddresses, insertBirthday, insertContactInfos, insertPersonLabels
 function reportFailure(errors: string[], summary: string, err: unknown): void {
   console.error(`[import] ${summary}`, err);
   errors.push(summary);
+}
+
+/**
+ * Finds the person among a user's own who has an email address, whatever its case.
+ *
+ * @param db - Drizzle client.
+ * @param userId - The user whose people are searched.
+ * @param email - The address.
+ * @returns The person's id, or null when none of the user's people has it. The oldest wins when several do.
+ */
+async function findOwnPersonByEmail(db: DB, userId: string, email: string): Promise<string | null> {
+  const { contactInfos } = dbSchema;
+  const [match] = await db
+    .select({ personId: contactInfos.personId })
+    .from(contactInfos)
+    .where(
+      and(
+        eq(contactInfos.userId, userId),
+        eq(contactInfos.type, dbSchema.ContactType.Email),
+        eq(sql`lower(${contactInfos.value})`, email.trim().toLowerCase()),
+      ),
+    )
+    .orderBy(contactInfos.createdAt)
+    .limit(1);
+  return match?.personId ?? null;
 }
 
 const IMPORT_CONTACTS_SDL = parse(`
@@ -59,8 +84,8 @@ export function applyImportContactsExtension(schema: GraphQLSchema): GraphQLSche
 
   /**
    * Resolves `Mutation.importGoogleContacts`. Adds every contact in a Google Contacts CSV export to the
-   * signed-in caller's contacts, creating the labels it names. A contact whose email a person already holds
-   * is merged into that person. A contact that fails is reported in `errors`, and the rest still go in.
+   * signed-in caller's contacts, creating the labels it names. A contact whose first email one of the
+   * caller's people already has is merged into that person. A contact that fails is reported in `errors`, and the rest still go in.
    *
    * @param _parent - Unused.
    * @param args.csv - The export file's text.
@@ -128,48 +153,28 @@ export function applyImportContactsExtension(schema: GraphQLSchema): GraphQLSche
       let personId: string;
 
       try {
-        const [inserted] = await db
-          .insert(dbSchema.persons)
-          .values({
-            firstName: contact.firstName,
-            lastName: contact.lastName || contact.firstName,
-            email: contact.email,
-          })
-          .returning({ id: dbSchema.persons.id });
+        const existingId = contact.email === null ? null : await findOwnPersonByEmail(db, userId, contact.email);
+        if (existingId === null) {
+          const [inserted] = await db
+            .insert(dbSchema.persons)
+            .values({ userId, firstName: contact.firstName, lastName: contact.lastName || contact.firstName })
+            .returning({ id: dbSchema.persons.id });
 
-        if (!inserted) {
-          errors.push(`Failed to insert ${contact.firstName} ${contact.lastName}: no row returned`);
-          continue;
+          if (!inserted) {
+            errors.push(`Failed to insert ${contact.firstName} ${contact.lastName}: no row returned`);
+            continue;
+          }
+
+          personId = inserted.id;
+          importedCount++;
+        } else {
+          personId = existingId;
+          mergedCount++;
         }
-
-        personId = inserted.id;
-        importedCount++;
       } catch (err: unknown) {
-        // A null email never trips the unique constraint, so a duplicate always has one.
-        const { email } = contact;
-        const isOtherFailure = violatedUniqueConstraint(err) === null || email === null;
-        if (isOtherFailure) {
-          reportFailure(errors, `Failed to import ${contact.firstName} ${contact.lastName}`, err);
-          continue;
-        }
-
-        // Duplicate email — fetch the existing person's ID and merge their data.
-        const [existing] = await db
-          .select({ id: dbSchema.persons.id })
-          .from(dbSchema.persons)
-          .where(eq(dbSchema.persons.email, email));
-
-        if (!existing) {
-          errors.push(`Could not find existing person for email ${contact.email}`);
-          continue;
-        }
-
-        personId = existing.id;
-        mergedCount++;
+        reportFailure(errors, `Failed to import ${contact.firstName} ${contact.lastName}`, err);
+        continue;
       }
-
-      // Ensure user_persons link exists (idempotent)
-      await db.insert(dbSchema.userPersons).values({ userId, personId }).onConflictDoNothing();
 
       // Step 4: Insert related data in parallel
       // Each helper is isolated with .catch() so a failure in one (e.g. a

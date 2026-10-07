@@ -24,7 +24,6 @@ export const GET_PERSON_DETAIL = graphql(`
       id
       firstName
       lastName
-      email
       avatarPath
       contactFrequency
       howWeMet
@@ -115,12 +114,17 @@ export const GET_ALL_PERSONS = graphql(`
       id
       firstName
       lastName
-      email
       avatarPath
       labels(limit: 20) {
         id
         label
         color
+      }
+      contactInfos(where: { type: { eq: email } }, limit: 5) {
+        id
+        type
+        value
+        isPrimary
       }
     }
   }
@@ -179,42 +183,26 @@ export const UPDATE_PERSON = graphql(`
     $id: UUID!
     $firstName: String!
     $lastName: String!
-    $email: String!
+    $contactFrequency: String
+    $howWeMet: String
+    $firstMetDate: String
   ) {
     updatePerson(
       set: {
         firstName: $firstName
         lastName: $lastName
-        email: $email
+        contactFrequency: $contactFrequency
+        howWeMet: $howWeMet
+        firstMetDate: $firstMetDate
       }
       where: { id: { eq: $id } }
     ) {
       id
       firstName
       lastName
-      email
-    }
-  }
-`);
-
-export const UPDATE_MY_PERSON_CONTEXT = graphql(`
-  mutation UpdateMyPersonContext(
-    $personId: UUID!
-    $contactFrequency: String
-    $howWeMet: String
-    $firstMetDate: String
-  ) {
-    updateMyPersonContext(
-      personId: $personId
-      contactFrequency: $contactFrequency
-      howWeMet: $howWeMet
-      firstMetDate: $firstMetDate
-    ) {
-      personId
       contactFrequency
       howWeMet
       firstMetDate
-      avatarPath
     }
   }
 `);

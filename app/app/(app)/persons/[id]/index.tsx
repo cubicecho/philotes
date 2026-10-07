@@ -2,7 +2,6 @@ import { type ApolloError, useMutation, useQuery } from '@apollo/client';
 import { Link, useLocalSearchParams, useRouter } from 'expo-router';
 import { useState } from 'react';
 import { View } from 'react-native';
-import { ContactTypeEnum } from '@/__generated__/graphql';
 import { Users } from '@/components/app-icons';
 import { ConfirmButton } from '@/components/confirm-button';
 import { PersonContactActions } from '@/components/domain/person/contact-actions';
@@ -29,10 +28,8 @@ import { useAvatarUpload } from '@/hooks/use-avatar-upload';
 import { PAGE_SIZE_DEFAULTS } from '@/lib/defaults';
 import { invalidateQueryFields } from '@/lib/invalidate';
 import { fullName } from '@/lib/person-name';
+import { primaryEmail, primaryPhone } from '@/lib/primary-contact';
 import { useAllRows } from '@/lib/use-all-rows';
-
-/** The contact types that can be called or texted. */
-const PHONE_TYPES: ReadonlySet<ContactTypeEnum> = new Set([ContactTypeEnum.Phone, ContactTypeEnum.Mobile]);
 
 const backLink = (
   <Link href="/persons" asChild>
@@ -119,7 +116,7 @@ export default function PersonDetailPage() {
     id: p.id,
     firstName: p.firstName,
     lastName: p.lastName,
-    email: p.email,
+    email: primaryEmail(p.contactInfos ?? []),
     avatarPath: p.avatarPath,
     labels: (p.labels ?? []).map((l) => ({
       id: l.id,
@@ -139,8 +136,8 @@ export default function PersonDetailPage() {
     router.push('/persons');
   };
 
-  const phones = (person.contactInfos ?? []).filter((ci) => PHONE_TYPES.has(ci.type));
-  const primaryPhone = (phones.find((p) => p.isPrimary) ?? phones[0])?.value ?? null;
+  const phone = primaryPhone(person.contactInfos ?? []);
+  const email = primaryEmail(person.contactInfos ?? []);
 
   return (
     <>
@@ -177,7 +174,7 @@ export default function PersonDetailPage() {
             <PersonProfileSummary
               firstName={person.firstName}
               lastName={person.lastName}
-              email={person.email}
+              email={email}
               avatarPath={person.avatarPath}
               contactFrequency={person.contactFrequency}
               avatarAccept={avatarUpload.accept}
@@ -195,11 +192,7 @@ export default function PersonDetailPage() {
             />
 
             {/* Communication actions — the reason you opened this page */}
-            <PersonContactActions
-              phone={primaryPhone}
-              email={person.email}
-              onLogInteraction={() => setInteractionDialogOpen(true)}
-            />
+            <PersonContactActions phone={phone} email={email} onLogInteraction={() => setInteractionDialogOpen(true)} />
 
             <View className="gap-6 lg:flex-row lg:items-start">
               <PersonContactColumn

@@ -4,7 +4,6 @@ import {
   DETACH_LABEL_FROM_PERSON,
   type DetailLabel,
   type PersonDetail,
-  UPDATE_MY_PERSON_CONTEXT,
   UPDATE_PERSON,
 } from '@/components/domain/person/detail-queries';
 import { PersonForm, type PersonFormValue } from '@/components/domain/person/form';
@@ -24,10 +23,9 @@ export interface EditPersonDialogProps {
   onSaved: () => void;
 }
 
-/** The dialog that edits a person: their shared details, the caller's own context for them, and their labels. */
+/** The dialog that edits a person: their name, how the caller knows them, and their labels. */
 export function EditPersonDialog({ person, allLabels, open, onOpenChange, onSaved }: EditPersonDialogProps) {
   const [updatePerson] = useMutation(UPDATE_PERSON);
-  const [updateMyPersonContext] = useMutation(UPDATE_MY_PERSON_CONTEXT);
   const [attachLabel] = useMutation(ATTACH_LABEL_TO_PERSON);
   const [detachLabel] = useMutation(DETACH_LABEL_FROM_PERSON);
   const id = person.id;
@@ -38,13 +36,6 @@ export function EditPersonDialog({ person, allLabels, open, onOpenChange, onSave
         id,
         firstName: fields.firstName,
         lastName: fields.lastName,
-        email: fields.email,
-      },
-    });
-
-    await updateMyPersonContext({
-      variables: {
-        personId: id,
         contactFrequency: fields.contactFrequency || null,
         howWeMet: fields.howWeMet || null,
         firstMetDate: fields.firstMetDate || null,
@@ -89,7 +80,6 @@ export function EditPersonDialog({ person, allLabels, open, onOpenChange, onSave
         initialValues={{
           firstName: person.firstName,
           lastName: person.lastName,
-          email: person.email,
           labelIds: person.labels.map((l) => l.id),
           contactFrequency: person.contactFrequency,
           howWeMet: person.howWeMet,

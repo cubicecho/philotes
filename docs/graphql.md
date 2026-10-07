@@ -40,16 +40,13 @@ for a caller:
 - `userId` does not appear in any create or update input. It is stamped from
   the request, so it cannot be set, and a create cannot be attributed to
   someone else.
-- `persons` rows are shared between users; a caller sees the ones in their own
-  contacts. `createPerson` and `createPersons` link an existing person on an
-  email collision rather than duplicating them, and `deletePerson` and
-  `deletePersons` unlink rather than deleting a row other users still have.
-  Both deletes take people by id only: `where: { id: { eq } }`, or
-  `{ id: { inArray } }` for the plural.
-- A person enters a caller's contacts only through `createPerson`,
-  `createPersons` or an import. No mutation links a person by id:
-  `user_persons` has no generated create, and an update cannot point a row at
-  a person outside the caller's contacts.
+- A person belongs to the user who added them. `createPerson` always makes a
+  new row, and `deletePerson` deletes it with what was recorded about them.
+  `updatePersons` and `deletePersons` need a `where` that names something, so
+  neither can be run over every person by leaving it out.
+- A person's email addresses are `contactInfos` of type `email`; there is no
+  `email` field on `Person`. `avatarPath` can be read but not written: a
+  picture is set by uploading it to `POST /avatars/<personId>`.
 - Referencing another user's row by id — tagging your note with their label —
   fails with `<Entity> not found`, never a leak of whether it exists.
 - `users` has no generated mutations; accounts come from `signUp`, `signIn`,
@@ -62,7 +59,7 @@ Every list, aggregate, update and delete takes a `where` of per-column filter
 objects:
 
 ```graphql
-persons(where: { email: { eq: "alice@example.com" } }) { id firstName }
+persons(where: { lastName: { eq: "Lovelace" } }) { id firstName }
 ```
 
 Operators depend on the column type: `eq`, `ne`, `gt`, `gte`, `lt`, `lte`,

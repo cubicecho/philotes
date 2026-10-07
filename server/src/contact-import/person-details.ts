@@ -82,9 +82,10 @@ export async function insertContactInfos(
     .select({ value: dbSchema.contactInfos.value })
     .from(dbSchema.contactInfos)
     .where(and(eq(dbSchema.contactInfos.personId, personId), eq(dbSchema.contactInfos.userId, userId)));
-  const existingValues = new Set(existingInfos.map((r) => r.value));
+  // Whatever the case: the import finds a person by an email in any case, so it must not add it again in another.
+  const existingValues = new Set(existingInfos.map((r) => r.value.trim().toLowerCase()));
 
-  const newRows = rows.filter((r) => existingValues.has(r.value) === false);
+  const newRows = rows.filter((r) => existingValues.has(r.value.trim().toLowerCase()) === false);
   if (newRows.length === 0) {
     return;
   }

@@ -4,19 +4,23 @@ import { beforeAll, describe, expect, it } from 'vitest';
 import { ErrorCode } from '../../core/errors.ts';
 import { createClient, createPerson, createTestDb, createUser, type TestDb } from '../helpers.ts';
 
-const UPDATE_CONTEXT =
-  'mutation ($personId: UUID!, $howWeMet: String) { updateMyPersonContext(personId: $personId, howWeMet: $howWeMet) { personId howWeMet } }';
+const UPDATE_HOW_WE_MET =
+  'mutation ($id: UUID!, $howWeMet: String) { updatePersons(set: { howWeMet: $howWeMet }, where: { id: { eq: $id } }) { id howWeMet } }';
 const UPDATE_FIRST_MET =
-  'mutation ($personId: UUID!, $firstMetDate: String) { updateMyPersonContext(personId: $personId, firstMetDate: $firstMetDate) { personId firstMetDate } }';
-const DELETE_MANY = 'mutation ($ids: [UUID!]) { deletePerson(where: { id: { inArray: $ids } }) { id } }';
-const DELETE_ONE = 'mutation ($id: UUID!) { deletePerson(where: { id: { eq: $id } }) { id } }';
+  'mutation ($id: UUID!, $firstMetDate: String) { updatePersons(set: { firstMetDate: $firstMetDate }, where: { id: { eq: $id } }) { id firstMetDate } }';
+const UPDATE_FREQUENCY =
+  'mutation ($id: UUID!, $contactFrequency: String) { updatePersons(set: { contactFrequency: $contactFrequency }, where: { id: { eq: $id } }) { id contactFrequency } }';
+const UPDATE_AVATAR =
+  'mutation ($id: UUID!, $avatarPath: String) { updatePersons(set: { avatarPath: $avatarPath }, where: { id: { eq: $id } }) { id } }';
+const RENAME =
+  'mutation ($id: UUID!, $firstName: String) { updatePersons(set: { firstName: $firstName }, where: { id: { eq: $id } }) { id firstName } }';
 const DELETE_SEVERAL = 'mutation ($ids: [UUID!]) { deletePersons(where: { id: { inArray: $ids } }) { id } }';
-const DELETE_BY_NAME = 'mutation ($name: String!) { deletePersons(where: { firstName: { eq: $name } }) { id } }';
 const DELETE_EVERYONE = 'mutation { deletePersons { id } }';
+const DELETE_WITH_EMPTY_FILTER = 'mutation { deletePersons(where: {}) { id } }';
 const CREATE_SEVERAL = 'mutation ($values: [CreatePersonInput!]!) { createPersons(values: $values) { id firstName } }';
-const LIST_PERSONS = '{ persons { id } }';
+const LIST_PERSONS = '{ persons { id firstName } }';
 
-describe('updateMyPersonContext', () => {
+describe('what a user keeps about a person', () => {
   let db: TestDb;
   let userId: string;
 
@@ -25,73 +29,42 @@ describe('updateMyPersonContext', () => {
     userId = await createUser(db, 'owner@example.com');
   });
 
-  it('returns the row unchanged when no field is named', async () => {
-    const personId = await createPerson(db, userId, 'Ada');
-    const client = createClient(db, userId);
-    await client.run(UPDATE_CONTEXT, { personId, howWeMet: 'At the library' });
+  it('saves how the caller met the person', async () => {
+    const id = await createPerson(db, userId, 'Ada');
 
-    const result = await client.run(UPDATE_CONTEXT, { personId });
+    const data = await createClient(db, userId).expectOk(UPDATE_HOW_WE_MET, { id, howWeMet: 'At the library' });
 
-    expect(result.errors).toBeUndefined();
-    expect(result.data).toEqual({ updateMyPersonContext: { personId, howWeMet: 'At the library' } });
+    expect(data).toEqual({ updatePersons: [{ id, howWeMet: 'At the library' }] });
   });
 
   it('saves the day the caller first met the person', async () => {
-    const personId = await createPerson(db, userId, 'Grace');
+    const id = await createPerson(db, userId, 'Grace');
 
-    const data = await createClient(db, userId).expectOk(UPDATE_FIRST_MET, { personId, firstMetDate: '2019-04-02' });
+    const data = await createClient(db, userId).expectOk(UPDATE_FIRST_MET, { id, firstMetDate: '2019-04-02' });
 
-    expect(data).toEqual({ updateMyPersonContext: { personId, firstMetDate: '2019-04-02' } });
+    expect(data).toEqual({ updatePersons: [{ id, firstMetDate: '2019-04-02' }] });
   });
 
-  it('refuses a first-met date that is not a calendar day', async () => {
-    const personId = await createPerson(db, userId, 'Linus');
+  it('refuses a contact frequency outside the vocabulary', async () => {
+    const id = await createPerson(db, userId, 'Linus');
 
-    await createClient(db, userId).expectError(ErrorCode.BadUserInput, UPDATE_FIRST_MET, {
-      personId,
-      firstMetDate: 'last spring',
+    await createClient(db, userId).expectError(ErrorCode.BadUserInput, UPDATE_FREQUENCY, {
+      id,
+      contactFrequency: 'fortnightly',
+    });
+  });
+
+  it('refuses an avatar path, which only an upload sets', async () => {
+    const id = await createPerson(db, userId, 'Margaret');
+
+    await createClient(db, userId).expectError(ErrorCode.BadUserInput, UPDATE_AVATAR, {
+      id,
+      avatarPath: '/avatars/someone-elses.png',
     });
   });
 });
 
-describe('deletePerson', () => {
-  let db: TestDb;
-  let userId: string;
-
-  beforeAll(async () => {
-    db = await createTestDb();
-    userId = await createUser(db, 'owner@example.com');
-  });
-
-  it('refuses a filter that names no single id', async () => {
-    const personId = await createPerson(db, userId, 'Ada');
-
-    const result = await createClient(db, userId).run(DELETE_MANY, { ids: [personId] });
-
-    expect(result.errors?.[0].extensions.code).toBe(ErrorCode.BadUserInput);
-  });
-
-  it('removes the person named by id', async () => {
-    const personId = await createPerson(db, userId, 'Grace');
-
-    const result = await createClient(db, userId).run(DELETE_ONE, { id: personId });
-
-    expect(result.errors).toBeUndefined();
-    expect(result.data).toEqual({ deletePerson: { id: personId } });
-  });
-
-  it("answers null for a person who is not in the caller's contacts", async () => {
-    const strangerId = await createUser(db, 'stranger@example.com');
-    const personId = await createPerson(db, strangerId, 'Linus');
-
-    const result = await createClient(db, userId).run(DELETE_ONE, { id: personId });
-
-    expect(result.errors).toBeUndefined();
-    expect(result.data).toEqual({ deletePerson: null });
-  });
-});
-
-describe('deletePersons', () => {
+describe('a person belongs to one user', () => {
   let db: TestDb;
   let userId: string;
   let otherUserId: string;
@@ -102,51 +75,7 @@ describe('deletePersons', () => {
     otherUserId = await createUser(db, 'other@example.com');
   });
 
-  it('only unlinks a person another user also has', async () => {
-    const personId = await createPerson(db, userId, 'Ada');
-    await db.insert(dbSchema.userPersons).values({ userId: otherUserId, personId });
-
-    const result = await createClient(db, userId).run(DELETE_SEVERAL, { ids: [personId] });
-
-    expect(result.errors).toBeUndefined();
-    expect(result.data).toEqual({ deletePersons: [{ id: personId }] });
-    const remaining = await db
-      .select({ userId: dbSchema.userPersons.userId })
-      .from(dbSchema.userPersons)
-      .where(eq(dbSchema.userPersons.personId, personId));
-    expect(remaining).toEqual([{ userId: otherUserId }]);
-    const persons = await db.select().from(dbSchema.persons).where(eq(dbSchema.persons.id, personId));
-    expect(persons).toHaveLength(1);
-  });
-
-  it("leaves out a person who is not in the caller's contacts", async () => {
-    const mineId = await createPerson(db, userId, 'Grace');
-    const theirsId = await createPerson(db, otherUserId, 'Linus');
-
-    const result = await createClient(db, userId).run(DELETE_SEVERAL, { ids: [mineId, theirsId] });
-
-    expect(result.errors).toBeUndefined();
-    expect(result.data).toEqual({ deletePersons: [{ id: mineId }] });
-    const theirs = await createClient(db, otherUserId).expectOk<{ persons: Array<{ id: string }> }>(LIST_PERSONS);
-    expect(theirs.persons.map((person) => person.id)).toContain(theirsId);
-  });
-
-  it('refuses a filter that names no ids', async () => {
-    await createPerson(db, userId, 'Margaret');
-    const client = createClient(db, userId);
-
-    const byName = await client.run(DELETE_BY_NAME, { name: 'Margaret' });
-    const everyone = await client.run(DELETE_EVERYONE);
-
-    expect(byName.errors?.[0].extensions.code).toBe(ErrorCode.BadUserInput);
-    expect(everyone.errors?.[0].extensions.code).toBe(ErrorCode.BadUserInput);
-  });
-});
-
-describe('createPersons', () => {
-  it("adds each person to the caller's contacts", async () => {
-    const db = await createTestDb();
-    const userId = await createUser(db, 'owner@example.com');
+  it("adds each created person to the caller's people only", async () => {
     const client = createClient(db, userId);
 
     const created = await client.expectOk<{ createPersons: Array<{ id: string }> }>(CREATE_SEVERAL, {
@@ -156,66 +85,76 @@ describe('createPersons', () => {
       ],
     });
 
-    const listed = await client.expectOk<{ persons: Array<{ id: string }> }>(LIST_PERSONS);
-    expect(listed.persons.map((person) => person.id).sort()).toEqual(
+    const mine = await client.expectOk<{ persons: Array<{ id: string }> }>(LIST_PERSONS);
+    const theirs = await createClient(db, otherUserId).expectOk<{ persons: Array<{ id: string }> }>(LIST_PERSONS);
+    expect(mine.persons.map((person) => person.id).sort()).toEqual(
       created.createPersons.map((person) => person.id).sort(),
     );
-  });
-});
-
-describe("taking a person who is not in the caller's contacts", () => {
-  let db: TestDb;
-  let client: ReturnType<typeof createClient>;
-  let personId: string;
-  let ownPersonId: string;
-
-  beforeAll(async () => {
-    db = await createTestDb();
-    const userId = await createUser(db, 'owner@example.com');
-    const strangerId = await createUser(db, 'stranger@example.com');
-    personId = await createPerson(db, strangerId, 'Linus');
-    ownPersonId = await createPerson(db, userId, 'Ada');
-    client = createClient(db, userId);
+    expect(theirs.persons).toEqual([]);
   });
 
-  /** Asserts the stranger's person is still not among the caller's people. */
-  async function expectNotTaken(): Promise<void> {
-    const listed = await client.expectOk<{ persons: Array<{ id: string }> }>(LIST_PERSONS);
-    expect(listed.persons).toEqual([{ id: ownPersonId }]);
-  }
+  it('lets two users keep the same email address for their own people', async () => {
+    const mineId = await createPerson(db, userId, 'Ada');
+    const theirsId = await createPerson(db, otherUserId, 'Ada');
+    const email = { type: dbSchema.ContactType.Email, value: 'ada@example.com' };
 
-  it('has no addPersonToMyContacts mutation', async () => {
-    const result = await client.run(
-      'mutation ($personId: UUID!) { addPersonToMyContacts(personId: $personId) { personId } }',
-      { personId },
-    );
+    await db.insert(dbSchema.contactInfos).values([
+      { ...email, userId, personId: mineId },
+      { ...email, userId: otherUserId, personId: theirsId },
+    ]);
 
-    expect(result.errors).toBeDefined();
-    await expectNotTaken();
+    const rows = await db.select().from(dbSchema.contactInfos).where(eq(dbSchema.contactInfos.value, email.value));
+    expect(rows).toHaveLength(2);
   });
 
-  it('has no generated create for the link either', async () => {
-    const one = await client.run(
-      'mutation ($personId: UUID!) { createUserPerson(values: { personId: $personId }) { personId } }',
-      { personId },
-    );
-    const several = await client.run(
-      'mutation ($personId: UUID!) { createUserPersons(values: [{ personId: $personId }]) { personId } }',
-      { personId },
-    );
+  it("does not rename another user's person", async () => {
+    const theirsId = await createPerson(db, otherUserId, 'Linus');
 
-    expect(one.errors).toBeDefined();
-    expect(several.errors).toBeDefined();
-    await expectNotTaken();
+    const data = await createClient(db, userId).expectOk(RENAME, { id: theirsId, firstName: 'Renamed' });
+
+    expect(data).toEqual({ updatePersons: [] });
+    const [theirs] = await db.select().from(dbSchema.persons).where(eq(dbSchema.persons.id, theirsId));
+    expect(theirs.firstName).toBe('Linus');
   });
 
-  it('refuses to point an existing link at the person', async () => {
-    const result = await client.run(
-      'mutation ($from: UUID!, $to: UUID!) { updateUserPersons(set: { personId: $to }, where: { personId: { eq: $from } }) { personId } }',
-      { from: ownPersonId, to: personId },
-    );
+  it("deletes the caller's person with what was recorded about them, and nobody else's", async () => {
+    const mineId = await createPerson(db, userId, 'Margaret');
+    const theirsId = await createPerson(db, otherUserId, 'Margaret');
+    await db.insert(dbSchema.notes).values([
+      { userId, personId: mineId, body: 'Mine' },
+      { userId: otherUserId, personId: theirsId, body: 'Theirs' },
+    ]);
+    await db
+      .insert(dbSchema.contactInfos)
+      .values({ userId, personId: mineId, type: dbSchema.ContactType.Phone, value: '555-0100' });
 
-    expect(result.errors?.[0].extensions.code).toBe(ErrorCode.NotFound);
-    await expectNotTaken();
+    const data = await createClient(db, userId).expectOk(DELETE_SEVERAL, { ids: [mineId, theirsId] });
+
+    expect(data).toEqual({ deletePersons: [{ id: mineId }] });
+    const people = await db.select({ id: dbSchema.persons.id }).from(dbSchema.persons);
+    expect(people.map((person: { id: string }) => person.id)).toContain(theirsId);
+    const details = await db.select().from(dbSchema.contactInfos).where(eq(dbSchema.contactInfos.personId, mineId));
+    expect(details).toEqual([]);
+    const notes: Array<{ body: string; personId: string | null }> = await db
+      .select({ body: dbSchema.notes.body, personId: dbSchema.notes.personId })
+      .from(dbSchema.notes)
+      .orderBy(dbSchema.notes.body);
+    expect(notes).toEqual([
+      { body: 'Mine', personId: null },
+      { body: 'Theirs', personId: theirsId },
+    ]);
+  });
+
+  it('refuses a delete that names nobody', async () => {
+    await createPerson(db, userId, 'Katherine');
+    const client = createClient(db, userId);
+
+    const everyone = await client.run(DELETE_EVERYONE);
+    const emptyFilter = await client.run(DELETE_WITH_EMPTY_FILTER);
+
+    expect(everyone.errors).toBeDefined();
+    expect(emptyFilter.errors).toBeDefined();
+    const listed = await client.expectOk<{ persons: Array<{ firstName: string }> }>(LIST_PERSONS);
+    expect(listed.persons.map((person) => person.firstName)).toContain('Katherine');
   });
 });

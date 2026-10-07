@@ -118,19 +118,18 @@ export async function createUser(db: TestDb, email: string): Promise<string> {
 }
 
 /**
- * Inserts a person and links it to a user.
+ * Inserts a person.
  *
  * @param db - The test database.
- * @param userId - The user who gets the person in their list.
+ * @param userId - The user the person belongs to.
  * @param firstName - The person's first name. The last name is always "Test".
  * @returns The new person's id.
  */
 export async function createPerson(db: TestDb, userId: string, firstName: string): Promise<string> {
   const [person] = await db
     .insert(dbSchema.persons)
-    .values({ firstName, lastName: 'Test' })
+    .values({ userId, firstName, lastName: 'Test' })
     .returning({ id: dbSchema.persons.id });
-  await db.insert(dbSchema.userPersons).values({ userId, personId: person.id });
   return person.id;
 }
 

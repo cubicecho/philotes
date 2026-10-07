@@ -44,7 +44,6 @@ export interface ExportPerson {
   id: string;
   firstName: string;
   lastName?: string | null;
-  email?: string | null;
   contactInfos: ExportContactInfo[];
   addresses: ExportAddress[];
   importantDates: ExportImportantDate[];
@@ -101,21 +100,13 @@ function contactInfoLabel(entry: ExportContactInfo, defaultLabel: string): strin
 }
 
 /**
- * Lists a person's e-mail addresses for the CSV: the address on the person itself first, unless one of
- * their contact details already holds it, then the contact details.
+ * Lists a person's e-mail addresses for the CSV.
  *
  * @param person - The person.
  * @returns The addresses in column order.
  */
 function personEmails(person: ExportPerson): ExportContactInfo[] {
-  const fromContactInfos = person.contactInfos.filter((c) => c.type === ContactTypeEnum.Email);
-  const own = person.email?.trim();
-  const isAlreadyListed = fromContactInfos.some((c) => c.value.toLowerCase() === own?.toLowerCase());
-  const isOwnMissing = !own || isAlreadyListed;
-  if (isOwnMissing) {
-    return fromContactInfos;
-  }
-  return [{ type: ContactTypeEnum.Email, label: null, value: own, isPrimary: false }, ...fromContactInfos];
+  return person.contactInfos.filter((c) => c.type === ContactTypeEnum.Email);
 }
 
 /**

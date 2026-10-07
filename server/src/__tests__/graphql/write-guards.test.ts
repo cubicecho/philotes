@@ -11,8 +11,6 @@ const CREATE_TASK = 'mutation ($values: CreateTaskInput!) { createTask(values: $
 const CREATE_INTERACTION = 'mutation ($values: CreateInteractionInput!) { createInteraction(values: $values) { id } }';
 const CREATE_NOTE_TAG = 'mutation ($values: CreateNoteTagInput!) { createNoteTag(values: $values) { noteId } }';
 const CREATE_PERSON = 'mutation ($values: CreatePersonInput!) { createPerson(values: $values) { id firstName } }';
-const UPDATE_PERSON =
-  'mutation ($id: UUID!, $set: UpdatePersonInput!) { updatePerson(where: { id: { eq: $id } }, set: $set) { id } }';
 
 describe('generated writes', () => {
   let db: TestDb;
@@ -77,9 +75,16 @@ describe('generated writes', () => {
   });
 
   it('refuses a repeated unique value as bad input, not an internal error', async () => {
-    const taken = 'taken@example.com';
-    await db.insert(dbSchema.persons).values({ firstName: 'Else', lastName: 'Where', email: taken });
-    await owner.expectError(ErrorCode.BadUserInput, UPDATE_PERSON, { id: ownPersonId, set: { email: taken } });
+    const [label] = await db
+      .insert(dbSchema.labels)
+      .values({ label: 'mine', color: '#6b7280', userId: ownerId })
+      .returning({ id: dbSchema.labels.id });
+    const { createNote } = await owner.expectOk<{ createNote: { id: string } }>(CREATE_NOTE, {
+      values: { body: 'tag me twice' },
+    });
+    const values = { noteId: createNote.id, labelId: label.id };
+    await owner.expectOk(CREATE_NOTE_TAG, { values });
+    await owner.expectError(ErrorCode.BadUserInput, CREATE_NOTE_TAG, { values });
   });
 });
 
@@ -99,17 +104,14 @@ describe('createPerson', () => {
     expect(data.createPerson.firstName).toBe('Ada');
   });
 
-  it('refuses an empty name and a malformed email', async () => {
+  it('refuses an empty name', async () => {
     await owner.expectError(ErrorCode.BadUserInput, CREATE_PERSON, { values: { firstName: ' ', lastName: 'L' } });
-    await owner.expectError(ErrorCode.BadUserInput, CREATE_PERSON, {
-      values: { firstName: 'A', lastName: 'L', email: 'not-an-email' },
-    });
   });
 
-  it('links the existing person when the email is already known', async () => {
-    const values = { firstName: 'Grace', lastName: 'Hopper', email: 'grace@example.com' };
+  it('makes a new person each time, whatever another one holds', async () => {
+    const values = { firstName: 'Grace', lastName: 'Hopper' };
     const first = await owner.expectOk<{ createPerson: { id: string } }>(CREATE_PERSON, { values });
     const second = await owner.expectOk<{ createPerson: { id: string } }>(CREATE_PERSON, { values });
-    expect(second.createPerson.id).toBe(first.createPerson.id);
+    expect(second.createPerson.id).not.toBe(first.createPerson.id);
   });
 });

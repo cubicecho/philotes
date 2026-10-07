@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Text, View } from 'react-native';
 import { LabelChip } from '@/components/domain/label/label-chip';
 import { Button } from '@/components/ui/button';
+import { primaryEmail } from '@/lib/primary-contact';
 import { drawGraph } from './graph-drawing';
 import { buildGraphData, GRAPH, type SimLink, type SimNode, type TooltipState } from './graph-model';
 import type { NetworkGraphProps } from './types';
@@ -19,6 +20,7 @@ export function NetworkGraph({ persons, onOpenPerson }: NetworkGraphProps) {
   const simulationRef = useRef<d3.Simulation<SimNode, SimLink> | null>(null);
   const [tooltip, setTooltip] = useState<TooltipState>(null);
   const [size, setSize] = useState({ width: 0, height: 0 });
+  const tooltipEmail = tooltip ? primaryEmail(tooltip.person.contactInfos ?? []) : null;
 
   // Read through a ref so a new callback identity does not rebuild the simulation.
   const onOpenPersonRef = useRef(onOpenPerson);
@@ -111,9 +113,7 @@ export function NetworkGraph({ persons, onOpenPerson }: NetworkGraphProps) {
           <Text className="font-semibold text-foreground text-sm">
             {tooltip.person.firstName} {tooltip.person.lastName}
           </Text>
-          {tooltip.person.email ? (
-            <Text className="mt-0.5 text-foreground/60 text-xs">{tooltip.person.email}</Text>
-          ) : null}
+          {tooltipEmail ? <Text className="mt-0.5 text-foreground/60 text-xs">{tooltipEmail}</Text> : null}
           {tooltip.person.labels.length > 0 && (
             <View className="mt-1.5 flex-row flex-wrap gap-1">
               {tooltip.person.labels.map((lbl) => (

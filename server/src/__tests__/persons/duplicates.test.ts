@@ -1,6 +1,6 @@
 import * as dbSchema from '@cubicecho/philotes-db/schema';
 import { ContactType } from '@cubicecho/philotes-db/schema';
-import { and, eq, getTableName, is } from 'drizzle-orm';
+import { eq, getTableName, is } from 'drizzle-orm';
 import { getTableConfig, PgTable } from 'drizzle-orm/pg-core';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { ErrorCode } from '../../core/errors.ts';
@@ -76,15 +76,6 @@ describe('duplicate people', () => {
     ]);
   });
 
-  it('counts a person’s own email as an email detail', async () => {
-    await db.update(dbSchema.persons).set({ email: 'ada@example.com' }).where(eq(dbSchema.persons.id, keepId));
-    await addDetail(mergeId, 'ada@example.com');
-
-    const data = await owner.expectOk<DuplicatesData>(DUPLICATES);
-
-    expect(data.potentialDuplicates.map((group) => group.personIds)).toEqual([[keepId, mergeId].sort()]);
-  });
-
   it('does not match across users', async () => {
     const theirs = await createPerson(db, strangerId, 'Grace');
     await addDetail(keepId, 'shared@example.com');
@@ -100,21 +91,19 @@ describe('duplicate people', () => {
   it('moves what was recorded about the merged person to the kept one', async () => {
     await db.insert(dbSchema.notes).values({ userId, personId: mergeId, body: 'Met at the fair' });
     await db.insert(dbSchema.gratitudes).values({ userId, personId: mergeId, body: 'Patient' });
-    await db
-      .update(dbSchema.userPersons)
-      .set({ howWeMet: 'At the fair' })
-      .where(and(eq(dbSchema.userPersons.userId, userId), eq(dbSchema.userPersons.personId, mergeId)));
+    await db.update(dbSchema.persons).set({ howWeMet: 'At the fair' }).where(eq(dbSchema.persons.id, mergeId));
 
     await owner.expectOk(MERGE, { keepId, mergeId });
 
     const notes = await db.select({ personId: dbSchema.notes.personId }).from(dbSchema.notes);
     const gratitudes = await db.select({ personId: dbSchema.gratitudes.personId }).from(dbSchema.gratitudes);
-    const links = await db.select().from(dbSchema.userPersons).where(eq(dbSchema.userPersons.userId, userId));
+    const people = await db
+      .select({ id: dbSchema.persons.id, howWeMet: dbSchema.persons.howWeMet })
+      .from(dbSchema.persons)
+      .where(eq(dbSchema.persons.userId, userId));
     expect(notes).toEqual([{ personId: keepId }]);
     expect(gratitudes).toEqual([{ personId: keepId }]);
-    expect(links.map((link: { personId: string; howWeMet: string | null }) => [link.personId, link.howWeMet])).toEqual([
-      [keepId, 'At the fair'],
-    ]);
+    expect(people).toEqual([{ id: keepId, howWeMet: 'At the fair' }]);
   });
 
   it('keeps one of a contact detail both people had, and the kept person’s primary', async () => {
@@ -176,13 +165,18 @@ describe('duplicate people', () => {
     expect(await db.select().from(dbSchema.importantDatePersons)).toEqual([]);
   });
 
-  it('leaves the shared person row for another user who has it', async () => {
-    await db.insert(dbSchema.userPersons).values({ userId: strangerId, personId: mergeId });
+  it('leaves another user’s person with the same email alone', async () => {
+    const theirs = await createPerson(db, strangerId, 'Ada');
+    await db
+      .insert(dbSchema.contactInfos)
+      .values({ userId: strangerId, personId: theirs, type: ContactType.Email, value: 'ada@example.com' });
+    await addDetail(keepId, 'ada@example.com');
+    await addDetail(mergeId, 'ada@example.com');
 
     await owner.expectOk(MERGE, { keepId, mergeId });
 
-    const links = await db.select().from(dbSchema.userPersons).where(eq(dbSchema.userPersons.personId, mergeId));
-    expect(links.map((link: { userId: string }) => link.userId)).toEqual([strangerId]);
+    const remaining = await db.select({ id: dbSchema.persons.id }).from(dbSchema.persons);
+    expect(remaining.map((person: { id: string }) => person.id).sort()).toEqual([keepId, theirs].sort());
   });
 
   it('answers "not found" for a person outside the caller’s contacts, and writes nothing', async () => {
@@ -191,8 +185,8 @@ describe('duplicate people', () => {
     await owner.expectError(ErrorCode.NotFound, MERGE, { keepId, mergeId: theirs });
     await owner.expectError(ErrorCode.NotFound, MERGE, { keepId: theirs, mergeId });
 
-    const links = await db.select().from(dbSchema.userPersons).where(eq(dbSchema.userPersons.userId, userId));
-    expect(links).toHaveLength(2);
+    const people = await db.select().from(dbSchema.persons).where(eq(dbSchema.persons.userId, userId));
+    expect(people).toHaveLength(2);
   });
 
   it('refuses to merge a person into themselves', async () => {

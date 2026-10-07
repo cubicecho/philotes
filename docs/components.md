@@ -81,15 +81,16 @@ interface PersonFormProps {
 }
 
 interface PersonFormValue {
-  person: PersonFormPerson;   // firstName, lastName, email, contactFrequency, howWeMet, firstMetDate
+  person: PersonFormPerson;   // firstName, lastName, contactFrequency, howWeMet, firstMetDate
+  email: string | null;       // a new person's address, saved as a contact info; null on an edit
   labelIds: string[];
 }
 ```
 
 Passing `initialValues` turns it into an edit form; the same component serves
-both. The last three person fields are per-user context stored on
-`user_persons`, not columns of the shared `persons` row — see
-[`graphql.md`](./graphql.md).
+both. The email field is only drawn when adding: a stored person's addresses
+are contact infos, edited on their page. `primaryEmail` and `primaryPhone` in
+`lib/primary-contact.ts` pick the one a row or a button uses.
 
 ### `PersonList` + `PersonRow` (`domain/person/list.tsx`)
 

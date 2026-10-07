@@ -1,5 +1,5 @@
 import type { DB } from '@cubicecho/philotes-db';
-import * as dbSchema from '@cubicecho/philotes-db/schema';
+import type * as dbSchema from '@cubicecho/philotes-db/schema';
 import type { WriteHookPayload, WriteHookPositions, WriteOperation } from '@vantreeseba/drizzle-graphql';
 import { and, eq, inArray } from 'drizzle-orm';
 import type { z } from 'zod';
@@ -13,12 +13,11 @@ export type Row = Record<string, unknown>;
 export type Transaction = Parameters<Parameters<DB['transaction']>[0]>[0];
 /** A user-owned table that other tables point at. */
 type OwnedParent =
+  | typeof dbSchema.persons
   | typeof dbSchema.notes
   | typeof dbSchema.labels
   | typeof dbSchema.interactions
   | typeof dbSchema.importantDates;
-/** `persons` is shared between users. A person is the caller's when a `user_persons` row links the two. */
-type SharedParent = typeof dbSchema.persons;
 
 /** A column that references a parent the caller must own. */
 export interface ForeignKey {
@@ -26,7 +25,7 @@ export interface ForeignKey {
   key: string;
   /** What the parent is called in error messages. */
   entity: string;
-  parent: OwnedParent | SharedParent;
+  parent: OwnedParent;
 }
 
 /** Writes that supply no rows, so there is nothing to check before them. */
@@ -62,23 +61,13 @@ export function writtenRows(args: WriteArgs): Row[] {
 }
 
 /**
- * Tells the shared `persons` table from the tables a user owns outright.
- *
- * @param parent - The table a foreign key points at.
- * @returns Whether it is `persons`.
- */
-function isSharedParent(parent: ForeignKey['parent']): parent is SharedParent {
-  return parent === dbSchema.persons;
-}
-
-/**
  * Finds which of the referenced parents belong to the caller.
  *
  * @param tx - Mutation transaction.
  * @param userId - Caller.
  * @param parent - The table the ids point at.
  * @param ids - Referenced ids.
- * @returns The ids the caller owns, or for `persons`, has in their contacts.
+ * @returns The ids the caller owns.
  */
 async function ownedIds(
   tx: Transaction,
@@ -86,12 +75,6 @@ async function ownedIds(
   parent: ForeignKey['parent'],
   ids: string[],
 ): Promise<Set<string>> {
-  if (isSharedParent(parent)) {
-    const { userPersons } = dbSchema;
-    const isLinkedToCaller = and(inArray(userPersons.personId, ids), eq(userPersons.userId, userId));
-    const linked = await tx.select({ id: userPersons.personId }).from(userPersons).where(isLinkedToCaller);
-    return new Set(linked.map((row) => row.id));
-  }
   const isOwnedByCaller = and(inArray(parent.id, ids), eq(parent.userId, userId));
   const owned = await tx.select({ id: parent.id }).from(parent).where(isOwnedByCaller);
   return new Set(owned.map((row) => row.id));
@@ -136,7 +119,8 @@ export interface WriteGuard {
 }
 
 /**
- * Builds a table's `before` hook: every written row is validated, then every parent it names must be the caller's.
+ * Builds a table's `before` hook: every written row is validated and takes the parsed form of what the
+ * schema names (a trimmed name, for one), then every parent it names must be the caller's.
  *
  * @param guard - The table's input schema and foreign keys.
  * @returns The hook positions for `onWrite`.
@@ -144,7 +128,7 @@ export interface WriteGuard {
 export function guardWrites({ input, foreignKeys = [] }: WriteGuard): WriteHookPositions {
   return {
     /**
-     * Validates input and parent ownership.
+     * Validates and normalises input, then checks parent ownership.
      *
      * @param payload - The write about to run.
      */
@@ -152,7 +136,8 @@ export function guardWrites({ input, foreignKeys = [] }: WriteGuard): WriteHookP
       const rows = writtenRows(args);
       if (input !== undefined) {
         for (const row of rows) {
-          parseOrThrow(input, row);
+          // In place: the write that follows reads these same rows.
+          Object.assign(row, parseOrThrow(input, row));
         }
       }
       await assertForeignKeysOwned(tx, requireAuth(context), rows, foreignKeys);
@@ -160,11 +145,8 @@ export function guardWrites({ input, foreignKeys = [] }: WriteGuard): WriteHookP
   };
 }
 
-/** What a caller is told when a write repeats a value that must be unique, by constraint name. */
-const UNIQUE_VIOLATION_MESSAGES: Record<string, string> = {
-  uq_persons_email: 'Another contact already uses that email.',
-};
-const UNIQUE_VIOLATION_FALLBACK = 'That already exists.';
+/** What a caller is told when a write repeats a value that must be unique. */
+const UNIQUE_VIOLATION_MESSAGE = 'That already exists.';
 
 /**
  * Turns a unique violation from a generated write into BAD_USER_INPUT. Passed to drizzle-graphql as `onError`.
@@ -177,5 +159,5 @@ export function mapWriteError(error: unknown): unknown {
   if (constraint === null) {
     return undefined;
   }
-  return badInput(UNIQUE_VIOLATION_MESSAGES[constraint] ?? UNIQUE_VIOLATION_FALLBACK);
+  return badInput(UNIQUE_VIOLATION_MESSAGE);
 }

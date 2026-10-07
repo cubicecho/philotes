@@ -13,6 +13,5 @@ export * from './persons.ts';
 export * from './relationship-types.ts';
 export * from './sessions.ts';
 export * from './tasks.ts';
-export * from './user-persons.ts';
 export * from './users.ts';
 export * from './verifications.ts';

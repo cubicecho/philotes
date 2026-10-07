@@ -52,10 +52,9 @@ describe('scope', () => {
     }
   });
 
-  it('scopes persons through the caller’s user_persons rows', () => {
-    expect(scope.persons?.(asContext('user-1'), dbSchema.persons)).toEqual({
-      userPersons: { some: { userId: { eq: 'user-1' } } },
-    });
+  it('scopes persons by their own userId, like any other owned table', () => {
+    expect(USER_OWNED_TABLES).toContain('persons');
+    expect(scope.persons).toBe(scope.notes);
   });
 
   it('refuses to produce a scope for an unauthenticated request', () => {

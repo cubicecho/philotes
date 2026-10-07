@@ -11,7 +11,6 @@ import {
   personLabels,
   personRelationships,
   persons,
-  userPersons,
   users,
 } from '../schema.ts';
 import { chance, pickRandom, pickRandomSubset, randomCount, randomId } from './random.ts';
@@ -21,7 +20,7 @@ import { chance, pickRandom, pickRandomSubset, randomCount, randomId } from './r
 
 const RELATIONSHIP_TYPES = ['friend', 'colleague', 'mentor', 'mentee', 'acquaintance', 'family', 'partner'];
 
-/** Emails are left out: a seeded person's email is on the person row. */
+/** Emails are left out: `seedPersons` gives each person their one email. */
 const SEEDED_CONTACT_TYPES = Object.values(ContactType).filter((type) => type !== ContactType.Email);
 
 /**
@@ -88,45 +87,32 @@ export async function seedLabels(userId: string) {
 }
 
 /**
- * Inserts fifty made-up persons, each with an email no other has, and puts them in the user's contacts.
+ * Inserts fifty made-up persons in the user's contacts, each with one email as their primary contact detail.
  *
  * @param userId - The seed user.
  * @returns The persons inserted.
  */
 export async function seedPersons(userId: string) {
-  const usedEmails = new Set<string>();
-
-  const personData = Array.from({ length: 50 }, () => {
-    const firstName = faker.person.firstName();
-    const lastName = faker.person.lastName();
-
-    let email: string;
-    let attempt = 0;
-    do {
-      const isRetry = attempt > 0;
-      const suffix = isRetry ? attempt.toString() : '';
-      email = `${firstName.toLowerCase()}.${lastName.toLowerCase()}${suffix}@${faker.internet.domainName()}`.replace(
-        /\s+/g,
-        '',
-      );
-      attempt++;
-    } while (usedEmails.has(email));
-
-    usedEmails.add(email);
-
-    return {
-      id: randomId(),
-      firstName,
-      lastName,
-      email,
-    };
-  });
+  const personData = Array.from({ length: 50 }, () => ({
+    id: randomId(),
+    userId,
+    firstName: faker.person.firstName(),
+    lastName: faker.person.lastName(),
+  }));
 
   await db.insert(persons).values(personData);
   console.log(`Inserted ${personData.length} persons`);
 
-  await db.insert(userPersons).values(personData.map((p) => ({ userId, personId: p.id })));
-  console.log(`Linked ${personData.length} persons to seed user`);
+  const emailData: NewContactInfo[] = personData.map((person) => ({
+    id: randomId(),
+    userId,
+    personId: person.id,
+    type: ContactType.Email,
+    value: faker.internet.email({ firstName: person.firstName, lastName: person.lastName }).toLowerCase(),
+    isPrimary: true,
+  }));
+  await db.insert(contactInfos).values(emailData);
+  console.log(`Inserted ${emailData.length} emails`);
 
   return personData;
 }
@@ -199,7 +185,7 @@ export async function seedPersonRelationships(personData: { id: string }[], user
 }
 
 /**
- * Gives each person contact details of every type but email. A person's first one is the primary.
+ * Gives each person contact details of every type but email. Their email stays the primary one.
  *
  * @param personData - The seeded persons.
  * @param userId - The seed user.
@@ -222,7 +208,7 @@ export async function seedContactInfos(personData: { id: string }[], userId: str
         type,
         value,
         label: chance(SEED.contactInfoLabelChance) ? faker.lorem.word() : null,
-        isPrimary: i === 0,
+        isPrimary: false,
       });
     }
   }
