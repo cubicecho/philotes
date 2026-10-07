@@ -1,3 +1,10 @@
+# [3.2.0](https://github.com/cubicecho/philotes/compare/v3.1.5...v3.2.0) (2026-10-07)
+
+
+### Features
+
+* **avatars:** keep avatar images in an S3-compatible store such as MinIO ([c4fff20](https://github.com/cubicecho/philotes/commit/c4fff201efc9797a718640f4220966fac5f8eb14))
+
 ## [3.1.5](https://github.com/cubicecho/philotes/compare/v3.1.4...v3.1.5) (2026-10-07)
 
 
