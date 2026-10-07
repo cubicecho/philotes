@@ -122,6 +122,38 @@ Filtering, sorting and pagination are the API's, not the client's: pass `where`
 and `orderBy` through to the query rather than filtering an array in the
 component. See [`graphql.md`](./graphql.md#filtering).
 
+Every list is paged: the server returns 50 rows when a query passes no `limit`
+and refuses an operation that costs too much (see
+[`server.md`](./server.md#operation-limits)). A screen that needs every row —
+the dashboard, the network graph, an export — declares `$limit` and `$offset`
+on its document and reads it with `useAllRows` (`src/lib/use-all-rows.ts`),
+which fetches page after page and joins them under the list field:
+
+```ts
+const { data, loading, error, refetch } = useAllRows(GET_DASHBOARD, { field: 'persons' });
+```
+
+Pass `pageSize` from `PAGE_SIZE_DEFAULTS` when a row is costly. A nested list
+takes a literal `limit` in the document, and that limit is a hard cap.
+
+## Defaults and vocabularies
+
+No number or closed-set string is written where it is used.
+
+- **`src/lib/defaults.ts`** holds every tunable as grouped, frozen data
+  (`DASHBOARD_DEFAULTS`, `PAGE_SIZE_DEFAULTS`, `NETWORK_GRAPH_DEFAULTS`, …). It
+  imports nothing and computes nothing. Read the member, or destructure it once
+  below the imports.
+- **`src/lib/time.ts`** holds unit conversions (`MS_PER_DAY`, `DAYS_PER_WEEK`).
+- **Vocabularies.** GraphQL enums come generated, as `as const` objects:
+  `ContactTypeEnum`, `AddressTypeEnum` and `ImportantDatesMilestoneTypeEnum`
+  from `@/__generated__/graphql`. Recurrence, interaction channel, sentiment and
+  check-in frequency cross the API as plain strings, so `src/lib/vocabulary.ts`
+  mirrors the db package's objects, and `src/__tests__/vocabulary.test.ts`
+  fails when the two drift. Compare against a member
+  (`recurrence === Recurrence.Yearly`), and key a label or icon table by the
+  members rather than writing a `switch`.
+
 ## Fragments
 
 Fragment masking is **off** (`fragmentMasking: false` in `app/codegen.ts`, and

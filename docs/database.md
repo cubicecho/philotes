@@ -192,6 +192,24 @@ export type NewThing = typeof things.$inferInsert;
 - **Index** every foreign key, as `idx_<table>_<column>`. A composite primary key
   covers its first column only.
 
+## Vocabularies
+
+A column that holds one of a closed set of values has a named vocabulary in its
+model file, an `as const` object with a type of the same name:
+
+```ts
+export const Recurrence = { Yearly: 'yearly', Monthly: 'monthly', Weekly: 'weekly' } as const;
+export type Recurrence = (typeof Recurrence)[keyof typeof Recurrence];
+```
+
+`ContactType` and `AddressType` back Postgres enums (`pgEnum('contact_type',
+ContactType)`). `MilestoneType` is a `text` column with an `enum` list, which is
+what makes it an enum in GraphQL. `Recurrence`, `InteractionChannel`,
+`InteractionSentiment` and `ContactFrequency` are plain `text` columns: the
+server's input schemas check a write against the vocabulary, and a row written
+before that check may hold another value. Code compares against a member
+(`Recurrence.Yearly`), never the bare string.
+
 ## Type Exports
 
 Export inferred types for every table directly below its definition:
