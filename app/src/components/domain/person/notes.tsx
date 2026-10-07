@@ -9,6 +9,7 @@ import { ConfirmButton } from '@/components/confirm-button';
 import { MentionTextareaField } from '@/components/domain/person/note-mentions';
 import { ATTACH_NOTE_TAG, DETACH_NOTE_TAG } from '@/components/domain/person/tag-mutations';
 import { RowTags, type TagOption, TagsField } from '@/components/domain/person/tag-picker';
+import { EmptyState } from '@/components/page';
 import { Button } from '@/components/ui/button';
 import { Form } from '@/components/ui/form';
 import { FormDialog, FormDialogFooter } from '@/components/ui/form-dialog';
@@ -294,7 +295,7 @@ export function PersonNotes({
 
   return (
     <View className="gap-2">
-      {notes.length === 0 && <Text className="text-sm text-foreground/60">No notes yet.</Text>}
+      {notes.length === 0 && <EmptyState compact title="No notes yet." />}
 
       {notes.map((note) => (
         <NoteRow key={note.id} note={note} allTags={allTags} allPersons={allPersons} onChanged={onChanged} />

@@ -29,8 +29,8 @@ export function OpenTasks({ tasks }: { tasks: OpenTask[] }) {
     <Widget
       iconSlot={<SquareCheck />}
       title="Open Tasks"
-      subtitle="due this week or overdue"
-      emptyMessage="No tasks due"
+      description="due this week or overdue"
+      emptyTitle="No tasks due"
       contentSlot={tasks.map((t) => (
         <ListItem
           key={t.id}

@@ -1,7 +1,7 @@
 import { useMutation, useQuery } from '@apollo/client';
 import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Text, View } from 'react-native';
+import { View } from 'react-native';
 import { graphql } from '@/__generated__/gql';
 import type { Person_RelationshipsFragment, PersonRelationshipEntry } from '@/__generated__/graphql';
 import { ActionButton } from '@/components/action-button';
@@ -9,6 +9,7 @@ import { useAppForm } from '@/components/app-form';
 import { ConfirmButton } from '@/components/confirm-button';
 import { ListItem } from '@/components/list-item';
 import { OptionSelect } from '@/components/option-select';
+import { EmptyState } from '@/components/page';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
@@ -243,7 +244,7 @@ function RelationshipFormDialog({
   return (
     <FormDialog open={open} onOpenChange={onOpenChange} title={isEditing ? 'Edit Relationship' : 'Add Relationship'}>
       {hasNobodyToLink ? (
-        <Text className="text-foreground/60 text-sm">No other persons available to link.</Text>
+        <EmptyState compact title="No other persons available to link." />
       ) : (
         <form.AppForm>
           <Form className="gap-4">
@@ -443,9 +444,7 @@ export function PersonRelationships({
             }}
           />
         ))}
-        {relationships.length === 0 && !showAdd ? (
-          <Text className="text-foreground/60 text-sm">No relationships yet.</Text>
-        ) : null}
+        {relationships.length === 0 && !showAdd ? <EmptyState compact title="No relationships yet." /> : null}
       </View>
 
       <RelationshipFormDialog

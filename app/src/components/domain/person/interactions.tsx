@@ -15,6 +15,7 @@ import {
 } from '@/components/domain/person/interaction-form';
 import { ATTACH_INTERACTION_TAG, DETACH_INTERACTION_TAG } from '@/components/domain/person/tag-mutations';
 import { RowTags, type TagOption } from '@/components/domain/person/tag-picker';
+import { EmptyState } from '@/components/page';
 import { Button } from '@/components/ui/button';
 import { FormDialog } from '@/components/ui/form-dialog';
 import { Pencil, Trash2 } from '@/components/ui/icons';
@@ -270,7 +271,7 @@ export function PersonInteractions({
 
   return (
     <View className="gap-2">
-      {sorted.length === 0 && <Text className="text-sm text-foreground/60">No interactions yet.</Text>}
+      {sorted.length === 0 && <EmptyState compact title="No interactions yet." />}
 
       {sorted.map((interaction) => (
         <InteractionRow key={interaction.id} interaction={interaction} allTags={allTags} onChanged={onChanged} />

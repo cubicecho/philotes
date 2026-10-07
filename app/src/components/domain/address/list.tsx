@@ -8,6 +8,7 @@ import { useAppForm } from '@/components/app-form';
 import { MapPin } from '@/components/app-icons';
 import { ConfirmButton } from '@/components/confirm-button';
 import { ListItem } from '@/components/list-item';
+import { EmptyState } from '@/components/page';
 import { Badge } from '@/components/ui/badge';
 import { CopyButton } from '@/components/ui/copy-button';
 import { FieldRow, Form } from '@/components/ui/form';
@@ -297,7 +298,7 @@ export function AddressList({ fragmentRef, onAdd, onDelete, createOpen, onCreate
   return (
     <>
       <View className="gap-2">
-        {addresses.length === 0 ? <Text className="text-foreground/60 text-sm">No addresses yet.</Text> : null}
+        {addresses.length === 0 ? <EmptyState compact title="No addresses yet." /> : null}
 
         {addresses.map((address) => (
           <AddressRow key={address.id} address={address} onDelete={onDelete} />

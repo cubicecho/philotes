@@ -21,8 +21,8 @@ export function RecentlyAdded({ persons }: { persons: RecentPerson[] }) {
     <Widget
       iconSlot={<UserPlus />}
       title="Recently Added"
-      viewAllHref="/persons"
-      emptyMessage="No one new yet"
+      actionHref="/persons"
+      emptyTitle="No one new yet"
       contentSlot={persons.map((p) => (
         <ListItem
           key={p.id}

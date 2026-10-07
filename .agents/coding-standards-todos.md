@@ -45,8 +45,8 @@ confirmed in code. Nothing here is implemented until approved.
 | R9 | Refactor [reuse] | One home each for the duplicated date, relative-time, name-colour, truncation and full-name helpers, and for `ChannelIcon` | One copy to fix | B10 | done |
 | B10 | Bug | The two `ChannelIcon` copies differ (one lacks "video"), and the two `nameToColor` copies give different colours for the same name | Same person, same colour | — | done |
 | B12 | Bug | Makes the CSV and calendar exports read the `Date` objects the Apollo cache hands them: the CSV export threw for anyone with a birthday, and the calendar export wrote important dates a day early east of Greenwich. Found when R12 typed the queries | Exports work | — | done |
-| R10 | Refactor [consistency] | Renames off-vocabulary props (`onClickAdd`, `active`, `subtitle`, `emptyMessage`, `viewAllHref`) to the cubeui vocabulary | One prop vocabulary | — | approved |
-| R11 | Refactor [reuse] | Uses `ListItem`, `ToggleChip`, `Empty` and `text-info` where rows, chips, empties and links are hand-rolled, and `as="nav"` on the sidebar | cubeui primitives instead of copies | — | approved |
+| R10 | Refactor [consistency] | Renames off-vocabulary props (`onClickAdd`, `active`, `subtitle`, `emptyMessage`, `viewAllHref`) to the cubeui vocabulary | One prop vocabulary | — | done |
+| R11 | Refactor [reuse] | Uses `ListItem`, `EmptyState compact` and `text-info` where rows, empties and links are hand-rolled, and `as="nav"` on the sidebar. `LabelChip` stays: `ToggleChip` is not vendored here and a label's colour is the user's | cubeui primitives instead of copies | — | done |
 | R12 | Refactor [consistency] | Moves the five settings files from raw `gql` and hand-written types to the generated `graphql()` documents | Typed operations | — | done |
 | R13 | Refactor [reuse] | Merges the three near-identical tag components into one | One component | — | done |
 | R14 | Refactor [sweep] | Replaces the 82 shadcn alias classes with cubeui tokens, and updates the docs that allow the aliases | Token colours only | — | done |

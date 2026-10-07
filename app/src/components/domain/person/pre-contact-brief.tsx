@@ -1,6 +1,7 @@
 import { Text, View } from 'react-native';
 import { CardLayout } from '@/components/card-layout';
 import { ChannelIcon } from '@/components/domain/person/channel-icon';
+import { EmptyState } from '@/components/page';
 import { SectionHeading } from '@/components/section-heading';
 import { Separator } from '@/components/ui/separator';
 import { relativeTime } from '@/lib/relative-time';
@@ -152,7 +153,7 @@ export function PreContactBrief({ person }: PreContactBriefProps) {
                 ) : null}
               </View>
             ) : (
-              <Text className="text-foreground/60 text-sm">No interactions logged yet</Text>
+              <EmptyState compact title="No interactions logged yet." />
             )}
           </View>
 

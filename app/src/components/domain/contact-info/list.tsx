@@ -1,6 +1,6 @@
 import { useMutation } from '@apollo/client';
 import { useEffect, useState } from 'react';
-import { Linking, Text, View } from 'react-native';
+import { Linking, View } from 'react-native';
 import { graphql } from '@/__generated__/gql';
 import type { ContactInfo_ListFragment } from '@/__generated__/graphql';
 import { ContactTypeEnum } from '@/__generated__/graphql';
@@ -8,6 +8,7 @@ import { useAppForm } from '@/components/app-form';
 import { Globe, Mail, Phone, Share2, Smartphone } from '@/components/app-icons';
 import { ConfirmButton } from '@/components/confirm-button';
 import { ListItem } from '@/components/list-item';
+import { EmptyState } from '@/components/page';
 import { Badge } from '@/components/ui/badge';
 import { Form } from '@/components/ui/form';
 import { FormDialog, FormDialogFooter } from '@/components/ui/form-dialog';
@@ -307,7 +308,7 @@ export function ContactInfoList({ person, onAdd, onDelete, createOpen, onCreateO
   return (
     <>
       <View className="gap-2">
-        {contactInfos.length === 0 ? <Text className="text-foreground/60 text-sm">No contact info yet.</Text> : null}
+        {contactInfos.length === 0 ? <EmptyState compact title="No contact info yet." /> : null}
 
         {contactInfos.map((info) => (
           <ContactInfoRow

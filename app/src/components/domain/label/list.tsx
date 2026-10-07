@@ -24,12 +24,12 @@ const LABEL_LIST = graphql(`
 interface LabelRowProps {
   label: Label_ListFragment;
   divided: boolean;
-  onClickDelete: (id: string) => void;
-  onClickEdit?: (label: Label_ListFragment) => void;
-  onClickMerge?: (label: Label_ListFragment) => void;
+  onDeletePress: (id: string) => void;
+  onEditPress?: (label: Label_ListFragment) => void;
+  onMergePress?: (label: Label_ListFragment) => void;
 }
 
-function LabelRow({ label: from, divided, onClickDelete, onClickEdit, onClickMerge }: LabelRowProps) {
+function LabelRow({ label: from, divided, onDeletePress, onEditPress, onMergePress }: LabelRowProps) {
   const { data: label, complete } = useFragment({
     fragment: LABEL_LIST,
     from,
@@ -47,22 +47,22 @@ function LabelRow({ label: from, divided, onClickDelete, onClickEdit, onClickMer
       titleClassName="font-mono font-normal text-foreground/60 text-xs"
       actionSlot={
         <>
-          {onClickEdit && (
+          {onEditPress && (
             <ActionButton
               variant="ghost"
               size="icon-sm"
               label={`Edit ${label.label}`}
               iconSlot={<Pencil />}
-              onPress={() => onClickEdit(label)}
+              onPress={() => onEditPress(label)}
             />
           )}
-          {onClickMerge && (
+          {onMergePress && (
             <ActionButton
               variant="ghost"
               size="icon-sm"
               label={`Merge ${label.label}`}
               iconSlot={<GitMerge />}
-              onPress={() => onClickMerge(label)}
+              onPress={() => onMergePress(label)}
             />
           )}
           <ConfirmButton
@@ -72,7 +72,7 @@ function LabelRow({ label: from, divided, onClickDelete, onClickEdit, onClickMer
             iconSlot={<Trash2 />}
             title={`Delete ${label.label}?`}
             description="The label comes off every person, note, interaction and date that carries it. To keep those, merge it into another label instead."
-            onConfirm={() => onClickDelete(label.id)}
+            onConfirm={() => onDeletePress(label.id)}
           />
         </>
       }
@@ -82,18 +82,18 @@ function LabelRow({ label: from, divided, onClickDelete, onClickEdit, onClickMer
 
 interface LabelListProps {
   labels: Array<Label_ListFragment>;
-  onClickAdd: () => void;
-  onClickDelete: (id: string) => void;
-  onClickEdit?: (label: Label_ListFragment) => void;
-  onClickMerge?: (label: Label_ListFragment) => void;
+  onAddPress: () => void;
+  onDeletePress: (id: string) => void;
+  onEditPress?: (label: Label_ListFragment) => void;
+  onMergePress?: (label: Label_ListFragment) => void;
 }
 
 /** The labels screen: it is its own `PageLayout`, so a route renders it as the whole page. */
-export function LabelList({ labels, onClickAdd, onClickDelete, onClickEdit, onClickMerge }: LabelListProps) {
+export function LabelList({ labels, onAddPress, onDeletePress, onEditPress, onMergePress }: LabelListProps) {
   return (
     <PageLayout
       title="Labels"
-      actionSlot={<Button content="Add Label" iconSlot={<Tag />} onPress={onClickAdd} />}
+      actionSlot={<Button content="Add Label" iconSlot={<Tag />} onPress={onAddPress} />}
       contentSlot={
         labels.length === 0 ? (
           <EmptyState
@@ -108,9 +108,9 @@ export function LabelList({ labels, onClickAdd, onClickDelete, onClickEdit, onCl
                 <LabelRow
                   label={label}
                   divided={index > 0}
-                  onClickDelete={onClickDelete}
-                  onClickEdit={onClickEdit}
-                  onClickMerge={onClickMerge}
+                  onDeletePress={onDeletePress}
+                  onEditPress={onEditPress}
+                  onMergePress={onMergePress}
                 />
               </View>
             ))}

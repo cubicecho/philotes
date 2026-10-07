@@ -30,8 +30,8 @@ export function ComingUp({ dates, windowDays }: { dates: UpcomingDate[]; windowD
     <Widget
       iconSlot={<CalendarDays />}
       title="Coming Up"
-      subtitle={`next ${windowDays} days`}
-      emptyMessage="Nothing on the calendar"
+      description={`next ${windowDays} days`}
+      emptyTitle="Nothing on the calendar"
       contentSlot={dates.map((d) => (
         <ListItem
           key={d.id}

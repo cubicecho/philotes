@@ -173,10 +173,10 @@ export default function LabelsPage() {
 
       <LabelList
         labels={data?.labels ?? []}
-        onClickAdd={() => setCreateDialogOpen(true)}
-        onClickDelete={handleDelete}
-        onClickEdit={setEditingLabel}
-        onClickMerge={setMergingLabel}
+        onAddPress={() => setCreateDialogOpen(true)}
+        onDeletePress={handleDelete}
+        onEditPress={setEditingLabel}
+        onMergePress={setMergingLabel}
       />
     </>
   );

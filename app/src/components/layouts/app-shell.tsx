@@ -58,17 +58,17 @@ export function AppShell({ contentSlot }: { contentSlot: SlotNode }) {
             </>
           }
           contentSlot={
-            <View role="navigation" aria-label="Main">
-              <SidebarSection
-                contentSlot={PLACES.filter((place) => place.href !== '/settings').map(
-                  ({ href, label, Icon, isActive }) => (
-                    <Link key={href} href={href} asChild>
-                      <SidebarNavItem href={href} label={label} iconSlot={<Icon />} active={isActive(pathname)} />
-                    </Link>
-                  ),
-                )}
-              />
-            </View>
+            <SidebarSection
+              as="nav"
+              label="Main"
+              contentSlot={PLACES.filter((place) => place.href !== '/settings').map(
+                ({ href, label, Icon, isActive }) => (
+                  <Link key={href} href={href} asChild>
+                    <SidebarNavItem href={href} label={label} iconSlot={<Icon />} active={isActive(pathname)} />
+                  </Link>
+                ),
+              )}
+            />
           }
           footerSlot={
             <>

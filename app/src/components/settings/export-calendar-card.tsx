@@ -1,6 +1,7 @@
 import { useQuery } from '@apollo/client';
 import { Text, View } from 'react-native';
 import { graphql } from '@/__generated__/gql';
+import { EmptyState } from '@/components/page';
 import { QueryError } from '@/components/query-state';
 import { Section } from '@/components/section';
 import { Button } from '@/components/ui/button';
@@ -68,9 +69,7 @@ export function ExportCalendarCard() {
               {`${data?.interactions?.length ?? 0} interactions · ${data?.importantDates?.length ?? 0} important dates`}
             </Text>
           ) : null}
-          {!loading && !error && totalCount === 0 ? (
-            <Text className="text-foreground/60 text-sm">No events to export yet.</Text>
-          ) : null}
+          {!loading && !error && totalCount === 0 ? <EmptyState compact title="No events to export yet." /> : null}
         </View>
       }
     />

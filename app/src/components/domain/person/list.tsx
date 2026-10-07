@@ -77,11 +77,11 @@ const LETTER_HEADER = Platform.select({ web: 'sticky top-0 z-10', default: '' })
 interface PersonRowProps {
   person: PersonRowData;
   divided: boolean;
-  onClickDelete?: (id: string) => void;
+  onDeletePress?: (id: string) => void;
   activeLabelIds: Set<string>;
 }
 
-function PersonRow({ person, divided, onClickDelete, activeLabelIds }: PersonRowProps) {
+function PersonRow({ person, divided, onDeletePress, activeLabelIds }: PersonRowProps) {
   const router = useRouter();
   const phone = primaryPhone(person.contactInfos);
   const { email } = person;
@@ -101,7 +101,7 @@ function PersonRow({ person, divided, onClickDelete, activeLabelIds }: PersonRow
         person.labels.length > 0 ? (
           <View className="hidden max-w-64 flex-row flex-wrap justify-end gap-1 sm:flex">
             {person.labels.map((l) => (
-              <LabelChip key={l.id} label={l.label} color={l.color} active={activeLabelIds.has(l.id)} />
+              <LabelChip key={l.id} label={l.label} color={l.color} selected={activeLabelIds.has(l.id)} />
             ))}
           </View>
         ) : undefined
@@ -126,7 +126,7 @@ function PersonRow({ person, divided, onClickDelete, activeLabelIds }: PersonRow
               onPress={() => Linking.openURL(`mailto:${email}`)}
             />
           )}
-          {onClickDelete && (
+          {onDeletePress && (
             <ConfirmButton
               variant="ghost"
               size="icon-sm"
@@ -134,7 +134,7 @@ function PersonRow({ person, divided, onClickDelete, activeLabelIds }: PersonRow
               iconSlot={<Trash2 />}
               title={`Delete ${fullName(person)}?`}
               description={`This will permanently delete ${person.firstName} and all their associated data. This cannot be undone.`}
-              onConfirm={() => onClickDelete(person.id)}
+              onConfirm={() => onDeletePress(person.id)}
             />
           )}
         </>
@@ -160,8 +160,8 @@ export interface PersonListProps {
   onSortChange: (value: string) => void;
   /** Group rows under sticky letter headers (name sort only). */
   grouped: boolean;
-  onClickAdd?: () => void;
-  onClickDelete?: (id: string) => void;
+  onAddPress?: () => void;
+  onDeletePress?: (id: string) => void;
 }
 
 /** The people screen: it is its own `PageLayout`, so a route renders it as the whole page. */
@@ -176,8 +176,8 @@ export function PersonList({
   sortValue,
   onSortChange,
   grouped,
-  onClickAdd,
-  onClickDelete,
+  onAddPress,
+  onDeletePress,
 }: PersonListProps) {
   const activeLabelSet = new Set(activeLabelIds);
   const hasFilters = q.trim().length > 0 || activeLabelIds.length > 0;
@@ -216,7 +216,7 @@ export function PersonList({
       description="Add someone, or import your existing contacts."
       actionSlot={
         <View className="flex-row flex-wrap justify-center gap-2">
-          {onClickAdd && <Button content="Add Person" iconSlot={<UserPlus />} onPress={onClickAdd} />}
+          {onAddPress && <Button content="Add Person" iconSlot={<UserPlus />} onPress={onAddPress} />}
           <Link href="/settings" asChild>
             <Button variant="outline" content="Import contacts" />
           </Link>
@@ -229,7 +229,7 @@ export function PersonList({
     <View role="list">
       {list.map((p, index) => (
         <View key={p.id} role="listitem">
-          <PersonRow person={p} divided={index > 0} onClickDelete={onClickDelete} activeLabelIds={activeLabelSet} />
+          <PersonRow person={p} divided={index > 0} onDeletePress={onDeletePress} activeLabelIds={activeLabelSet} />
         </View>
       ))}
     </View>
@@ -240,8 +240,8 @@ export function PersonList({
       title="People"
       actionSlot={
         // Below `md` the app shell's own bar carries the add button.
-        onClickAdd ? (
-          <Button className="hidden md:flex" content="Add Person" iconSlot={<UserPlus />} onPress={onClickAdd} />
+        onAddPress ? (
+          <Button className="hidden md:flex" content="Add Person" iconSlot={<UserPlus />} onPress={onAddPress} />
         ) : undefined
       }
       headerContentSlot={
@@ -271,7 +271,7 @@ export function PersonList({
                   key={l.id}
                   label={l.label}
                   color={l.color}
-                  active={activeLabelSet.has(l.id)}
+                  selected={activeLabelSet.has(l.id)}
                   onPress={() => onToggleLabel(l.id)}
                   onRemove={activeLabelSet.has(l.id) ? () => onToggleLabel(l.id) : undefined}
                 />

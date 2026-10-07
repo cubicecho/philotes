@@ -97,9 +97,9 @@ export function ReachOut({ persons, onLogged }: ReachOutProps) {
     <Widget
       iconSlot={<Users />}
       title="Reach Out"
-      subtitle="people waiting to hear from you"
-      viewAllHref="/persons?sortField=lastContacted&sortDir=asc"
-      emptyMessage="You're all caught up here"
+      description="people waiting to hear from you"
+      actionHref="/persons?sortField=lastContacted&sortDir=asc"
+      emptyTitle="You're all caught up here"
       contentSlot={persons.map((p) => (
         <ListItem
           key={p.id}

@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react';
-import { Pressable, Text, View } from 'react-native';
+import { View } from 'react-native';
+import { ListItem } from '@/components/list-item';
 import { type FieldProps, FieldWrapper, splitProps, useFieldContext } from '@/components/ui/form';
 import { Textarea, type TextareaHandle } from '@/components/ui/textarea';
 import type { MentionablePerson } from '@/lib/mentions';
@@ -30,16 +31,7 @@ export function MentionDropdown({ query, allPersons, onSelect }: MentionDropdown
   return (
     <View role="list" className="max-h-48 overflow-hidden rounded-md border border-foreground/10 bg-secondary py-1">
       {filtered.map((p) => (
-        <Pressable
-          key={p.id}
-          role="button"
-          onPress={() => onSelect(p)}
-          className="px-3 py-1.5 hover:bg-hover active:bg-hover"
-        >
-          <Text className="text-sm text-foreground">
-            {p.firstName} {p.lastName}
-          </Text>
-        </Pressable>
+        <ListItem key={p.id} title={fullName(p)} onPress={() => onSelect(p)} />
       ))}
     </View>
   );

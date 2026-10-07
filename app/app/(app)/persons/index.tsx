@@ -289,8 +289,8 @@ export default function PersonsPage() {
           sortValue={`${sortField}-${sortDir}`}
           onSortChange={handleSortChange}
           grouped={isNameSort}
-          onClickAdd={() => setDialogOpen(true)}
-          onClickDelete={handleDelete}
+          onAddPress={() => setDialogOpen(true)}
+          onDeletePress={handleDelete}
         />
       )}
     </>

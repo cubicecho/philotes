@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { Text, View } from 'react-native';
+import { View } from 'react-native';
 import { LabelChip } from '@/components/domain/label/label-chip';
 import { MultiSelect } from '@/components/multi-select';
+import { EmptyState } from '@/components/page';
 import { Button } from '@/components/ui/button';
 import { type FieldProps, FieldWrapper, useFieldContext } from '@/components/ui/form';
 import { Tag } from '@/components/ui/icons';
@@ -33,7 +34,7 @@ function TagPickerPanel({ allTags, attachedTagIds, onSelect, onClose }: TagPicke
   return (
     <View className="flex-row flex-wrap items-center gap-1.5 rounded-md border border-foreground/10 p-2">
       {available.length === 0 ? (
-        <Text className="text-xs text-foreground/60">All tags attached.</Text>
+        <EmptyState compact title="All tags attached." />
       ) : (
         available.map((t) => <LabelChip key={t.id} label={t.label} color={t.color} onPress={() => onSelect(t.id)} />)
       )}
