@@ -23,9 +23,10 @@ subject needs, under the same file names everywhere:
 | `<domain>/hooks.ts` | `onWrite` hooks: validation and foreign-key ownership for generated writes |
 | `<domain>/resolvers.ts` | An `apply<Name>Extension(schema)` for queries and mutations that are not plain CRUD |
 
-The folders are `persons`, `notes`, `interactions`, `tasks`,
+The folders are `persons`, `notes`, `gratitudes`, `interactions`, `tasks`,
 `important-dates`, `labels`, `relationships`, `contact-import`, `api-keys` and
-`auth`. Three more hold what no domain owns:
+`auth`. `persons` has a second extension file, `duplicates.ts`, for
+`potentialDuplicates` and `mergePersons`. Three more hold what no domain owns:
 
 | Folder | Holds |
 | --- | --- |
@@ -161,6 +162,13 @@ A resolver that is not plain CRUD goes in its domain's `resolvers.ts`, as one
 Prefer configuration over an override: a resolver written by hand does not get
 the scope, filter compilation or batching the generated one has. See
 `persons/resolvers.ts` for the two cases that genuinely need it.
+
+A mutation that touches several tables runs in one `db.transaction` and checks
+ownership itself before it writes. `mergePersons` in `persons/duplicates.ts`
+is the fullest example: it moves every row a user recorded about one person to
+another. **A new table with a person column has to be added to
+`PERSON_OWNED_TABLES` or `PERSON_JUNCTIONS` there**, or a merge leaves its rows
+on the person who was merged away.
 
 ## Error Handling
 

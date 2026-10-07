@@ -303,6 +303,8 @@ export default function PersonsPage() {
           grouped={isNameSort}
           onAddPress={() => setDialogOpen(true)}
           onDeletePress={handleDelete}
+          // The row's last-contact line reads the newest interaction.
+          onLogged={() => refetch()}
         />
       )}
     </>

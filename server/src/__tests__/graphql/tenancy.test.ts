@@ -40,7 +40,13 @@ describe('scope', () => {
   });
 
   it('scopes a junction table by its own userId, like any other owned table', () => {
-    for (const name of ['noteTags', 'noteMentions', 'interactionTags', 'importantDateTags'] as const) {
+    for (const name of [
+      'noteTags',
+      'noteMentions',
+      'interactionTags',
+      'importantDateTags',
+      'importantDatePersons',
+    ] as const) {
       expect(USER_OWNED_TABLES).toContain(name);
       expect(scope[name]).toBe(scope.notes);
     }

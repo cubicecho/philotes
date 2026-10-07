@@ -128,6 +128,17 @@ export const PERSON_DEFAULTS: Readonly<PersonSettings> = Object.freeze({
   maxAvatarPathLength: 500,
 });
 
+/** Limits on the search for duplicate people. */
+export interface DuplicateSettings {
+  /** Most groups of duplicates one search returns. */
+  maxGroups: number;
+}
+
+/** The duplicate search limits as shipped. */
+export const DUPLICATE_DEFAULTS: Readonly<DuplicateSettings> = Object.freeze({
+  maxGroups: 100,
+});
+
 /** Limits on what an address may hold. */
 export interface AddressSettings {
   /** Longest label, city, state or country, in characters. */
@@ -168,6 +179,17 @@ export interface NoteSettings {
 /** The note limits as shipped. */
 export const NOTE_DEFAULTS: Readonly<NoteSettings> = Object.freeze({
   maxBodyLength: 20_000,
+});
+
+/** Limits on what a gratitude may hold. */
+export interface GratitudeSettings {
+  /** Longest body, in characters. */
+  maxBodyLength: number;
+}
+
+/** The gratitude limits as shipped. */
+export const GRATITUDE_DEFAULTS: Readonly<GratitudeSettings> = Object.freeze({
+  maxBodyLength: 2_000,
 });
 
 /** Limits on what an interaction may hold. */

@@ -1,11 +1,13 @@
 import { Link, useRouter } from 'expo-router';
+import { useState } from 'react';
 import { Linking, Platform, Text, View } from 'react-native';
 import { ContactTypeEnum } from '@/__generated__/graphql';
 import { ActionButton } from '@/components/action-button';
-import { Mail, Phone, UserPlus, Users } from '@/components/app-icons';
+import { GitMerge, Mail, MessageSquarePlus, Phone, UserPlus, Users } from '@/components/app-icons';
 import { ConfirmButton } from '@/components/confirm-button';
 import { LabelChip } from '@/components/domain/label/label-chip';
 import { Avatar } from '@/components/domain/person/avatar';
+import { QuickLogDialog } from '@/components/domain/person/quick-log';
 import { ListItem } from '@/components/list-item';
 import { OptionSelect } from '@/components/option-select';
 import { EmptyState } from '@/components/page';
@@ -94,14 +96,17 @@ interface PersonRowProps {
   divided: boolean;
   /** Called with the person's id once the delete is confirmed; no delete button is drawn without it. */
   onDeletePress?: (id: string) => void;
+  /** Called when the row's log button is pressed; the button is not drawn without it. */
+  onLogPress?: (person: PersonRowData) => void;
   /** The labels being filtered by; the row's matching chips are drawn selected. */
   activeLabelIds: Set<string>;
 }
 
 /**
- * One person: avatar, name, last contact (or email when never contacted), labels, and call, email and delete buttons.
+ * One person: avatar, name, last contact (or email when never contacted), labels, and log, call, email and delete
+ * buttons.
  */
-function PersonRow({ person, divided, onDeletePress, activeLabelIds }: PersonRowProps) {
+function PersonRow({ person, divided, onDeletePress, onLogPress, activeLabelIds }: PersonRowProps) {
   const router = useRouter();
   const phone = primaryPhone(person.contactInfos);
   const { email } = person;
@@ -128,6 +133,15 @@ function PersonRow({ person, divided, onDeletePress, activeLabelIds }: PersonRow
       }
       actionSlot={
         <>
+          {onLogPress && (
+            <ActionButton
+              variant="ghost"
+              size="icon-sm"
+              label={`Log interaction with ${person.firstName}`}
+              iconSlot={<MessageSquarePlus />}
+              onPress={() => onLogPress(person)}
+            />
+          )}
           {phone && (
             <ActionButton
               variant="ghost"
@@ -185,6 +199,8 @@ export interface PersonListProps {
   onAddPress?: () => void;
   /** Called with a person's id once their delete is confirmed; no delete buttons are drawn without it. */
   onDeletePress?: (id: string) => void;
+  /** Called after an interaction is logged from a row; no log buttons are drawn without it. */
+  onLogged?: () => void;
 }
 
 /** The people screen: it is its own `PageLayout`, so a route renders it as the whole page. */
@@ -201,7 +217,9 @@ export function PersonList({
   grouped,
   onAddPress,
   onDeletePress,
+  onLogged,
 }: PersonListProps) {
+  const [loggingPerson, setLoggingPerson] = useState<PersonRowData | null>(null);
   const activeLabelSet = new Set(activeLabelIds);
   const hasFilters = q.trim().length > 0 || activeLabelIds.length > 0;
 
@@ -253,7 +271,13 @@ export function PersonList({
     <View role="list">
       {list.map((p, index) => (
         <View key={p.id} role="listitem">
-          <PersonRow person={p} divided={index > 0} onDeletePress={onDeletePress} activeLabelIds={activeLabelSet} />
+          <PersonRow
+            person={p}
+            divided={index > 0}
+            onDeletePress={onDeletePress}
+            onLogPress={onLogged ? setLoggingPerson : undefined}
+            activeLabelIds={activeLabelSet}
+          />
         </View>
       ))}
     </View>
@@ -271,61 +295,71 @@ export function PersonList({
     : rows(persons);
 
   return (
-    <PageLayout
-      title="People"
-      actionSlot={
-        // Below `md` the app shell's own bar carries the add button.
-        onAddPress ? (
-          <Button className="hidden md:flex" content="Add Person" iconSlot={<UserPlus />} onPress={onAddPress} />
-        ) : undefined
-      }
-      headerContentSlot={
-        <View className="gap-3">
+    <>
+      {onLogged && <QuickLogDialog person={loggingPerson} onClose={() => setLoggingPerson(null)} onLogged={onLogged} />}
+      <PageLayout
+        title="People"
+        actionSlot={
           <View className="flex-row items-center gap-2">
-            <View className="min-w-0 flex-1">
-              <SearchInput
-                label="Search people"
-                placeholder="Search by name or email…"
-                value={q}
-                onChangeText={onSearchChange}
-              />
-            </View>
-            <View className="shrink-0">
-              <OptionSelect
-                aria-label="Sort people"
-                options={SORT_OPTIONS}
-                value={sortValue}
-                onValueChange={onSortChange}
-              />
-            </View>
+            <Link href="/persons/dedupe" asChild>
+              <Button variant="outline" content="Find duplicates" iconSlot={<GitMerge />} />
+            </Link>
+            {/* Below `md` the app shell's own bar carries the add button. */}
+            {onAddPress && (
+              <Button className="hidden md:flex" content="Add Person" iconSlot={<UserPlus />} onPress={onAddPress} />
+            )}
           </View>
-          {allLabels.length > 0 && (
-            <View className="flex-row flex-wrap items-center gap-1.5">
-              {allLabels.map((l) => (
-                <LabelChip
-                  key={l.id}
-                  label={l.label}
-                  color={l.color}
-                  selected={activeLabelSet.has(l.id)}
-                  onPress={() => onToggleLabel(l.id)}
-                  onRemove={activeLabelSet.has(l.id) ? () => onToggleLabel(l.id) : undefined}
+        }
+        headerContentSlot={
+          <View className="gap-3">
+            <View className="flex-row items-center gap-2">
+              <View className="min-w-0 flex-1">
+                <SearchInput
+                  label="Search people"
+                  placeholder="Search by name or email…"
+                  value={q}
+                  onChangeText={onSearchChange}
                 />
-              ))}
-              {hasFilters && (
-                <Button variant="ghost" size="xs" content="Clear" iconSlot={<X />} onPress={handleClearFilters} />
-              )}
+              </View>
+              <View className="shrink-0">
+                <OptionSelect
+                  aria-label="Sort people"
+                  options={SORT_OPTIONS}
+                  value={sortValue}
+                  onValueChange={onSortChange}
+                />
+              </View>
             </View>
-          )}
-        </View>
-      }
-      contentSlot={<View className={cn(loading && 'opacity-60')}>{persons.length === 0 ? emptyState : listSlot}</View>}
-      footerSlot={
-        persons.length > 0 ? (
-          <Text className="text-foreground/60 text-xs">
-            {persons.length} {persons.length === 1 ? 'person' : 'people'}
-          </Text>
-        ) : undefined
-      }
-    />
+            {allLabels.length > 0 && (
+              <View className="flex-row flex-wrap items-center gap-1.5">
+                {allLabels.map((l) => (
+                  <LabelChip
+                    key={l.id}
+                    label={l.label}
+                    color={l.color}
+                    selected={activeLabelSet.has(l.id)}
+                    onPress={() => onToggleLabel(l.id)}
+                    onRemove={activeLabelSet.has(l.id) ? () => onToggleLabel(l.id) : undefined}
+                  />
+                ))}
+                {hasFilters && (
+                  <Button variant="ghost" size="xs" content="Clear" iconSlot={<X />} onPress={handleClearFilters} />
+                )}
+              </View>
+            )}
+          </View>
+        }
+        contentSlot={
+          <View className={cn(loading && 'opacity-60')}>{persons.length === 0 ? emptyState : listSlot}</View>
+        }
+        footerSlot={
+          persons.length > 0 ? (
+            <Text className="text-foreground/60 text-xs">
+              {persons.length} {persons.length === 1 ? 'person' : 'people'}
+            </Text>
+          ) : undefined
+        }
+      />
+    </>
   );
 }

@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { View } from 'react-native';
 import type { GetPersonInteractionsQuery, GetPersonNotesQuery } from '@/__generated__/graphql';
-import { MessageSquare, NotebookPen, SquareCheck } from '@/components/app-icons';
+import { Heart, MessageSquare, NotebookPen, SquareCheck } from '@/components/app-icons';
 import type { DetailLabel, PersonDetail, PersonStub } from '@/components/domain/person/detail-queries';
+import { PersonGratitudes } from '@/components/domain/person/gratitudes';
 import { ImportantDatesSection } from '@/components/domain/person/important-dates-section';
 import { PersonInteractions } from '@/components/domain/person/interactions';
 import { PersonMentionedIn } from '@/components/domain/person/mentioned-in';
@@ -20,7 +21,7 @@ export interface PersonActivityColumnProps {
   interactions: GetPersonInteractionsQuery['interactions'];
   /** Every label of the caller's, for tagging a note, an interaction or a date. */
   allLabels: DetailLabel[];
-  /** Everyone in the caller's contacts, for a note's @mentions. */
+  /** Everyone in the caller's contacts, for a note's @mentions and the people on a date. */
   allPersons: PersonStub[];
   /** Called after anything in the column is added, changed or removed. */
   onChanged: () => void;
@@ -43,6 +44,7 @@ export function PersonActivityColumn({
 }: PersonActivityColumnProps) {
   const [noteDialogOpen, setNoteDialogOpen] = useState(false);
   const [taskDialogOpen, setTaskDialogOpen] = useState(false);
+  const [gratitudeDialogOpen, setGratitudeDialogOpen] = useState(false);
   const mentionedInNotes = person.mentionedInNotes ?? [];
 
   return (
@@ -99,7 +101,7 @@ export function PersonActivityColumn({
         }
       />
 
-      <ImportantDatesSection person={person} allLabels={allLabels} onChanged={onChanged} />
+      <ImportantDatesSection person={person} allLabels={allLabels} allPersons={allPersons} onChanged={onChanged} />
 
       <Section
         surface="card"
@@ -121,6 +123,21 @@ export function PersonActivityColumn({
             onUpdate={onChanged}
             createOpen={taskDialogOpen}
             onCreateOpenChange={setTaskDialogOpen}
+          />
+        }
+      />
+
+      <Section
+        surface="card"
+        title="Gratitude"
+        actionSlot={<SectionAdd iconSlot={<Heart />} onPress={() => setGratitudeDialogOpen(true)} />}
+        contentSlot={
+          <PersonGratitudes
+            personId={person.id}
+            gratitudes={person.gratitudes ?? []}
+            onChanged={onChanged}
+            createOpen={gratitudeDialogOpen}
+            onCreateOpenChange={setGratitudeDialogOpen}
           />
         }
       />

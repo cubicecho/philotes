@@ -2,6 +2,7 @@ export * from './accounts.ts';
 export * from './addresses.ts';
 export * from './apikeys.ts';
 export * from './contact-infos.ts';
+export * from './gratitudes.ts';
 export * from './important-dates.ts';
 export * from './interactions.ts';
 export * from './labels.ts';

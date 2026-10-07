@@ -11,6 +11,7 @@ export {
   Clipboard,
   GitMerge,
   Globe,
+  Heart,
   House,
   LogOut,
   Mail,

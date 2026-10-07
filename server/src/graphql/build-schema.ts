@@ -6,12 +6,14 @@ import { applyApiKeysExtension } from '../api-keys/resolvers.ts';
 import { applyAuthExtension } from '../auth/resolvers.ts';
 import { applyImportContactsExtension } from '../contact-import/resolvers.ts';
 import { OPERATION_LIMIT_DEFAULTS } from '../core/defaults.ts';
+import { gratitudeWriteHooks } from '../gratitudes/hooks.ts';
 import { importantDateWriteHooks } from '../important-dates/hooks.ts';
 import { applyUpcomingDatesExtension } from '../important-dates/resolvers.ts';
 import { interactionWriteHooks } from '../interactions/hooks.ts';
 import { labelWriteHooks } from '../labels/hooks.ts';
 import { applyMergeLabelsExtension } from '../labels/resolvers.ts';
 import { noteWriteHooks } from '../notes/hooks.ts';
+import { applyDuplicatesExtension } from '../persons/duplicates.ts';
 import { personWriteHooks } from '../persons/hooks.ts';
 import { applyUserScopeExtensions } from '../persons/resolvers.ts';
 import { relationshipWriteHooks } from '../relationships/hooks.ts';
@@ -27,6 +29,7 @@ const TIMESTAMP_COLUMN = 'PgTimestamp';
 export const WRITE_HOOKS: OnWriteConfig = {
   ...personWriteHooks,
   ...noteWriteHooks,
+  ...gratitudeWriteHooks,
   ...interactionWriteHooks,
   ...taskWriteHooks,
   ...importantDateWriteHooks,
@@ -42,6 +45,7 @@ const EXTENSIONS: Array<(schema: GraphQLSchema) => GraphQLSchema> = [
   applyUpcomingDatesExtension,
   applyImportContactsExtension,
   applyMergeLabelsExtension,
+  applyDuplicatesExtension,
   applyApiKeysExtension,
 ];
 

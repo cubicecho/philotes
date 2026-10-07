@@ -53,7 +53,7 @@ stub it with `vi.mock('@cubicecho/philotes-db')`. See
 
 ## Tables
 
-Seventeen tables, plus `api_keys`:
+Nineteen tables, plus `api_keys`:
 
 | Table | File | Ownership |
 | --- | --- | --- |
@@ -62,8 +62,10 @@ Seventeen tables, plus `api_keys`:
 | `user_persons` | `models/user-persons.ts` | `user_id` |
 | `addresses` | `models/addresses.ts` | `user_id` |
 | `contact_infos` | `models/contact-infos.ts` | `user_id` |
+| `gratitudes` | `models/gratitudes.ts` | `user_id` |
 | `important_dates` | `models/important-dates.ts` | `user_id` |
 | `important_date_tags` | `models/important-dates.ts` | `user_id` |
+| `important_date_persons` | `models/important-dates.ts` | `user_id` |
 | `interactions` | `models/interactions.ts` | `user_id` |
 | `interaction_tags` | `models/interactions.ts` | `user_id` |
 | `labels` | `models/labels.ts` | `user_id` |

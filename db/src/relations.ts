@@ -12,6 +12,10 @@ export const relations = defineRelations(schema, (r) => ({
       from: r.users.id,
       to: r.notes.userId,
     }),
+    gratitudes: r.many.gratitudes({
+      from: r.users.id,
+      to: r.gratitudes.userId,
+    }),
     interactions: r.many.interactions({
       from: r.users.id,
       to: r.interactions.userId,
@@ -65,6 +69,10 @@ export const relations = defineRelations(schema, (r) => ({
       from: r.persons.id.through(r.personLabels.personId),
       to: r.labels.id.through(r.personLabels.labelId),
     }),
+    gratitudes: r.many.gratitudes({
+      from: r.persons.id,
+      to: r.gratitudes.personId,
+    }),
     importantDates: r.many.importantDates({
       from: r.persons.id,
       to: r.importantDates.personId,
@@ -80,6 +88,11 @@ export const relations = defineRelations(schema, (r) => ({
     relationshipsTo: r.many.personRelationships({
       from: r.persons.id,
       to: r.personRelationships.toPersonId,
+    }),
+    taggedOnDates: r.many.importantDates({
+      from: r.persons.id.through(r.importantDatePersons.personId),
+      to: r.importantDates.id.through(r.importantDatePersons.importantDateId),
+      alias: 'importantDatePersons',
     }),
     mentionedInNotes: r.many.notes({
       from: r.persons.id.through(r.noteMentions.mentionedPersonId),
@@ -119,6 +132,16 @@ export const relations = defineRelations(schema, (r) => ({
       alias: 'noteMentions',
     }),
   },
+  gratitudes: {
+    person: r.one.persons({
+      from: r.gratitudes.personId,
+      to: r.persons.id,
+    }),
+    user: r.one.users({
+      from: r.gratitudes.userId,
+      to: r.users.id,
+    }),
+  },
   importantDates: {
     person: r.one.persons({
       from: r.importantDates.personId,
@@ -131,6 +154,11 @@ export const relations = defineRelations(schema, (r) => ({
     labels: r.many.labels({
       from: r.importantDates.id.through(r.importantDateTags.importantDateId),
       to: r.labels.id.through(r.importantDateTags.labelId),
+    }),
+    taggedPersons: r.many.persons({
+      from: r.importantDates.id.through(r.importantDatePersons.importantDateId),
+      to: r.persons.id.through(r.importantDatePersons.personId),
+      alias: 'importantDatePersons',
     }),
   },
   personRelationships: {
