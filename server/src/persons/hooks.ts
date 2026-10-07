@@ -8,12 +8,13 @@ const PERSON: ForeignKey = { key: 'personId', entity: 'Person', parent: persons 
 const LABEL: ForeignKey = { key: 'labelId', entity: 'Label', parent: labels };
 
 /**
- * Validation and ownership hooks for persons and what hangs off one. `userPersons` checks no parent:
- * a row there is what puts a person in the caller's contacts.
+ * Validation and ownership hooks for persons and what hangs off one. `userPersons` has no generated
+ * create, and an update may not point a row at a person outside the caller's contacts: a row there is
+ * what puts a person in them.
  */
 export const personWriteHooks: OnWriteConfig = {
   persons: guardWrites({ input: personInput }),
-  userPersons: guardWrites({ input: userPersonInput }),
+  userPersons: guardWrites({ input: userPersonInput, foreignKeys: [PERSON] }),
   addresses: guardWrites({ input: addressInput, foreignKeys: [PERSON] }),
   contactInfos: guardWrites({ input: contactInfoInput, foreignKeys: [PERSON] }),
   personLabels: guardWrites({ foreignKeys: [PERSON, LABEL] }),

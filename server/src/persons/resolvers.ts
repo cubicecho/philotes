@@ -27,7 +27,6 @@ const USER_SCOPE_SDL = parse(`
   }
 
   extend type Mutation {
-    addPersonToMyContacts(personId: UUID!): UserPerson!
     updateMyPersonContext(
       personId: UUID!
       contactFrequency: String
@@ -310,7 +309,8 @@ function overridePersonMutations(schema: GraphQLSchema): void {
 
 /**
  * Sets the resolvers that read and change the caller's own link to a person: `myPersonContext`,
- * `addPersonToMyContacts`, `updateMyPersonContext` and `removePersonFromMyContacts`.
+ * `updateMyPersonContext` and `removePersonFromMyContacts`. Nothing links a caller to a person by id alone:
+ * a person enters someone's contacts through `createPerson`, `createPersons` or an import.
  *
  * @param schema - The extended schema, changed in place.
  */
@@ -335,38 +335,6 @@ function addUserPersonsResolvers(schema: GraphQLSchema): void {
       .from(dbSchema.userPersons)
       .where(and(eq(dbSchema.userPersons.userId, userId), eq(dbSchema.userPersons.personId, args.personId)));
     return row ?? null;
-  };
-
-  /**
-   * Resolves `Mutation.addPersonToMyContacts`. Puts an existing person in the signed-in caller's contacts.
-   * Any person's id is taken, whoever added the row. Adding one already there changes nothing.
-   *
-   * @param _parent - Unused.
-   * @param args.personId - The person to add.
-   * @param ctx - Request context.
-   * @returns The caller's `user_persons` row for the person.
-   * @throws UNAUTHENTICATED when nobody is signed in.
-   * @throws NOT_FOUND when no person has the id.
-   */
-  mf.addPersonToMyContacts.resolve = async (_parent: unknown, args: { personId: string }, ctx: Context) => {
-    const userId = requireAuth(ctx);
-    const { db } = ctx;
-
-    const [person] = await db
-      .select({ id: dbSchema.persons.id })
-      .from(dbSchema.persons)
-      .where(eq(dbSchema.persons.id, args.personId));
-    if (!person) {
-      throw notFound('Person not found');
-    }
-
-    await db.insert(dbSchema.userPersons).values({ userId, personId: args.personId }).onConflictDoNothing();
-
-    const [row] = await db
-      .select()
-      .from(dbSchema.userPersons)
-      .where(and(eq(dbSchema.userPersons.userId, userId), eq(dbSchema.userPersons.personId, args.personId)));
-    return row;
   };
 
   /**
