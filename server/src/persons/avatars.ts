@@ -7,6 +7,7 @@ import { and, eq } from 'drizzle-orm';
 import { type NextFunction, type Request, type Response, Router } from 'express';
 import multer from 'multer';
 import { extractUserId } from '../auth/resolvers.ts';
+import { HttpStatus } from '../core/wire.ts';
 
 /** The URL prefix the stored `avatarPath` carries, and the mount the files are served under. */
 const AVATAR_URL_PREFIX = '/avatars/';
@@ -52,7 +53,7 @@ export interface AvatarRouterDeps {
 async function requireOwnPerson(db: DB, req: Request, res: Response, next: NextFunction): Promise<void> {
   const userId = extractUserId(req);
   if (!userId) {
-    res.status(401).json({ error: 'Unauthenticated' });
+    res.status(HttpStatus.Unauthorized).json({ error: 'Unauthenticated' });
     return;
   }
 
@@ -68,7 +69,7 @@ async function requireOwnPerson(db: DB, req: Request, res: Response, next: NextF
 
   const [link] = rows;
   if (!link) {
-    res.status(404).json({ error: 'Person not found' });
+    res.status(HttpStatus.NotFound).json({ error: 'Person not found' });
     return;
   }
 
@@ -136,12 +137,12 @@ export function createAvatarRouter(deps: AvatarRouterDeps): Router {
   router.post('/:personId', guard, (req, res) => {
     upload(req, res, async (uploadError: unknown) => {
       if (uploadError) {
-        res.status(400).json({ error: 'The file could not be uploaded' });
+        res.status(HttpStatus.BadRequest).json({ error: 'The file could not be uploaded' });
         return;
       }
 
       if (!req.file) {
-        res.status(400).json({ error: 'No image file uploaded' });
+        res.status(HttpStatus.BadRequest).json({ error: 'No image file uploaded' });
         return;
       }
 

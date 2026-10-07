@@ -5,6 +5,7 @@ import { and, eq, isNull } from 'drizzle-orm';
 import type { Request, RequestHandler, Response } from 'express';
 import ical, { ICalEventRepeatingFreq } from 'ical-generator';
 import { hashApiKey, isApiKey } from '../api-keys/tokens.ts';
+import { HttpStatus } from '../core/wire.ts';
 
 /**
  * Writes the caller's important dates as an iCalendar feed. The caller is identified by the API
@@ -19,7 +20,7 @@ async function sendCalendar(db: DB, req: Request, res: Response): Promise<void> 
   const { key } = req.query;
 
   if (!key || typeof key !== 'string' || isApiKey(key) === false) {
-    res.status(400).send('Missing or invalid API key. Use ?key=phlt_...');
+    res.status(HttpStatus.BadRequest).send('Missing or invalid API key. Use ?key=phlt_...');
     return;
   }
 
@@ -33,7 +34,7 @@ async function sendCalendar(db: DB, req: Request, res: Response): Promise<void> 
     .limit(1);
 
   if (!apiKey || (apiKey.expiresAt !== null && apiKey.expiresAt < now)) {
-    res.status(401).send('Invalid or expired API key');
+    res.status(HttpStatus.Unauthorized).send('Invalid or expired API key');
     return;
   }
 

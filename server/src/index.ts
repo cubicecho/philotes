@@ -1,44 +1,27 @@
-import { createServer } from 'node:http';
+import './core/preflight.ts';
+
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { DATABASE_URL, db, runMigrations } from '@philotes/db';
-import cors from 'cors';
-import express from 'express';
-import { createGraphQLRouter } from './graphql/handler.ts';
-import { createIcalHandler } from './important-dates/ical.ts';
-import { createAvatarRouter } from './persons/avatars.ts';
+import { appUrl, port } from './core/config.ts';
+import { createApp } from './http/app.ts';
+import { stopOnSignals } from './http/shutdown.ts';
 
-export type { Context } from './core/context.ts';
+/** Every interface. The container's port mapping decides who can reach it. */
+const LISTEN_HOST = '0.0.0.0';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const PORT = process.env.PORT ?? 3001;
 
-if (
-  process.env.NODE_ENV === 'production' &&
-  (!process.env.JWT_SECRET || process.env.JWT_SECRET === 'dev-secret-change-in-production')
-) {
-  console.error('FATAL: JWT_SECRET must be set to a strong random value in production.');
-  process.exit(1);
-}
-const staticDir = join(__dirname, '../../app/dist');
-const avatarDir = join(__dirname, '../../avatars');
-
+// At boot, so starting on a fresh volume is the whole install.
 await runMigrations(db, join(__dirname, '../../db/drizzle'), DATABASE_URL);
 
-const app = express();
-const httpServer = createServer(app);
-
-app.use(cors());
-app.use('/graphql', await createGraphQLRouter(httpServer, db));
-app.get('/ical', createIcalHandler(db));
-app.use('/avatars', express.static(avatarDir));
-app.use('/avatars', createAvatarRouter({ db, avatarDir }));
-app.use(express.static(staticDir));
-app.get('/{*path}', (_req, res) => {
-  res.sendFile(join(staticDir, 'index.html'));
+const app = createApp({
+  db,
+  avatarDir: join(__dirname, '../../avatars'),
+  staticDir: join(__dirname, '../../app/dist'),
 });
 
-httpServer.listen(PORT, () => {
-  console.log(`🚀 Server ready at http://localhost:${PORT}/graphql`);
-  console.log(`🌐 App served at http://localhost:${PORT}`);
+const server = app.listen(port(), LISTEN_HOST, () => {
+  console.log(`[server] ready at ${appUrl()}`);
 });
+stopOnSignals(server);

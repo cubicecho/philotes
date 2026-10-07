@@ -7,13 +7,9 @@ import { and, eq } from 'drizzle-orm';
 import express from 'express';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { signToken } from '../../auth/resolvers.ts';
+import { HttpStatus } from '../../core/wire.ts';
 import { createAvatarRouter } from '../../persons/avatars.ts';
 import { createPerson, createTestDb, createUser, portOf, type TestDb } from '../helpers.ts';
-
-const HTTP_OK = 200;
-const HTTP_UNAUTHENTICATED = 401;
-const HTTP_NOT_FOUND = 404;
-const HTTP_BAD_REQUEST = 400;
 
 describe('avatar routes', () => {
   let db: TestDb;
@@ -81,14 +77,14 @@ describe('avatar routes', () => {
   it('writes nothing for a caller who is not signed in', async () => {
     const response = await uploadAvatar(null);
 
-    expect(response.status).toBe(HTTP_UNAUTHENTICATED);
+    expect(response.status).toBe(HttpStatus.Unauthorized);
     expect(await readdir(avatarDir)).toEqual([]);
   });
 
   it("answers 'not found' and writes nothing for a person in someone else's list", async () => {
     const response = await uploadAvatar(strangerId);
 
-    expect(response.status).toBe(HTTP_NOT_FOUND);
+    expect(response.status).toBe(HttpStatus.NotFound);
     expect(await readdir(avatarDir)).toEqual([]);
     expect(await storedAvatarPath()).toBeNull();
   });
@@ -99,13 +95,13 @@ describe('avatar routes', () => {
       headers: { authorization: `Bearer ${signToken(ownerId)}` },
     });
 
-    expect(response.status).toBe(HTTP_NOT_FOUND);
+    expect(response.status).toBe(HttpStatus.NotFound);
   });
 
   it('stores the upload under a random name with the extension of its type', async () => {
     const response = await uploadAvatar(ownerId, 'image/png', 'evil.html');
 
-    expect(response.status).toBe(HTTP_OK);
+    expect(response.status).toBe(HttpStatus.Ok);
     const [fileName] = await readdir(avatarDir);
     expect(fileName).toMatch(/^[0-9a-f-]{36}\.png$/);
     expect(fileName).not.toContain(personId);
@@ -115,7 +111,7 @@ describe('avatar routes', () => {
   it('rejects a file that is not an image', async () => {
     const response = await uploadAvatar(ownerId, 'text/html', 'page.html');
 
-    expect(response.status).toBe(HTTP_BAD_REQUEST);
+    expect(response.status).toBe(HttpStatus.BadRequest);
     expect(await readdir(avatarDir)).toEqual([]);
   });
 
@@ -138,7 +134,7 @@ describe('avatar routes', () => {
       headers: { authorization: `Bearer ${signToken(ownerId)}` },
     });
 
-    expect(response.status).toBe(HTTP_OK);
+    expect(response.status).toBe(HttpStatus.Ok);
     expect(await readdir(avatarDir)).toEqual([]);
     expect(await storedAvatarPath()).toBeNull();
   });

@@ -1,37 +1,33 @@
-import type { Server } from 'node:http';
-import { ApolloServer } from '@apollo/server';
-import { ApolloServerPluginDrainHttpServer } from '@apollo/server/plugin/drainHttpServer';
-import { expressMiddleware } from '@as-integrations/express5';
 import type { DB } from '@philotes/db';
-import express, { Router } from 'express';
+import { createYoga } from 'graphql-yoga';
 import { extractUserId } from '../auth/resolvers.ts';
+import { isProduction } from '../core/config.ts';
 import type { Context } from '../core/context.ts';
 import { createSchema } from './build-schema.ts';
+import { graphqlLogger } from './logger.ts';
+
+/** What the handler passes on to resolvers. */
+interface GraphQLHandlerDeps {
+  db: DB;
+}
 
 /**
- * Builds the `/graphql` router over one database.
+ * Builds the Yoga handler for /graphql.
  *
- * @param httpServer - The server to drain at shutdown.
- * @param db - Drizzle client.
- * @returns The router, to mount at `/graphql`.
+ * @param deps - The database.
+ * @returns The Yoga instance, callable as Express middleware.
  */
-export async function createGraphQLRouter(httpServer: Server, db: DB) {
+export function createGraphQLHandler({ db }: GraphQLHandlerDeps) {
   const { schema } = createSchema(db);
-  const apolloServer = new ApolloServer<Context>({
+  return createYoga<Record<string, unknown>, Context>({
     schema,
-    plugins: [ApolloServerPluginDrainHttpServer({ httpServer })],
+    graphqlEndpoint: '/graphql',
+    graphiql: isProduction() === false,
+    // Masked errors are logged here with their real cause.
+    logging: graphqlLogger,
+    context: ({ request }): Context => {
+      const authorization = request.headers.get('authorization') ?? undefined;
+      return { db, userId: extractUserId({ headers: { authorization } }) };
+    },
   });
-
-  await apolloServer.start();
-
-  const router = Router();
-
-  router.use(
-    express.json(),
-    expressMiddleware(apolloServer, {
-      context: async ({ req }) => ({ db, userId: extractUserId(req) }),
-    }),
-  );
-
-  return router;
 }
