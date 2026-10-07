@@ -101,6 +101,24 @@ function contactInfoLabel(entry: ExportContactInfo, defaultLabel: string): strin
 }
 
 /**
+ * Lists a person's e-mail addresses for the CSV: the address on the person itself first, unless one of
+ * their contact details already holds it, then the contact details.
+ *
+ * @param person - The person.
+ * @returns The addresses in column order.
+ */
+function personEmails(person: ExportPerson): ExportContactInfo[] {
+  const fromContactInfos = person.contactInfos.filter((c) => c.type === ContactTypeEnum.Email);
+  const own = person.email?.trim();
+  const isAlreadyListed = fromContactInfos.some((c) => c.value.toLowerCase() === own?.toLowerCase());
+  const isOwnMissing = !own || isAlreadyListed;
+  if (isOwnMissing) {
+    return fromContactInfos;
+  }
+  return [{ type: ContactTypeEnum.Email, label: null, value: own, isPrimary: false }, ...fromContactInfos];
+}
+
+/**
  * Builds a CSV of people in the columns Google Contacts imports. There are as many e-mail, phone,
  * website and address column groups as the person with the most of each needs.
  *
@@ -109,10 +127,7 @@ function contactInfoLabel(entry: ExportContactInfo, defaultLabel: string): strin
  */
 export function buildPersonsCsv(persons: ExportPerson[]): string {
   // 1. Calculate max counts across all persons
-  const maxEmails = Math.max(
-    0,
-    ...persons.map((p) => p.contactInfos.filter((c) => c.type === ContactTypeEnum.Email).length),
-  );
+  const maxEmails = Math.max(0, ...persons.map((p) => personEmails(p).length));
   const maxPhones = Math.max(0, ...persons.map((p) => p.contactInfos.filter((c) => PHONE_TYPES.has(c.type)).length));
   const maxWebsites = Math.max(
     0,
@@ -135,6 +150,7 @@ export function buildPersonsCsv(persons: ExportPerson[]): string {
     headers.push(
       `Address ${n} - Label`,
       `Address ${n} - Street`,
+      `Address ${n} - Extended Address`,
       `Address ${n} - City`,
       `Address ${n} - Region`,
       `Address ${n} - Postal Code`,
@@ -151,7 +167,7 @@ export function buildPersonsCsv(persons: ExportPerson[]): string {
     const cells: string[] = [person.firstName, person.lastName ?? '', birthday, labelsStr];
 
     // Emails
-    const emails = person.contactInfos.filter((c) => c.type === ContactTypeEnum.Email);
+    const emails = personEmails(person);
     for (let n = 0; n < maxEmails; n++) {
       const entry = emails[n];
       cells.push(entry ? contactInfoLabel(entry, 'Home') : '', entry?.value ?? '');
@@ -179,6 +195,7 @@ export function buildPersonsCsv(persons: ExportPerson[]): string {
       cells.push(
         typeLabel,
         addr?.line1 ?? '',
+        addr?.line2 ?? '',
         addr?.city ?? '',
         addr?.state ?? '',
         addr?.postalCode ?? '',

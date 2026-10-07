@@ -17,6 +17,7 @@ import { RowTags, type TagOption } from '@/components/domain/person/tag-picker';
 import { Badge } from '@/components/ui/badge';
 import { FormDialog } from '@/components/ui/form-dialog';
 import { Pencil, Trash2 } from '@/components/ui/icons';
+import { parseLocalDay } from '@/lib/local-date';
 
 const UPDATE_IMPORTANT_DATE = graphql(`
   mutation UpdateImportantDate(
@@ -92,9 +93,7 @@ export function ImportantDateRow({
   const [editOpen, setEditOpen] = useState(false);
   const [attachTag] = useMutation(ATTACH_IMPORTANT_DATE_TAG);
   const [detachTag] = useMutation(DETACH_IMPORTANT_DATE_TAG);
-  const [updateImportantDate] = useMutation(UPDATE_IMPORTANT_DATE, {
-    refetchQueries: [],
-  });
+  const [updateImportantDate] = useMutation(UPDATE_IMPORTANT_DATE);
 
   const handleEdit = async (values: ImportantDateFormValue) => {
     // The form holds the milestone as a plain string; only one the schema knows is sent.
@@ -130,7 +129,7 @@ export function ImportantDateRow({
               {description && <Text className="text-xs text-foreground/60">{description}</Text>}
             </View>
             <View className="flex-row flex-wrap items-center gap-1.5">
-              <Text className="text-xs text-foreground/60">{new Date(date).toLocaleDateString()}</Text>
+              <Text className="text-xs text-foreground/60">{parseLocalDay(date)?.toLocaleDateString() ?? date}</Text>
               {recurrenceLabel && <Badge variant="secondary">{recurrenceLabel}</Badge>}
               {milestoneLabel && <Badge variant="info">{milestoneLabel}</Badge>}
             </View>

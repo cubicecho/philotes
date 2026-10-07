@@ -62,7 +62,9 @@ export function GoogleCsvImportCard() {
     const previewNames = lines.slice(1, 1 + previewNameCount).map((line) => {
       const firstComma = line.indexOf(',');
       const secondComma = line.indexOf(',', firstComma + 1);
-      const first = line.slice(0, firstComma).replace(/^"|"$/g, '').trim();
+      // A line with no comma is one cell: the whole of it is the first name.
+      const firstCell = firstComma === -1 ? line : line.slice(0, firstComma);
+      const first = firstCell.replace(/^"|"$/g, '').trim();
       const hasBothCommas = firstComma !== -1 && secondComma !== -1;
       const last = hasBothCommas
         ? line

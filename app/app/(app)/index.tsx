@@ -13,9 +13,9 @@ import { PageLayout } from '@/components/page-layout';
 import { QueryState } from '@/components/query-state';
 import { computeOverdueByDays } from '@/lib/contact-frequency';
 import { DASHBOARD_DEFAULTS } from '@/lib/defaults';
-import { DAYS_PER_WEEK, DAYS_PER_YEAR, MS_PER_DAY } from '@/lib/time';
+import { daysUntilNextOccurrence } from '@/lib/next-occurrence';
+import { DAYS_PER_YEAR, MS_PER_DAY } from '@/lib/time';
 import { useAllRows } from '@/lib/use-all-rows';
-import { Recurrence } from '@/lib/vocabulary';
 
 const GET_DASHBOARD = graphql(`
   query Dashboard($limit: Int!, $offset: Int!) {
@@ -60,76 +60,6 @@ const { widgetLimit, upcomingWindowDays, dormantAfterDays, tasksDueWithinDays } 
 
 /** From this many days without contact, the dormant label counts the years. */
 const TWO_YEARS_IN_DAYS = 2 * DAYS_PER_YEAR;
-
-/**
- * Gives the start of today.
- *
- * @returns Today at local midnight.
- */
-function todayMidnight(): Date {
-  const d = new Date();
-  d.setHours(0, 0, 0, 0);
-  return d;
-}
-
-/**
- * Counts the days from one date to another.
- *
- * @param a - The date counted from.
- * @param b - The date counted to.
- * @returns Days, rounded to the nearest whole one; negative when `b` is before `a`.
- */
-function daysBetween(a: Date, b: Date): number {
-  return Math.round((b.getTime() - a.getTime()) / MS_PER_DAY);
-}
-
-/**
- * Counts the days until an important date next comes round.
- *
- * @param storedDate - The date as recorded.
- * @param recurrence - How the date repeats; null, undefined or empty means it happens once.
- * @returns Days from today, 0 for today, or null for a one-off date already past or an unknown recurrence.
- */
-function daysUntilNextOccurrence(storedDate: Date, recurrence: string | null | undefined): number | null {
-  const t = todayMidnight();
-  const month = storedDate.getMonth();
-  const day = storedDate.getDate();
-
-  if (!recurrence) {
-    const stored = new Date(storedDate.getFullYear(), month, day);
-    const diff = daysBetween(t, stored);
-    const isStillAhead = diff >= 0;
-    return isStillAhead ? diff : null;
-  }
-
-  if (recurrence === Recurrence.Yearly) {
-    const thisYear = new Date(t.getFullYear(), month, day);
-    const diff = daysBetween(t, thisYear);
-    const isStillAhead = diff >= 0;
-    if (isStillAhead) {
-      return diff;
-    }
-    return daysBetween(t, new Date(t.getFullYear() + 1, month, day));
-  }
-
-  if (recurrence === Recurrence.Monthly) {
-    const thisMonth = new Date(t.getFullYear(), t.getMonth(), day);
-    const diff = daysBetween(t, thisMonth);
-    const isStillAhead = diff >= 0;
-    if (isStillAhead) {
-      return diff;
-    }
-    return daysBetween(t, new Date(t.getFullYear(), t.getMonth() + 1, day));
-  }
-
-  if (recurrence === Recurrence.Weekly) {
-    const targetDow = storedDate.getDay();
-    const todayDow = t.getDay();
-    return (targetDow - todayDow + DAYS_PER_WEEK) % DAYS_PER_WEEK;
-  }
-
-  return null;
-}
 
 /**
  * Whether a person last contacted this many days ago counts as a dormant tie.

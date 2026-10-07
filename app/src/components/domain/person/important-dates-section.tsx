@@ -15,6 +15,7 @@ import { SectionAdd } from '@/components/domain/person/section-add';
 import { EmptyState } from '@/components/page';
 import { Section } from '@/components/section';
 import { FormDialog } from '@/components/ui/form-dialog';
+import { localIsoDate } from '@/lib/local-date';
 import { fullName } from '@/lib/person-name';
 
 /** Every milestone an important date can mark. */
@@ -73,7 +74,7 @@ export function ImportantDatesSection({ person, allLabels, onChanged }: Importan
                 id={d.id}
                 personId={person.id}
                 name={d.name}
-                date={d.date instanceof Date ? d.date.toISOString().slice(0, 10) : d.date}
+                date={d.date instanceof Date ? localIsoDate(d.date) : d.date}
                 description={d.description}
                 recurrence={d.recurrence}
                 milestoneType={d.milestoneType}

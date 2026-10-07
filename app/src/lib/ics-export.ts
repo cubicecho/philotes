@@ -117,8 +117,41 @@ function buildInteractionEvent(interaction: CalendarInteraction, now: string): s
   return lines.join('\r\n');
 }
 
+/** The iCalendar frequency each recurrence repeats at. */
+const RRULE_FREQUENCY: Record<Recurrence, string> = {
+  [Recurrence.Yearly]: 'YEARLY',
+  [Recurrence.Monthly]: 'MONTHLY',
+  [Recurrence.Weekly]: 'WEEKLY',
+};
+
+/** The last day of the month every month has; a monthly date after it needs a rule for the shorter months. */
+const LAST_DAY_IN_EVERY_MONTH = 28;
+
 /**
- * Builds the all-day VEVENT for an important date. Only a yearly date repeats in the file.
+ * Writes the RRULE for an important date. A monthly date past the 28th names every day from the 28th to
+ * its own and takes the last one each month has, so the 31st falls on the 30th in April rather than
+ * skipping the month, which is what a bare `FREQ=MONTHLY` does.
+ *
+ * @param date - The date as recorded, at local midnight.
+ * @param [recurrence] - How the date repeats.
+ * @returns The RRULE line, or `null` for a date that happens once or a recurrence the file cannot express.
+ */
+function recurrenceRule(date: Date, recurrence: string | null | undefined): string | null {
+  const frequency = Object.entries(RRULE_FREQUENCY).find(([known]) => known === recurrence)?.[1];
+  if (!frequency) {
+    return null;
+  }
+  const day = date.getDate();
+  const isShortMonthProne = recurrence === Recurrence.Monthly && day > LAST_DAY_IN_EVERY_MONTH;
+  if (isShortMonthProne) {
+    const days = Array.from({ length: day - LAST_DAY_IN_EVERY_MONTH + 1 }, (_, i) => LAST_DAY_IN_EVERY_MONTH + i);
+    return `RRULE:FREQ=${frequency};BYMONTHDAY=${days.join(',')};BYSETPOS=-1`;
+  }
+  return `RRULE:FREQ=${frequency}`;
+}
+
+/**
+ * Builds the all-day VEVENT for an important date, repeating as the date does.
  *
  * @param importantDate - The date to write.
  * @param now - The export's time as an iCalendar DATE-TIME, for DTSTAMP.
@@ -138,8 +171,9 @@ function buildImportantDateEvent(importantDate: CalendarImportantDate, now: stri
   if (importantDate.description) {
     lines.push(`DESCRIPTION:${escapeIcsText(importantDate.description)}`);
   }
-  if (importantDate.recurrence === Recurrence.Yearly) {
-    lines.push('RRULE:FREQ=YEARLY');
+  const rule = recurrenceRule(importantDate.date, importantDate.recurrence);
+  if (rule) {
+    lines.push(rule);
   }
   lines.push('END:VEVENT');
   return lines.join('\r\n');

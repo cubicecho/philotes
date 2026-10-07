@@ -5,10 +5,11 @@ import { EmptyState } from '@/components/page';
 import { SectionHeading } from '@/components/section-heading';
 import { Separator } from '@/components/ui/separator';
 import { PRE_CONTACT_BRIEF_DEFAULTS } from '@/lib/defaults';
+import { daysUntilNextOccurrence } from '@/lib/next-occurrence';
 import { relativeTime } from '@/lib/relative-time';
 import { MS_PER_DAY } from '@/lib/time';
 import { cn } from '@/lib/utils';
-import { InteractionChannel } from '@/lib/vocabulary';
+import { InteractionChannel, Recurrence } from '@/lib/vocabulary';
 
 /** An interaction, as far as the brief needs it. */
 interface Interaction {
@@ -94,26 +95,16 @@ function dueDateLabel(dueAt: Date | null): string | null {
 }
 
 /**
- * Returns the next occurrence of a month+day date, when it falls inside the brief's window. Handles annual recurrence
- * by projecting the stored date to the current year (or next year if this year's occurrence has already passed).
+ * Counts the days to a date's next anniversary, when that falls inside the brief's window. Every date is read as
+ * yearly here, whatever its own recurrence.
  *
- * @param stored - The date; its UTC month and day are what repeats.
- * @returns Days from now to the next occurrence, rounded up, or `null` when that is past `BRIEF.upcomingWindowDays`.
+ * @param stored - The date as recorded, at local midnight.
+ * @returns Days from today, 0 for today, or `null` when that is past `BRIEF.upcomingWindowDays`.
  */
 function nextOccurrenceInWindow(stored: Date): number | null {
-  const month = stored.getUTCMonth();
-  const day = stored.getUTCDate();
-
-  const now = new Date();
-  const thisYear = new Date(Date.UTC(now.getUTCFullYear(), month, day));
-  const nextYear = new Date(Date.UTC(now.getUTCFullYear() + 1, month, day));
-
-  const isStillAhead = thisYear >= now;
-  const candidate = isStillAhead ? thisYear : nextYear;
-  const diff = Math.ceil((candidate.getTime() - now.getTime()) / MS_PER_DAY);
-
-  const isInWindow = diff <= BRIEF.upcomingWindowDays;
-  return isInWindow ? diff : null;
+  const daysAway = daysUntilNextOccurrence(stored, Recurrence.Yearly);
+  const isInWindow = daysAway !== null && daysAway <= BRIEF.upcomingWindowDays;
+  return isInWindow ? daysAway : null;
 }
 
 /**

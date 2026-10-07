@@ -148,6 +148,21 @@ function InteractionRow({ interaction, allTags, onChanged }: InteractionRowProps
         note: values.note || null,
       },
     });
+    // The tags are rows of their own: attach the ones the form added, detach the ones it dropped.
+    const currentIds = new Set(interaction.labels.map((l) => l.id));
+    const wantedIds = new Set(values.labelIds);
+    for (const labelId of wantedIds) {
+      const isNew = currentIds.has(labelId) === false;
+      if (isNew) {
+        await attachTag({ variables: { interactionId: interaction.id, labelId } });
+      }
+    }
+    for (const labelId of currentIds) {
+      const isDropped = wantedIds.has(labelId) === false;
+      if (isDropped) {
+        await detachTag({ variables: { interactionId: interaction.id, labelId } });
+      }
+    }
     setEditOpen(false);
     onChanged();
   };

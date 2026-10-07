@@ -79,6 +79,28 @@ describe('buildIcsContent', () => {
     expect(ics).not.toContain('RRULE');
   });
 
+  it('repeats a monthly and a weekly date', () => {
+    const ics = buildIcsContent(
+      events({
+        importantDates: [
+          { id: 'd1', name: 'Rent', date: new Date(2020, 0, 5), recurrence: 'monthly', person: ada },
+          { id: 'd2', name: 'Call', date: new Date(2020, 0, 6), recurrence: 'weekly', person: ada },
+        ],
+      }),
+    );
+    expect(ics).toContain('RRULE:FREQ=MONTHLY\r\n');
+    expect(ics).toContain('RRULE:FREQ=WEEKLY\r\n');
+  });
+
+  it('keeps a monthly 31st on the last day of a shorter month', () => {
+    const ics = buildIcsContent(
+      events({
+        importantDates: [{ id: 'd1', name: 'Close', date: new Date(2020, 0, 31), recurrence: 'monthly', person: ada }],
+      }),
+    );
+    expect(ics).toContain('RRULE:FREQ=MONTHLY;BYMONTHDAY=28,29,30,31;BYSETPOS=-1');
+  });
+
   it('escapes the characters RFC 5545 reserves', () => {
     const ics = buildIcsContent(
       events({
