@@ -60,6 +60,11 @@ for a caller:
   picture is set by uploading it to `POST /avatars/<personId>`.
 - Referencing another user's row by id — tagging your note with their label —
   fails with `<Entity> not found`, never a leak of whether it exists.
+- A person's `revision` is the server's. `personTombstones` is read-only. To
+  sync, keep the highest revision seen and ask for
+  `persons(where: { revision: { gt: $since } })` and
+  `personTombstones(where: { revision: { gt: $since } })`; `me.personsRevision`
+  is the current count.
 - `users` has no generated mutations; accounts come from `signUp`, `signIn`,
   `requestSignIn` and `verifyMagicLink`. Sessions, password hashes and API key
   hashes are not in the schema at all.

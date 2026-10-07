@@ -8,6 +8,7 @@ import type { Context } from '../core/context.ts';
 import { DUPLICATE_DEFAULTS } from '../core/defaults.ts';
 import { badInput, notFound, requireAuth } from '../core/errors.ts';
 import { objectType } from '../graphql/object-type.ts';
+import { buryPersons, touchPersons } from './revisions.ts';
 
 const DUPLICATES_SDL = `
   """People in the caller's contacts who share one contact detail."""
@@ -350,6 +351,9 @@ export async function mergePersons(db: DB, userId: string, keepId: string, merge
     await removeSelfTaggedDates(tx, userId, keepId);
     await mergeRelationships(tx, userId, keepId, mergeId);
 
+    // To a phone the kept contact changed and the merged one was deleted.
+    await touchPersons(tx, userId, [keepId]);
+    await buryPersons(tx, userId, [mergeId]);
     const { persons } = dbSchema;
     await tx.delete(persons).where(and(eq(persons.userId, userId), eq(persons.id, mergeId)));
   });

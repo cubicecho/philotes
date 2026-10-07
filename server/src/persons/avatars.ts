@@ -10,6 +10,7 @@ import multer from 'multer';
 import { type Auth, sessionUserId } from '../auth/better-auth.ts';
 import { HttpStatus } from '../core/wire.ts';
 import type { AvatarStore } from './avatar-store.ts';
+import { touchPersons } from './revisions.ts';
 
 /** The URL prefix the stored `avatarPath` carries, and the mount the files are served under. */
 const AVATAR_URL_PREFIX = '/avatars/';
@@ -181,10 +182,14 @@ async function sendAvatar(deps: Pick<AvatarRouterDeps, 'db' | 'store'>, req: Req
  * @returns Nothing.
  */
 async function saveAvatarPath(db: DB, locals: AvatarLocals, avatarPath: string | null): Promise<void> {
-  await db
-    .update(dbSchema.persons)
-    .set({ avatarPath })
-    .where(and(eq(dbSchema.persons.id, locals.personId), eq(dbSchema.persons.userId, locals.userId)));
+  await db.transaction(async (tx) => {
+    await tx
+      .update(dbSchema.persons)
+      .set({ avatarPath })
+      .where(and(eq(dbSchema.persons.id, locals.personId), eq(dbSchema.persons.userId, locals.userId)));
+    // The picture is on the contact card, so a phone has to fetch the person again.
+    await touchPersons(tx, locals.userId, [locals.personId]);
+  });
 }
 
 /**

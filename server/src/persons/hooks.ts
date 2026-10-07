@@ -4,6 +4,7 @@ import { badInput, requireAuth } from '../core/errors.ts';
 import { type ForeignKey, guardWrites, WRITES_WITHOUT_ROWS, writtenRows } from '../graphql/write-guards.ts';
 import { addressInput, contactInfoInput, NAMING_KEYS, personInput } from './input.ts';
 import { normalizeWrittenContactInfos } from './normalized-values.ts';
+import { countingChanges } from './revision-hooks.ts';
 
 /** The person a detail row belongs to, who must be the caller's. */
 const PERSON: ForeignKey = { key: 'personId', entity: 'Person', parent: persons };
@@ -79,8 +80,8 @@ function guardContactInfoWrites(): WriteHookPositions {
 
 /** Validation and ownership hooks for persons and what hangs off one. */
 export const personWriteHooks: OnWriteConfig = {
-  persons: guardPersonWrites(),
-  addresses: guardWrites({ input: addressInput, foreignKeys: [PERSON] }),
-  contactInfos: guardContactInfoWrites(),
-  personLabels: guardWrites({ foreignKeys: [PERSON, LABEL] }),
+  persons: countingChanges('persons', guardPersonWrites()),
+  addresses: countingChanges('addresses', guardWrites({ input: addressInput, foreignKeys: [PERSON] })),
+  contactInfos: countingChanges('contactInfos', guardContactInfoWrites()),
+  personLabels: countingChanges('personLabels', guardWrites({ foreignKeys: [PERSON, LABEL] })),
 };

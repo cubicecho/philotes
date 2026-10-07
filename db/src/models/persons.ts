@@ -1,5 +1,5 @@
 import { type SQL, sql } from 'drizzle-orm';
-import { date, index, pgTable, text, timestamp, uniqueIndex, uuid } from 'drizzle-orm/pg-core';
+import { bigint, date, index, pgTable, text, timestamp, uniqueIndex, uuid } from 'drizzle-orm/pg-core';
 import { users } from './users.ts';
 
 /** How often a user means to be in touch with a person. */
@@ -19,6 +19,9 @@ const FAMILY_FIRST_SQL = `btrim(coalesce(last_name, '') || ' ' || coalesce(first
 const NAME_FALLBACK_SQL = `nullif(btrim(nickname), ''), nullif(btrim(organization), ''), ''`;
 const DISPLAY_NAME_SQL = `coalesce(nullif(${FULL_NAME_SQL}, ''), ${NAME_FALLBACK_SQL})`;
 const SORT_NAME_SQL = `lower(coalesce(nullif(${FAMILY_FIRST_SQL}, ''), ${NAME_FALLBACK_SQL}))`;
+
+/** The revision of a person no change has been counted for yet. */
+export const UNREVISED = 0;
 
 /** A person in one user's contacts. Two users who know the same person each hold their own row. */
 export const persons = pgTable(
@@ -52,6 +55,11 @@ export const persons = pgTable(
     uid: text('uid').notNull().default(sql`gen_random_uuid()::text`),
     /** The lines of a synced contact card that no column holds, kept so a phone gets them back unchanged. */
     vcardExtra: text('vcard_extra'),
+    /**
+     * The user's `personsRevision` when this person, or a detail a contact card carries, last changed.
+     * 0 only until the write that made the row has finished.
+     */
+    revision: bigint('revision', { mode: 'number' }).notNull().default(UNREVISED),
     contactFrequency: text('contact_frequency').$type<ContactFrequency>(),
     howWeMet: text('how_we_met'),
     firstMetDate: date('first_met_date'),
@@ -66,6 +74,7 @@ export const persons = pgTable(
   (t) => [
     index('idx_persons_user_id').on(t.userId),
     index('idx_persons_user_id_sort_name').on(t.userId, t.sortName),
+    index('idx_persons_user_id_revision').on(t.userId, t.revision),
     uniqueIndex('uq_persons_user_id_uid').on(t.userId, t.uid),
   ],
 );

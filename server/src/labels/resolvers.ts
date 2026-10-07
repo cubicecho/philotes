@@ -5,6 +5,7 @@ import type { AnyPgColumn, PgTable } from 'drizzle-orm/pg-core';
 import { extendSchema, type GraphQLSchema, parse } from 'graphql';
 import type { Context } from '../core/context.ts';
 import { notFound, requireAuth } from '../core/errors.ts';
+import { touchPersons } from '../persons/revisions.ts';
 
 const MERGE_LABELS_SDL = `
   extend type Mutation {
@@ -135,6 +136,18 @@ export function applyMergeLabelsExtension(schema: GraphQLSchema): GraphQLSchema 
     }
 
     await db.transaction(async (tx) => {
+      // Whoever wears either label has a different set of names on their card afterwards.
+      const { personLabels } = dbSchema;
+      const wearers = await tx
+        .select({ personId: personLabels.personId })
+        .from(personLabels)
+        .where(and(eq(personLabels.userId, userId), inArray(personLabels.labelId, [keepId, deleteId])));
+      await touchPersons(
+        tx,
+        userId,
+        wearers.map((wearer) => wearer.personId),
+      );
+
       for (const junction of JUNCTIONS) {
         await copyJunctionRows(tx, junction, deleteId, keepId, userId);
       }

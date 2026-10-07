@@ -1,6 +1,7 @@
 import { importantDates, labels, persons } from '@cubicecho/philotes-db/schema';
 import type { OnWriteConfig } from '@vantreeseba/drizzle-graphql';
 import { type ForeignKey, guardWrites } from '../graphql/write-guards.ts';
+import { countingChanges } from '../persons/revision-hooks.ts';
 import { importantDateInput } from './input.ts';
 
 const IMPORTANT_DATE: ForeignKey = { key: 'importantDateId', entity: 'ImportantDate', parent: importantDates };
@@ -9,7 +10,7 @@ const PERSON: ForeignKey = { key: 'personId', entity: 'Person', parent: persons 
 
 /** Validation and ownership hooks for important dates, their tags and the people tagged on them. */
 export const importantDateWriteHooks: OnWriteConfig = {
-  importantDates: guardWrites({ input: importantDateInput, foreignKeys: [PERSON] }),
+  importantDates: countingChanges('importantDates', guardWrites({ input: importantDateInput, foreignKeys: [PERSON] })),
   importantDateTags: guardWrites({ foreignKeys: [IMPORTANT_DATE, LABEL] }),
   importantDatePersons: guardWrites({ foreignKeys: [IMPORTANT_DATE, PERSON] }),
 };
