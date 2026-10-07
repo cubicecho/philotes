@@ -27,6 +27,7 @@ export const userPersonInput = z
   .object({
     contactFrequency: z.enum(ContactFrequency, 'Choose weekly, monthly, quarterly or yearly.').nullable(),
     howWeMet: z.string().max(PERSON_DEFAULTS.maxHowWeMetLength, 'How we met is too long.').nullable(),
+    firstMetDate: z.iso.date('First met date must be a day, as YYYY-MM-DD.').nullable(),
     avatarPath: z.string().max(PERSON_DEFAULTS.maxAvatarPathLength, 'Avatar path is too long.').nullable(),
   })
   .partial();
