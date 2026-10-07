@@ -1,3 +1,10 @@
+## [3.1.5](https://github.com/cubicecho/philotes/compare/v3.1.4...v3.1.5) (2026-10-07)
+
+
+### Bug Fixes
+
+* **server:** no way to take a person by id alone ([7da771f](https://github.com/cubicecho/philotes/commit/7da771fcc10b785969503c8283f8d33178a93e6d)), closes [#11](https://github.com/cubicecho/philotes/issues/11)
+
 ## [3.1.4](https://github.com/cubicecho/philotes/compare/v3.1.3...v3.1.4) (2026-10-07)
 
 
