@@ -90,6 +90,27 @@ export const importantDateTags = pgTable(
   ],
 );
 
+/** Ties an important date to another person it involves, such as the spouse on an anniversary. */
+export const importantDatePersons = pgTable(
+  'important_date_persons',
+  {
+    importantDateId: uuid('important_date_id')
+      .notNull()
+      .references(() => importantDates.id, { onDelete: 'cascade' }),
+    personId: uuid('person_id')
+      .notNull()
+      .references(() => persons.id, { onDelete: 'cascade' }),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+  },
+  (t) => [
+    primaryKey({ columns: [t.importantDateId, t.personId] }),
+    index('idx_important_date_persons_person_id').on(t.personId),
+    index('idx_important_date_persons_user_id').on(t.userId),
+  ],
+);
+
 /** An important date row as read. */
 export type ImportantDate = typeof importantDates.$inferSelect;
 /** An important date row as inserted. */
@@ -98,3 +119,7 @@ export type NewImportantDate = typeof importantDates.$inferInsert;
 export type ImportantDateTag = typeof importantDateTags.$inferSelect;
 /** An important date tag row as inserted. */
 export type NewImportantDateTag = typeof importantDateTags.$inferInsert;
+/** An important date person row as read. */
+export type ImportantDatePerson = typeof importantDatePersons.$inferSelect;
+/** An important date person row as inserted. */
+export type NewImportantDatePerson = typeof importantDatePersons.$inferInsert;

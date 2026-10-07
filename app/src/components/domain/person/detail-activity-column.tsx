@@ -21,7 +21,7 @@ export interface PersonActivityColumnProps {
   interactions: GetPersonInteractionsQuery['interactions'];
   /** Every label of the caller's, for tagging a note, an interaction or a date. */
   allLabels: DetailLabel[];
-  /** Everyone in the caller's contacts, for a note's @mentions. */
+  /** Everyone in the caller's contacts, for a note's @mentions and the people on a date. */
   allPersons: PersonStub[];
   /** Called after anything in the column is added, changed or removed. */
   onChanged: () => void;
@@ -101,7 +101,7 @@ export function PersonActivityColumn({
         }
       />
 
-      <ImportantDatesSection person={person} allLabels={allLabels} onChanged={onChanged} />
+      <ImportantDatesSection person={person} allLabels={allLabels} allPersons={allPersons} onChanged={onChanged} />
 
       <Section
         surface="card"

@@ -8,6 +8,7 @@ import {
   type DetailLabel,
   GET_PERSON_DETAIL,
   type PersonDetail,
+  type PersonStub,
 } from '@/components/domain/person/detail-queries';
 import { ImportantDateForm, type ImportantDateFormValue } from '@/components/domain/person/important-date-form';
 import { ImportantDateRow } from '@/components/domain/person/important-date-row';
@@ -26,16 +27,19 @@ export interface ImportantDatesSectionProps {
   person: PersonDetail;
   /** Every label of the caller's, for tagging a date. */
   allLabels: DetailLabel[];
-  /** Called after a date is edited or its tags change. */
+  /** Everyone in the caller's contacts, for tagging the other people a date involves. */
+  allPersons: PersonStub[];
+  /** Called after a date is edited, or its tags or tagged people change. */
   onChanged: () => void;
 }
 
 /** The important dates card on a person's page, with the dialog that adds one. */
-export function ImportantDatesSection({ person, allLabels, onChanged }: ImportantDatesSectionProps) {
+export function ImportantDatesSection({ person, allLabels, allPersons, onChanged }: ImportantDatesSectionProps) {
   const refetchQueries = [{ query: GET_PERSON_DETAIL, variables: { id: person.id } }];
   const [deleteImportantDate] = useMutation(DELETE_IMPORTANT_DATE, { refetchQueries });
   const [createImportantDate] = useMutation(CREATE_IMPORTANT_DATE, { refetchQueries });
   const [dialogOpen, setDialogOpen] = useState(false);
+  const taggablePersons = allPersons.filter((p) => p.id !== person.id);
 
   const handleDelete = async (dateId: string) => {
     await deleteImportantDate({ variables: { id: dateId } });
@@ -80,6 +84,8 @@ export function ImportantDatesSection({ person, allLabels, onChanged }: Importan
                 milestoneType={d.milestoneType}
                 tags={d.labels ?? []}
                 allTags={allLabels}
+                taggedPersons={d.taggedPersons ?? []}
+                taggablePersons={taggablePersons}
                 onDelete={handleDelete}
                 onEdit={onChanged}
                 onTagChanged={onChanged}

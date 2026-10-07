@@ -89,6 +89,11 @@ export const relations = defineRelations(schema, (r) => ({
       from: r.persons.id,
       to: r.personRelationships.toPersonId,
     }),
+    taggedOnDates: r.many.importantDates({
+      from: r.persons.id.through(r.importantDatePersons.personId),
+      to: r.importantDates.id.through(r.importantDatePersons.importantDateId),
+      alias: 'importantDatePersons',
+    }),
     mentionedInNotes: r.many.notes({
       from: r.persons.id.through(r.noteMentions.mentionedPersonId),
       to: r.notes.id.through(r.noteMentions.noteId),
@@ -149,6 +154,11 @@ export const relations = defineRelations(schema, (r) => ({
     labels: r.many.labels({
       from: r.importantDates.id.through(r.importantDateTags.importantDateId),
       to: r.labels.id.through(r.importantDateTags.labelId),
+    }),
+    taggedPersons: r.many.persons({
+      from: r.importantDates.id.through(r.importantDatePersons.importantDateId),
+      to: r.persons.id.through(r.importantDatePersons.personId),
+      alias: 'importantDatePersons',
     }),
   },
   personRelationships: {

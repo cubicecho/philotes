@@ -6,12 +6,14 @@ import { graphql } from '@/__generated__/gql';
 import { ImportantDatesMilestoneTypeEnum } from '@/__generated__/graphql';
 import { ActionButton } from '@/components/action-button';
 import { ConfirmButton } from '@/components/confirm-button';
+import type { PersonStub } from '@/components/domain/person/detail-queries';
 import {
   ImportantDateForm,
   type ImportantDateFormValue,
   MILESTONE_TYPE_OPTIONS,
   RECURRENCE_OPTIONS,
 } from '@/components/domain/person/important-date-form';
+import { ImportantDatePersons } from '@/components/domain/person/important-date-persons';
 import { ATTACH_IMPORTANT_DATE_TAG, DETACH_IMPORTANT_DATE_TAG } from '@/components/domain/person/tag-mutations';
 import { RowTags, type TagOption } from '@/components/domain/person/tag-picker';
 import { Badge } from '@/components/ui/badge';
@@ -62,17 +64,21 @@ interface ImportantDateRowProps {
   tags: TagOption[];
   /** Every tag the user has. */
   allTags: TagOption[];
+  /** The other people the date involves. */
+  taggedPersons: PersonStub[];
+  /** Everyone who can be tagged on the date. */
+  taggablePersons: PersonStub[];
   /** Called with the date's id once the removal is confirmed; the owner deletes it. */
   onDelete: (id: string) => void;
   /** Called after an edit is saved. */
   onEdit: () => void;
-  /** Called after a tag is attached or detached. */
+  /** Called after a tag is attached or detached, or a person tagged or untagged. */
   onTagChanged: () => void;
 }
 
 /**
- * One important date: its name linking to its page, its day, recurrence and milestone, its tags, and the dialog that
- * edits it.
+ * One important date: its name linking to its page, its day, recurrence and milestone, its tags, the other people it
+ * involves, and the dialog that edits it.
  */
 export function ImportantDateRow({
   id,
@@ -84,6 +90,8 @@ export function ImportantDateRow({
   milestoneType,
   tags,
   allTags,
+  taggedPersons,
+  taggablePersons,
   onDelete,
   onEdit,
   onTagChanged,
@@ -154,12 +162,18 @@ export function ImportantDateRow({
             />
           </View>
         </View>
-        <View className="mt-1.5">
+        <View className="mt-1.5 gap-1.5">
           <RowTags
             tags={tags}
             allTags={allTags}
             onAttach={(labelId) => attachTag({ variables: { importantDateId: id, labelId } })}
             onDetach={(labelId) => detachTag({ variables: { importantDateId: id, labelId } })}
+            onChanged={onTagChanged}
+          />
+          <ImportantDatePersons
+            importantDateId={id}
+            taggedPersons={taggedPersons}
+            candidates={taggablePersons}
             onChanged={onTagChanged}
           />
         </View>

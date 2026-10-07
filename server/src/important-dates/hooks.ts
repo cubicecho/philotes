@@ -7,8 +7,9 @@ const IMPORTANT_DATE: ForeignKey = { key: 'importantDateId', entity: 'ImportantD
 const LABEL: ForeignKey = { key: 'labelId', entity: 'Label', parent: labels };
 const PERSON: ForeignKey = { key: 'personId', entity: 'Person', parent: persons };
 
-/** Validation and ownership hooks for important dates and their tags. */
+/** Validation and ownership hooks for important dates, their tags and the people tagged on them. */
 export const importantDateWriteHooks: OnWriteConfig = {
   importantDates: guardWrites({ input: importantDateInput, foreignKeys: [PERSON] }),
   importantDateTags: guardWrites({ foreignKeys: [IMPORTANT_DATE, LABEL] }),
+  importantDatePersons: guardWrites({ foreignKeys: [IMPORTANT_DATE, PERSON] }),
 };

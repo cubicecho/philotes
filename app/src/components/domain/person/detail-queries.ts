@@ -52,6 +52,11 @@ export const GET_PERSON_DETAIL = graphql(`
           label
           color
         }
+        taggedPersons(limit: 20) {
+          id
+          firstName
+          lastName
+        }
       }
       mentionedInNotes(limit: 50) {
         id
