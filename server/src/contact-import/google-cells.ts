@@ -1,3 +1,5 @@
+import { YEARLESS_DATE_YEAR } from '@cubicecho/philotes-db/schema';
+
 // How Google Contacts writes the cells of its CSV export, and how each is read back to a plain value.
 
 /** What Google puts between the values of a cell that holds several. */
@@ -40,38 +42,30 @@ export function normalizeHyphens(s: string): string {
   return s.replace(/[\u2010\u2011\u2012\u2013]/g, '-');
 }
 
+/** A birthday read from a cell. */
+export interface ParsedBirthday {
+  /** As `YYYY-MM-DD`. Under {@link YEARLESS_DATE_YEAR} when the cell gave no year. */
+  date: string;
+  /** false when the cell gave only a month and a day. */
+  hasYear: boolean;
+}
+
+/** A birthday with its year, and the two ways Google writes one without: `--MM-DD` and `0000-MM-DD`. */
+const BIRTHDAY_PATTERN = /^(?:(\d{4})|-)-(\d{2})-(\d{2})$/;
+
 /**
  * Reads a birthday from a Google CSV cell.
  *
  * @param raw - The cell's text.
- * @returns The date as `YYYY-MM-DD`. null when the cell is empty, gives no year (`--MM-DD` or `0000-MM-DD`), or
- * is in any other form.
+ * @returns The date, and whether the cell gave its year. null when the cell is empty or in any other form.
  */
-export function parseBirthday(raw: string): string | null {
-  if (!raw) {
-    return null;
-  }
-
-  // --MM-DD format (no year)
-  if (raw.startsWith('--')) {
-    return null;
-  }
-
-  // 0000-MM-DD format (no year)
-  if (raw.startsWith('0000-')) {
-    return null;
-  }
-
-  // YYYY-MM-DD — validate and return as-is
-  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(raw);
+export function parseBirthday(raw: string): ParsedBirthday | null {
+  const match = BIRTHDAY_PATTERN.exec(raw);
   if (!match) {
     return null;
   }
 
-  const year = Number(match[1]);
-  if (year === 0) {
-    return null;
-  }
-
-  return raw;
+  const [, year, month, day] = match;
+  const hasYear = year !== undefined && Number(year) !== 0;
+  return { date: `${hasYear ? year : YEARLESS_DATE_YEAR}-${month}-${day}`, hasYear };
 }

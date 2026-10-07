@@ -28,11 +28,10 @@ const GET_PERSONS_FOR_DEDUPE = graphql(`
     persons(
       limit: $limit
       offset: $offset
-      orderBy: { lastName: { direction: asc, priority: 1 }, id: { direction: asc, priority: 2 } }
+      orderBy: { sortName: { direction: asc, priority: 1 }, id: { direction: asc, priority: 2 } }
     ) {
       id
-      firstName
-      lastName
+      displayName
       contactInfos(where: { type: { eq: email } }, limit: 5) {
         id
         type

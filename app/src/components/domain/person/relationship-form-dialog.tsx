@@ -17,13 +17,13 @@ import { Button } from '@/components/ui/button';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { FieldWrapper, Form } from '@/components/ui/form';
 import { FormDialog, FormDialogFooter } from '@/components/ui/form-dialog';
-import { fullName } from '@/lib/person-name';
+import { personName } from '@/lib/person-name';
 import { useAllRows } from '@/lib/use-all-rows';
 
 /** What the dialog needs of the relationship it edits. */
 export type EditingRelationship = Pick<
   PersonRelationshipEntry,
-  'id' | 'type' | 'relatedPersonId' | 'relatedPersonFirstName' | 'relatedPersonLastName'
+  'id' | 'type' | 'relatedPersonId' | 'relatedPersonDisplayName'
 >;
 
 interface RelationshipFormDialogProps {
@@ -32,7 +32,7 @@ interface RelationshipFormDialogProps {
   /** The person whose page this is; a new relationship starts at them. */
   fromPersonId: string;
   /** Everyone the person could be linked to. */
-  allPersons: Array<{ id: string; firstName: string; lastName: string }>;
+  allPersons: Array<{ id: string; displayName: string }>;
   /** The people already related to this person, who are not offered again. */
   existingRelatedIds: Set<string>;
   /** Called after a relationship is created, with both people and its type name. */
@@ -117,7 +117,7 @@ export function RelationshipFormDialog({
     ? [
         {
           value: editing.relatedPersonId,
-          label: `${editing.relatedPersonFirstName} ${editing.relatedPersonLastName}`,
+          label: personName({ displayName: editing.relatedPersonDisplayName }),
         },
       ]
     : allPersons
@@ -126,7 +126,7 @@ export function RelationshipFormDialog({
           const isUnrelated = existingRelatedIds.has(p.id) === false;
           return isOther && isUnrelated;
         })
-        .map((p) => ({ value: p.id, label: fullName(p) }));
+        .map((p) => ({ value: p.id, label: personName(p) }));
 
   // A relationship keeps its type's name after the type is deleted, so the one being edited may
   // no longer be in the list.

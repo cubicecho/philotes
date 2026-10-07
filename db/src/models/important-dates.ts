@@ -1,4 +1,4 @@
-import { date, index, pgTable, primaryKey, text, timestamp, uuid } from 'drizzle-orm/pg-core';
+import { boolean, date, index, pgTable, primaryKey, text, timestamp, uuid } from 'drizzle-orm/pg-core';
 
 import { labels } from './labels.ts';
 import { persons } from './persons.ts';
@@ -23,6 +23,13 @@ export const MilestoneType = {
   Other: 'other',
 } as const;
 export type MilestoneType = (typeof MilestoneType)[keyof typeof MilestoneType];
+
+/** What an important date is, as a phone's contact card tells them apart. */
+export const ImportantDateKind = { Birthday: 'birthday', Anniversary: 'anniversary', Other: 'other' } as const;
+export type ImportantDateKind = (typeof ImportantDateKind)[keyof typeof ImportantDateKind];
+
+/** The year a date is stored under when its own is not known. A leap year, so 29 February fits. */
+export const YEARLESS_DATE_YEAR = 1604;
 
 /**
  * Lists a vocabulary's members in the non-empty tuple form a `text` column's `enum` takes.
@@ -53,7 +60,13 @@ export const importantDates = pgTable(
       .references(() => users.id, { onDelete: 'cascade' }),
     name: text('name').notNull(),
     description: text('description'),
+    kind: text('kind', { enum: membersOf(ImportantDateKind) })
+      .$type<ImportantDateKind>()
+      .notNull()
+      .default(ImportantDateKind.Other),
     date: date('date').notNull(),
+    /** false when only the month and day are known. The date is then stored under {@link YEARLESS_DATE_YEAR}. */
+    hasYear: boolean('has_year').notNull().default(true),
     recurrence: text('recurrence').$type<Recurrence>(),
     milestoneType: text('milestone_type', { enum: membersOf(MilestoneType) }).$type<MilestoneType>(),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),

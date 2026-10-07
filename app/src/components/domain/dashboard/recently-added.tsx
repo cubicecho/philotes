@@ -2,15 +2,15 @@ import { useRouter } from 'expo-router';
 import { UserPlus } from '@/components/app-icons';
 import { Avatar } from '@/components/domain/person/avatar';
 import { ListItem } from '@/components/list-item';
-import { fullName } from '@/lib/person-name';
+import { personName } from '@/lib/person-name';
 import { relativeTime } from '@/lib/relative-time';
 import { Widget } from './widget';
 
 /** A person as the recently-added card shows them. */
 export type RecentPerson = {
   id: string;
-  firstName: string;
-  lastName: string;
+  /** The person's name as the server worked it out. Empty when they have none. */
+  displayName: string;
   avatarPath?: string | null;
   createdAt: Date;
 };
@@ -28,8 +28,8 @@ export function RecentlyAdded({ persons }: { persons: RecentPerson[] }) {
       contentSlot={persons.map((p) => (
         <ListItem
           key={p.id}
-          leadingSlot={<Avatar firstName={p.firstName} lastName={p.lastName} avatarPath={p.avatarPath} size="sm" />}
-          title={fullName(p)}
+          leadingSlot={<Avatar name={personName(p)} avatarPath={p.avatarPath} size="sm" />}
+          title={personName(p)}
           meta={relativeTime(p.createdAt)}
           onPress={() => router.push(`/persons/${p.id}`)}
         />

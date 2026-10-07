@@ -91,9 +91,60 @@ describe('parseGoogleContactsCsv', () => {
     expect(contacts[0].birthday).toBe('1990-06-15');
   });
 
-  it('returns null birthday for --MM-DD format', () => {
-    const csv = 'First Name,Last Name,E-mail 1 - Value,Birthday\nAlice,Smith,alice@example.com,--06-15';
+  it('says a full birthday has its year', () => {
+    const csv = 'First Name,Birthday\nAlice,1990-06-15';
+    const { contacts } = parseGoogleContactsCsv(csv);
+    expect(contacts[0].birthdayHasYear).toBe(true);
+  });
+
+  it.each(['--06-15', '0000-06-15'])('keeps the month and day of the yearless birthday %s', (cell) => {
+    const csv = `First Name,Birthday\nAlice,${cell}`;
+    const { contacts } = parseGoogleContactsCsv(csv);
+    expect(contacts[0]).toMatchObject({ birthday: '1604-06-15', birthdayHasYear: false });
+  });
+
+  it('has no birthday for a cell in another form', () => {
+    const csv = 'First Name,Birthday\nAlice,June 15';
     const { contacts } = parseGoogleContactsCsv(csv);
     expect(contacts[0].birthday).toBeNull();
+  });
+
+  it('reads the rest of the name, the work fields and the notes', () => {
+    const csv = [
+      'Name Prefix,First Name,Middle Name,Last Name,Name Suffix,Nickname,Organization Name,Organization Title,Organization Department,Notes',
+      'Dr.,Grace,Brewster,Hopper,PhD,Amazing Grace,US Navy,Rear Admiral,Computing,Found the first bug',
+    ].join('\n');
+
+    const { contacts } = parseGoogleContactsCsv(csv);
+
+    expect(contacts[0]).toMatchObject({
+      namePrefix: 'Dr.',
+      firstName: 'Grace',
+      middleName: 'Brewster',
+      lastName: 'Hopper',
+      nameSuffix: 'PhD',
+      nickname: 'Amazing Grace',
+      organization: 'US Navy',
+      jobTitle: 'Rear Admiral',
+      department: 'Computing',
+      about: 'Found the first bug',
+    });
+  });
+
+  it('keeps a contact that has only an organization or a nickname, and skips one with neither', () => {
+    const csv = [
+      'First Name,Nickname,Organization Name,Phone 1 - Value',
+      ',,Analytical Engines,555-0100',
+      ',Countess,,555-0101',
+      ',,,555-0102',
+    ].join('\n');
+
+    const { contacts, skippedCount } = parseGoogleContactsCsv(csv);
+
+    expect(contacts.map((contact) => contact.organization || contact.nickname)).toEqual([
+      'Analytical Engines',
+      'Countess',
+    ]);
+    expect(skippedCount).toBe(1);
   });
 });

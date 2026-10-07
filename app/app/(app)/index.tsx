@@ -25,8 +25,7 @@ const GET_DASHBOARD = graphql(`
       orderBy: { createdAt: { direction: asc, priority: 1 }, id: { direction: asc, priority: 2 } }
     ) {
       id
-      firstName
-      lastName
+      displayName
       avatarPath
       contactFrequency
       createdAt
@@ -103,8 +102,7 @@ function computeReachOut(persons: DashboardPerson[]): ReachOutPerson[] {
     .sort((a, b) => b.overdueByDays - a.overdueByDays)
     .map(({ person, overdueByDays }) => ({
       id: person.id,
-      firstName: person.firstName,
-      lastName: person.lastName,
+      displayName: person.displayName,
       avatarPath: person.avatarPath,
       statusLabel: formatOverdueLabel(overdueByDays),
       isDormant: false,
@@ -124,8 +122,7 @@ function computeReachOut(persons: DashboardPerson[]): ReachOutPerson[] {
     .sort((a, b) => (b.daysSince ?? 0) - (a.daysSince ?? 0))
     .map(({ person, daysSince }) => ({
       id: person.id,
-      firstName: person.firstName,
-      lastName: person.lastName,
+      displayName: person.displayName,
       avatarPath: person.avatarPath,
       statusLabel: dormantLabel(daysSince),
       isDormant: true,
@@ -155,8 +152,7 @@ function computeUpcomingDates(persons: DashboardPerson[]): UpcomingDate[] {
         name: importantDate.name,
         daysUntil,
         personId: person.id,
-        personFirstName: person.firstName,
-        personLastName: person.lastName,
+        personDisplayName: person.displayName,
       });
     }
   }
@@ -196,8 +192,7 @@ function computeOpenTasks(persons: DashboardPerson[]): OpenTask[] {
         title: task.title,
         dueAt: task.dueAt ?? null,
         personId: person.id,
-        personFirstName: person.firstName,
-        personLastName: person.lastName,
+        personDisplayName: person.displayName,
         isOverdue,
       });
     }
@@ -232,8 +227,7 @@ function computeRecentlyAdded(persons: DashboardPerson[]): RecentPerson[] {
     .slice(0, widgetLimit)
     .map((p) => ({
       id: p.id,
-      firstName: p.firstName,
-      lastName: p.lastName,
+      displayName: p.displayName,
       avatarPath: p.avatarPath,
       createdAt: p.createdAt,
     }));

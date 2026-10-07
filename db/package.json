@@ -9,7 +9,8 @@
     "./relations": "./src/relations.ts",
     "./wait": "./src/wait.ts",
     "./ssl": "./src/ssl.ts",
-    "./defaults": "./src/defaults.ts"
+    "./defaults": "./src/defaults.ts",
+    "./normalize": "./src/normalize.ts"
   },
   "scripts": {
     "generate": "drizzle-kit generate",
@@ -22,6 +23,7 @@
   },
   "dependencies": {
     "drizzle-orm": "1.0.0-rc.4",
+    "libphonenumber-js": "^1.13.14",
     "postgres": "^3.4.9"
   },
   "devDependencies": {

@@ -1,4 +1,5 @@
-import { date, index, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core';
+import { type SQL, sql } from 'drizzle-orm';
+import { date, index, pgTable, text, timestamp, uniqueIndex, uuid } from 'drizzle-orm/pg-core';
 import { users } from './users.ts';
 
 /** How often a user means to be in touch with a person. */
@@ -10,6 +11,15 @@ export const ContactFrequency = {
 } as const;
 export type ContactFrequency = (typeof ContactFrequency)[keyof typeof ContactFrequency];
 
+/** The given and family name, in the order they are read. Empty when the person has neither. */
+const FULL_NAME_SQL = `btrim(coalesce(first_name, '') || ' ' || coalesce(last_name, ''))`;
+/** The family and given name, in the order a list is sorted by. */
+const FAMILY_FIRST_SQL = `btrim(coalesce(last_name, '') || ' ' || coalesce(first_name, ''))`;
+/** What stands in for a missing name. */
+const NAME_FALLBACK_SQL = `nullif(btrim(nickname), ''), nullif(btrim(organization), ''), ''`;
+const DISPLAY_NAME_SQL = `coalesce(nullif(${FULL_NAME_SQL}, ''), ${NAME_FALLBACK_SQL})`;
+const SORT_NAME_SQL = `lower(coalesce(nullif(${FAMILY_FIRST_SQL}, ''), ${NAME_FALLBACK_SQL}))`;
+
 /** A person in one user's contacts. Two users who know the same person each hold their own row. */
 export const persons = pgTable(
   'persons',
@@ -18,8 +28,30 @@ export const persons = pgTable(
     userId: uuid('user_id')
       .notNull()
       .references(() => users.id, { onDelete: 'cascade' }),
-    firstName: text('first_name').notNull(),
-    lastName: text('last_name').notNull(),
+    namePrefix: text('name_prefix'),
+    /** null for a person known only by a nickname or an organization. */
+    firstName: text('first_name'),
+    middleName: text('middle_name'),
+    lastName: text('last_name'),
+    nameSuffix: text('name_suffix'),
+    nickname: text('nickname'),
+    organization: text('organization'),
+    jobTitle: text('job_title'),
+    department: text('department'),
+    /** What a phone's contact card calls the note. A user's Philotes notes are kept apart from it. */
+    about: text('about'),
+    /** What the person is called in a list: the name, else the nickname, else the organization. Empty when none is set. */
+    displayName: text('display_name')
+      .notNull()
+      .generatedAlwaysAs((): SQL => sql.raw(DISPLAY_NAME_SQL)),
+    /** What a list of people is ordered by: family name first, in lower case. */
+    sortName: text('sort_name')
+      .notNull()
+      .generatedAlwaysAs((): SQL => sql.raw(SORT_NAME_SQL)),
+    /** The person's id in a synced address book (the vCard UID). A phone that creates the person supplies its own. */
+    uid: text('uid').notNull().default(sql`gen_random_uuid()::text`),
+    /** The lines of a synced contact card that no column holds, kept so a phone gets them back unchanged. */
+    vcardExtra: text('vcard_extra'),
     contactFrequency: text('contact_frequency').$type<ContactFrequency>(),
     howWeMet: text('how_we_met'),
     firstMetDate: date('first_met_date'),
@@ -33,7 +65,8 @@ export const persons = pgTable(
   },
   (t) => [
     index('idx_persons_user_id').on(t.userId),
-    index('idx_persons_last_name_first_name').on(t.lastName, t.firstName),
+    index('idx_persons_user_id_sort_name').on(t.userId, t.sortName),
+    uniqueIndex('uq_persons_user_id_uid').on(t.userId, t.uid),
   ],
 );
 

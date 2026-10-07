@@ -17,6 +17,17 @@ export function localIsoDate(date: Date): string {
 }
 
 /**
+ * Writes a day for reading, in the reader's locale. A day whose year is not known is written without one.
+ *
+ * @param date - Local midnight of the day.
+ * @param hasYear - Whether the day's year is known. `false` for a birthday kept as a month and a day.
+ * @returns The day with a long month name: "March 9, 2026", or "March 9" without its year, in US English.
+ */
+export function formatDay(date: Date, hasYear: boolean): string {
+  return date.toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: hasYear ? 'numeric' : undefined });
+}
+
+/**
  * Reads a `YYYY-MM-DD` day as a local date. `new Date(str)` reads it as UTC midnight instead, which is
  * the day before anywhere west of Greenwich.
  *

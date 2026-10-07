@@ -13,6 +13,9 @@ const REPEAT_FREQUENCIES: Record<Recurrence, ICalEventRepeatingFreq> = {
   [Recurrence.Weekly]: ICalEventRepeatingFreq.WEEKLY,
 };
 
+/** What an event calls a person who has no name, nickname or organization. */
+const UNNAMED_PERSON = 'Unknown';
+
 /** What the feed is built from. */
 export interface IcalDeps {
   /** Drizzle client. */
@@ -53,9 +56,9 @@ async function sendCalendar({ db, auth }: IcalDeps, req: Request, res: Response)
       name: importantDates.name,
       description: importantDates.description,
       date: importantDates.date,
+      hasYear: importantDates.hasYear,
       recurrence: importantDates.recurrence,
-      personFirstName: persons.firstName,
-      personLastName: persons.lastName,
+      personName: persons.displayName,
     })
     .from(importantDates)
     .leftJoin(persons, eq(importantDates.personId, persons.id))
@@ -64,10 +67,14 @@ async function sendCalendar({ db, auth }: IcalDeps, req: Request, res: Response)
   const cal = ical({ name: 'Philotes – Important Dates' });
 
   for (const row of rows) {
-    const personName = [row.personFirstName, row.personLastName].filter(Boolean).join(' ') || 'Unknown';
+    const personName = row.personName || UNNAMED_PERSON;
 
     // Parse as UTC midnight to keep the date stable across timezones
     const start = new Date(`${row.date}T00:00:00Z`);
+    if (row.hasYear === false) {
+      // The stored year is a placeholder. A calendar is given this year's, which a repeat rule carries on from.
+      start.setUTCFullYear(new Date().getUTCFullYear());
+    }
 
     const event = cal.createEvent({
       id: `importantdate-${row.id}@philotes`,

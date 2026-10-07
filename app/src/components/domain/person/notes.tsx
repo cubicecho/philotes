@@ -15,7 +15,7 @@ import { Form } from '@/components/ui/form';
 import { FormDialog, FormDialogFooter } from '@/components/ui/form-dialog';
 import { Pencil, Trash2 } from '@/components/ui/icons';
 import { type MentionablePerson, parseMentionedPersonIds } from '@/lib/mentions';
-import { fullName } from '@/lib/person-name';
+import { personName } from '@/lib/person-name';
 
 const CREATE_NOTE = graphql(`
   mutation CreateNote($body: String!, $personId: UUID!) {
@@ -74,7 +74,7 @@ export interface NoteData {
   /** The tags attached to the note. */
   labels: TagOption[];
   /** The people the note mentions. */
-  mentions: Array<{ id: string; firstName: string; lastName: string }>;
+  mentions: Array<{ id: string; displayName: string }>;
 }
 
 export interface PersonNotesProps {
@@ -83,7 +83,7 @@ export interface PersonNotesProps {
   /** Every tag the user has. */
   allTags: TagOption[];
   /** Everyone a note can mention. */
-  allPersons: Array<{ id: string; firstName: string; lastName: string }>;
+  allPersons: Array<{ id: string; displayName: string }>;
   /** Called after a note is added, edited or deleted, or its tags change. */
   onChanged: () => void;
   /** Whether the Add Note dialog is open. */
@@ -245,7 +245,7 @@ function NoteRow({ note, allTags, allPersons, onChanged }: NoteRowProps) {
             <Text className="text-xs font-medium text-foreground/60">Mentions:</Text>
             {note.mentions.map((m) => (
               <Link key={m.id} href={`/persons/${m.id}`} asChild>
-                <Button variant="secondary" size="xs" content={fullName(m)} />
+                <Button variant="secondary" size="xs" content={personName(m)} />
               </Link>
             ))}
           </View>

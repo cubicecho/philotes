@@ -3,9 +3,9 @@ import { useEffect, useState } from 'react';
 import { Linking, View } from 'react-native';
 import { graphql } from '@/__generated__/gql';
 import type { ContactInfo_ListFragment } from '@/__generated__/graphql';
-import { ContactTypeEnum } from '@/__generated__/graphql';
+import { ContactInfosKindEnum, ContactTypeEnum } from '@/__generated__/graphql';
 import { useAppForm } from '@/components/app-form';
-import { Globe, Mail, Phone, Share2, Smartphone } from '@/components/app-icons';
+import { Globe, Mail, MessageSquare, Phone, Printer, Share2 } from '@/components/app-icons';
 import { ConfirmButton } from '@/components/confirm-button';
 import { ListItem } from '@/components/list-item';
 import { EmptyState } from '@/components/page';
@@ -20,6 +20,7 @@ export const CONTACT_INFO_LIST_FRAGMENT = graphql(`
     contactInfos {
       id
       type
+      kind
       value
       label
       isPrimary
@@ -31,6 +32,7 @@ const CREATE_CONTACT_INFO = graphql(`
   mutation CreateContactInfo(
     $personId: UUID!
     $type: ContactTypeEnum!
+    $kind: ContactInfosKindEnum
     $value: String!
     $label: String
     $isPrimary: Boolean
@@ -39,6 +41,7 @@ const CREATE_CONTACT_INFO = graphql(`
       values: {
         personId: $personId
         type: $type
+        kind: $kind
         value: $value
         label: $label
         isPrimary: $isPrimary
@@ -47,6 +50,7 @@ const CREATE_CONTACT_INFO = graphql(`
       id
       personId
       type
+      kind
       value
       label
       isPrimary
@@ -66,7 +70,8 @@ const DELETE_CONTACT_INFO = graphql(`
 const CONTACT_TYPE_OPTIONS: Array<{ value: ContactTypeEnum; label: string }> = [
   { value: ContactTypeEnum.Email, label: 'Email' },
   { value: ContactTypeEnum.Phone, label: 'Phone' },
-  { value: ContactTypeEnum.Mobile, label: 'Mobile' },
+  { value: ContactTypeEnum.Fax, label: 'Fax' },
+  { value: ContactTypeEnum.Im, label: 'Messaging' },
   { value: ContactTypeEnum.Linkedin, label: 'LinkedIn' },
   { value: ContactTypeEnum.Twitter, label: 'Twitter' },
   { value: ContactTypeEnum.Instagram, label: 'Instagram' },
@@ -74,11 +79,32 @@ const CONTACT_TYPE_OPTIONS: Array<{ value: ContactTypeEnum; label: string }> = [
   { value: ContactTypeEnum.Other, label: 'Other' },
 ];
 
+/** The select's value for "no kind". A select cannot hold an empty string, and the API takes null. */
+const NO_KIND = 'none';
+
+/** Where a contact value reaches the person, as select options. The first leaves it unsaid. */
+const CONTACT_KIND_OPTIONS: Array<{ value: ContactInfosKindEnum | typeof NO_KIND; label: string }> = [
+  { value: NO_KIND, label: 'Not set' },
+  { value: ContactInfosKindEnum.Mobile, label: 'Mobile' },
+  { value: ContactInfosKindEnum.Home, label: 'Home' },
+  { value: ContactInfosKindEnum.Work, label: 'Work' },
+  { value: ContactInfosKindEnum.Other, label: 'Other' },
+];
+
+/** The name shown for each kind. */
+const CONTACT_KIND_LABELS: Record<ContactInfosKindEnum, string> = {
+  [ContactInfosKindEnum.Mobile]: 'Mobile',
+  [ContactInfosKindEnum.Home]: 'Home',
+  [ContactInfosKindEnum.Work]: 'Work',
+  [ContactInfosKindEnum.Other]: 'Other',
+};
+
 /** An example value for each contact type, shown as the value field's placeholder. */
 const CONTACT_TYPE_PLACEHOLDERS: Record<ContactTypeEnum, string> = {
   [ContactTypeEnum.Email]: 'name@example.com',
   [ContactTypeEnum.Phone]: '+1 (555) 000-0000',
-  [ContactTypeEnum.Mobile]: '+1 (555) 000-0000',
+  [ContactTypeEnum.Fax]: '+1 (555) 000-0000',
+  [ContactTypeEnum.Im]: 'Handle or address',
   [ContactTypeEnum.Linkedin]: 'https://linkedin.com/in/username',
   [ContactTypeEnum.Twitter]: '@username',
   [ContactTypeEnum.Instagram]: '@username',
@@ -119,11 +145,13 @@ function websiteHref(site: string): string {
   return isUrl ? site : `https://${site}`;
 }
 
-/** What turns a trimmed value of each contact type into its href. `other` has nothing to open. */
+/** What turns a trimmed value of each contact type into its href. */
 const CONTACT_HREF_BUILDERS: Record<string, (value: string) => string | null> = {
   [ContactTypeEnum.Email]: (address) => `mailto:${address}`,
   [ContactTypeEnum.Phone]: telHref,
-  [ContactTypeEnum.Mobile]: telHref,
+  // A fax number and a messaging handle have nothing a phone or browser opens.
+  [ContactTypeEnum.Fax]: () => null,
+  [ContactTypeEnum.Im]: () => null,
   [ContactTypeEnum.Linkedin]: (handle) => profileHref('https://linkedin.com/in/', handle),
   [ContactTypeEnum.Twitter]: (handle) => profileHref('https://x.com/', handle),
   [ContactTypeEnum.Instagram]: (handle) => profileHref('https://instagram.com/', handle),
@@ -150,7 +178,8 @@ export function contactHref(type: string, value: string): string | null {
 const CONTACT_TYPE_ICONS: Record<string, typeof Ellipsis> = {
   [ContactTypeEnum.Email]: Mail,
   [ContactTypeEnum.Phone]: Phone,
-  [ContactTypeEnum.Mobile]: Smartphone,
+  [ContactTypeEnum.Fax]: Printer,
+  [ContactTypeEnum.Im]: MessageSquare,
   [ContactTypeEnum.Linkedin]: Share2,
   [ContactTypeEnum.Twitter]: Share2,
   [ContactTypeEnum.Instagram]: Share2,
@@ -182,7 +211,9 @@ interface ContactInfoRowProps {
   /** The contact type, one of the `ContactTypeEnum` values; it picks the glyph and what a press opens. */
   type: string;
   value: string;
-  /** The user's own name for the value, such as Work; shown under it. */
+  /** Where the value reaches the person: home, work, mobile or other. Shown as a badge when set. */
+  kind: ContactInfosKindEnum | null | undefined;
+  /** The user's own name for the value, such as Assistant; shown under it. */
   label: string | null | undefined;
   isPrimary: boolean;
   /** Called after the contact value is deleted. */
@@ -190,7 +221,7 @@ interface ContactInfoRowProps {
 }
 
 /** One contact value with its type and primary badges. Pressing the row calls, mails or opens the value. */
-function ContactInfoRow({ id, type, value, label, isPrimary, onDelete }: ContactInfoRowProps) {
+function ContactInfoRow({ id, type, kind, value, label, isPrimary, onDelete }: ContactInfoRowProps) {
   const [deleteContactInfo] = useMutation(DELETE_CONTACT_INFO);
 
   const handleDelete = async () => {
@@ -211,6 +242,7 @@ function ContactInfoRow({ id, type, value, label, isPrimary, onDelete }: Contact
       meta={
         <>
           <Badge variant="secondary">{typeLabel}</Badge>
+          {kind ? <Badge variant="outline">{CONTACT_KIND_LABELS[kind]}</Badge> : null}
           {isPrimary ? <Badge variant="warning">Primary</Badge> : null}
         </>
       }
@@ -234,6 +266,7 @@ function ContactInfoRow({ id, type, value, label, isPrimary, onDelete }: Contact
 /** The add-contact-info form's values. */
 interface ContactInfoFields {
   type: ContactTypeEnum;
+  kind: ContactInfosKindEnum | typeof NO_KIND;
   value: string;
   label: string;
   isPrimary: boolean;
@@ -242,6 +275,7 @@ interface ContactInfoFields {
 /** A blank contact info form; the type starts as email. */
 const EMPTY_CONTACT_INFO: ContactInfoFields = {
   type: ContactTypeEnum.Email,
+  kind: NO_KIND,
   value: '',
   label: '',
   isPrimary: false,
@@ -268,6 +302,7 @@ function AddContactInfoDialog({ personId, open, onOpenChange, onAdded }: AddCont
           variables: {
             personId,
             type: value.type,
+            kind: value.kind === NO_KIND ? null : value.kind,
             value: value.value.trim(),
             label: value.label.trim() || null,
             isPrimary: value.isPrimary,
@@ -312,8 +347,13 @@ function AddContactInfoDialog({ personId, open, onOpenChange, onAdded }: AddCont
               </form.AppField>
             )}
           </form.Subscribe>
+          <form.AppField name="kind">
+            {(field) => <field.SelectField label="Kind" options={CONTACT_KIND_OPTIONS} />}
+          </form.AppField>
           <form.AppField name="label">
-            {(field) => <field.InputField label="Label" description="Optional" placeholder="e.g. Work, Personal" />}
+            {(field) => (
+              <field.InputField label="Label" description="Optional" placeholder="e.g. Assistant, Front desk" />
+            )}
           </form.AppField>
           <form.AppField name="isPrimary">{(field) => <field.CheckboxField label="Mark as primary" />}</form.AppField>
           <FormDialogFooter onCancel={() => onOpenChange(false)} error={error?.message ?? null}>
@@ -342,6 +382,7 @@ export function ContactInfoList({ person, onAdd, onDelete, createOpen, onCreateO
             key={info.id}
             id={info.id}
             type={info.type}
+            kind={info.kind}
             value={info.value}
             label={info.label}
             isPrimary={info.isPrimary}

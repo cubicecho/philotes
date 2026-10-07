@@ -23,8 +23,7 @@ const GET_INTERACTIONS_FOR_EXPORT = graphql(`
       note
       person {
         id
-        firstName
-        lastName
+        displayName
       }
     }
   }
@@ -41,12 +40,12 @@ const GET_IMPORTANT_DATES_FOR_EXPORT = graphql(`
       name
       description
       date
+      hasYear
       recurrence
       milestoneType
       person {
         id
-        firstName
-        lastName
+        displayName
       }
     }
   }

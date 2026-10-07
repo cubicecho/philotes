@@ -16,8 +16,7 @@ const GET_NETWORK_DATA = graphql(`
       orderBy: { createdAt: { direction: asc, priority: 1 }, id: { direction: asc, priority: 2 } }
     ) {
       id
-      firstName
-      lastName
+      displayName
       avatarPath
       contactInfos(where: { type: { eq: email } }, limit: 5) {
         id

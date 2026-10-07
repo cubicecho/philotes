@@ -93,6 +93,49 @@ A person has no email column. Their addresses are `contact_infos` rows of type
 `email`, any number of them, and the one marked `is_primary` is the one the app
 writes to. Nothing makes an address unique: two people may share one.
 
+### A person holds what a phone contact holds
+
+Every part of the name is optional: `name_prefix`, `first_name`, `middle_name`,
+`last_name`, `name_suffix` and `nickname`, beside `organization`, `job_title`,
+`department` and `about` (a contact card's note, which is not a Philotes note).
+A person may be a company, or only a telephone number.
+
+Code does not join name parts. Two generated columns do it once, in SQL:
+
+- `display_name`: the name, else the nickname, else the organization. It is the
+  empty string when none is set, and the app then falls back to an email
+  address, a telephone number and last "Unnamed" (`app/src/lib/person-name.ts`).
+- `sort_name`: family name first, in lower case. Lists order by it, and
+  `idx_persons_user_id_sort_name` covers that.
+
+`uid` is the id a synced address book knows the person by (the vCard UID),
+unique per user. `vcard_extra` keeps the lines of a synced card that no column
+holds. Neither is written through GraphQL, and `vcard_extra` is not in the
+schema at all.
+
+### Contact details
+
+`contact_infos.type` says what a detail is (`ContactType`: email, phone, fax,
+im, the social sites, website, other) and `kind` says whose or where
+(`ContactKind`: home, work, mobile, other; null when unknown). A mobile number
+is a `phone` of kind `mobile`. `label` is free text for what neither covers.
+
+`normalized_value` is the form two spellings of one value share, and the column
+to match on: E.164 for a phone or fax number, the trimmed lower-case value for
+everything else. The server writes it (`db/src/normalize.ts`,
+`normalizeContactValue`); no client supplies it. A number without a country
+code is read in the owner's `users.default_country` (ISO 3166-1 alpha-2, `US`
+unless changed). A number that cannot be parsed keeps only its digits.
+
+### Dates without a year
+
+`important_dates.kind` (`ImportantDateKind`: birthday, anniversary, other) says
+what a date is; nothing reads it out of the name. When only the month and day
+are known, `has_year` is false and the date is stored under year 1604
+(`YEARLESS_DATE_YEAR`, the year a contact card uses for the same purpose and a
+leap year, so 29 February is storable). The year of such a date means nothing
+and is never shown.
+
 ## Tenancy
 
 Every new table needs an ownership story, and it must be registered in
@@ -207,8 +250,8 @@ export type Recurrence = (typeof Recurrence)[keyof typeof Recurrence];
 ```
 
 `ContactType` and `AddressType` back Postgres enums (`pgEnum('contact_type',
-ContactType)`). `MilestoneType` is a `text` column with an `enum` list, which is
-what makes it an enum in GraphQL. `Recurrence`, `InteractionChannel`,
+ContactType)`). `MilestoneType`, `ContactKind` and `ImportantDateKind` are
+`text` columns with an `enum` list, which is what makes them enums in GraphQL. `Recurrence`, `InteractionChannel`,
 `InteractionSentiment` and `ContactFrequency` are plain `text` columns: the
 server's input schemas check a write against the vocabulary, and a row written
 before that check may hold another value. Code compares against a member

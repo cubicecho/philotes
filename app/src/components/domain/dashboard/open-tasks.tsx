@@ -2,6 +2,7 @@ import { useRouter } from 'expo-router';
 import { Text } from 'react-native';
 import { SquareCheck } from '@/components/app-icons';
 import { ListItem } from '@/components/list-item';
+import { personName } from '@/lib/person-name';
 import { Widget } from './widget';
 
 /** A task not yet done, with the person it belongs to. */
@@ -11,8 +12,8 @@ export type OpenTask = {
   /** `null` when the task has no due date. */
   dueAt: Date | null;
   personId: string;
-  personFirstName: string;
-  personLastName: string;
+  /** The person's name as the server worked it out. Empty when they have none. */
+  personDisplayName: string;
   isOverdue: boolean;
 };
 
@@ -44,7 +45,7 @@ export function OpenTasks({ tasks }: { tasks: OpenTask[] }) {
         <ListItem
           key={t.id}
           title={t.title}
-          description={`${t.personFirstName} ${t.personLastName}`}
+          description={personName({ displayName: t.personDisplayName })}
           meta={t.isOverdue ? <Text className="font-medium text-negative text-xs">{dueLabel(t)}</Text> : dueLabel(t)}
           onPress={() => router.push(`/persons/${t.personId}`)}
         />

@@ -18,6 +18,7 @@ import { personWriteHooks } from '../persons/hooks.ts';
 import { relationshipWriteHooks } from '../relationships/hooks.ts';
 import { applyRelationshipsExtension } from '../relationships/resolvers.ts';
 import { taskWriteHooks } from '../tasks/hooks.ts';
+import { applyUserSettingsExtension } from '../users/resolvers.ts';
 import { contextValues, exclude, features, scope } from './tenancy.ts';
 import { mapWriteError } from './write-guards.ts';
 
@@ -45,6 +46,7 @@ const EXTENSIONS: Array<(schema: GraphQLSchema) => GraphQLSchema> = [
   applyMergeLabelsExtension,
   applyDuplicatesExtension,
   applyApiKeysExtension,
+  applyUserSettingsExtension,
 ];
 
 /**

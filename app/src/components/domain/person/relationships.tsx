@@ -11,11 +11,12 @@ import { ListItem } from '@/components/list-item';
 import { EmptyState } from '@/components/page';
 import { Badge } from '@/components/ui/badge';
 import { Pencil, Trash2 } from '@/components/ui/icons';
+import { personName } from '@/lib/person-name';
 
 export interface RelationshipsProps {
   person: Person_RelationshipsFragment;
   /** Everyone the person could be linked to. */
-  allPersons: Array<{ id: string; firstName: string; lastName: string }>;
+  allPersons: Array<{ id: string; displayName: string }>;
   /** Called with a relationship's id after it is removed. */
   onDelete: (id: string) => void;
   /** Called after a relationship is created, with both people and its type name. */
@@ -38,10 +39,10 @@ interface RelationshipRowProps {
 
 /** One relationship: the other person, opening their page when pressed, the type, and edit and remove. */
 function RelationshipRow({ relationship, onDelete, onEditPress }: RelationshipRowProps) {
-  const { id, relatedPersonId, relatedPersonFirstName, relatedPersonLastName, type } = relationship;
+  const { id, relatedPersonId, relatedPersonDisplayName, type } = relationship;
   const router = useRouter();
   const [deleteRelationship] = useMutation(DELETE_RELATIONSHIP);
-  const name = `${relatedPersonFirstName} ${relatedPersonLastName}`;
+  const name = personName({ displayName: relatedPersonDisplayName });
 
   const handleDelete = async () => {
     await deleteRelationship({ variables: { id } });

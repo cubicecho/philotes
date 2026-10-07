@@ -58,7 +58,7 @@ export interface RelationshipsProps {
   // The parent entity, typed from the GraphQL fragment
   person: Person_RelationshipsFragment;
   // Available options for the add form/picker
-  allPersons: Array<{ id: string; firstName: string; lastName: string }>;
+  allPersons: Array<{ id: string; displayName: string }>;
   // Called by the component after a mutation succeeds
   onDelete: (id: string) => void;
   onAdd: (fromPersonId: string, toPersonId: string, type: string) => void;

@@ -1,4 +1,5 @@
 import { boolean, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core';
+import { USER_DEFAULTS } from '../defaults.ts';
 
 /** An account. better-auth owns the columns it names (auth.md); the rest of the schema hangs off `id`. */
 export const users = pgTable('users', {
@@ -9,6 +10,8 @@ export const users = pgTable('users', {
   /** false until a magic link or provider has proved the address. */
   emailVerified: boolean('email_verified').notNull().default(false),
   image: text('image'),
+  /** The country a phone number written without a country code is read as: an ISO 3166-1 alpha-2 code. */
+  defaultCountry: text('default_country').notNull().default(USER_DEFAULTS.country),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true })
     .notNull()

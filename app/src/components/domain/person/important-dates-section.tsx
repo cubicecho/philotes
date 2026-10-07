@@ -17,7 +17,7 @@ import { EmptyState } from '@/components/page';
 import { Section } from '@/components/section';
 import { FormDialog } from '@/components/ui/form-dialog';
 import { localIsoDate } from '@/lib/local-date';
-import { fullName } from '@/lib/person-name';
+import { personName } from '@/lib/person-name';
 
 /** Every milestone an important date can mark. */
 const MILESTONE_TYPES = Object.values(ImportantDatesMilestoneTypeEnum);
@@ -53,6 +53,8 @@ export function ImportantDatesSection({ person, allLabels, allPersons, onChanged
         personId: person.id,
         name: values.name,
         date: values.date,
+        kind: values.kind,
+        hasYear: values.hasYear,
         description: values.description ?? null,
         recurrence: values.recurrence ?? null,
         milestoneType,
@@ -79,6 +81,8 @@ export function ImportantDatesSection({ person, allLabels, allPersons, onChanged
                 personId={person.id}
                 name={d.name}
                 date={d.date instanceof Date ? localIsoDate(d.date) : d.date}
+                kind={d.kind}
+                hasYear={d.hasYear}
                 description={d.description}
                 recurrence={d.recurrence}
                 milestoneType={d.milestoneType}
@@ -99,7 +103,7 @@ export function ImportantDatesSection({ person, allLabels, allPersons, onChanged
         open={dialogOpen}
         onOpenChange={setDialogOpen}
         title="Add Important Date"
-        description={`Record a memorable date for ${fullName(person)}.`}
+        description={`Record a memorable date for ${personName(person)}.`}
       >
         <ImportantDateForm onSubmit={handleCreate} onCancel={() => setDialogOpen(false)} />
       </FormDialog>

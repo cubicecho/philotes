@@ -9,7 +9,7 @@ export interface ContactValue {
 }
 
 /** The contact types that can be called or texted. */
-const PHONE_TYPES: ReadonlySet<string> = new Set([ContactTypeEnum.Phone, ContactTypeEnum.Mobile]);
+const PHONE_TYPES: ReadonlySet<string> = new Set([ContactTypeEnum.Phone]);
 
 /** The contact types that can be written to. */
 const EMAIL_TYPES: ReadonlySet<string> = new Set([ContactTypeEnum.Email]);
@@ -41,7 +41,7 @@ export function primaryEmail(infos: readonly ContactValue[]): string | null {
  * The number to call or text a person on.
  *
  * @param infos - The person's contact details.
- * @returns The phone or mobile marked primary, else the first of either; `null` when the person has none.
+ * @returns The phone number marked primary, else the first; `null` when the person has none.
  */
 export function primaryPhone(infos: readonly ContactValue[]): string | null {
   return primaryOf(infos, PHONE_TYPES);

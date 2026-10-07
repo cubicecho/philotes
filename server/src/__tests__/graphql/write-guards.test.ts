@@ -10,7 +10,11 @@ const UPDATE_NOTE =
 const CREATE_TASK = 'mutation ($values: CreateTaskInput!) { createTask(values: $values) { id } }';
 const CREATE_INTERACTION = 'mutation ($values: CreateInteractionInput!) { createInteraction(values: $values) { id } }';
 const CREATE_NOTE_TAG = 'mutation ($values: CreateNoteTagInput!) { createNoteTag(values: $values) { noteId } }';
-const CREATE_PERSON = 'mutation ($values: CreatePersonInput!) { createPerson(values: $values) { id firstName } }';
+const CREATE_PERSON =
+  'mutation ($values: CreatePersonInput!) { createPerson(values: $values) { id firstName displayName sortName uid } }';
+const CREATE_PERSONS = 'mutation ($values: [CreatePersonInput!]!) { createPersons(values: $values) { uid } }';
+const CLEAR_NAME =
+  'mutation ($id: UUID!) { updatePersons(set: { organization: null }, where: { id: { eq: $id } }) { displayName } }';
 
 describe('generated writes', () => {
   let db: TestDb;
@@ -104,8 +108,51 @@ describe('createPerson', () => {
     expect(data.createPerson.firstName).toBe('Ada');
   });
 
-  it('refuses an empty name', async () => {
-    await owner.expectError(ErrorCode.BadUserInput, CREATE_PERSON, { values: { firstName: ' ', lastName: 'L' } });
+  it('stores a blank name part as nothing', async () => {
+    const data = await owner.expectOk<{ createPerson: { firstName: string | null; displayName: string } }>(
+      CREATE_PERSON,
+      { values: { firstName: ' ', lastName: 'Lovelace' } },
+    );
+    expect(data.createPerson).toMatchObject({ firstName: null, displayName: 'Lovelace' });
+  });
+
+  it('refuses a new person with nothing to be called by', async () => {
+    await owner.expectError(ErrorCode.BadUserInput, CREATE_PERSON, {
+      values: { firstName: ' ', jobTitle: 'Engineer' },
+    });
+    await owner.expectError(ErrorCode.BadUserInput, CREATE_PERSON, { values: {} });
+  });
+
+  it.each([
+    [{ firstName: 'Ada', lastName: 'Lovelace', nickname: 'Countess' }, 'Ada Lovelace', 'lovelace ada'],
+    [{ nickname: 'Countess', organization: 'Analytical Engines' }, 'Countess', 'countess'],
+    [{ organization: 'Analytical Engines' }, 'Analytical Engines', 'analytical engines'],
+  ])('names %j as shown and as sorted', async (values, displayName, sortName) => {
+    const data = await owner.expectOk<{ createPerson: object }>(CREATE_PERSON, { values });
+    expect(data.createPerson).toMatchObject({ displayName, sortName });
+  });
+
+  it('lets an existing person lose their only name', async () => {
+    const created = await owner.expectOk<{ createPerson: { id: string } }>(CREATE_PERSON, {
+      values: { organization: 'Analytical Engines' },
+    });
+
+    const data = await owner.expectOk(CLEAR_NAME, { id: created.createPerson.id });
+
+    expect(data).toEqual({ updatePersons: [{ displayName: '' }] });
+  });
+
+  it('gives each new person their own uid, which a client cannot choose', async () => {
+    const data = await owner.expectOk<{ createPersons: Array<{ uid: string }> }>(CREATE_PERSONS, {
+      values: [{ firstName: 'Grace' }, { firstName: 'Katherine' }],
+    });
+    const chosen = await owner.run(CREATE_PERSON, { values: { firstName: 'Linus', uid: 'mine' } });
+    const named = await owner.run(CREATE_PERSON, { values: { firstName: 'Linus', displayName: 'Someone Else' } });
+
+    const [first, second] = data.createPersons;
+    expect(first.uid).not.toBe(second.uid);
+    expect(chosen.errors).toBeDefined();
+    expect(named.errors).toBeDefined();
   });
 
   it('makes a new person each time, whatever another one holds', async () => {

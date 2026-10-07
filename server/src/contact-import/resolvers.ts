@@ -5,7 +5,8 @@ import { extendSchema, type GraphQLSchema, parse } from 'graphql';
 import type { Context } from '../core/context.ts';
 import { requireAuth } from '../core/errors.ts';
 import { objectType } from '../graphql/object-type.ts';
-import { parseGoogleContactsCsv } from './google-contacts-csv.ts';
+import { defaultCountryOf } from '../persons/normalized-values.ts';
+import { type ParsedContact, parseGoogleContactsCsv } from './google-contacts-csv.ts';
 import { insertAddresses, insertBirthday, insertContactInfos, insertPersonLabels } from './person-details.ts';
 
 /**
@@ -45,6 +46,40 @@ async function findOwnPersonByEmail(db: DB, userId: string, email: string): Prom
     .orderBy(contactInfos.createdAt)
     .limit(1);
   return match?.personId ?? null;
+}
+
+/**
+ * Says who a contact is in a message to the caller.
+ *
+ * @param contact - The parsed contact, which has a name, a nickname or an organization.
+ * @returns The first and last name, or else the nickname, or else the organization.
+ */
+function nameOf(contact: ParsedContact): string {
+  const fullName = [contact.firstName, contact.lastName].filter(Boolean).join(' ');
+  return fullName || contact.nickname || contact.organization;
+}
+
+/**
+ * Builds the person row an imported contact starts as.
+ *
+ * @param userId - The user importing the contact.
+ * @param contact - The parsed contact.
+ * @returns The row, with null for each part the contact does not have.
+ */
+function toNewPerson(userId: string, contact: ParsedContact): dbSchema.NewPerson {
+  return {
+    userId,
+    namePrefix: contact.namePrefix || null,
+    firstName: contact.firstName || null,
+    middleName: contact.middleName || null,
+    lastName: contact.lastName || null,
+    nameSuffix: contact.nameSuffix || null,
+    nickname: contact.nickname || null,
+    organization: contact.organization || null,
+    jobTitle: contact.jobTitle || null,
+    department: contact.department || null,
+    about: contact.about || null,
+  };
 }
 
 const IMPORT_CONTACTS_SDL = parse(`
@@ -103,6 +138,7 @@ export function applyImportContactsExtension(schema: GraphQLSchema): GraphQLSche
 
     // Step 1: Parse CSV
     const { contacts, skippedCount } = parseGoogleContactsCsv(args.csv);
+    const country = await defaultCountryOf(db, userId);
 
     // Step 2: Upsert Labels (user-scoped)
     const allLabelNames = new Set<string>();
@@ -150,6 +186,7 @@ export function applyImportContactsExtension(schema: GraphQLSchema): GraphQLSche
     const errors: string[] = [];
 
     for (const contact of contacts) {
+      const name = nameOf(contact);
       let personId: string;
 
       try {
@@ -157,11 +194,11 @@ export function applyImportContactsExtension(schema: GraphQLSchema): GraphQLSche
         if (existingId === null) {
           const [inserted] = await db
             .insert(dbSchema.persons)
-            .values({ userId, firstName: contact.firstName, lastName: contact.lastName || contact.firstName })
+            .values(toNewPerson(userId, contact))
             .returning({ id: dbSchema.persons.id });
 
           if (!inserted) {
-            errors.push(`Failed to insert ${contact.firstName} ${contact.lastName}: no row returned`);
+            errors.push(`Failed to insert ${name}: no row returned`);
             continue;
           }
 
@@ -172,7 +209,7 @@ export function applyImportContactsExtension(schema: GraphQLSchema): GraphQLSche
           mergedCount++;
         }
       } catch (err: unknown) {
-        reportFailure(errors, `Failed to import ${contact.firstName} ${contact.lastName}`, err);
+        reportFailure(errors, `Failed to import ${name}`, err);
         continue;
       }
 
@@ -180,17 +217,17 @@ export function applyImportContactsExtension(schema: GraphQLSchema): GraphQLSche
       // Each helper is isolated with .catch() so a failure in one (e.g. a
       // duplicate address) does not roll back an otherwise-successful import.
       await Promise.all([
-        insertContactInfos(db, personId, userId, contact).catch((err: unknown) => {
-          reportFailure(errors, `Failed to import contact details for ${contact.firstName} ${contact.lastName}`, err);
+        insertContactInfos(db, personId, userId, contact, country).catch((err: unknown) => {
+          reportFailure(errors, `Failed to import contact details for ${name}`, err);
         }),
         insertAddresses(db, personId, userId, contact).catch((err: unknown) => {
-          reportFailure(errors, `Failed to import addresses for ${contact.firstName} ${contact.lastName}`, err);
+          reportFailure(errors, `Failed to import addresses for ${name}`, err);
         }),
         insertBirthday(db, personId, userId, contact).catch((err: unknown) => {
-          reportFailure(errors, `Failed to import birthday for ${contact.firstName} ${contact.lastName}`, err);
+          reportFailure(errors, `Failed to import birthday for ${name}`, err);
         }),
         insertPersonLabels(db, personId, userId, contact.labels, labelNameToId).catch((err: unknown) => {
-          reportFailure(errors, `Failed to import labels for ${contact.firstName} ${contact.lastName}`, err);
+          reportFailure(errors, `Failed to import labels for ${name}`, err);
         }),
       ]);
     }

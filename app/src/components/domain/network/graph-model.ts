@@ -52,17 +52,6 @@ export function getNodeRadius(connections: number): number {
   return minNodeRadius + ((maxNodeRadius - minNodeRadius) * counted) / nodeRadiusFullAt;
 }
 
-/**
- * The two letters drawn inside a person's node.
- *
- * @param firstName - The person's first name.
- * @param lastName - The person's last name.
- * @returns The first character of each name, uppercased; an empty name adds nothing.
- */
-export function getInitials(firstName: string, lastName: string): string {
-  return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
-}
-
 /** What the simulation is built from. */
 export interface GraphData {
   nodes: SimNode[];

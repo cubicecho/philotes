@@ -21,13 +21,14 @@ interface UpcomingDateEntry {
   id: string;
   name: string;
   description: string | null;
+  kind: dbSchema.ImportantDateKind;
   date: string;
+  hasYear: boolean;
   recurrence: Recurrence | null;
   daysUntil: number;
   nextDate: string;
   personId: string;
-  personFirstName: string;
-  personLastName: string;
+  personDisplayName: string;
 }
 
 const upcomingDatesExtensionSDL = parse(`
@@ -35,13 +36,17 @@ const upcomingDatesExtensionSDL = parse(`
     id: String!
     name: String!
     description: String
+    """birthday, anniversary or other."""
+    kind: String!
     date: String!
+    """false when only the month and day are known. The year in \`date\` is then a placeholder."""
+    hasYear: Boolean!
     recurrence: String
     daysUntil: Int!
     nextDate: String!
     personId: String!
-    personFirstName: String!
-    personLastName: String!
+    """The person's name as shown: the empty string when they have no name, nickname or organization."""
+    personDisplayName: String!
   }
 
   extend type Query {
@@ -202,11 +207,12 @@ export function applyUpcomingDatesExtension(schema: GraphQLSchema): GraphQLSchem
         id: importantDates.id,
         name: importantDates.name,
         description: importantDates.description,
+        kind: importantDates.kind,
         date: importantDates.date,
+        hasYear: importantDates.hasYear,
         recurrence: importantDates.recurrence,
         personId: persons.id,
-        personFirstName: persons.firstName,
-        personLastName: persons.lastName,
+        personDisplayName: persons.displayName,
       })
       .from(importantDates)
       .innerJoin(persons, eq(importantDates.personId, persons.id))
@@ -226,13 +232,14 @@ export function applyUpcomingDatesExtension(schema: GraphQLSchema): GraphQLSchem
           id: row.id,
           name: row.name,
           description: row.description,
+          kind: row.kind,
           date: row.date,
+          hasYear: row.hasYear,
           recurrence: row.recurrence,
           daysUntil: occurrence.daysUntil,
           nextDate: toLocalDateString(occurrence.nextDate),
           personId: row.personId,
-          personFirstName: row.personFirstName,
-          personLastName: row.personLastName,
+          personDisplayName: row.personDisplayName,
         },
       ];
     });

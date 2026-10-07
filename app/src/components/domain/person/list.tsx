@@ -14,7 +14,7 @@ import { PageLayout } from '@/components/page-layout';
 import { Button } from '@/components/ui/button';
 import { Search, Trash2, X } from '@/components/ui/icons';
 import { SearchInput } from '@/components/ui/search-input';
-import { fullName } from '@/lib/person-name';
+import { personName } from '@/lib/person-name';
 import { type ContactValue, primaryEmail, primaryPhone } from '@/lib/primary-contact';
 import { relativeTime } from '@/lib/relative-time';
 import { cn } from '@/lib/utils';
@@ -27,8 +27,10 @@ export interface PersonContactInfo extends ContactValue {
 /** A person as a row of the list shows them. */
 export interface PersonRowData {
   id: string;
-  firstName: string;
-  lastName: string;
+  /** The person's name as the server worked it out. Empty when they have none. */
+  displayName: string;
+  /** The name in the form the list is ordered by: lower case, last name first. */
+  sortName: string;
   avatarPath?: string | null;
   labels: Array<{ id: string; label: string; color: string }>;
   /** When they were last contacted; `null` or left out when never. */
@@ -55,11 +57,10 @@ const SORT_OPTIONS: Array<{ value: SortOption; label: string }> = [
  * The letter a person is grouped under in the name-sorted list.
  *
  * @param person - The person.
- * @returns The first letter of the last name, or of the first name when there is none; `#` when it is not A–Z.
+ * @returns The first letter of the name they are sorted by; `#` when it is not A–Z, or they have no name.
  */
 function groupLetter(person: PersonRowData): string {
-  const basis = person.lastName || person.firstName;
-  const first = basis.charAt(0).toUpperCase();
+  const first = person.sortName.charAt(0).toUpperCase();
   const isLetter = /[A-Z]/.test(first);
   return isLetter ? first : '#';
 }
@@ -87,15 +88,14 @@ function PersonRow({ person, divided, onDeletePress, onLogPress, activeLabelIds 
   const router = useRouter();
   const phone = primaryPhone(person.contactInfos);
   const email = primaryEmail(person.contactInfos);
+  const name = personName(person);
 
   return (
     <ListItem
       className={divided ? 'rounded-none border-foreground/10 border-t' : undefined}
       onPress={() => router.push(`/persons/${person.id}`)}
-      leadingSlot={
-        <Avatar firstName={person.firstName} lastName={person.lastName} avatarPath={person.avatarPath} size="md" />
-      }
-      title={fullName(person)}
+      leadingSlot={<Avatar name={name} avatarPath={person.avatarPath} size="md" />}
+      title={name}
       description={person.lastContactedAt ? `Last contact: ${relativeTime(person.lastContactedAt)}` : (email ?? '')}
       meta={
         person.labels.length > 0 ? (
@@ -112,7 +112,7 @@ function PersonRow({ person, divided, onDeletePress, onLogPress, activeLabelIds 
             <ActionButton
               variant="ghost"
               size="icon-sm"
-              label={`Log interaction with ${person.firstName}`}
+              label={`Log interaction with ${name}`}
               iconSlot={<MessageSquarePlus />}
               onPress={() => onLogPress(person)}
             />
@@ -121,7 +121,7 @@ function PersonRow({ person, divided, onDeletePress, onLogPress, activeLabelIds 
             <ActionButton
               variant="ghost"
               size="icon-sm"
-              label={`Call ${person.firstName}`}
+              label={`Call ${name}`}
               iconSlot={<Phone />}
               onPress={() => Linking.openURL(`tel:${phone}`)}
             />
@@ -130,7 +130,7 @@ function PersonRow({ person, divided, onDeletePress, onLogPress, activeLabelIds 
             <ActionButton
               variant="ghost"
               size="icon-sm"
-              label={`Email ${person.firstName}`}
+              label={`Email ${name}`}
               iconSlot={<Mail />}
               onPress={() => Linking.openURL(`mailto:${email}`)}
             />
@@ -139,10 +139,10 @@ function PersonRow({ person, divided, onDeletePress, onLogPress, activeLabelIds 
             <ConfirmButton
               variant="ghost"
               size="icon-sm"
-              label={`Delete ${fullName(person)}`}
+              label={`Delete ${name}`}
               iconSlot={<Trash2 />}
-              title={`Delete ${fullName(person)}?`}
-              description={`This will permanently delete ${person.firstName} and all their associated data. This cannot be undone.`}
+              title={`Delete ${name}?`}
+              description={`This will permanently delete ${name} and all their associated data. This cannot be undone.`}
               onConfirm={() => onDeletePress(person.id)}
             />
           )}

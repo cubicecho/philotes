@@ -13,8 +13,18 @@ import {
 
 /** One contact read from a row of a Google Contacts CSV export. */
 export interface ParsedContact {
+  /** The empty string when the row has none, as is every name and work field below. */
   firstName: string;
   lastName: string;
+  namePrefix: string;
+  middleName: string;
+  nameSuffix: string;
+  nickname: string;
+  organization: string;
+  jobTitle: string;
+  department: string;
+  /** The row's notes. */
+  about: string;
   /** The first of `emails`, or null when the row has none. */
   email: string | null;
   emails: Array<{ label: string; value: string }>;
@@ -30,18 +40,20 @@ export interface ParsedContact {
     postalCode: string;
     country: string;
   }>;
-  /** As `YYYY-MM-DD`, or null when the row has none or gives no year. */
+  /** As `YYYY-MM-DD`, or null when the row has none. */
   birthday: string | null;
+  /** false when the row gave the birthday's month and day only. The year in `birthday` is then a placeholder. */
+  birthdayHasYear: boolean;
   /** In the case the file gave them, each once whatever its case, without Google's own "my contacts" group. */
   labels: string[];
 }
 
 /**
  * Parses a Google Contacts CSV export into contacts. The first row is the header. A blank row, and a row
- * with no name, is left out.
+ * with no name, nickname or organization, is left out.
  *
  * @param csvText - The export file's text.
- * @returns The contacts, and how many rows were left out for having no name. A blank row is not counted.
+ * @returns The contacts, and how many rows were left out for having nothing to call them by. A blank row is not counted.
  */
 export function parseGoogleContactsCsv(csvText: string): {
   contacts: ParsedContact[];
@@ -94,20 +106,17 @@ export function parseGoogleContactsCsv(csvText: string): {
     const lastName = col(row, 'Last Name');
     const fullName = col(row, 'Name');
 
-    // Skip contacts with no name data
-    const hasNoName = firstName === '' && lastName === '' && fullName === '';
-    if (hasNoName) {
-      skippedCount++;
-      continue;
-    }
+    const nickname = col(row, 'Nickname');
+    const organization = col(row, 'Organization Name');
 
     // Resolve names with fallback to Name column
     const nameParts = fullName.split(' ').filter(Boolean);
     const resolvedFirstName = firstName || nameParts[0] || '';
     const resolvedLastName = lastName || nameParts.slice(1).join(' ');
 
-    const hasNoResolvedName = resolvedFirstName === '' && resolvedLastName === '';
-    if (hasNoResolvedName) {
+    // Skip a contact with nothing to call it by
+    const isUnnamed = [resolvedFirstName, resolvedLastName, nickname, organization].every((part) => part === '');
+    if (isUnnamed) {
       skippedCount++;
       continue;
     }
@@ -234,12 +243,21 @@ export function parseGoogleContactsCsv(csvText: string): {
     contacts.push({
       firstName: resolvedFirstName,
       lastName: resolvedLastName,
+      namePrefix: col(row, 'Name Prefix'),
+      middleName: col(row, 'Middle Name'),
+      nameSuffix: col(row, 'Name Suffix'),
+      nickname,
+      organization,
+      jobTitle: col(row, 'Organization Title'),
+      department: col(row, 'Organization Department'),
+      about: col(row, 'Notes'),
       email: emails[0]?.value ?? null,
       emails,
       phones,
       websites,
       addresses: addressList,
-      birthday,
+      birthday: birthday?.date ?? null,
+      birthdayHasYear: birthday?.hasYear ?? true,
       labels: parsedLabels,
     });
   }

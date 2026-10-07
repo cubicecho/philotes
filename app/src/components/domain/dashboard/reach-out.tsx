@@ -8,15 +8,15 @@ import { Avatar } from '@/components/domain/person/avatar';
 import { ListItem } from '@/components/list-item';
 import { Button } from '@/components/ui/button';
 import { Check } from '@/components/ui/icons';
-import { fullName } from '@/lib/person-name';
+import { personName } from '@/lib/person-name';
 import { DAYS_PER_MONTH, DAYS_PER_WEEK, WEEKS_PER_MONTH } from '@/lib/time';
 import { Widget } from './widget';
 
 /** A person the dashboard suggests getting back in touch with. */
 export type ReachOutPerson = {
   id: string;
-  firstName: string;
-  lastName: string;
+  /** The person's name as the server worked it out. Empty when they have none. */
+  displayName: string;
   avatarPath?: string | null;
   /** e.g. "3 weeks overdue" or "No contact in over a year" */
   statusLabel: string;
@@ -102,8 +102,8 @@ export function ReachOut({ persons, onLogged }: ReachOutProps) {
       contentSlot={persons.map((p) => (
         <ListItem
           key={p.id}
-          leadingSlot={<Avatar firstName={p.firstName} lastName={p.lastName} avatarPath={p.avatarPath} size="sm" />}
-          title={fullName(p)}
+          leadingSlot={<Avatar name={personName(p)} avatarPath={p.avatarPath} size="sm" />}
+          title={personName(p)}
           // Dormant entries keep the row's own muted line; overdue ones are called out.
           description={p.isDormant ? p.statusLabel : <Text className="text-warning text-xs">{p.statusLabel}</Text>}
           onPress={() => router.push(`/persons/${p.id}`)}

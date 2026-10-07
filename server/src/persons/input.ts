@@ -1,15 +1,21 @@
-import { ContactFrequency } from '@cubicecho/philotes-db/schema';
+import { ContactFrequency, ContactKind } from '@cubicecho/philotes-db/schema';
 import { z } from 'zod';
 import { ADDRESS_DEFAULTS, CONTACT_INFO_DEFAULTS, PERSON_DEFAULTS } from '../core/defaults.ts';
 
 /**
- * Builds the schema for one of a person's names: trimmed, not empty and within the name length.
+ * Builds the schema for one of a person's short texts, such as a name or a job title: trimmed, within
+ * the name length, and null when nothing is left.
  *
- * @param label - What the field is called in the messages, such as "First name".
+ * @param label - What the field is called in the message, such as "First name".
  * @returns The zod schema.
  */
-const nameSchema = (label: string) =>
-  z.string().trim().min(1, `${label} cannot be empty.`).max(PERSON_DEFAULTS.maxNameLength, `${label} is too long.`);
+const namePart = (label: string) =>
+  z
+    .string()
+    .trim()
+    .max(PERSON_DEFAULTS.maxNameLength, `${label} is too long.`)
+    .nullable()
+    .transform((value) => value || null);
 
 /**
  * What a person may hold. Partial, since an update's `set` carries only the changed columns. The avatar is
@@ -17,13 +23,24 @@ const nameSchema = (label: string) =>
  */
 export const personInput = z
   .object({
-    firstName: nameSchema('First name'),
-    lastName: nameSchema('Last name'),
+    namePrefix: namePart('Prefix'),
+    firstName: namePart('First name'),
+    middleName: namePart('Middle name'),
+    lastName: namePart('Last name'),
+    nameSuffix: namePart('Suffix'),
+    nickname: namePart('Nickname'),
+    organization: namePart('Organization'),
+    jobTitle: namePart('Job title'),
+    department: namePart('Department'),
+    about: z.string().max(PERSON_DEFAULTS.maxAboutLength, 'About is too long.').nullable(),
     contactFrequency: z.enum(ContactFrequency, 'Choose weekly, monthly, quarterly or yearly.').nullable(),
     howWeMet: z.string().max(PERSON_DEFAULTS.maxHowWeMetLength, 'How we met is too long.').nullable(),
     firstMetDate: z.iso.date('First met date must be a day, as YYYY-MM-DD.').nullable(),
   })
   .partial();
+
+/** The columns that can name a person. A new person needs one of them. */
+export const NAMING_KEYS = ['firstName', 'lastName', 'nickname', 'organization'] as const;
 
 /**
  * Builds the schema for a part of an address that may be null, such as the city.
@@ -60,5 +77,6 @@ export const contactInfoInput = z
       .min(1, 'Value cannot be empty.')
       .max(CONTACT_INFO_DEFAULTS.maxValueLength, 'Value is too long.'),
     label: z.string().max(CONTACT_INFO_DEFAULTS.maxLabelLength, 'Label is too long.').nullable(),
+    kind: z.enum(ContactKind, 'Choose home, work, mobile or other.').nullable(),
   })
   .partial();

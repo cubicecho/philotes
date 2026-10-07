@@ -5,7 +5,15 @@ import { getTableConfig, PgTable } from 'drizzle-orm/pg-core';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { ErrorCode } from '../../core/errors.ts';
 import { PERSON_JUNCTIONS, PERSON_OWNED_TABLES, SPECIALLY_MERGED_TABLES } from '../../persons/duplicates.ts';
-import { createClient, createPerson, createTestDb, createUser, type TestClient, type TestDb } from '../helpers.ts';
+import {
+  createClient,
+  createContactInfo,
+  createPerson,
+  createTestDb,
+  createUser,
+  type TestClient,
+  type TestDb,
+} from '../helpers.ts';
 
 const DUPLICATES = 'query { potentialDuplicates { matchValue matchType personIds } }';
 const MERGE = 'mutation ($keepId: UUID!, $mergeId: UUID!) { mergePersons(keepId: $keepId, mergeId: $mergeId) }';
@@ -52,7 +60,7 @@ describe('duplicate people', () => {
    * @returns Nothing, once the row is written.
    */
   async function addDetail(personId: string, value: string, type: ContactType = ContactType.Email): Promise<void> {
-    await db.insert(dbSchema.contactInfos).values({ personId, userId, type, value, isPrimary: true });
+    await createContactInfo(db, { personId, userId, type, value, isPrimary: true });
   }
 
   beforeEach(async () => {
@@ -79,9 +87,12 @@ describe('duplicate people', () => {
   it('does not match across users', async () => {
     const theirs = await createPerson(db, strangerId, 'Grace');
     await addDetail(keepId, 'shared@example.com');
-    await db
-      .insert(dbSchema.contactInfos)
-      .values({ personId: theirs, userId: strangerId, type: ContactType.Email, value: 'shared@example.com' });
+    await createContactInfo(db, {
+      personId: theirs,
+      userId: strangerId,
+      type: ContactType.Email,
+      value: 'shared@example.com',
+    });
 
     const data = await owner.expectOk<DuplicatesData>(DUPLICATES);
 
@@ -167,9 +178,12 @@ describe('duplicate people', () => {
 
   it('leaves another user’s person with the same email alone', async () => {
     const theirs = await createPerson(db, strangerId, 'Ada');
-    await db
-      .insert(dbSchema.contactInfos)
-      .values({ userId: strangerId, personId: theirs, type: ContactType.Email, value: 'ada@example.com' });
+    await createContactInfo(db, {
+      userId: strangerId,
+      personId: theirs,
+      type: ContactType.Email,
+      value: 'ada@example.com',
+    });
     await addDetail(keepId, 'ada@example.com');
     await addDetail(mergeId, 'ada@example.com');
 

@@ -10,8 +10,8 @@ export type NetworkPersonLabel = {
 /** A person as the graph draws them, with the relationships that start at them. */
 export type NetworkPerson = {
   id: string;
-  firstName: string;
-  lastName: string;
+  /** The person's name as the server worked it out. Empty when they have none. */
+  displayName: string;
   /** The person's email addresses; the main one is shown when they are pointed at. */
   contactInfos?: ContactValue[];
   /** The person's labels; the first one's colour fills their node. */

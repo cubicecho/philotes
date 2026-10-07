@@ -2,9 +2,9 @@ import { describe, expect, it } from 'vitest';
 import { type MentionablePerson, parseMentionedPersonIds } from '../lib/mentions';
 
 const people: MentionablePerson[] = [
-  { id: 'a', firstName: 'Ada', lastName: 'Lovelace' },
-  { id: 'g', firstName: 'Grace', lastName: 'Hopper' },
-  { id: 'o', firstName: "O'Neil", lastName: 'Smith-Jones' },
+  { id: 'a', displayName: 'Ada Lovelace' },
+  { id: 'g', displayName: 'Grace Hopper' },
+  { id: 'o', displayName: "O'Neil Smith-Jones" },
 ];
 
 describe('parseMentionedPersonIds', () => {
@@ -37,21 +37,32 @@ describe('parseMentionedPersonIds', () => {
   });
 
   it('matches accented names', () => {
-    const accented = [{ id: 'j', firstName: 'José', lastName: 'Núñez' }];
+    const accented = [{ id: 'j', displayName: 'José Núñez' }];
     expect(parseMentionedPersonIds('Lunch with @josé núñez.', accented)).toEqual(['j']);
   });
 
   it('matches names of several words', () => {
-    const several = [{ id: 'm', firstName: 'Mary Ann', lastName: 'van der Berg' }];
+    const several = [{ id: 'm', displayName: 'Mary Ann van der Berg' }];
     expect(parseMentionedPersonIds('Saw @Mary Ann van der Berg, briefly', several)).toEqual(['m']);
   });
 
   it('does not find a name inside a longer one', () => {
-    const short = [{ id: 's', firstName: 'Ada', lastName: 'Love' }];
+    const short = [{ id: 's', displayName: 'Ada Love' }];
     expect(parseMentionedPersonIds('@Ada Lovelace', short)).toEqual([]);
   });
 
-  it('needs both names — a first name alone is not a mention', () => {
-    expect(parseMentionedPersonIds('@Ada', people)).toEqual([]);
+  it('mentions a person by the one name they have', () => {
+    const nicknamed = [...people, { id: 'c', displayName: 'Countess' }];
+    expect(parseMentionedPersonIds('Tea with @Countess', nicknamed)).toEqual(['c']);
+  });
+
+  it('does not find a person in the mention of someone whose name starts with theirs', () => {
+    const both = [{ id: 's', displayName: 'Ada' }, ...people];
+    expect(parseMentionedPersonIds('@Ada Lovelace', both)).toEqual(['a']);
+    expect(parseMentionedPersonIds('@Ada Lovelace and @Ada', both)).toEqual(['s', 'a']);
+  });
+
+  it('never mentions a person with no name', () => {
+    expect(parseMentionedPersonIds('@ someone', [{ id: 'n', displayName: '' }])).toEqual([]);
   });
 });

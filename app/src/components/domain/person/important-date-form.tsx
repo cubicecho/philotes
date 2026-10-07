@@ -1,10 +1,11 @@
 import { format, parseISO } from 'date-fns';
 import { useState } from 'react';
 import { z } from 'zod';
-import { ImportantDatesMilestoneTypeEnum as Milestone } from '@/__generated__/graphql';
+import { ImportantDatesKindEnum as Kind, ImportantDatesMilestoneTypeEnum as Milestone } from '@/__generated__/graphql';
 import { useAppForm } from '@/components/app-form';
 import { Form } from '@/components/ui/form';
 import { FormDialogFooter } from '@/components/ui/form-dialog';
+import { YEARLESS_DATE_YEAR } from '@/lib/time';
 import { Recurrence } from '@/lib/vocabulary';
 
 /** How an important date repeats, as options; the empty value is a date that does not. */
@@ -17,6 +18,20 @@ export const RECURRENCE_OPTIONS = [
 
 /** A recurrence, or the empty string for a date that does not repeat. */
 export type RecurrenceValue = '' | Recurrence;
+
+/** What an important date is, as options. A phone's contact card tells the first two apart from the rest. */
+export const KIND_OPTIONS = [
+  { value: Kind.Other, label: 'Other' },
+  { value: Kind.Birthday, label: 'Birthday' },
+  { value: Kind.Anniversary, label: 'Anniversary' },
+] as const;
+
+/** The name a date of each kind starts with. `other` has none: its name is the user's to give. */
+const KIND_NAMES: Record<Kind, string> = {
+  [Kind.Birthday]: 'Birthday',
+  [Kind.Anniversary]: 'Anniversary',
+  [Kind.Other]: '',
+};
 
 /** The milestones an important date can mark, as options; the empty value is a regular date. */
 export const MILESTONE_TYPE_OPTIONS = [
@@ -58,6 +73,8 @@ const MILESTONE_TYPE_SELECT_OPTIONS = selectOptions(MILESTONE_TYPE_OPTIONS);
 const importantDateSchema = z.object({
   name: z.string().min(1, 'Name is required.'),
   date: z.custom<Date | null>((value) => value instanceof Date, 'Date is required.'),
+  kind: z.nativeEnum(Kind),
+  yearUnknown: z.boolean(),
   description: z.string(),
   recurrence: z.string(),
   milestoneType: z.string(),
@@ -80,11 +97,44 @@ function parseDay(value: string | undefined): Date | null {
   return Number.isNaN(parsed.getTime()) ? null : parsed;
 }
 
+/**
+ * The day the date picker starts on. A day without a year is shown in this one, so the picker opens on a
+ * calendar the user knows instead of the placeholder year's.
+ *
+ * @param [initialValues] - The date being edited.
+ * @returns The day, or `null` for a blank form.
+ */
+function initialDay(initialValues: ImportantDateFormValue | undefined): Date | null {
+  const day = parseDay(initialValues?.date);
+  const isYearless = initialValues?.hasYear === false;
+  if (day === null || isYearless === false) {
+    return day;
+  }
+  return withYear(day, new Date().getFullYear());
+}
+
+/**
+ * The same month and day in another year. 29 February becomes the 28th in a year without one.
+ *
+ * @param day - The day to move.
+ * @param year - The year to move it to.
+ * @returns Local midnight of that day.
+ */
+function withYear(day: Date, year: number): Date {
+  const moved = new Date(year, day.getMonth(), day.getDate());
+  const isSameMonth = moved.getMonth() === day.getMonth();
+  return isSameMonth ? moved : new Date(year, day.getMonth() + 1, 0);
+}
+
 /** What the important-date form reads and submits. */
 export interface ImportantDateFormValue {
   name: string;
-  /** The day as `yyyy-MM-dd`. */
+  /** The day as `yyyy-MM-dd`. Under `YEARLESS_DATE_YEAR` when `hasYear` is false. */
   date: string;
+  /** Birthday, anniversary or other. */
+  kind: Kind;
+  /** false when only the month and day are known. */
+  hasYear: boolean;
   description?: string;
   /** A `Recurrence` value; left out when the date does not repeat. */
   recurrence?: string;
@@ -105,7 +155,9 @@ export function ImportantDateForm({ onSubmit, onCancel, initialValues }: Importa
   const [formError, setFormError] = useState<string | null>(null);
   const defaultValues: z.input<typeof importantDateSchema> = {
     name: initialValues?.name ?? '',
-    date: parseDay(initialValues?.date),
+    date: initialDay(initialValues),
+    kind: initialValues?.kind ?? Kind.Other,
+    yearUnknown: initialValues?.hasYear === false,
     description: initialValues?.description ?? '',
     recurrence: initialValues?.recurrence || NONE,
     milestoneType: initialValues?.milestoneType || NONE,
@@ -122,11 +174,16 @@ export function ImportantDateForm({ onSubmit, onCancel, initialValues }: Importa
       }
       setFormError(null);
       try {
+        // A day without a year can only come round once a year.
+        const recurrence = value.yearUnknown ? Recurrence.Yearly : value.recurrence;
+        const day = value.yearUnknown ? withYear(value.date, YEARLESS_DATE_YEAR) : value.date;
         await onSubmit({
           name: value.name,
-          date: format(value.date, DATE_FORMAT),
+          date: format(day, DATE_FORMAT),
+          kind: value.kind,
+          hasYear: value.yearUnknown === false,
           description: value.description || undefined,
-          recurrence: value.recurrence === NONE ? undefined : value.recurrence,
+          recurrence: recurrence === NONE ? undefined : recurrence,
           milestoneType: value.milestoneType === NONE ? undefined : value.milestoneType,
         });
         form.reset();
@@ -143,8 +200,30 @@ export function ImportantDateForm({ onSubmit, onCancel, initialValues }: Importa
   return (
     <form.AppForm>
       <Form className="gap-4">
+        <form.AppField
+          name="kind"
+          listeners={{
+            onChange: ({ value }) => {
+              // A birthday or an anniversary names itself and comes round every year.
+              const kindName = KIND_NAMES[value];
+              if (kindName === '') {
+                return;
+              }
+              const isUnnamed = form.getFieldValue('name').trim() === '';
+              if (isUnnamed) {
+                form.setFieldValue('name', kindName);
+              }
+              form.setFieldValue('recurrence', Recurrence.Yearly);
+            },
+          }}
+        >
+          {(field) => <field.SelectField label="Kind" options={KIND_OPTIONS} />}
+        </form.AppField>
         <form.AppField name="name">{(field) => <field.InputField label="Name" />}</form.AppField>
         <form.AppField name="date">{(field) => <field.DateTimeField label="Date" mode="date" />}</form.AppField>
+        <form.AppField name="yearUnknown">
+          {(field) => <field.CheckboxField label="I don't know the year" />}
+        </form.AppField>
         <form.AppField name="description">
           {(field) => <field.InputField label="Description (optional)" />}
         </form.AppField>

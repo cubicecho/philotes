@@ -2,7 +2,7 @@ import * as dbSchema from '@cubicecho/philotes-db/schema';
 import { eq } from 'drizzle-orm';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { ErrorCode } from '../../core/errors.ts';
-import { createClient, createPerson, createTestDb, createUser, type TestDb } from '../helpers.ts';
+import { createClient, createContactInfo, createPerson, createTestDb, createUser, type TestDb } from '../helpers.ts';
 
 const UPDATE_HOW_WE_MET =
   'mutation ($id: UUID!, $howWeMet: String) { updatePersons(set: { howWeMet: $howWeMet }, where: { id: { eq: $id } }) { id howWeMet } }';
@@ -98,10 +98,8 @@ describe('a person belongs to one user', () => {
     const theirsId = await createPerson(db, otherUserId, 'Ada');
     const email = { type: dbSchema.ContactType.Email, value: 'ada@example.com' };
 
-    await db.insert(dbSchema.contactInfos).values([
-      { ...email, userId, personId: mineId },
-      { ...email, userId: otherUserId, personId: theirsId },
-    ]);
+    await createContactInfo(db, { ...email, userId, personId: mineId });
+    await createContactInfo(db, { ...email, userId: otherUserId, personId: theirsId });
 
     const rows = await db.select().from(dbSchema.contactInfos).where(eq(dbSchema.contactInfos.value, email.value));
     expect(rows).toHaveLength(2);
@@ -124,9 +122,7 @@ describe('a person belongs to one user', () => {
       { userId, personId: mineId, body: 'Mine' },
       { userId: otherUserId, personId: theirsId, body: 'Theirs' },
     ]);
-    await db
-      .insert(dbSchema.contactInfos)
-      .values({ userId, personId: mineId, type: dbSchema.ContactType.Phone, value: '555-0100' });
+    await createContactInfo(db, { userId, personId: mineId, type: dbSchema.ContactType.Phone, value: '555-0100' });
 
     const data = await createClient(db, userId).expectOk(DELETE_SEVERAL, { ids: [mineId, theirsId] });
 

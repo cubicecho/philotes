@@ -86,13 +86,13 @@ product, and Philotes isn't a platform. It's a tool. The boundary matters.
 
 ## Features
 
-- **People** — name, email, avatar, how you met, preferred contact frequency
+- **People** — everything a phone contact holds (name parts, nickname, organization, job title), plus avatar, how you met and preferred contact frequency. A person can be a company or just a number
 - **Interactions** — log touchpoints (in-person, phone, email, video, etc.) with channel, sentiment, and notes
 - **Notes** — free-form notes with `@mention` support to link other contacts
-- **Important Dates** — birthdays, anniversaries, and any other recurring or one-off significant date
+- **Important Dates** — birthdays, anniversaries, and any other recurring or one-off significant date, with or without a year
 - **Labels & Tags** — flexible tagging across people, notes, and dates
 - **Relationships** — track how people are connected to each other (friend, colleague, custom types)
-- **Contact Info** — phone numbers, social handles, URLs
+- **Contact Info** — phone numbers (matched however they are typed), fax, messaging, social handles, URLs
 - **Addresses** — home, work, and more
 - **Activities & Tasks** — things to do with or for someone
 - **Suggested Introductions** — surfaces people who share labels but aren't yet connected

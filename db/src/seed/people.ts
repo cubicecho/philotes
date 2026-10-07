@@ -1,10 +1,12 @@
 import { faker } from '@faker-js/faker';
-import { SEED_DEFAULTS as SEED } from '../defaults.ts';
+import { SEED_DEFAULTS as SEED, USER_DEFAULTS } from '../defaults.ts';
 import { db } from '../index.ts';
+import { withNormalizedValue } from '../normalize.ts';
 import type { NewAddress, NewContactInfo, NewPersonRelationship } from '../schema.ts';
 import {
   AddressType,
   addresses,
+  ContactKind,
   ContactType,
   contactInfos,
   labels,
@@ -39,7 +41,7 @@ const fakeWord = () => faker.lorem.word();
 /** What a made-up contact detail of each type looks like. A type with no entry gets a word. */
 const SEEDED_CONTACT_VALUES: Partial<Record<ContactType, () => string>> = {
   [ContactType.Phone]: () => faker.phone.number(),
-  [ContactType.Mobile]: () => faker.phone.number(),
+  [ContactType.Fax]: () => faker.phone.number(),
   [ContactType.Linkedin]: () => `https://linkedin.com/in/${faker.internet.username()}`,
   [ContactType.Twitter]: fakeHandle,
   [ContactType.Instagram]: fakeHandle,
@@ -103,14 +105,19 @@ export async function seedPersons(userId: string) {
   await db.insert(persons).values(personData);
   console.log(`Inserted ${personData.length} persons`);
 
-  const emailData: NewContactInfo[] = personData.map((person) => ({
-    id: randomId(),
-    userId,
-    personId: person.id,
-    type: ContactType.Email,
-    value: faker.internet.email({ firstName: person.firstName, lastName: person.lastName }).toLowerCase(),
-    isPrimary: true,
-  }));
+  const emailData: NewContactInfo[] = personData.map((person) =>
+    withNormalizedValue(
+      {
+        id: randomId(),
+        userId,
+        personId: person.id,
+        type: ContactType.Email,
+        value: faker.internet.email({ firstName: person.firstName, lastName: person.lastName }).toLowerCase(),
+        isPrimary: true,
+      },
+      USER_DEFAULTS.country,
+    ),
+  );
   await db.insert(contactInfos).values(emailData);
   console.log(`Inserted ${emailData.length} emails`);
 
@@ -201,15 +208,21 @@ export async function seedContactInfos(personData: { id: string }[], userId: str
       const type = pickRandom(SEEDED_CONTACT_TYPES);
       const value = (SEEDED_CONTACT_VALUES[type] ?? fakeWord)();
 
-      contactInfoData.push({
-        id: randomId(),
-        userId,
-        personId: person.id,
-        type,
-        value,
-        label: chance(SEED.contactInfoLabelChance) ? faker.lorem.word() : null,
-        isPrimary: false,
-      });
+      contactInfoData.push(
+        withNormalizedValue(
+          {
+            id: randomId(),
+            userId,
+            personId: person.id,
+            type,
+            value,
+            kind: chance(SEED.contactInfoLabelChance) ? pickRandom(Object.values(ContactKind)) : null,
+            label: chance(SEED.contactInfoLabelChance) ? faker.lorem.word() : null,
+            isPrimary: false,
+          },
+          USER_DEFAULTS.country,
+        ),
+      );
     }
   }
 

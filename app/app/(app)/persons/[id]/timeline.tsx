@@ -16,18 +16,18 @@ import { Button } from '@/components/ui/button';
 import { ArrowLeft, Clock } from '@/components/ui/icons';
 import { Spinner } from '@/components/ui/spinner';
 import { PAGE_SIZE_DEFAULTS } from '@/lib/defaults';
-import { fullName } from '@/lib/person-name';
+import { personName } from '@/lib/person-name';
 import { useAllRows } from '@/lib/use-all-rows';
 
 const GET_PERSON_TIMELINE = graphql(`
   query GetPersonTimeline($id: UUID!) {
     persons(where: { id: { eq: $id } }, limit: 1) {
       id
-      firstName
-      lastName
+      displayName
       importantDates(limit: 100) {
         id
         date
+        hasYear
         name
         milestoneType
         labels(limit: 10) {
@@ -81,7 +81,7 @@ export default function PersonTimelinePage() {
         variant="link"
         size="xs"
         iconSlot={<ArrowLeft />}
-        content={person ? `Back to ${fullName(person)}` : 'Back'}
+        content={person ? `Back to ${personName(person)}` : 'Back'}
       />
     </Link>
   );
@@ -107,7 +107,9 @@ export default function PersonTimelinePage() {
     labels: i.labels ?? [],
   }));
 
-  const importantDates: TimelineImportantDate[] = (person.importantDates ?? []).map((d) => ({
+  // A date without a year has no moment to stand at on a timeline.
+  const datedImportantDates = (person.importantDates ?? []).filter((d) => d.hasYear);
+  const importantDates: TimelineImportantDate[] = datedImportantDates.map((d) => ({
     id: d.id,
     date: d.date instanceof Date ? d.date : new Date(d.date),
     name: d.name,
@@ -118,7 +120,7 @@ export default function PersonTimelinePage() {
   return (
     <PageLayout
       title="Timeline"
-      description={fullName(person)}
+      description={personName(person)}
       iconSlot={<Clock />}
       breadcrumbsSlot={backLink}
       contentSlot={

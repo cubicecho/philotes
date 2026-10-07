@@ -24,9 +24,11 @@ subject needs, under the same file names everywhere:
 | `<domain>/resolvers.ts` | An `apply<Name>Extension(schema)` for queries and mutations that are not plain CRUD |
 
 The folders are `persons`, `notes`, `gratitudes`, `interactions`, `tasks`,
-`important-dates`, `labels`, `relationships`, `contact-import`, `api-keys` and
-`auth`. `persons` has a second extension file, `duplicates.ts`, for
-`potentialDuplicates` and `mergePersons`. Three more hold what no domain owns:
+`important-dates`, `labels`, `relationships`, `contact-import`, `api-keys`,
+`users` and `auth`. `persons` has a second extension file, `duplicates.ts`, for
+`potentialDuplicates` and `mergePersons`, and `normalized-values.ts`, which
+fills a contact info's `normalizedValue` on every write. `users` holds the
+caller's settings (`setDefaultCountry`). Three more hold what no domain owns:
 
 | Folder | Holds |
 | --- | --- |

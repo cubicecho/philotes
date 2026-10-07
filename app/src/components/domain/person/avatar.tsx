@@ -2,12 +2,12 @@ import { useState } from 'react';
 import { Image, Text, View } from 'react-native';
 import { useAvatarImage } from '@/hooks/use-avatar-image';
 import { nameToColor } from '@/lib/name-color';
-import { fullName } from '@/lib/person-name';
+import { initialsOf } from '@/lib/person-name';
 import { cn } from '@/lib/utils';
 
 interface AvatarProps {
-  firstName: string;
-  lastName: string;
+  /** The person's name as shown, which gives the initials, their colour and the photo's label. */
+  name: string;
   /** The stored photo's path; `null` or left out draws the initials. */
   avatarPath?: string | null;
   size?: 'sm' | 'md' | 'lg';
@@ -25,10 +25,9 @@ const SIZE_CLASSES: Record<NonNullable<AvatarProps['size']>, { box: string; text
  * A person's photo if there is one, otherwise a deterministic initials circle, which is also
  * what shows while a photo loads and when it fails to.
  */
-export function Avatar({ firstName, lastName, avatarPath, size = 'md', className }: AvatarProps) {
+export function Avatar({ name, avatarPath, size = 'md', className }: AvatarProps) {
   const [failed, setFailed] = useState(false);
   const { box, text } = SIZE_CLASSES[size];
-  const name = fullName({ firstName, lastName });
   const imageUri = useAvatarImage(avatarPath ?? null);
 
   const showsPhoto = imageUri !== null && failed === false;
@@ -43,7 +42,6 @@ export function Avatar({ firstName, lastName, avatarPath, size = 'md', className
     );
   }
 
-  const initials = `${firstName[0] ?? ''}${lastName[0] ?? ''}`.toUpperCase();
   return (
     <View
       aria-hidden
@@ -51,7 +49,7 @@ export function Avatar({ firstName, lastName, avatarPath, size = 'md', className
       style={{ backgroundColor: nameToColor(name) }}
     >
       {/* The palette above is all mid-lightness, so white holds on every swatch in both themes. */}
-      <Text className={cn('font-semibold text-white', text)}>{initials}</Text>
+      <Text className={cn('font-semibold text-white', text)}>{initialsOf(name)}</Text>
     </View>
   );
 }

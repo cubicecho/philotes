@@ -12,6 +12,7 @@ import type {
   NewTask,
 } from '../schema.ts';
 import {
+  ImportantDateKind,
   InteractionChannel,
   InteractionSentiment,
   importantDates,
@@ -37,14 +38,15 @@ import {
 
 // Seeds what happens with a person over time: notes, important dates, interactions and tasks.
 
-const IMPORTANT_DATE_NAMES = [
-  'Birthday',
-  'Work Anniversary',
-  'Wedding Anniversary',
-  'Graduation Day',
-  'First Met',
-  'Promotion Day',
-  'Moving Day',
+/** The dates a seeded person may have, each with the kind a phone would file it under. */
+const SEEDED_IMPORTANT_DATES: Array<{ name: string; kind: ImportantDateKind }> = [
+  { name: 'Birthday', kind: ImportantDateKind.Birthday },
+  { name: 'Work Anniversary', kind: ImportantDateKind.Other },
+  { name: 'Wedding Anniversary', kind: ImportantDateKind.Anniversary },
+  { name: 'Graduation Day', kind: ImportantDateKind.Other },
+  { name: 'First Met', kind: ImportantDateKind.Other },
+  { name: 'Promotion Day', kind: ImportantDateKind.Other },
+  { name: 'Moving Day', kind: ImportantDateKind.Other },
 ];
 
 /**
@@ -121,13 +123,14 @@ export async function seedImportantDates(personData: { id: string }[], labelData
 
     for (let i = 0; i < dateCount; i++) {
       const dateId = randomId();
-      const name = pickRandom(IMPORTANT_DATE_NAMES);
+      const { name, kind } = pickRandom(SEEDED_IMPORTANT_DATES);
 
       importantDateData.push({
         id: dateId,
         userId,
         personId: person.id,
         name,
+        kind,
         description: faker.lorem.sentence(),
         date: toIsoDate(randomPastDate(SEED.dateWithinPastYears)),
         recurrence: pickRandom(Object.values(Recurrence)),

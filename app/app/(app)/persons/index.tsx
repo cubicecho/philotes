@@ -33,8 +33,8 @@ const GET_PERSONS = graphql(`
   query GetPersons($where: PersonFilters, $orderBy: PersonOrderBy, $limit: Int!, $offset: Int!) {
     persons(where: $where, orderBy: $orderBy, limit: $limit, offset: $offset) {
       id
-      firstName
-      lastName
+      displayName
+      sortName
       avatarPath
       labels(limit: 20) {
         id
@@ -147,8 +147,9 @@ export default function PersonsPage() {
   const where: PersonFilters | undefined = trimmedQ
     ? {
         OR: [
-          { firstName: { ilike: `%${trimmedQ}%` } },
-          { lastName: { ilike: `%${trimmedQ}%` } },
+          { displayName: { ilike: `%${trimmedQ}%` } },
+          { nickname: { ilike: `%${trimmedQ}%` } },
+          { organization: { ilike: `%${trimmedQ}%` } },
           { contactInfos: { some: { value: { ilike: `%${trimmedQ}%` } } } },
         ],
       }
@@ -163,10 +164,9 @@ export default function PersonsPage() {
     variables: {
       where,
       orderBy: {
-        lastName: { direction: isNameSort ? orderDirection : OrderDirection.Asc, priority: 1 },
-        firstName: { direction: isNameSort ? orderDirection : OrderDirection.Asc, priority: 2 },
+        sortName: { direction: isNameSort ? orderDirection : OrderDirection.Asc, priority: 1 },
         // Paging needs one fixed order, and two people can share a name.
-        id: { direction: OrderDirection.Asc, priority: 3 },
+        id: { direction: OrderDirection.Asc, priority: 2 },
       },
     },
   });
@@ -198,8 +198,8 @@ export default function PersonsPage() {
   // Shape raw data
   const rawPersons: PersonRowData[] = (displayData?.persons ?? []).map((p) => ({
     id: p.id,
-    firstName: p.firstName,
-    lastName: p.lastName,
+    displayName: p.displayName,
+    sortName: p.sortName,
     avatarPath: p.avatarPath,
     labels: p.labels ?? [],
     contactInfos: p.contactInfos ?? [],

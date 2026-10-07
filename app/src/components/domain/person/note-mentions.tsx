@@ -4,10 +4,9 @@ import { ListItem } from '@/components/list-item';
 import { type FieldProps, FieldWrapper, splitProps, useFieldContext } from '@/components/ui/form';
 import { Textarea, type TextareaHandle } from '@/components/ui/textarea';
 import type { MentionablePerson } from '@/lib/mentions';
-import { fullName } from '@/lib/person-name';
 
 interface MentionDropdownProps {
-  /** What has been typed after the `@`; matched against the start of a full or first name, ignoring case. */
+  /** What has been typed after the `@`; matched against the start of a name, ignoring case. */
   query: string;
   /** Everyone who can be mentioned. */
   allPersons: MentionablePerson[];
@@ -18,10 +17,8 @@ interface MentionDropdownProps {
 /** The people an `@query` could mean, listed in flow beneath the textarea. */
 export function MentionDropdown({ query, allPersons, onSelect }: MentionDropdownProps) {
   const lower = query.toLowerCase();
-  const filtered = allPersons.filter((p) => {
-    const full = fullName(p).toLowerCase();
-    return full.startsWith(lower) || p.firstName.toLowerCase().startsWith(lower);
-  });
+  // A person with no name has nothing a mention could be written with.
+  const filtered = allPersons.filter((p) => p.displayName !== '' && p.displayName.toLowerCase().startsWith(lower));
 
   if (filtered.length === 0) {
     return null;
@@ -30,7 +27,7 @@ export function MentionDropdown({ query, allPersons, onSelect }: MentionDropdown
   return (
     <View role="list" className="max-h-48 overflow-hidden rounded-md border border-foreground/10 bg-secondary py-1">
       {filtered.map((p) => (
-        <ListItem key={p.id} title={fullName(p)} onPress={() => onSelect(p)} />
+        <ListItem key={p.id} title={p.displayName} onPress={() => onSelect(p)} />
       ))}
     </View>
   );
@@ -51,14 +48,14 @@ export function trailingMentionQuery(text: string): string | null {
 }
 
 /**
- * Replace the trailing partial `@query` with `@FirstName LastName`.
+ * Replace the trailing partial `@query` with `@` and the person's name.
  *
  * @param text - The whole text of the textarea, ending in the partial mention.
  * @param person - The person chosen.
  * @returns The text with the mention completed; unchanged when it does not end in one.
  */
 export function completeMention(text: string, person: MentionablePerson): string {
-  return text.replace(TRAILING_MENTION, `@${fullName(person)}`);
+  return text.replace(TRAILING_MENTION, `@${person.displayName}`);
 }
 
 type MentionTextareaFieldProps = FieldProps & {

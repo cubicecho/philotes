@@ -2,6 +2,7 @@ import { useRouter } from 'expo-router';
 import { CalendarDays } from '@/components/app-icons';
 import { ListItem } from '@/components/list-item';
 import { Badge } from '@/components/ui/badge';
+import { personName } from '@/lib/person-name';
 import { Widget } from './widget';
 
 /** An important date coming up, with the person it belongs to. */
@@ -11,8 +12,8 @@ export type UpcomingDate = {
   /** Whole days from today; 0 is today. */
   daysUntil: number;
   personId: string;
-  personFirstName: string;
-  personLastName: string;
+  /** The person's name as the server worked it out. Empty when they have none. */
+  personDisplayName: string;
 };
 
 /**
@@ -45,7 +46,7 @@ export function ComingUp({ dates, windowDays }: { dates: UpcomingDate[]; windowD
         <ListItem
           key={d.id}
           title={d.name}
-          description={`${d.personFirstName} ${d.personLastName}`}
+          description={personName({ displayName: d.personDisplayName })}
           meta={<Badge variant={d.daysUntil <= 1 ? 'info' : 'secondary'}>{daysLabel(d.daysUntil)}</Badge>}
           onPress={() => router.push(`/persons/${d.personId}`)}
         />

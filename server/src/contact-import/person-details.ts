@@ -1,4 +1,5 @@
 import type { DB } from '@cubicecho/philotes-db';
+import { withNormalizedValue } from '@cubicecho/philotes-db/normalize';
 import * as dbSchema from '@cubicecho/philotes-db/schema';
 import { and, eq } from 'drizzle-orm';
 import type { ParsedContact } from './google-contacts-csv.ts';
@@ -6,10 +7,29 @@ import type { ParsedContact } from './google-contacts-csv.ts';
 // What an imported contact adds to a person: contact details, addresses, a birthday and labels. Each
 // leaves out what the user already has there, so importing the same file twice adds nothing.
 
-const { AddressType, ContactType, Recurrence } = dbSchema;
+const { AddressType, ContactKind, ContactType, ImportantDateKind, Recurrence } = dbSchema;
 
-/** A phone whose Google label holds this word is a mobile. */
-const MOBILE_LABEL_WORD = 'mobile';
+/** The kind a Google label names, by the word it holds. The first match wins. */
+const KIND_LABEL_WORDS = [
+  { word: 'mobile', kind: ContactKind.Mobile },
+  { word: 'cell', kind: ContactKind.Mobile },
+  { word: 'home', kind: ContactKind.Home },
+  { word: 'work', kind: ContactKind.Work },
+] as const;
+
+/** What an imported birthday is named. */
+const BIRTHDAY_NAME = 'Birthday';
+
+/**
+ * Reads whether a Google label says home, work or mobile.
+ *
+ * @param label - The label, such as "Work Fax".
+ * @returns The kind, or null when the label names none.
+ */
+function kindFromLabel(label: string): dbSchema.ContactKind | null {
+  const lower = label.toLowerCase();
+  return KIND_LABEL_WORDS.find(({ word }) => lower.includes(word))?.kind ?? null;
+}
 
 /** The address type a Google label names, by the word it holds. The first match wins. */
 const ADDRESS_LABEL_WORDS = [
@@ -19,12 +39,14 @@ const ADDRESS_LABEL_WORDS = [
 
 /**
  * Adds a contact's emails, phones and websites to a person, leaving out any value the user already has
- * there. The first email is the primary one, and a phone labelled as a mobile is stored as one.
+ * there. The first email is the primary one, and an email or phone whose label says home, work or
+ * mobile takes that kind.
  *
  * @param db - Drizzle client.
  * @param personId - The person the rows belong to.
  * @param userId - The user importing them.
  * @param contact - The parsed contact.
+ * @param country - The user's default country, which numbers without a country code are read in.
  * @returns Resolves once the new details are in.
  */
 export async function insertContactInfos(
@@ -32,8 +54,9 @@ export async function insertContactInfos(
   personId: string,
   userId: string,
   contact: ParsedContact,
+  country: string,
 ): Promise<void> {
-  const rows: dbSchema.NewContactInfo[] = [];
+  const rows: Array<Omit<dbSchema.NewContactInfo, 'normalizedValue'>> = [];
 
   for (let i = 0; i < contact.emails.length; i++) {
     const e = contact.emails[i];
@@ -44,20 +67,19 @@ export async function insertContactInfos(
       type: ContactType.Email,
       value: e.value,
       label: e.label || undefined,
+      kind: kindFromLabel(e.label),
       isPrimary: isFirstEmail,
     });
   }
 
   for (const p of contact.phones) {
-    const lower = p.label.toLowerCase();
-    const isMobile = lower.includes(MOBILE_LABEL_WORD);
-    const type = isMobile ? ContactType.Mobile : ContactType.Phone;
     rows.push({
       personId,
       userId,
-      type,
+      type: ContactType.Phone,
       value: p.value,
       label: p.label || undefined,
+      kind: kindFromLabel(p.label),
       isPrimary: false,
     });
   }
@@ -90,7 +112,7 @@ export async function insertContactInfos(
     return;
   }
 
-  await db.insert(dbSchema.contactInfos).values(newRows);
+  await db.insert(dbSchema.contactInfos).values(newRows.map((row) => withNormalizedValue(row, country)));
 }
 
 /**
@@ -142,8 +164,8 @@ export async function insertAddresses(db: DB, personId: string, userId: string, 
 }
 
 /**
- * Adds a contact's birthday as a yearly important date named "Birthday". A person who already has one
- * for this user keeps it.
+ * Adds a contact's birthday as a yearly important date of the birthday kind. A person who already has
+ * one for this user keeps it.
  *
  * @param db - Drizzle client.
  * @param personId - The person the rows belong to.
@@ -156,7 +178,7 @@ export async function insertBirthday(db: DB, personId: string, userId: string, c
     return;
   }
 
-  // DB wins — skip if a Birthday already exists for this person+user
+  // DB wins — skip if a birthday already exists for this person+user
   const existing = await db
     .select({ id: dbSchema.importantDates.id })
     .from(dbSchema.importantDates)
@@ -164,7 +186,7 @@ export async function insertBirthday(db: DB, personId: string, userId: string, c
       and(
         eq(dbSchema.importantDates.personId, personId),
         eq(dbSchema.importantDates.userId, userId),
-        eq(dbSchema.importantDates.name, 'Birthday'),
+        eq(dbSchema.importantDates.kind, ImportantDateKind.Birthday),
       ),
     );
 
@@ -175,8 +197,10 @@ export async function insertBirthday(db: DB, personId: string, userId: string, c
   await db.insert(dbSchema.importantDates).values({
     personId,
     userId,
-    name: 'Birthday',
+    name: BIRTHDAY_NAME,
+    kind: ImportantDateKind.Birthday,
     date: contact.birthday,
+    hasYear: contact.birthdayHasYear,
     recurrence: Recurrence.Yearly,
   });
 }

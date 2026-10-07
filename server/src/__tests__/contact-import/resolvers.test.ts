@@ -67,6 +67,60 @@ describe('importGoogleContacts', () => {
     expect(details.map((row) => row.value).sort()).toEqual(CONTACT_VALUES);
   });
 
+  it('files a phone under the kind its label names, with the number normalized', async () => {
+    const userId = await createUser(db, 'kinds@example.com');
+    const csv = [
+      'First Name,Phone 1 - Label,Phone 1 - Value,Phone 2 - Label,Phone 2 - Value,E-mail 1 - Label,E-mail 1 - Value',
+      'Grace,* Mobile,(212) 555-0100,Main,212-555-0101,Work,Grace@Example.com',
+    ].join('\n');
+
+    await createClient(db, userId).expectOk(IMPORT, { csv });
+
+    const details = await db
+      .select({
+        type: dbSchema.contactInfos.type,
+        kind: dbSchema.contactInfos.kind,
+        normalizedValue: dbSchema.contactInfos.normalizedValue,
+      })
+      .from(dbSchema.contactInfos)
+      .where(eq(dbSchema.contactInfos.userId, userId))
+      .orderBy(dbSchema.contactInfos.normalizedValue);
+    expect(details).toEqual([
+      { type: 'phone', kind: 'mobile', normalizedValue: '+12125550100' },
+      { type: 'phone', kind: null, normalizedValue: '+12125550101' },
+      { type: 'email', kind: 'work', normalizedValue: 'grace@example.com' },
+    ]);
+  });
+
+  it('imports a company with no person’s name, and a birthday with no year', async () => {
+    const userId = await createUser(db, 'company@example.com');
+    const csv = ['First Name,Last Name,Organization Name,Birthday', ',,Analytical Engines,', 'Ada,,,--12-10'].join(
+      '\n',
+    );
+
+    const result = await createClient(db, userId).expectOk(IMPORT, { csv });
+
+    expect(result).toEqual({ importGoogleContacts: { imported: 2, merged: 0, errors: [] } });
+    const people = await db
+      .select({ displayName: dbSchema.persons.displayName, lastName: dbSchema.persons.lastName })
+      .from(dbSchema.persons)
+      .where(eq(dbSchema.persons.userId, userId))
+      .orderBy(dbSchema.persons.sortName);
+    expect(people).toEqual([
+      { displayName: 'Ada', lastName: null },
+      { displayName: 'Analytical Engines', lastName: null },
+    ]);
+    const dates = await db
+      .select({
+        kind: dbSchema.importantDates.kind,
+        date: dbSchema.importantDates.date,
+        hasYear: dbSchema.importantDates.hasYear,
+      })
+      .from(dbSchema.importantDates)
+      .where(eq(dbSchema.importantDates.userId, userId));
+    expect(dates).toEqual([{ kind: 'birthday', date: '1604-12-10', hasYear: false }]);
+  });
+
   it('creates a label in the case the file gives it, and reuses one that differs only by case', async () => {
     const userId = await createUser(db, 'labels@example.com');
     await db.insert(dbSchema.labels).values({ label: 'family', color: '#6b7280', userId });
