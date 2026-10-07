@@ -19,10 +19,10 @@ confirmed in code. Nothing here is implemented until approved.
 | ID | Kind | What it does | Buys | Needs | Status |
 |---|---|---|---|---|---|
 | B1 | Bug | Stops the server logging the sign-in link in every environment, which needs a mailer first because production sign-in reads that log line | No credentials in logs | A2 | declined |
-| B2 | Bug | Makes revoking an API key answer "not found" for a key that belongs to someone else, as every other resolver does | Does not reveal which key ids exist | — | approved |
+| B2 | Bug | Makes revoking an API key answer "not found" for a key that belongs to someone else, as every other resolver does | Does not reveal which key ids exist | — | done |
 | B3 | Bug | Checks who is uploading an avatar before the file is written, and stops serving avatars to callers who are not signed in | Closes an unauthenticated write and read | — | approved |
-| B4 | Bug | Stops contact import returning raw database error text, and scopes its duplicate check to the importing user | No schema details in responses; no cross-user dedupe | — | approved |
-| B5 | Bug (unverified) | Keeps the owner on the person-label rows that merging two labels re-inserts | Merge does not fail on the NOT NULL owner column | — | approved |
+| B4 | Bug | Stops contact import returning raw database error text, and scopes its duplicate check to the importing user | No schema details in responses; no cross-user dedupe | — | done |
+| B5 | Bug | Keeps the owner on the person-label rows that merging two labels re-inserts | Merge does not fail on the NOT NULL owner column | — | done |
 | B6 | Bug | Runs the postgres-js migrator when `DATABASE_URL` is a Postgres URL, not the PGlite one | Migrations apply on a real Postgres | — | approved |
 | B7 | Bug | Makes the avatar upload in the app check the response and use the configured API URL | A failed upload is reported, and works off-origin | B3 | approved |
 | B8 | Bug | Refetches the lists that import, person delete, label merge and label delete change | No stale rows after a mutation | — | approved |

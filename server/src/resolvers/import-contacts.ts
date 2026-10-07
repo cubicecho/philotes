@@ -7,8 +7,18 @@ import { requireAuth } from './auth.ts';
 
 // ── Error utilities ──────────────────────────────────────────────────────────
 
-function errorMessage(err: unknown): string {
-  return err instanceof Error ? err.message : String(err);
+/**
+ * Records a failed step for the caller and logs why. The database's own message names tables,
+ * columns and constraints, so it goes to the log and never into the response.
+ *
+ * @param errors - The messages returned to the caller.
+ * @param summary - What failed, in words that are safe to show.
+ * @param err - What was thrown.
+ * @returns Nothing.
+ */
+function reportFailure(errors: string[], summary: string, err: unknown): void {
+  console.error(`[import] ${summary}`, err);
+  errors.push(summary);
 }
 
 function isUniqueViolation(err: unknown): boolean {
@@ -129,7 +139,7 @@ export function applyImportContactsExtension(schema: GraphQLSchema): GraphQLSche
         const { email } = contact;
         const isOtherFailure = isUniqueViolation(err) === false || email === null;
         if (isOtherFailure) {
-          errors.push(`Failed to import ${contact.firstName} ${contact.lastName}: ${errorMessage(err)}`);
+          reportFailure(errors, `Failed to import ${contact.firstName} ${contact.lastName}`, err);
           continue;
         }
 
@@ -156,16 +166,16 @@ export function applyImportContactsExtension(schema: GraphQLSchema): GraphQLSche
       // duplicate address) does not roll back an otherwise-successful import.
       await Promise.all([
         insertContactInfos(db, personId, userId, contact).catch((err: unknown) => {
-          errors.push(`contactInfos failure for ${contact.firstName} ${contact.lastName}: ${errorMessage(err)}`);
+          reportFailure(errors, `Failed to import contact details for ${contact.firstName} ${contact.lastName}`, err);
         }),
         insertAddresses(db, personId, userId, contact).catch((err: unknown) => {
-          errors.push(`addresses failure for ${contact.firstName} ${contact.lastName}: ${errorMessage(err)}`);
+          reportFailure(errors, `Failed to import addresses for ${contact.firstName} ${contact.lastName}`, err);
         }),
         insertBirthday(db, personId, userId, contact).catch((err: unknown) => {
-          errors.push(`birthday failure for ${contact.firstName} ${contact.lastName}: ${errorMessage(err)}`);
+          reportFailure(errors, `Failed to import birthday for ${contact.firstName} ${contact.lastName}`, err);
         }),
         insertPersonLabels(db, personId, userId, contact.labels, labelNameToId).catch((err: unknown) => {
-          errors.push(`personLabels failure for ${contact.firstName} ${contact.lastName}: ${errorMessage(err)}`);
+          reportFailure(errors, `Failed to import labels for ${contact.firstName} ${contact.lastName}`, err);
         }),
       ]);
     }
@@ -234,11 +244,11 @@ async function insertContactInfos(db: any, personId: string, userId: string, con
     return;
   }
 
-  // Pre-filter: skip any incoming entries whose value already exists for this person
+  // Pre-filter: skip any incoming entries this user already has for this person
   const existingInfos: Array<{ value: string }> = await db
     .select({ value: dbSchema.contactInfos.value })
     .from(dbSchema.contactInfos)
-    .where(eq(dbSchema.contactInfos.personId, personId));
+    .where(and(eq(dbSchema.contactInfos.personId, personId), eq(dbSchema.contactInfos.userId, userId)));
   const existingValues = new Set(existingInfos.map((r: { value: string }) => r.value));
 
   const newRows = rows.filter((r) => existingValues.has(r.value) === false);
@@ -272,11 +282,11 @@ async function insertAddresses(db: any, personId: string, userId: string, contac
     };
   });
 
-  // Pre-filter: skip any incoming addresses whose line1 already exists for this person
+  // Pre-filter: skip any incoming addresses this user already has for this person
   const existingAddrs: Array<{ line1: string }> = await db
     .select({ line1: dbSchema.addresses.line1 })
     .from(dbSchema.addresses)
-    .where(eq(dbSchema.addresses.personId, personId));
+    .where(and(eq(dbSchema.addresses.personId, personId), eq(dbSchema.addresses.userId, userId)));
   const existingLine1s = new Set(existingAddrs.map((r: { line1: string }) => r.line1));
 
   const newRows = rows.filter((r) => existingLine1s.has(r.line1) === false);
