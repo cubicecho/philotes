@@ -3,8 +3,10 @@ import * as dbSchema from '@cubicecho/philotes-db/schema';
 import { and, eq, sql } from 'drizzle-orm';
 import { extendSchema, type GraphQLSchema, parse } from 'graphql';
 import type { Context } from '../core/context.ts';
+import { LABEL_DEFAULTS } from '../core/defaults.ts';
 import { requireAuth } from '../core/errors.ts';
 import { objectType } from '../graphql/object-type.ts';
+import type { Transaction } from '../graphql/write-guards.ts';
 import { defaultCountryOf } from '../persons/normalized-values.ts';
 import { touchPersons } from '../persons/revisions.ts';
 import { type ParsedContact, parseGoogleContactsCsv } from './google-contacts-csv.ts';
@@ -19,7 +21,7 @@ import { insertAddresses, insertBirthday, insertContactInfos, insertPersonLabels
  * @param err - What was thrown.
  * @returns Nothing.
  */
-function reportFailure(errors: string[], summary: string, err: unknown): void {
+export function reportFailure(errors: string[], summary: string, err: unknown): void {
   console.error(`[import] ${summary}`, err);
   errors.push(summary);
 }
@@ -32,7 +34,11 @@ function reportFailure(errors: string[], summary: string, err: unknown): void {
  * @param email - The address.
  * @returns The person's id, or null when none of the user's people has it. The oldest wins when several do.
  */
-async function findOwnPersonByEmail(db: DB, userId: string, email: string): Promise<string | null> {
+export async function findOwnPersonByEmail(
+  db: DB | Transaction,
+  userId: string,
+  email: string,
+): Promise<string | null> {
   const { contactInfos } = dbSchema;
   const [match] = await db
     .select({ personId: contactInfos.personId })
@@ -100,7 +106,7 @@ interface ImportGoogleContactsArgs {
   csv: string;
 }
 
-interface ImportContactsResult {
+export interface ImportContactsResult {
   imported: number;
   merged: number;
   skipped: number;
@@ -172,7 +178,7 @@ export function applyImportContactsExtension(schema: GraphQLSchema): GraphQLSche
 
         const [inserted] = await db
           .insert(dbSchema.labels)
-          .values({ label: name, color: '#6b7280', userId })
+          .values({ label: name, color: LABEL_DEFAULTS.importedColor, userId })
           .returning({ id: dbSchema.labels.id });
 
         if (inserted) {

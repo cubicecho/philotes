@@ -19,6 +19,7 @@ import { relationshipWriteHooks } from '../relationships/hooks.ts';
 import { applyRelationshipsExtension } from '../relationships/resolvers.ts';
 import { taskWriteHooks } from '../tasks/hooks.ts';
 import { applyUserSettingsExtension } from '../users/resolvers.ts';
+import { applyVCardExtension } from '../vcard/resolvers.ts';
 import { contextValues, exclude, features, scope } from './tenancy.ts';
 import { mapWriteError } from './write-guards.ts';
 
@@ -43,6 +44,8 @@ const EXTENSIONS: Array<(schema: GraphQLSchema) => GraphQLSchema> = [
   applyRelationshipsExtension,
   applyUpcomingDatesExtension,
   applyImportContactsExtension,
+  // After the contact import, whose result type it returns.
+  applyVCardExtension,
   applyMergeLabelsExtension,
   applyDuplicatesExtension,
   applyApiKeysExtension,

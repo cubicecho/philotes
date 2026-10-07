@@ -13,6 +13,7 @@ import { createRateLimiter, type RateLimiter } from '../auth/rate-limit.ts';
 import type { Context } from '../core/context.ts';
 import type { ErrorCode } from '../core/errors.ts';
 import { createSchema } from '../graphql/build-schema.ts';
+import type { AvatarStore } from '../persons/avatar-store.ts';
 
 /**
  * The test database. PGlite and postgres-js clients share the query API but not a type, so the
@@ -28,6 +29,12 @@ export const TEST_IP = '127.0.0.1';
 
 /** What a test client's context is built from, where the defaults don't do. */
 export interface TestClientDeps {
+  /**
+   * Where avatar images are kept.
+   *
+   * @defaultValue `null`: resolvers leave pictures alone.
+   */
+  avatarStore?: AvatarStore;
   /**
    * The auth instance.
    *
@@ -171,6 +178,7 @@ export function createClient(db: TestDb, userId: string | null, deps: TestClient
     ip: deps.ip ?? TEST_IP,
     userId,
     headers: deps.headers ?? new Headers(),
+    avatarStore: deps.avatarStore ?? null,
   };
   const run: TestClient['run'] = (source, variableValues = {}) =>
     graphql({ schema, source, variableValues, contextValue });

@@ -6,7 +6,9 @@ import { ApiKeyManager } from '@/components/settings/api-key-manager';
 import { DefaultCountryCard } from '@/components/settings/default-country-card';
 import { ExportCalendarCard } from '@/components/settings/export-calendar-card';
 import { ExportPeopleCard } from '@/components/settings/export-people-card';
+import { ExportVCardsCard } from '@/components/settings/export-vcards-card';
 import { GoogleCsvImportCard } from '@/components/settings/google-csv-import-card';
+import { VCardImportCard } from '@/components/settings/vcard-import-card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ThemePicker } from '@/components/ui/theme-picker';
 
@@ -48,6 +50,8 @@ export default function SettingsPage() {
             <View className="gap-6">
               <ExportCalendarCard />
               <ExportPeopleCard />
+              <ExportVCardsCard />
+              <VCardImportCard />
               <GoogleCsvImportCard />
             </View>
           </TabsContent>

@@ -98,6 +98,7 @@ product, and Philotes isn't a platform. It's a tool. The boundary matters.
 - **Suggested Introductions** — surfaces people who share labels but aren't yet connected
 - **Network View** — a graph of your relationships
 - **Review Page** — a to-do-style overview for pending follow-ups
+- **Import & Export** — vCard (`.vcf`) files from a phone or another contacts app, Google Contacts CSV in, CSV and calendar files out
 
 ---
 

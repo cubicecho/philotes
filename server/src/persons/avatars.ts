@@ -13,13 +13,13 @@ import type { AvatarStore } from './avatar-store.ts';
 import { touchPersons } from './revisions.ts';
 
 /** The URL prefix the stored `avatarPath` carries, and the mount the files are served under. */
-const AVATAR_URL_PREFIX = '/avatars/';
+export const AVATAR_URL_PREFIX = '/avatars/';
 /** 5 MiB. */
-const AVATAR_MAX_BYTES = 5_242_880;
+export const AVATAR_MAX_BYTES = 5_242_880;
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /** The image types accepted, and the extension each is stored under. The client's file name is never used. */
-const EXTENSION_BY_MIME_TYPE: Record<string, string> = {
+export const EXTENSION_BY_MIME_TYPE: Record<string, string> = {
   'image/jpeg': '.jpg',
   'image/png': '.png',
   'image/gif': '.gif',
@@ -27,7 +27,7 @@ const EXTENSION_BY_MIME_TYPE: Record<string, string> = {
 };
 
 /** The type a stored file is served as, by its extension. `.jpeg` is here for files older installs stored. */
-const MIME_TYPE_BY_EXTENSION: Record<string, string> = {
+export const MIME_TYPE_BY_EXTENSION: Record<string, string> = {
   '.jpg': 'image/jpeg',
   '.jpeg': 'image/jpeg',
   '.png': 'image/png',

@@ -41,7 +41,7 @@ export function createApp({ db, auth, limiter = createRateLimiter(), avatarStore
   app.set('trust proxy', trustProxy());
   // The app is same-origin in production. The list only adds the dev app's origin.
   app.use(cors({ origin: allowedOrigins() }));
-  const graphql = createGraphQLHandler({ db, auth, limiter });
+  const graphql = createGraphQLHandler({ db, auth, limiter, avatarStore });
 
   // Yoga reads a body Express already parsed, so this is where the size cap goes. Over it: 413.
   app.use(graphql.graphqlEndpoint, express.json({ limit: HTTP_DEFAULTS.bodyLimit }));
