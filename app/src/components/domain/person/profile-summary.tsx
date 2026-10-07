@@ -56,7 +56,7 @@ export function PersonProfileSummary({
               <Text
                 role="link"
                 onPress={() => Linking.openURL(`mailto:${email}`)}
-                className="text-muted-foreground text-sm"
+                className="text-foreground/60 text-sm"
               >
                 {email}
               </Text>

@@ -47,12 +47,12 @@ export default function LoginPage() {
         level={1}
         title="Your magic link"
         contentSlot={
-          <Text className="text-muted-foreground text-sm">
+          <Text className="text-foreground/60 text-sm">
             Click the link below to sign in as <Text className="font-semibold text-foreground">{sentTo}</Text>.
           </Text>
         }
         footerSlot={
-          <Text className="shrink text-muted-foreground text-xs">
+          <Text className="shrink text-foreground/60 text-xs">
             This link is shown here because the server is running in development mode.
           </Text>
         }
@@ -68,7 +68,7 @@ export default function LoginPage() {
         level={1}
         title="Check your email"
         contentSlot={
-          <Text className="text-muted-foreground text-sm">
+          <Text className="text-foreground/60 text-sm">
             We sent a magic link to <Text className="font-semibold text-foreground">{sentTo}</Text>. Click it to sign
             in.
           </Text>
@@ -103,7 +103,7 @@ export default function LoginPage() {
               {(field) => <field.InputField label="Email" type="email" />}
             </form.AppField>
 
-            {error ? <Text className="text-destructive text-sm">{error.message}</Text> : null}
+            {error ? <Text className="text-negative text-sm">{error.message}</Text> : null}
 
             <form.SubmitButton createLabel="Send magic link" savingLabel="Sending…" />
           </Form>

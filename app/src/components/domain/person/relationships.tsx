@@ -243,7 +243,7 @@ function RelationshipFormDialog({
   return (
     <FormDialog open={open} onOpenChange={onOpenChange} title={isEditing ? 'Edit Relationship' : 'Add Relationship'}>
       {hasNobodyToLink ? (
-        <Text className="text-muted-foreground text-sm">No other persons available to link.</Text>
+        <Text className="text-foreground/60 text-sm">No other persons available to link.</Text>
       ) : (
         <form.AppForm>
           <Form className="gap-4">
@@ -381,7 +381,7 @@ function RelationshipRow({ relationship, onDelete, onEditPress }: RelationshipRo
 
   return (
     <ListItem
-      className="border border-border"
+      className="border border-foreground/10"
       title={name}
       meta={<Badge variant="secondary">{type}</Badge>}
       onPress={() => router.push(`/persons/${relatedPersonId}`)}
@@ -444,7 +444,7 @@ export function PersonRelationships({
           />
         ))}
         {relationships.length === 0 && !showAdd ? (
-          <Text className="text-muted-foreground text-sm">No relationships yet.</Text>
+          <Text className="text-foreground/60 text-sm">No relationships yet.</Text>
         ) : null}
       </View>
 

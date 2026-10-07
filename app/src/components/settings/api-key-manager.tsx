@@ -94,10 +94,10 @@ export function ApiKeyManager() {
             keys.map((key) => (
               <ListItem
                 key={key.id}
-                className="rounded-lg border border-border"
+                className="rounded-lg border border-foreground/10"
                 title={key.name}
                 description={keyDetails(key)}
-                meta={<Text className="font-mono text-muted-foreground text-xs">{`phlt_${key.keyPrefix}…`}</Text>}
+                meta={<Text className="font-mono text-foreground/60 text-xs">{`phlt_${key.keyPrefix}…`}</Text>}
                 actionSlot={
                   <ConfirmButton
                     size="sm"

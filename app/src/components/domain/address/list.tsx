@@ -146,13 +146,13 @@ function AddressRow({ address, onDelete }: AddressRowProps) {
 
   return (
     <ListItem
-      className="border border-border"
-      leadingSlot={<MapPin className="h-4 w-4 text-muted-foreground" />}
+      className="border border-foreground/10"
+      leadingSlot={<MapPin className="h-4 w-4 text-foreground/60" />}
       title={address.line1}
       description={rest || undefined}
       meta={
         <>
-          {address.label ? <Text className="text-muted-foreground text-xs">{address.label}</Text> : null}
+          {address.label ? <Text className="text-foreground/60 text-xs">{address.label}</Text> : null}
           <Badge variant="secondary">{TYPE_LABELS[address.type]}</Badge>
           {address.isPrimary ? <Badge variant="info">Primary</Badge> : null}
         </>
@@ -297,7 +297,7 @@ export function AddressList({ fragmentRef, onAdd, onDelete, createOpen, onCreate
   return (
     <>
       <View className="gap-2">
-        {addresses.length === 0 ? <Text className="text-muted-foreground text-sm">No addresses yet.</Text> : null}
+        {addresses.length === 0 ? <Text className="text-foreground/60 text-sm">No addresses yet.</Text> : null}
 
         {addresses.map((address) => (
           <AddressRow key={address.id} address={address} onDelete={onDelete} />

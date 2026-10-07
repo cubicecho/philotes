@@ -94,13 +94,13 @@ function InteractionEntry({ item }: { item: TimelineInteraction }) {
   const channel = item.channel === 'in-person' ? 'In Person' : item.channel;
   return (
     <View className="min-w-0 flex-row items-start gap-2">
-      <ChannelIcon channel={item.channel} className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
+      <ChannelIcon channel={item.channel} className="mt-0.5 h-4 w-4 shrink-0 text-foreground/60" />
       <View className="min-w-0 flex-1">
         <Text className="font-medium text-foreground text-sm capitalize">
           {emoji ? `${channel} ${emoji}` : channel}
         </Text>
         {item.note ? (
-          <Text numberOfLines={3} className="mt-0.5 text-muted-foreground text-sm">
+          <Text numberOfLines={3} className="mt-0.5 text-foreground/60 text-sm">
             {item.note}
           </Text>
         ) : null}
@@ -161,15 +161,15 @@ export function PersonTimeline({ interactions, importantDates }: PersonTimelineP
           </SectionHeading>
 
           {/* The rail is this view's left border; each entry's dot sits on it. */}
-          <View className="ml-4 border-border border-l">
+          <View className="ml-4 border-foreground/10 border-l">
             {group.items.map((item, index) => (
               <View key={item.id} className={cn('relative pl-6', index < group.items.length - 1 && 'pb-5')}>
-                <View className="absolute top-1 -left-[5px] h-2.5 w-2.5 rounded-full border-2 border-background bg-muted-foreground" />
+                <View className="absolute top-1 -left-[5px] h-2.5 w-2.5 rounded-full border-2 border-background bg-foreground/60" />
 
                 <View className="mb-1 flex-row items-baseline gap-2">
-                  <Text className="font-medium text-muted-foreground text-xs">{formatDate(item.date)}</Text>
-                  <Text className="text-muted-foreground text-xs">·</Text>
-                  <Text className="text-muted-foreground text-xs">{relativeTime(item.date)}</Text>
+                  <Text className="font-medium text-foreground/60 text-xs">{formatDate(item.date)}</Text>
+                  <Text className="text-foreground/60 text-xs">·</Text>
+                  <Text className="text-foreground/60 text-xs">{relativeTime(item.date)}</Text>
                 </View>
 
                 {item.type === 'interaction' ? (

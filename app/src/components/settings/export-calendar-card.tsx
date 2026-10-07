@@ -63,12 +63,12 @@ export function ExportCalendarCard() {
             onPress={handleExport}
           />
           {!loading && !error && totalCount > 0 ? (
-            <Text className="text-muted-foreground text-sm">
+            <Text className="text-foreground/60 text-sm">
               {`${data?.interactions?.length ?? 0} interactions · ${data?.importantDates?.length ?? 0} important dates`}
             </Text>
           ) : null}
           {!loading && !error && totalCount === 0 ? (
-            <Text className="text-muted-foreground text-sm">No events to export yet.</Text>
+            <Text className="text-foreground/60 text-sm">No events to export yet.</Text>
           ) : null}
         </View>
       }

@@ -175,10 +175,10 @@ function ContactInfoRow({ id, type, value, label, isPrimary, onDelete }: Contact
 
   return (
     <ListItem
-      className="border border-border"
-      leadingSlot={<ContactTypeIcon type={type} className="h-4 w-4 text-muted-foreground" />}
+      className="border border-foreground/10"
+      leadingSlot={<ContactTypeIcon type={type} className="h-4 w-4 text-foreground/60" />}
       title={value}
-      titleClassName={href ? 'text-primary' : undefined}
+      titleClassName={href ? 'text-info' : undefined}
       description={label || undefined}
       meta={
         <>
@@ -307,7 +307,7 @@ export function ContactInfoList({ person, onAdd, onDelete, createOpen, onCreateO
   return (
     <>
       <View className="gap-2">
-        {contactInfos.length === 0 ? <Text className="text-muted-foreground text-sm">No contact info yet.</Text> : null}
+        {contactInfos.length === 0 ? <Text className="text-foreground/60 text-sm">No contact info yet.</Text> : null}
 
         {contactInfos.map((info) => (
           <ContactInfoRow

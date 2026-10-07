@@ -30,9 +30,9 @@ export function TagPickerPanel({ allTags, attachedTagIds, onSelect, onClose }: T
   const available = allTags.filter((t) => attachedTagIds.has(t.id) === false);
 
   return (
-    <View className="flex-row flex-wrap items-center gap-1.5 rounded-md border border-border p-2">
+    <View className="flex-row flex-wrap items-center gap-1.5 rounded-md border border-foreground/10 p-2">
       {available.length === 0 ? (
-        <Text className="text-xs text-muted-foreground">All tags attached.</Text>
+        <Text className="text-xs text-foreground/60">All tags attached.</Text>
       ) : (
         available.map((t) => <LabelChip key={t.id} label={t.label} color={t.color} onPress={() => onSelect(t.id)} />)
       )}

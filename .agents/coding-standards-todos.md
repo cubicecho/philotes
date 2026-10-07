@@ -48,7 +48,7 @@ confirmed in code. Nothing here is implemented until approved.
 | R11 | Refactor [reuse] | Uses `ListItem`, `ToggleChip`, `Empty` and `text-info` where rows, chips, empties and links are hand-rolled, and `as="nav"` on the sidebar | cubeui primitives instead of copies | — | approved |
 | R12 | Refactor [consistency] | Moves the five settings files from raw `gql` and hand-written types to the generated `graphql()` documents | Typed operations | — | approved |
 | R13 | Refactor [reuse] | Merges the three near-identical tag components into one | One component | — | approved |
-| R14 | Refactor [sweep] | Replaces the 82 shadcn alias classes with cubeui tokens, and updates the docs that allow the aliases | Token colours only | — | approved |
+| R14 | Refactor [sweep] | Replaces the 82 shadcn alias classes with cubeui tokens, and updates the docs that allow the aliases | Token colours only | — | done |
 | R15 | Refactor [simplify] | Splits the oversized files, starting with the 792-line person page | Files a reader can hold | R4–R6 | approved |
 | T1 | Test | Sets up Storybook with `play` stories as the UI tests | UI tests | — | declined |
 | F2 | Feature | Guards the 18 form dialogs against discarding unsaved changes; needs `hasUnsavedChanges` on cubeui's `FormDialog` first | No lost edits | upstream | open |

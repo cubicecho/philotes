@@ -28,7 +28,7 @@ export function MentionDropdown({ query, allPersons, onSelect }: MentionDropdown
   }
 
   return (
-    <View role="list" className="max-h-48 overflow-hidden rounded-md border border-border bg-popover py-1">
+    <View role="list" className="max-h-48 overflow-hidden rounded-md border border-foreground/10 bg-secondary py-1">
       {filtered.map((p) => (
         <Pressable
           key={p.id}
@@ -36,7 +36,7 @@ export function MentionDropdown({ query, allPersons, onSelect }: MentionDropdown
           onPress={() => onSelect(p)}
           className="px-3 py-1.5 hover:bg-hover active:bg-hover"
         >
-          <Text className="text-sm text-popover-foreground">
+          <Text className="text-sm text-foreground">
             {p.firstName} {p.lastName}
           </Text>
         </Pressable>

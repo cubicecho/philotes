@@ -154,9 +154,9 @@ export function NetworkGraph({ persons, onOpenPerson }: NetworkGraphProps) {
       .selectAll<SVGLineElement, SimLink>('line')
       .data(links)
       .join('line')
-      .attr('stroke', 'var(--muted-foreground)')
+      .attr('stroke', 'var(--foreground)')
       .attr('stroke-width', 1.5)
-      .attr('stroke-opacity', 0.6)
+      .attr('stroke-opacity', 0.4)
       .style('cursor', 'default');
 
     // ── Edge label groups (pill background + rotated text) ──────────────────
@@ -173,8 +173,9 @@ export function NetworkGraph({ persons, onOpenPerson }: NetworkGraphProps) {
       .append('rect')
       .attr('rx', 3)
       .attr('ry', 3)
-      .attr('fill', 'var(--popover)')
-      .attr('stroke', 'var(--border)')
+      .attr('fill', 'var(--secondary)')
+      .attr('stroke', 'var(--foreground)')
+      .attr('stroke-opacity', 0.1)
       .attr('stroke-width', 0.5)
       .attr('opacity', 0.9);
 
@@ -184,7 +185,7 @@ export function NetworkGraph({ persons, onOpenPerson }: NetworkGraphProps) {
       .text((d) => d.type)
       .attr('text-anchor', 'middle')
       .attr('dominant-baseline', 'central')
-      .attr('fill', 'var(--popover-foreground)')
+      .attr('fill', 'var(--foreground)')
       .attr('font-size', '9px')
       .style('user-select', 'none');
 
@@ -382,14 +383,14 @@ export function NetworkGraph({ persons, onOpenPerson }: NetworkGraphProps) {
       {tooltip && (
         <View
           pointerEvents="none"
-          className="absolute min-w-40 rounded-lg border border-border bg-popover px-3 py-2 shadow-lg"
+          className="absolute min-w-40 rounded-lg border border-foreground/10 bg-secondary px-3 py-2 shadow-lg"
           style={{ left: tooltip.x + 16, top: tooltip.y - 8 }}
         >
-          <Text className="font-semibold text-popover-foreground text-sm">
+          <Text className="font-semibold text-foreground text-sm">
             {tooltip.person.firstName} {tooltip.person.lastName}
           </Text>
           {tooltip.person.email ? (
-            <Text className="mt-0.5 text-muted-foreground text-xs">{tooltip.person.email}</Text>
+            <Text className="mt-0.5 text-foreground/60 text-xs">{tooltip.person.email}</Text>
           ) : null}
           {tooltip.person.labels.length > 0 && (
             <View className="mt-1.5 flex-row flex-wrap gap-1">

@@ -64,13 +64,13 @@ interface SuggestionRowProps {
 function SuggestionRow({ suggestion }: SuggestionRowProps) {
   const { person, sharedLabels } = suggestion;
   return (
-    <View className="flex-row items-start gap-3 rounded-md border border-border px-3 py-2">
+    <View className="flex-row items-start gap-3 rounded-md border border-foreground/10 px-3 py-2">
       <Avatar firstName={person.firstName} lastName={person.lastName} avatarPath={person.avatarPath} size="sm" />
       <View className="min-w-0 flex-1 gap-1">
         <Link href={`/persons/${person.id}`} className="font-medium text-foreground text-sm">
           {person.firstName} {person.lastName}
         </Link>
-        {person.email ? <Text className="text-muted-foreground text-xs">{person.email}</Text> : null}
+        {person.email ? <Text className="text-foreground/60 text-xs">{person.email}</Text> : null}
         {sharedLabels.length > 0 ? (
           <View className="flex-row flex-wrap gap-1">
             {sharedLabels.map((l) => (

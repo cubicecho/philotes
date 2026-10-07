@@ -88,7 +88,7 @@ function PersonRow({ person, divided, onClickDelete, activeLabelIds }: PersonRow
 
   return (
     <ListItem
-      className={divided ? 'rounded-none border-border/60 border-t' : undefined}
+      className={divided ? 'rounded-none border-foreground/10 border-t' : undefined}
       onPress={() => router.push(`/persons/${person.id}`)}
       leadingSlot={
         <Avatar firstName={person.firstName} lastName={person.lastName} avatarPath={person.avatarPath} size="md" />
@@ -291,7 +291,7 @@ export function PersonList({
               ? groups.map((group) => (
                   <View key={group.letter}>
                     <View className={cn('bg-background px-3 py-1', LETTER_HEADER)}>
-                      <Text className="font-semibold text-primary text-xs">{group.letter}</Text>
+                      <Text className="font-semibold text-foreground text-xs">{group.letter}</Text>
                     </View>
                     {rows(group.rows)}
                   </View>
@@ -301,7 +301,7 @@ export function PersonList({
       }
       footerSlot={
         persons.length > 0 ? (
-          <Text className="text-muted-foreground text-xs">
+          <Text className="text-foreground/60 text-xs">
             {persons.length} {persons.length === 1 ? 'person' : 'people'}
           </Text>
         ) : undefined

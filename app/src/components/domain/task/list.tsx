@@ -146,7 +146,7 @@ function TaskRow({ task, onDelete, onUpdate }: TaskRowProps) {
 
   return (
     <ListItem
-      className="rounded-md border border-border"
+      className="rounded-md border border-foreground/10"
       leadingSlot={
         <Checkbox
           checked={isCompleted}
@@ -155,7 +155,7 @@ function TaskRow({ task, onDelete, onUpdate }: TaskRowProps) {
         />
       }
       title={task.title}
-      titleClassName={isCompleted ? 'font-normal text-muted-foreground line-through' : undefined}
+      titleClassName={isCompleted ? 'font-normal text-foreground/60 line-through' : undefined}
       description={details || undefined}
       actionSlot={
         <ConfirmButton

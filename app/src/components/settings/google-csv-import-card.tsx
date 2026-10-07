@@ -109,17 +109,17 @@ export function GoogleCsvImportCard() {
 
           {importState.stage === 'preview' ? (
             <>
-              <Text className="text-muted-foreground text-sm">
+              <Text className="text-foreground/60 text-sm">
                 {`Ready to import approximately ${importState.contactCount} contacts.`}
               </Text>
               {importState.firstFiveNames.length > 0 ? (
                 <View className="gap-1">
                   {importState.firstFiveNames.map((name, i) => (
                     // biome-ignore lint/suspicious/noArrayIndexKey: static preview list
-                    <Text key={i} className="text-muted-foreground text-sm">{`• ${name}`}</Text>
+                    <Text key={i} className="text-foreground/60 text-sm">{`• ${name}`}</Text>
                   ))}
                   {importState.contactCount > 5 ? (
-                    <Text className="text-muted-foreground text-sm">{`…and ${importState.contactCount - 5} more`}</Text>
+                    <Text className="text-foreground/60 text-sm">{`…and ${importState.contactCount - 5} more`}</Text>
                   ) : null}
                 </View>
               ) : null}
@@ -130,7 +130,7 @@ export function GoogleCsvImportCard() {
           {importState.stage === 'importing' ? (
             <View className="flex-row items-center gap-2">
               <Spinner label="Importing" />
-              <Text className="text-muted-foreground text-sm">Importing…</Text>
+              <Text className="text-foreground/60 text-sm">Importing…</Text>
             </View>
           ) : null}
 
@@ -145,7 +145,7 @@ export function GoogleCsvImportCard() {
                 <View className="gap-0.5">
                   {importState.errors.map((e, i) => (
                     // biome-ignore lint/suspicious/noArrayIndexKey: static error list
-                    <Text key={i} className="text-destructive text-sm">
+                    <Text key={i} className="text-negative text-sm">
                       {e}
                     </Text>
                   ))}

@@ -101,7 +101,7 @@ export function ImportantDateRow({
 
   return (
     <>
-      <View className="rounded-md border border-border px-3 py-2">
+      <View className="rounded-md border border-foreground/10 px-3 py-2">
         <View className="flex-row items-center justify-between gap-3">
           <View className="min-w-0 flex-1 gap-0.5">
             <View className="flex-row flex-wrap items-baseline gap-2">
@@ -111,10 +111,10 @@ export function ImportantDateRow({
               >
                 {name}
               </Link>
-              {description && <Text className="text-xs text-muted-foreground">{description}</Text>}
+              {description && <Text className="text-xs text-foreground/60">{description}</Text>}
             </View>
             <View className="flex-row flex-wrap items-center gap-1.5">
-              <Text className="text-xs text-muted-foreground">{new Date(date).toLocaleDateString()}</Text>
+              <Text className="text-xs text-foreground/60">{new Date(date).toLocaleDateString()}</Text>
               {recurrenceLabel && <Badge variant="secondary">{recurrenceLabel}</Badge>}
               {milestoneLabel && <Badge variant="info">{milestoneLabel}</Badge>}
             </View>

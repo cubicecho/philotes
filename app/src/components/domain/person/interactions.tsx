@@ -157,20 +157,20 @@ function InteractionRow({ interaction, allTags, onChanged }: InteractionRowProps
 
   return (
     <>
-      <View className="gap-1.5 rounded-md border border-border px-3 py-2">
+      <View className="gap-1.5 rounded-md border border-foreground/10 px-3 py-2">
         <View className="flex-row items-start justify-between gap-3">
           <View className="min-w-0 flex-1 flex-row items-start gap-2">
-            <ChannelIcon channel={interaction.channel} className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
+            <ChannelIcon channel={interaction.channel} className="mt-0.5 h-4 w-4 shrink-0 text-foreground/60" />
             <View className="min-w-0 flex-1 gap-0.5">
               {/* Date + sentiment */}
               <View className="flex-row items-center gap-2">
-                <Text className="text-xs text-muted-foreground">{relativeTime(interaction.occurredAt)}</Text>
+                <Text className="text-xs text-foreground/60">{relativeTime(interaction.occurredAt)}</Text>
                 {interaction.sentiment && (
                   <Text aria-label={interaction.sentiment} className="text-xs text-foreground">
                     {sentimentEmoji(interaction.sentiment)}
                   </Text>
                 )}
-                <Text className="text-xs capitalize text-muted-foreground">
+                <Text className="text-xs capitalize text-foreground/60">
                   {CHANNEL_OPTIONS.find((c) => c.value === interaction.channel)?.label ?? interaction.channel}
                 </Text>
               </View>
@@ -296,7 +296,7 @@ export function PersonInteractions({
 
   return (
     <View className="gap-2">
-      {sorted.length === 0 && <Text className="text-sm text-muted-foreground">No interactions yet.</Text>}
+      {sorted.length === 0 && <Text className="text-sm text-foreground/60">No interactions yet.</Text>}
 
       {sorted.map((interaction) => (
         <InteractionRow key={interaction.id} interaction={interaction} allTags={allTags} onChanged={onChanged} />

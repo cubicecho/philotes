@@ -58,7 +58,7 @@ export default function VerifyPage() {
       ) : (
         <View className="flex-row items-center gap-2">
           <Spinner label="Signing you in" />
-          <Text className="text-muted-foreground">Signing you in…</Text>
+          <Text className="text-foreground/60">Signing you in…</Text>
         </View>
       )}
     </View>

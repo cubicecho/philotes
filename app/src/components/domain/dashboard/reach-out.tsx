@@ -111,8 +111,8 @@ export function ReachOut({ persons, onLogged }: ReachOutProps) {
           actionSlot={
             loggedIds.has(p.id) ? (
               <View className="flex-row items-center gap-1">
-                <Check className="size-3.5 text-primary" />
-                <Text className="text-primary text-xs">Logged</Text>
+                <Check className="size-3.5 text-positive" />
+                <Text className="text-positive text-xs">Logged</Text>
               </View>
             ) : (
               <Button

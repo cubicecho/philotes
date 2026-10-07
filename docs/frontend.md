@@ -146,9 +146,9 @@ export interface PersonRowData {
   not `onChange(event)`. The one exception is the d3 canvas in
   `app/(app)/network.tsx`.
 - **Every string sits in a `<Text>`, and every `<Text>` names its colour**
-  (`text-foreground`, `text-foreground/60`, `text-destructive`, …). Text does
+  (`text-foreground`, `text-foreground/60`, `text-negative`, …). Text does
   not inherit colour or font from a parent `View`.
-- **Every border names its colour** — `border border-border`, never a bare
+- **Every border names its colour** — `border border-foreground/10`, never a bare
   `border`.
 - **A `View` is a column.** Write `flex-row` where a row is meant, `gap-*`
   rather than `space-x/y`, and no CSS grid.
@@ -225,8 +225,8 @@ edit), imported by `app/global.css`, which the root layout imports. Use utility
 classes directly in JSX, and `cn()` from `@/lib/utils` when merging conditional
 classes.
 
-Use the tokens — `bg-background`, `text-foreground/60`, `border-border`,
-`text-destructive` — never a palette class (`bg-red-50`) or a hex in a class
+Use the tokens — `bg-background`, `text-foreground/60`, `border-foreground/10`,
+`text-negative` — never a palette class (`bg-red-50`) or a hex in a class
 name. A colour the user chose (a label's) is data, so it goes inline: `Badge
 backgroundColor`, `ColorDot`, or `style`, with `readableTextColor()` picking
 the ink on top.

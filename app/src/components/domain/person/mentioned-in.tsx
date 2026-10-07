@@ -16,12 +16,12 @@ export function PersonMentionedIn({ notes }: PersonMentionedInProps) {
   return (
     <View className="gap-2">
       {notes.map((n) => (
-        <View key={n.id} className="gap-0.5 rounded-md border border-border px-3 py-2">
+        <View key={n.id} className="gap-0.5 rounded-md border border-foreground/10 px-3 py-2">
           <Text numberOfLines={3} className="text-foreground text-sm">
             {n.body.length > 120 ? `${n.body.slice(0, 120)}…` : n.body}
           </Text>
           {n.person ? (
-            <Text className="text-muted-foreground text-xs">
+            <Text className="text-foreground/60 text-xs">
               by{' '}
               <Link href={`/persons/${n.person.id}`} className="text-foreground/80 underline">
                 {n.person.firstName} {n.person.lastName}

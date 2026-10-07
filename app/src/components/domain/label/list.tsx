@@ -41,10 +41,10 @@ function LabelRow({ label: from, divided, onClickDelete, onClickEdit, onClickMer
 
   return (
     <ListItem
-      className={divided ? 'rounded-none border-border/60 border-t' : undefined}
+      className={divided ? 'rounded-none border-foreground/10 border-t' : undefined}
       leadingSlot={<LabelChip label={label.label} color={label.color} />}
       title={label.color}
-      titleClassName="font-mono font-normal text-muted-foreground text-xs"
+      titleClassName="font-mono font-normal text-foreground/60 text-xs"
       actionSlot={
         <>
           {onClickEdit && (

@@ -36,7 +36,7 @@ export function OpenTasks({ tasks }: { tasks: OpenTask[] }) {
           key={t.id}
           title={t.title}
           description={`${t.personFirstName} ${t.personLastName}`}
-          meta={t.isOverdue ? <Text className="font-medium text-destructive text-xs">{dueLabel(t)}</Text> : dueLabel(t)}
+          meta={t.isOverdue ? <Text className="font-medium text-negative text-xs">{dueLabel(t)}</Text> : dueLabel(t)}
           onPress={() => router.push(`/persons/${t.personId}`)}
         />
       ))}

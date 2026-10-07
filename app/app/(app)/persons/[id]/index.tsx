@@ -485,9 +485,9 @@ export default function PersonDetailPage() {
           contentClassName="gap-1"
           contentSlot={
             <>
-              <Text className="text-muted-foreground text-sm">{person.howWeMet}</Text>
+              <Text className="text-foreground/60 text-sm">{person.howWeMet}</Text>
               {person.firstMetDate ? (
-                <Text className="text-muted-foreground text-xs">
+                <Text className="text-foreground/60 text-xs">
                   First met:{' '}
                   {new Date(person.firstMetDate).toLocaleDateString('en-US', {
                     year: 'numeric',

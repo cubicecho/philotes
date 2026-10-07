@@ -131,7 +131,7 @@ export default function ImportantDateDetailPage() {
               ) : (
                 <View className="gap-2">
                   {relatedNotes.map((note) => (
-                    <View key={note.id} className="gap-1.5 rounded-md border border-border px-3 py-2">
+                    <View key={note.id} className="gap-1.5 rounded-md border border-foreground/10 px-3 py-2">
                       <Text className="text-foreground text-sm">{note.body}</Text>
                       {note.labels && note.labels.length > 0 ? (
                         <View className="flex-row flex-wrap gap-1">

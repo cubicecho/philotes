@@ -141,18 +141,18 @@ export function PreContactBrief({ person }: PreContactBriefProps) {
             {lastInteraction ? (
               <View className="gap-1">
                 <View className="flex-row items-center gap-2">
-                  <ChannelIcon channel={lastInteraction.channel} className="h-4 w-4 shrink-0 text-muted-foreground" />
+                  <ChannelIcon channel={lastInteraction.channel} className="h-4 w-4 shrink-0 text-foreground/60" />
                   <Text className="shrink text-foreground text-sm">
                     {channelLabel(lastInteraction.channel)}{' '}
-                    <Text className="text-muted-foreground">· {relativeTime(lastInteraction.occurredAt)}</Text>
+                    <Text className="text-foreground/60">· {relativeTime(lastInteraction.occurredAt)}</Text>
                   </Text>
                 </View>
                 {lastInteraction.note ? (
-                  <Text className="pl-6 text-muted-foreground text-xs">{truncate(lastInteraction.note, 100)}</Text>
+                  <Text className="pl-6 text-foreground/60 text-xs">{truncate(lastInteraction.note, 100)}</Text>
                 ) : null}
               </View>
             ) : (
-              <Text className="text-muted-foreground text-sm">No interactions logged yet</Text>
+              <Text className="text-foreground/60 text-sm">No interactions logged yet</Text>
             )}
           </View>
 
@@ -164,8 +164,8 @@ export function PreContactBrief({ person }: PreContactBriefProps) {
                 <View role="list" className="gap-1">
                   {recentNotes.map((note) => (
                     <View key={note.id} role="listitem" className="flex-row gap-1.5">
-                      <View className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-muted-foreground/60" />
-                      <Text className="shrink text-muted-foreground text-sm">{truncate(note.body, 80)}</Text>
+                      <View className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-foreground/40" />
+                      <Text className="shrink text-foreground/60 text-sm">{truncate(note.body, 80)}</Text>
                     </View>
                   ))}
                 </View>
@@ -184,12 +184,10 @@ export function PreContactBrief({ person }: PreContactBriefProps) {
                     const isOverdue = due?.startsWith('overdue');
                     return (
                       <View key={task.id} role="listitem" className="flex-row items-baseline gap-2">
-                        <Text className="shrink-0 text-muted-foreground text-sm">·</Text>
+                        <Text className="shrink-0 text-foreground/60 text-sm">·</Text>
                         <Text className="flex-1 text-foreground text-sm">{task.title}</Text>
                         {due ? (
-                          <Text
-                            className={cn('shrink-0 text-xs', isOverdue ? 'text-destructive' : 'text-muted-foreground')}
-                          >
+                          <Text className={cn('shrink-0 text-xs', isOverdue ? 'text-negative' : 'text-foreground/60')}>
                             {due}
                           </Text>
                         ) : null}
@@ -210,7 +208,7 @@ export function PreContactBrief({ person }: PreContactBriefProps) {
                   {upcomingDates.map(({ date, daysAway }) => (
                     <View key={date.id} role="listitem" className="flex-row items-center justify-between gap-2">
                       <Text className="shrink text-foreground text-sm">{date.name}</Text>
-                      <Text className="shrink-0 text-muted-foreground text-xs">
+                      <Text className="shrink-0 text-foreground/60 text-xs">
                         {daysAway === 0 ? 'today' : daysAway === 1 ? 'tomorrow' : `in ${daysAway} days`}
                       </Text>
                     </View>
