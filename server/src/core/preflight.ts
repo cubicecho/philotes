@@ -1,6 +1,6 @@
 // Runs before anything connects or signs a token, so a misconfigured instance fails with a sentence, not a stack trace.
 import { isPrivateHost } from '@cubicecho/philotes-db/ssl';
-import { allowsPublicLocalNet, appUrl, authSecret, isProduction, secureLocalNet } from './config.ts';
+import { allowsPublicLocalNet, appUrl, authSecret, isProduction, objectStorage, secureLocalNet } from './config.ts';
 import { AUTH_DEFAULTS } from './defaults.ts';
 
 /** The secret .env.example ships with. */
@@ -30,6 +30,16 @@ if (isProduction()) {
   const isWeakSecret = isTooShort || isPlaceholder;
   if (isWeakSecret) {
     fatal('BETTER_AUTH_SECRET must be a strong random value. Generate one with `openssl rand -hex 32`.');
+  }
+}
+
+const storage = objectStorage();
+if (storage !== null) {
+  const isMissingKeys = storage.accessKeyId === '' || storage.secretAccessKey === '';
+  if (isMissingKeys) {
+    fatal(
+      'S3_ENDPOINT is set, so S3_ACCESS_KEY_ID and S3_SECRET_ACCESS_KEY are required. Unset S3_ENDPOINT to keep avatars on disk.',
+    );
   }
 }
 

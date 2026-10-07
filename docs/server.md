@@ -147,6 +147,22 @@ itself.
 The iCal feed (`important-dates/ical.ts`) and avatar uploads
 (`persons/avatars.ts`) are plain Express routes and authenticate on their own.
 
+### Avatar storage
+
+The avatar routes keep images through an `AvatarStore` (`persons/avatar-store.ts`:
+`prepare`, `put`, `read`, `remove`) and never touch the filesystem themselves.
+`index.ts` picks the store: `createS3AvatarStore` (`persons/avatar-store-s3.ts`)
+when `S3_ENDPOINT` is set, otherwise `createDiskAvatarStore` on `AVATAR_DIR`. It
+calls `prepare()` at boot, which makes the directory or the missing bucket.
+
+The stored `avatarPath` is `/avatars/<name>` with either store. `GET /avatars/<name>`
+checks the session and streams the image from the store, so a bucket stays
+private. `npm run storage:up` starts a MinIO for development.
+
+The route tests run once per store. To run them against a real S3-compatible
+store as well, set `TEST_S3_ENDPOINT`, `TEST_S3_ACCESS_KEY_ID` and
+`TEST_S3_SECRET_ACCESS_KEY`; without them that run is left out.
+
 ## Adding Custom Resolvers
 
 A resolver that is not plain CRUD goes in its domain's `resolvers.ts`, as one

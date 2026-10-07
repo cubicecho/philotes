@@ -11,6 +11,7 @@
     "codegen": "node --import=./src/core/preload-env.ts src/graphql/write-schema.ts && graphql-codegen-esm"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.1147.0",
     "@better-auth/api-key": "^1.7.7",
     "@cubicecho/philotes-db": "*",
     "@escape.tech/graphql-armor-max-aliases": "^2.6.2",

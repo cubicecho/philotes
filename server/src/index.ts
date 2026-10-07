@@ -6,10 +6,12 @@ import { closeDatabase, db } from '@cubicecho/philotes-db';
 import { waitForDatabase } from '@cubicecho/philotes-db/wait';
 import { migrate } from 'drizzle-orm/postgres-js/migrator';
 import { createAuth } from './auth/better-auth.ts';
-import { appUrl, avatarDir, dbConnectTimeoutMs, port, secureLocalNet } from './core/config.ts';
+import { appUrl, avatarDir, dbConnectTimeoutMs, objectStorage, port, secureLocalNet } from './core/config.ts';
 import { errorMessage } from './core/errors.ts';
 import { createApp } from './http/app.ts';
 import { stopOnSignals } from './http/shutdown.ts';
+import { createDiskAvatarStore } from './persons/avatar-store.ts';
+import { createS3AvatarStore } from './persons/avatar-store-s3.ts';
 
 /** Postgres's port, shown when DATABASE_URL names none. */
 const DEFAULT_POSTGRES_PORT = '5432';
@@ -35,10 +37,22 @@ if (secureLocalNet()) {
   console.warn('[auth] SECURE_LOCAL_NET is on: any email signs in without a link. Private networks only.');
 }
 
+const storage = objectStorage();
+const avatarStore = storage === null ? createDiskAvatarStore(avatarDir()) : createS3AvatarStore(storage);
+try {
+  // Makes the directory, or the bucket when it is missing, so a fresh install needs no setup step.
+  await avatarStore.prepare();
+} catch (error) {
+  const place = storage === null ? avatarDir() : `bucket "${storage.bucket}" at ${storage.endpoint}`;
+  console.error(`[avatars] cannot use ${place}: ${errorMessage(error)}`);
+  process.exit(1);
+}
+console.log(storage === null ? `[avatars] kept in ${avatarDir()}` : `[avatars] kept in bucket "${storage.bucket}"`);
+
 const app = createApp({
   db,
   auth: createAuth(db),
-  avatarDir: avatarDir(),
+  avatarStore,
   staticDir: join(__dirname, '../../app/dist'),
 });
 

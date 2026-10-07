@@ -202,7 +202,12 @@ Then open [http://localhost:3000](http://localhost:3000).
 | `SMTP_FROM` | `philotes@<APP_URL host>` | From address of sign-in emails |
 | `APP_URL` | `http://localhost:<PORT>` | Public URL the app is served at |
 | `PORT` | `3000` | Port the server listens on |
-| `AVATAR_DIR` | `./avatars`, `/data/avatars` in the image | Where uploaded avatars are kept |
+| `AVATAR_DIR` | `./avatars`, `/data/avatars` in the image | Where uploaded avatars are kept, unless `S3_ENDPOINT` is set |
+| `S3_ENDPOINT` | none | URL of an S3-compatible store (MinIO, for one). Set, avatars are kept in a bucket there instead of `AVATAR_DIR` |
+| `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY` | none, required with `S3_ENDPOINT` | The store's credentials |
+| `S3_BUCKET` | `philotes-avatars` | The bucket. Created at boot when missing; it stays private |
+| `S3_REGION` | `us-east-1` | Region sent to the store. MinIO accepts any |
+| `S3_FORCE_PATH_STYLE` | `true` | Bucket in the URL path (MinIO) rather than the host name |
 | `DB_CONNECT_TIMEOUT_MS` | `60000` | How long boot waits for Postgres |
 | `TRUST_PROXY` | `false` | Proxy hops that may set `X-Forwarded-For` |
 
@@ -217,6 +222,10 @@ off for local and private addresses unless the URL sets `sslmode`.
 > **Upgrading from an image that kept avatars in `philotes_avatars`:** the
 > server now runs as the `node` user and keeps avatars in the `philotes_data`
 > volume. Upload avatars again, or copy the old files into the new volume.
+
+> **Switching avatar storage:** pictures already uploaded are not moved between
+> `AVATAR_DIR` and the bucket. After setting or unsetting `S3_ENDPOINT`, upload
+> them again, or copy the files across yourself under the same names.
 
 Released images are published to Docker Hub (`vantreeseba/philotes`) and to
 GHCR (`ghcr.io/cubicecho/philotes`).

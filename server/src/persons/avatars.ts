@@ -1,14 +1,15 @@
 import { randomUUID } from 'node:crypto';
-import { unlink } from 'node:fs/promises';
-import { basename, join } from 'node:path';
+import { basename, extname } from 'node:path';
+import { pipeline } from 'node:stream/promises';
 import type { DB } from '@cubicecho/philotes-db';
 import * as dbSchema from '@cubicecho/philotes-db/schema';
 import { fromNodeHeaders } from 'better-auth/node';
 import { and, eq } from 'drizzle-orm';
-import express, { type NextFunction, type Request, type Response, Router } from 'express';
+import { type NextFunction, type Request, type Response, Router } from 'express';
 import multer from 'multer';
 import { type Auth, sessionUserId } from '../auth/better-auth.ts';
 import { HttpStatus } from '../core/wire.ts';
+import type { AvatarStore } from './avatar-store.ts';
 
 /** The URL prefix the stored `avatarPath` carries, and the mount the files are served under. */
 const AVATAR_URL_PREFIX = '/avatars/';
@@ -23,6 +24,18 @@ const EXTENSION_BY_MIME_TYPE: Record<string, string> = {
   'image/gif': '.gif',
   'image/webp': '.webp',
 };
+
+/** The type a stored file is served as, by its extension. `.jpeg` is here for files older installs stored. */
+const MIME_TYPE_BY_EXTENSION: Record<string, string> = {
+  '.jpg': 'image/jpeg',
+  '.jpeg': 'image/jpeg',
+  '.png': 'image/png',
+  '.gif': 'image/gif',
+  '.webp': 'image/webp',
+};
+
+/** A stored file's name: no directory, and no leading dot. */
+const FILE_NAME_PATTERN = /^[A-Za-z0-9_-][A-Za-z0-9._-]*$/;
 
 /** What the guard leaves on `res.locals` for the handlers behind it. */
 interface AvatarLocals {
@@ -41,8 +54,8 @@ export interface AvatarRouterDeps {
   db: DB;
   /** Reads the caller's session. */
   auth: Auth;
-  /** The directory avatars are stored in. */
-  avatarDir: string;
+  /** Where the images are kept. */
+  store: AvatarStore;
 }
 
 /**
@@ -101,15 +114,42 @@ async function requireOwnPerson(db: DB, req: Request, res: AvatarResponse, next:
 }
 
 /**
- * Deletes a stored avatar's file. A file that is already gone is not an error.
+ * Deletes a stored avatar's file. A file that is already gone is not an error, and one that cannot
+ * be deleted is logged and left: the row no longer points at it either way.
  *
- * @param avatarDir - The directory avatars are stored in.
+ * @param store - Where the images are kept.
  * @param avatarPath - The path as stored on the row, such as `/avatars/<name>`.
  * @returns Nothing.
  */
-async function removeAvatarFile(avatarDir: string, avatarPath: string): Promise<void> {
-  // `basename` keeps a stored path from ever pointing outside the avatar directory.
-  await unlink(join(avatarDir, basename(avatarPath))).catch(() => {});
+async function removeAvatarFile(store: AvatarStore, avatarPath: string): Promise<void> {
+  // `basename` keeps a stored path from ever naming anything outside the store.
+  const name = basename(avatarPath);
+  await store.remove(name).catch((error: unknown) => {
+    console.error(`[avatars] could not remove ${name}`, error);
+  });
+}
+
+/**
+ * Sends a stored avatar. Only a plain file name with an image extension is looked up, so a
+ * request can never name anything else in the store.
+ *
+ * @param store - Where the images are kept.
+ * @param req - The request, with the file's `name` in its path.
+ * @param res - The response the image is streamed to.
+ * @returns Nothing.
+ */
+async function sendAvatar(store: AvatarStore, req: Request, res: Response): Promise<void> {
+  const name = String(req.params.name);
+  const contentType = MIME_TYPE_BY_EXTENSION[extname(name).toLowerCase()];
+  const isServable = FILE_NAME_PATTERN.test(name) && contentType !== undefined;
+  const body = isServable ? await store.read(name) : null;
+  if (body === null) {
+    res.status(HttpStatus.NotFound).json({ error: 'Avatar not found' });
+    return;
+  }
+
+  res.type(contentType);
+  await pipeline(body, res);
 }
 
 /**
@@ -128,64 +168,66 @@ async function saveAvatarPath(db: DB, locals: AvatarLocals, avatarPath: string |
 }
 
 /**
- * Builds the routes that upload and remove a person's avatar.
+ * Builds the routes that upload, serve and remove a person's avatar.
  *
  * Each file gets a random name, so two users who share a person never overwrite each other's
  * picture and a name cannot be guessed from a person id.
  *
- * @param deps - The database, the auth instance and the avatar directory.
+ * @param deps - The database, the auth instance and the avatar store.
  * @returns The router, to mount at `/avatars`.
  */
 export function createAvatarRouter(deps: AvatarRouterDeps): Router {
-  const { db, auth, avatarDir } = deps;
+  const { db, auth, store } = deps;
   const guard = (req: Request, res: AvatarResponse, next: NextFunction) => requireOwnPerson(db, req, res, next);
-  const storage = multer.diskStorage({
-    destination: avatarDir,
-    filename: (_req, file, cb) => {
-      cb(null, `${randomUUID()}${EXTENSION_BY_MIME_TYPE[file.mimetype]}`);
-    },
-  });
 
+  // Held in memory until the store takes it: the size limit keeps that to one small image a request.
   const upload = multer({
-    storage,
+    storage: multer.memoryStorage(),
     limits: { fileSize: AVATAR_MAX_BYTES, files: 1 },
     fileFilter: (_req, file, cb) => {
       cb(null, Object.hasOwn(EXTENSION_BY_MIME_TYPE, file.mimetype));
     },
   }).single('file');
 
-  const router = Router();
-  router.use((req, res, next) => requireSession(auth, req, res, next));
-  router.use(express.static(avatarDir));
-
-  router.post('/:personId', guard, (req, res) => {
-    upload(req, res, async (uploadError: unknown) => {
+  /** Parses the upload, answering 400 itself when multer refuses it. */
+  const parseUpload = (req: Request, res: Response, next: NextFunction) => {
+    upload(req, res, (uploadError: unknown) => {
       if (uploadError) {
         res.status(HttpStatus.BadRequest).json({ error: 'The file could not be uploaded' });
         return;
       }
-
-      if (!req.file) {
-        res.status(HttpStatus.BadRequest).json({ error: 'No image file uploaded' });
-        return;
-      }
-
-      const { locals } = res;
-      const avatarUrl = `${AVATAR_URL_PREFIX}${req.file.filename}`;
-      await saveAvatarPath(db, locals, avatarUrl);
-      if (locals.avatarPath) {
-        await removeAvatarFile(avatarDir, locals.avatarPath);
-      }
-
-      res.json({ url: avatarUrl });
+      next();
     });
+  };
+
+  const router = Router();
+  router.use((req, res, next) => requireSession(auth, req, res, next));
+  router.get('/:name', (req, res) => sendAvatar(store, req, res));
+
+  router.post('/:personId', guard, parseUpload, async (req, res: AvatarResponse) => {
+    if (!req.file) {
+      res.status(HttpStatus.BadRequest).json({ error: 'No image file uploaded' });
+      return;
+    }
+
+    const { locals } = res;
+    const name = `${randomUUID()}${EXTENSION_BY_MIME_TYPE[req.file.mimetype]}`;
+    await store.put(name, req.file.buffer, req.file.mimetype);
+
+    const avatarUrl = `${AVATAR_URL_PREFIX}${name}`;
+    await saveAvatarPath(db, locals, avatarUrl);
+    if (locals.avatarPath) {
+      await removeAvatarFile(store, locals.avatarPath);
+    }
+
+    res.json({ url: avatarUrl });
   });
 
   router.delete('/:personId', guard, async (_req, res) => {
     const { locals } = res;
 
     if (locals.avatarPath) {
-      await removeAvatarFile(avatarDir, locals.avatarPath);
+      await removeAvatarFile(store, locals.avatarPath);
       await saveAvatarPath(db, locals, null);
     }
 

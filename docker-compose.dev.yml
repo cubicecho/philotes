@@ -11,5 +11,18 @@ services:
       - "${DEV_BIND:-127.0.0.1}:${POSTGRES_PORT:-5439}:5432"
     volumes: [philotes_dev_pgdata:/var/lib/postgresql/data]
     healthcheck: { test: ["CMD-SHELL", "pg_isready -U philotes -d philotes"], interval: 5s, timeout: 5s, retries: 10 }
+  # Opt-in: `npm run storage:up`. An S3-compatible store for avatars, in place of the ./avatars directory.
+  # Point the server at it with the S3_* lines in .env.example. The console is on port 9001.
+  minio:
+    image: cgr.dev/chainguard/minio:latest
+    profiles: [storage]
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment: { MINIO_ROOT_USER: philotes, MINIO_ROOT_PASSWORD: philotes-dev }
+    ports:
+      - "${DEV_BIND:-127.0.0.1}:${MINIO_PORT:-9000}:9000"
+      - "${DEV_BIND:-127.0.0.1}:${MINIO_CONSOLE_PORT:-9001}:9001"
+    volumes: [philotes_dev_minio:/data]
 volumes:
   philotes_dev_pgdata:
+  philotes_dev_minio:
