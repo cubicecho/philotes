@@ -1,6 +1,16 @@
 // Parses a Google Contacts CSV export into the shape `importGoogleContacts`
 // inserts. Pure — no database, no GraphQL — so it can be tested directly.
 
+import { parseCsvRfc4180 } from './csv.ts';
+import {
+  NOISE_LABELS,
+  normalizeHyphens,
+  parseBirthday,
+  stripDefaultMarker,
+  stripGoogleDuplicate,
+  VALUE_SEPARATOR,
+} from './google-cells.ts';
+
 /** One contact read from a row of a Google Contacts CSV export. */
 export interface ParsedContact {
   firstName: string;
@@ -24,162 +34,6 @@ export interface ParsedContact {
   birthday: string | null;
   /** In the case the file gave them, each once whatever its case, without Google's own "my contacts" group. */
   labels: string[];
-}
-
-/** What Google puts between the values of a cell that holds several. */
-const VALUE_SEPARATOR = ' ::: ';
-/** What Google puts in front of the label of an entry it marks as the default. */
-const DEFAULT_LABEL_PREFIX = '* ';
-/** The byte order mark a spreadsheet export may start with. */
-const BYTE_ORDER_MARK = '\uFEFF';
-/** Google's own "everyone" groups, which say nothing about a contact. */
-const NOISE_LABELS = new Set(['my contacts', 'mycontacts']);
-
-/**
- * Keeps the first value of a cell Google wrote as "val ::: val".
- *
- * @param s - The cell's text.
- * @returns The first value, or the whole cell when it holds one. Trimmed either way.
- */
-function stripGoogleDuplicate(s: string): string {
-  const idx = s.indexOf(VALUE_SEPARATOR);
-  const hasSeveralValues = idx !== -1;
-  return hasSeveralValues ? s.slice(0, idx).trim() : s.trim();
-}
-
-/**
- * Drops the "* " Google puts in front of a default entry's label.
- *
- * @param label - The label as exported.
- * @returns The label without the marker.
- */
-function stripDefaultMarker(label: string): string {
-  const isDefault = label.startsWith(DEFAULT_LABEL_PREFIX);
-  return isDefault ? label.slice(DEFAULT_LABEL_PREFIX.length) : label;
-}
-
-/**
- * Turns the Unicode hyphens U+2010 to U+2013 into the ASCII hyphen-minus.
- *
- * @param s - Text that may hold them, here a column header.
- * @returns The text with ASCII hyphens.
- */
-function normalizeHyphens(s: string): string {
-  return s.replace(/[\u2010\u2011\u2012\u2013]/g, '-');
-}
-
-/**
- * Parses RFC 4180 CSV: a leading byte order mark, quoted fields, doubled quotes and every line ending.
- *
- * @param input - The file's text.
- * @returns The rows, each a list of cells.
- */
-function parseCsvRfc4180(input: string): string[][] {
-  // Strip BOM from start of file
-  const hasByteOrderMark = input.startsWith(BYTE_ORDER_MARK);
-  const text = hasByteOrderMark ? input.slice(BYTE_ORDER_MARK.length) : input;
-
-  const rows: string[][] = [];
-  let row: string[] = [];
-  let field = '';
-  let inQuotes = false;
-  let i = 0;
-
-  while (i < text.length) {
-    const ch = text[i];
-
-    if (inQuotes) {
-      if (ch === '"') {
-        // "" inside quotes → literal quote character
-        if (text[i + 1] === '"') {
-          field += '"';
-          i += 2;
-        } else {
-          inQuotes = false;
-          i++;
-        }
-      } else {
-        field += ch;
-        i++;
-      }
-    } else {
-      const isCrlf = ch === '\r' && text[i + 1] === '\n';
-      if (ch === '"') {
-        inQuotes = true;
-        i++;
-      } else if (ch === ',') {
-        row.push(field);
-        field = '';
-        i++;
-      } else if (isCrlf) {
-        row.push(field);
-        field = '';
-        rows.push(row);
-        row = [];
-        i += 2;
-      } else if (ch === '\r') {
-        row.push(field);
-        field = '';
-        rows.push(row);
-        row = [];
-        i++;
-      } else if (ch === '\n') {
-        row.push(field);
-        field = '';
-        rows.push(row);
-        row = [];
-        i++;
-      } else {
-        field += ch;
-        i++;
-      }
-    }
-  }
-
-  // Flush trailing row/field
-  const hasTrailingRow = field !== '' || row.length > 0;
-  if (hasTrailingRow) {
-    row.push(field);
-    rows.push(row);
-  }
-
-  return rows;
-}
-
-/**
- * Reads a birthday from a Google CSV cell.
- *
- * @param raw - The cell's text.
- * @returns The date as `YYYY-MM-DD`. null when the cell is empty, gives no year (`--MM-DD` or `0000-MM-DD`), or
- * is in any other form.
- */
-function parseBirthday(raw: string): string | null {
-  if (!raw) {
-    return null;
-  }
-
-  // --MM-DD format (no year)
-  if (raw.startsWith('--')) {
-    return null;
-  }
-
-  // 0000-MM-DD format (no year)
-  if (raw.startsWith('0000-')) {
-    return null;
-  }
-
-  // YYYY-MM-DD — validate and return as-is
-  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(raw);
-  if (!match) {
-    return null;
-  }
-
-  const year = Number(match[1]);
-  if (year === 0) {
-    return null;
-  }
-
-  return raw;
 }
 
 /**
