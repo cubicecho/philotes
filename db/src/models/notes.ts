@@ -4,6 +4,7 @@ import { labels } from './labels.ts';
 import { persons } from './persons.ts';
 import { users } from './users.ts';
 
+/** A note a user wrote. It outlives its person: deleting the person clears `personId`. */
 export const notes = pgTable(
   'notes',
   {
@@ -22,6 +23,7 @@ export const notes = pgTable(
   (t) => [index('idx_notes_person_id').on(t.personId), index('idx_notes_user_id').on(t.userId)],
 );
 
+/** Ties a note to a label. */
 export const noteTags = pgTable(
   'note_tags',
   {
@@ -42,6 +44,7 @@ export const noteTags = pgTable(
   ],
 );
 
+/** Ties a note to a person it mentions. */
 export const noteMentions = pgTable(
   'note_mentions',
   {
@@ -62,9 +65,15 @@ export const noteMentions = pgTable(
   ],
 );
 
+/** A note row as read. */
 export type Note = typeof notes.$inferSelect;
+/** A note row as inserted. */
 export type NewNote = typeof notes.$inferInsert;
+/** A note tag row as read. */
 export type NoteTag = typeof noteTags.$inferSelect;
+/** A note tag row as inserted. */
 export type NewNoteTag = typeof noteTags.$inferInsert;
+/** A note mention row as read. */
 export type NoteMention = typeof noteMentions.$inferSelect;
+/** A note mention row as inserted. */
 export type NewNoteMention = typeof noteMentions.$inferInsert;

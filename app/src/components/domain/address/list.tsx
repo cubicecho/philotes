@@ -59,30 +59,50 @@ const DELETE_ADDRESSES = graphql(`
 `);
 
 export interface AddressListProps {
+  /** The person whose addresses are listed. */
   fragmentRef: AddressListFragment;
+  /** Called after an address is added. */
   onAdd: () => void;
+  /** Called after an address is deleted. */
   onDelete: () => void;
+  /** Whether the add dialog is open, when the owner holds that state; left out, the list holds it. */
   createOpen?: boolean;
+  /** Receives the add dialog's open state when the owner holds it. */
   onCreateOpenChange?: (open: boolean) => void;
 }
 
+/** One address of the fragment. */
 type AddressData = AddressListFragment['addresses'][number];
 
+/** What each address type is called on screen. */
 const TYPE_LABELS: Record<AddressTypeEnum, string> = {
   [AddressTypeEnum.Home]: 'Home',
   [AddressTypeEnum.Work]: 'Work',
   [AddressTypeEnum.Other]: 'Other',
 };
 
+/** The address types as select options. */
 const TYPE_OPTIONS = [AddressTypeEnum.Home, AddressTypeEnum.Work, AddressTypeEnum.Other].map((value) => ({
   value,
   label: TYPE_LABELS[value],
 }));
 
+/**
+ * The city, state and postal code on one line.
+ *
+ * @param address - The address.
+ * @returns The parts that are set, joined by `, `; empty when none is.
+ */
 function cityStateLine(address: AddressData): string {
   return [address.city, address.state, address.postalCode].filter(Boolean).join(', ');
 }
 
+/**
+ * An address as the lines of a postal address, for the clipboard.
+ *
+ * @param address - The address.
+ * @returns Line 1, then line 2, the city line and the country where set, one per line.
+ */
 function formatAddress(address: AddressData): string {
   const parts: string[] = [address.line1];
   if (address.line2) {
@@ -100,9 +120,11 @@ function formatAddress(address: AddressData): string {
 
 interface AddressRowProps {
   address: AddressData;
+  /** Called after the address is deleted. */
   onDelete: () => void;
 }
 
+/** One address: its lines, its type and primary badges, and its copy and delete buttons. */
 function AddressRow({ address, onDelete }: AddressRowProps) {
   const [deleteAddress] = useMutation(DELETE_ADDRESSES);
 
@@ -145,6 +167,7 @@ function AddressRow({ address, onDelete }: AddressRowProps) {
   );
 }
 
+/** The add-address form's values. */
 interface AddressFields {
   type: AddressTypeEnum;
   label: string;
@@ -157,6 +180,7 @@ interface AddressFields {
   isPrimary: boolean;
 }
 
+/** A blank address form; the country starts as `US`. */
 const EMPTY_ADDRESS: AddressFields = {
   type: AddressTypeEnum.Home,
   label: '',
@@ -170,12 +194,15 @@ const EMPTY_ADDRESS: AddressFields = {
 };
 
 interface AddAddressDialogProps {
+  /** The person the address is added to. */
   personId: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  /** Called after the address is saved. */
   onAdded: () => void;
 }
 
+/** The dialog that adds one address to a person. */
 function AddAddressDialog({ personId, open, onOpenChange, onAdded }: AddAddressDialogProps) {
   const [createAddresses, { error, reset }] = useMutation(CREATE_ADDRESSES);
 
@@ -262,6 +289,7 @@ function AddAddressDialog({ personId, open, onOpenChange, onAdded }: AddAddressD
   );
 }
 
+/** A person's addresses and the dialog that adds one. */
 export function AddressList({ fragmentRef, onAdd, onDelete, createOpen, onCreateOpenChange }: AddressListProps) {
   const [internalOpen, setInternalOpen] = useState(false);
   const dialogOpen = createOpen ?? internalOpen;

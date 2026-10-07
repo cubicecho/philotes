@@ -22,9 +22,7 @@ async function fetchAvatarImage(avatarPath: string): Promise<string | null> {
   return URL.createObjectURL(await response.blob());
 }
 
-/**
- * Releases every fetched avatar. Called on sign-out, so the next user starts with none.
- */
+/** Releases every fetched avatar. Called on sign-out, so the next user starts with none. */
 export function forgetAvatarImages(): void {
   for (const image of images.values()) {
     void image.then((uri) => {

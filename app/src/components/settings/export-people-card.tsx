@@ -9,6 +9,7 @@ import { buildPersonsCsv } from '@/lib/csv-export';
 import { PAGE_SIZE_DEFAULTS } from '@/lib/defaults';
 import { useAllRows } from '@/lib/use-all-rows';
 
+/** Everyone, with what the CSV carries. Of the important dates only birthdays are read. */
 const GET_EXPORT_PERSONS = graphql(`
   query ExportPersons($limit: Int!, $offset: Int!) {
     persons(
@@ -54,6 +55,7 @@ const GET_EXPORT_PERSONS = graphql(`
   }
 `);
 
+/** The settings card that downloads everyone as `philotes-contacts.csv`. */
 export function ExportPeopleCard() {
   const {
     data: exportData,

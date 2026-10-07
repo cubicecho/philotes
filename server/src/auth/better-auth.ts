@@ -87,6 +87,7 @@ export function createAuth(db: DB, { secret = authSecret(), sendMagicLink }: Aut
     ],
   });
 }
+/** The better-auth instance `createAuth` builds. */
 export type Auth = ReturnType<typeof createAuth>;
 
 /**

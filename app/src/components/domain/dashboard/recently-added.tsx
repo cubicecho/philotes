@@ -6,6 +6,7 @@ import { fullName } from '@/lib/person-name';
 import { relativeTime } from '@/lib/relative-time';
 import { Widget } from './widget';
 
+/** A person as the recently-added card shows them. */
 export type RecentPerson = {
   id: string;
   firstName: string;
@@ -14,6 +15,7 @@ export type RecentPerson = {
   createdAt: Date;
 };
 
+/** The dashboard card of the newest people, each with how long ago they were added. */
 export function RecentlyAdded({ persons }: { persons: RecentPerson[] }) {
   const router = useRouter();
 

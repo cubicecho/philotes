@@ -8,12 +8,15 @@ import { nameToColor } from '@/lib/name-color';
 import { fullName } from '@/lib/person-name';
 import type { NetworkGraphProps, NetworkPerson } from './types';
 
+/** A person as a node of the d3 simulation, which adds the position and velocity. */
 type SimNode = d3.SimulationNodeDatum & NetworkPerson;
 
+/** A relationship as a link of the simulation; `type` is the relationship's name, drawn on the edge. */
 type SimLink = d3.SimulationLinkDatum<SimNode> & {
   type: string;
 };
 
+/** The person under the pointer and where the pointer is in the graph's box; `null` over no one. */
 type TooltipState = {
   x: number;
   y: number;
@@ -30,23 +33,46 @@ const FAINT_STROKE = { width: 1.5, opacity: 0.4 };
 /** The pill behind a relationship label. */
 const EDGE_PILL = { cornerRadius: 3, strokeWidth: 0.5, strokeOpacity: 0.1, opacity: 0.9 };
 
-/** A link's end as a node. d3 holds the id the link was built with until the simulation swaps in the node. */
+/**
+ * A link's end as a node. d3 holds the id the link was built with until the simulation swaps in the node.
+ *
+ * @param end - One end of a link.
+ * @returns The node, or `null` while the end is still an id.
+ */
 function resolvedNode(end: SimLink['source']): SimNode | null {
   const isResolved = typeof end === 'object';
   return isResolved ? end : null;
 }
 
-/** The node id at a link's end, whether or not the simulation has swapped the node in yet. */
+/**
+ * The node id at a link's end, whether or not the simulation has swapped the node in yet.
+ *
+ * @param end - One end of a link.
+ * @returns The id of the person at that end.
+ */
 function linkEndId(end: SimLink['source']): string {
   return resolvedNode(end)?.id ?? String(end);
 }
 
+/**
+ * A node's radius, which grows with the person's connections up to a ceiling.
+ *
+ * @param connections - How many relationships the person is part of, on either side.
+ * @returns The radius in svg units, from `minNodeRadius` up to `maxNodeRadius` at `nodeRadiusFullAt` connections.
+ */
 function getNodeRadius(connections: number): number {
   const { minNodeRadius, maxNodeRadius, nodeRadiusFullAt } = GRAPH;
   const counted = Math.min(connections, nodeRadiusFullAt);
   return minNodeRadius + ((maxNodeRadius - minNodeRadius) * counted) / nodeRadiusFullAt;
 }
 
+/**
+ * The two letters drawn inside a person's node.
+ *
+ * @param firstName - The person's first name.
+ * @param lastName - The person's last name.
+ * @returns The first character of each name, uppercased; an empty name adds nothing.
+ */
 function getInitials(firstName: string, lastName: string): string {
   return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
 }

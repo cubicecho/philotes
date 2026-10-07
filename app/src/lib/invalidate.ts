@@ -11,7 +11,6 @@ export type QueryField = 'persons' | 'labels';
  *
  * @param cache - The Apollo cache, as a mutation's `update` receives it.
  * @param fieldNames - The root fields the mutation changed.
- * @returns Nothing.
  */
 export function invalidateQueryFields(cache: ApolloCache<unknown>, fieldNames: readonly QueryField[]): void {
   for (const fieldName of fieldNames) {

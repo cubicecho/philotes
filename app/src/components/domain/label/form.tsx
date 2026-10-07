@@ -5,6 +5,7 @@ import { useAppForm } from '@/components/app-form';
 import { Form } from '@/components/ui/form';
 import { FormDialogFooter } from '@/components/ui/form-dialog';
 
+/** What a label must hold: a name and a `#rrggbb` colour. */
 const labelSchema = z.object({
   label: z.string().min(1, 'Name is required.'),
   color: z
@@ -14,9 +15,12 @@ const labelSchema = z.object({
 });
 
 interface LabelFormProps {
+  /** The label being edited; left out, the form creates one, starting from black. */
   initialValues?: { label: string; color: string };
+  /** Saves the label. A rejection's message is shown in the footer and the form stays as typed. */
   onSubmit: (value: NewLabel) => Promise<void>;
   onCancel: () => void;
+  /** Replaces the submit button's "Save" (editing) or "Create". */
   submitLabel?: string;
 }
 

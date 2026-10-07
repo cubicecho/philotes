@@ -59,6 +59,7 @@ function TimelinePlaceholder({
   return <EmptyState icon={Users} title="Person not found." />;
 }
 
+/** One person's timeline page: their interactions and important dates on one timeline. */
 export default function PersonTimelinePage() {
   const { id } = useLocalSearchParams<{ id: string }>();
 

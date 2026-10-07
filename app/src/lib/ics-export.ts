@@ -6,12 +6,14 @@ import { localIsoDate } from '@/lib/local-date';
 import { MS_PER_MINUTE } from '@/lib/time';
 import { Recurrence } from '@/lib/vocabulary';
 
+/** The person an exported event is about. */
 export interface CalendarPerson {
   id: string;
   firstName: string;
   lastName?: string | null;
 }
 
+/** An interaction, as the calendar export reads it. */
 export interface CalendarInteraction {
   id: string;
   channel: string;
@@ -20,6 +22,7 @@ export interface CalendarInteraction {
   person?: CalendarPerson | null;
 }
 
+/** An important date, as the calendar export reads it. */
 export interface CalendarImportantDate {
   id: string;
   name: string;
@@ -31,11 +34,18 @@ export interface CalendarImportantDate {
   person?: CalendarPerson | null;
 }
 
+/** Everything one calendar file holds. */
 export interface CalendarEventsData {
   interactions: CalendarInteraction[];
   importantDates: CalendarImportantDate[];
 }
 
+/**
+ * Writes the name an event shows for its person.
+ *
+ * @param [person] - The person, when the event has one.
+ * @returns First and last name, or "Unknown" when there is no person.
+ */
 function buildCalendarPersonName(person?: CalendarPerson | null): string {
   if (!person) {
     return 'Unknown';
@@ -43,6 +53,12 @@ function buildCalendarPersonName(person?: CalendarPerson | null): string {
   return [person.firstName, person.lastName].filter(Boolean).join(' ');
 }
 
+/**
+ * Writes a moment as an iCalendar DATE-TIME in UTC.
+ *
+ * @param date - The moment.
+ * @returns The form `YYYYMMDDTHHMMSSZ`.
+ */
 function formatIcsDateTime(date: Date): string {
   return date
     .toISOString()
@@ -50,15 +66,33 @@ function formatIcsDateTime(date: Date): string {
     .replace(/\.\d{3}/, '');
 }
 
-/** Format a date-only value as a DATE (not DATE-TIME) for all-day events */
+/**
+ * Writes a day as an iCalendar DATE, the form an all-day event takes.
+ *
+ * @param date - Local midnight of the day.
+ * @returns The form `YYYYMMDD`.
+ */
 function formatIcsDateOnly(date: Date): string {
   return localIsoDate(date).replace(/-/g, '');
 }
 
+/**
+ * Escapes text for an iCalendar property value.
+ *
+ * @param text - The text as the user wrote it.
+ * @returns The text with backslashes, semicolons, commas and newlines escaped.
+ */
 function escapeIcsText(text: string): string {
   return text.replace(/\\/g, '\\\\').replace(/;/g, '\\;').replace(/,/g, '\\,').replace(/\n/g, '\\n');
 }
 
+/**
+ * Builds the VEVENT for an interaction. It lasts `interactionMinutes`, since no length is recorded.
+ *
+ * @param interaction - The interaction to write.
+ * @param now - The export's time as an iCalendar DATE-TIME, for DTSTAMP.
+ * @returns The event's lines, joined by CRLF.
+ */
 function buildInteractionEvent(interaction: CalendarInteraction, now: string): string {
   const personName = buildCalendarPersonName(interaction.person);
   const summary = escapeIcsText(
@@ -83,6 +117,13 @@ function buildInteractionEvent(interaction: CalendarInteraction, now: string): s
   return lines.join('\r\n');
 }
 
+/**
+ * Builds the all-day VEVENT for an important date. Only a yearly date repeats in the file.
+ *
+ * @param importantDate - The date to write.
+ * @param now - The export's time as an iCalendar DATE-TIME, for DTSTAMP.
+ * @returns The event's lines, joined by CRLF.
+ */
 function buildImportantDateEvent(importantDate: CalendarImportantDate, now: string): string {
   const personName = buildCalendarPersonName(importantDate.person);
   const summary = escapeIcsText(`${importantDate.name} (${personName})`);
@@ -104,6 +145,12 @@ function buildImportantDateEvent(importantDate: CalendarImportantDate, now: stri
   return lines.join('\r\n');
 }
 
+/**
+ * Builds an iCalendar (RFC 5545) file of interactions and important dates.
+ *
+ * @param data - The events to write.
+ * @returns The file's text, with CRLF line endings.
+ */
 export function buildIcsContent(data: CalendarEventsData): string {
   const now = formatIcsDateTime(new Date());
 

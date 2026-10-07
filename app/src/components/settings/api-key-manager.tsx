@@ -32,11 +32,15 @@ const MY_REVOKE_API_KEY = graphql(`
   }
 `);
 
+/** An API key as the list shows it. The token itself is never read back. */
 interface ApiKeyRecord {
   id: string;
   name: string;
+  /** The stored prefix of the token, shown after `phlt_` to tell one key from another. */
   keyPrefix: string;
+  /** An ISO timestamp; `null` for a key never used. */
   lastUsedAt: string | null;
+  /** An ISO timestamp; `null` for a key that does not expire. */
   expiresAt: string | null;
   createdAt: string;
 }
@@ -44,6 +48,12 @@ interface ApiKeyRecord {
 /** What stands in for a date the key does not have. */
 const NO_DATE = '—';
 
+/**
+ * A key's dates on one line.
+ *
+ * @param key - The key.
+ * @returns When it was last used, when it expires if it does, and when it was made, joined by ` · `.
+ */
 function keyDetails(key: ApiKeyRecord): string {
   return [
     `Last used: ${key.lastUsedAt ? relativeTime(new Date(key.lastUsedAt)) : 'never'}`,
@@ -54,6 +64,7 @@ function keyDetails(key: ApiKeyRecord): string {
     .join(' · ');
 }
 
+/** The settings card of the user's API keys: each one revocable, and the dialog that generates another. */
 export function ApiKeyManager() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const { data, loading, error, refetch } = useQuery(MY_API_KEYS);

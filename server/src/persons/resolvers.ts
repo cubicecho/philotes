@@ -42,11 +42,20 @@ const USER_SCOPE_SDL = parse(`
 // The caller's user_persons rows are read once per request and kept against the context. A user has
 // hundreds of contacts, so one indexed read beats a lookup per row of every list that shows an avatar.
 
+/** What one user keeps about a person: a `user_persons` row. */
 type PersonContext = typeof dbSchema.userPersons.$inferSelect;
 /** The columns `createPerson` takes. The GraphQL input type requires the names. */
 type NewPerson = typeof dbSchema.persons.$inferInsert;
 const personContextsByRequest = new WeakMap<Context, Promise<Map<string, PersonContext>>>();
 
+/**
+ * Loads the caller's `user_persons` rows, once per request. Later calls with the same context share the
+ * one read.
+ *
+ * @param ctx - Request context, which the rows are cached against.
+ * @returns The caller's rows, by person id.
+ * @throws UNAUTHENTICATED when nobody is signed in.
+ */
 function personContexts(ctx: Context): Promise<Map<string, PersonContext>> {
   const cached = personContextsByRequest.get(ctx);
   if (cached) {
@@ -63,9 +72,25 @@ function personContexts(ctx: Context): Promise<Map<string, PersonContext>> {
   return loading;
 }
 
+/**
+ * Sets the resolvers for the fields `Person` takes from the caller's own `user_persons` row:
+ * `avatarPath`, `contactFrequency`, `howWeMet` and `firstMetDate`.
+ *
+ * @param schema - The extended schema, changed in place.
+ */
 function applyPersonContextFields(schema: GraphQLSchema): void {
   const personFields = objectType(schema, 'Person').getFields();
   for (const field of ['avatarPath', 'contactFrequency', 'howWeMet', 'firstMetDate'] as const) {
+    /**
+     * Resolves one of `Person`'s per-user fields from the caller's own `user_persons` row.
+     *
+     * @param parent - The person, as the parent resolver returned it.
+     * @param _args - Unused.
+     * @param ctx - Request context.
+     * @returns The caller's value. null when the parent carries no id, the person is not in the caller's
+     * contacts, or nothing is set.
+     * @throws UNAUTHENTICATED when nobody is signed in.
+     */
     personFields[field].resolve = async (parent: { id?: string }, _args: unknown, ctx: Context) => {
       if (!parent.id) {
         return null;
@@ -110,9 +135,26 @@ async function insertOrFindPerson(db: DB, values: NewPerson): Promise<string> {
   }
 }
 
+/**
+ * Replaces the generated `createPerson` and `deletePerson` resolvers. A person row is shared, so creating
+ * one links it to the caller, and deleting one only unlinks it.
+ *
+ * @param schema - The extended schema, changed in place.
+ */
 function overridePersonMutations(schema: GraphQLSchema): void {
   const mf = objectType(schema, 'Mutation').getFields();
 
+  /**
+   * Resolves `Mutation.createPerson`. Adds a person to the signed-in caller's contacts. When a person
+   * already holds the email, the caller is linked to that row and no new one is made.
+   *
+   * @param _parent - Unused.
+   * @param args.values - The person's columns. The names and the email are validated and trimmed.
+   * @param ctx - Request context.
+   * @returns The person row, new or existing.
+   * @throws UNAUTHENTICATED when nobody is signed in.
+   * @throws BAD_USER_INPUT when a name or the email fails validation.
+   */
   mf.createPerson.resolve = async (_parent: unknown, args: { values: NewPerson }, ctx: Context) => {
     const userId = requireAuth(ctx);
     const { db } = ctx;
@@ -127,6 +169,17 @@ function overridePersonMutations(schema: GraphQLSchema): void {
     return person;
   };
 
+  /**
+   * Resolves `Mutation.deletePerson`. Takes a person out of the signed-in caller's contacts. The shared
+   * row stays for the other users who have it. Only a filter of the form `{ id: { eq } }` is honoured.
+   *
+   * @param _parent - Unused.
+   * @param [args.where] - The filter naming the person by id.
+   * @param ctx - Request context.
+   * @returns The person in a list of one. An empty list when the filter names no id, or the person was not
+   * in the caller's contacts.
+   * @throws UNAUTHENTICATED when nobody is signed in.
+   */
   mf.deletePerson.resolve = async (_parent: unknown, args: { where?: { id?: { eq?: string } } }, ctx: Context) => {
     const userId = requireAuth(ctx);
     const { db } = ctx;
@@ -150,10 +203,25 @@ function overridePersonMutations(schema: GraphQLSchema): void {
   };
 }
 
+/**
+ * Sets the resolvers that read and change the caller's own link to a person: `myPersonContext`,
+ * `addPersonToMyContacts`, `updateMyPersonContext` and `removePersonFromMyContacts`.
+ *
+ * @param schema - The extended schema, changed in place.
+ */
 function addUserPersonsResolvers(schema: GraphQLSchema): void {
   const qf = objectType(schema, 'Query').getFields();
   const mf = objectType(schema, 'Mutation').getFields();
 
+  /**
+   * Resolves `Query.myPersonContext`. Reads what the signed-in caller keeps about a person.
+   *
+   * @param _parent - Unused.
+   * @param args.personId - The person.
+   * @param ctx - Request context.
+   * @returns The caller's `user_persons` row, or null when the person is not in their contacts.
+   * @throws UNAUTHENTICATED when nobody is signed in.
+   */
   qf.myPersonContext.resolve = async (_parent: unknown, args: { personId: string }, ctx: Context) => {
     const userId = requireAuth(ctx);
     const { db } = ctx;
@@ -164,6 +232,17 @@ function addUserPersonsResolvers(schema: GraphQLSchema): void {
     return row ?? null;
   };
 
+  /**
+   * Resolves `Mutation.addPersonToMyContacts`. Puts an existing person in the signed-in caller's contacts.
+   * Any person's id is taken, whoever added the row. Adding one already there changes nothing.
+   *
+   * @param _parent - Unused.
+   * @param args.personId - The person to add.
+   * @param ctx - Request context.
+   * @returns The caller's `user_persons` row for the person.
+   * @throws UNAUTHENTICATED when nobody is signed in.
+   * @throws NOT_FOUND when no person has the id.
+   */
   mf.addPersonToMyContacts.resolve = async (_parent: unknown, args: { personId: string }, ctx: Context) => {
     const userId = requireAuth(ctx);
     const { db } = ctx;
@@ -185,6 +264,22 @@ function addUserPersonsResolvers(schema: GraphQLSchema): void {
     return row;
   };
 
+  /**
+   * Resolves `Mutation.updateMyPersonContext`. Changes what the signed-in caller keeps about a person. An
+   * argument left out is left alone, and null clears it.
+   *
+   * @param _parent - Unused.
+   * @param args.personId - The person.
+   * @param [args.contactFrequency] - How often the caller means to be in touch: weekly, monthly, quarterly or yearly.
+   * @param [args.howWeMet] - How the caller met the person.
+   * @param [args.firstMetDate] - When they first met, as `YYYY-MM-DD`.
+   * @param [args.avatarPath] - The stored path of the caller's picture of the person.
+   * @param ctx - Request context.
+   * @returns The updated `user_persons` row.
+   * @throws UNAUTHENTICATED when nobody is signed in.
+   * @throws BAD_USER_INPUT when a value fails validation.
+   * @throws NOT_FOUND when the person is not in the caller's contacts.
+   */
   mf.updateMyPersonContext.resolve = async (
     _parent: unknown,
     args: {
@@ -215,6 +310,15 @@ function addUserPersonsResolvers(schema: GraphQLSchema): void {
     return row;
   };
 
+  /**
+   * Resolves `Mutation.removePersonFromMyContacts`. Takes a person out of the signed-in caller's contacts.
+   *
+   * @param _parent - Unused.
+   * @param args.personId - The person to remove.
+   * @param ctx - Request context.
+   * @returns true, whether or not the person was there.
+   * @throws UNAUTHENTICATED when nobody is signed in.
+   */
   mf.removePersonFromMyContacts.resolve = async (_parent: unknown, args: { personId: string }, ctx: Context) => {
     const userId = requireAuth(ctx);
     const { db } = ctx;
@@ -225,6 +329,13 @@ function addUserPersonsResolvers(schema: GraphQLSchema): void {
   };
 }
 
+/**
+ * Adds what a user keeps about a shared person to the schema: the per-user fields on `Person`, the
+ * contact-list query and mutations, and the `createPerson` and `deletePerson` overrides.
+ *
+ * @param schema - The schema so far.
+ * @returns The schema with the per-user person fields.
+ */
 export function applyUserScopeExtensions(schema: GraphQLSchema): GraphQLSchema {
   const extendedSchema = extendSchema(schema, USER_SCOPE_SDL);
 

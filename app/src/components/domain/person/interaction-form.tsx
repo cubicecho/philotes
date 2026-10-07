@@ -7,9 +7,12 @@ import { FormDialogFooter } from '@/components/ui/form-dialog';
 import { SegmentedButton, SegmentedGroup } from '@/components/ui/segmented';
 import { InteractionChannel, InteractionSentiment } from '@/lib/vocabulary';
 
+/** How an interaction took place. */
 export type Channel = InteractionChannel;
+/** How an interaction went. */
 export type Sentiment = InteractionSentiment;
 
+/** The channels an interaction can be logged on, in the order offered. */
 export const CHANNEL_OPTIONS: Array<{ value: Channel; label: string }> = [
   { value: InteractionChannel.Call, label: 'Call' },
   { value: InteractionChannel.Text, label: 'Text' },
@@ -18,6 +21,7 @@ export const CHANNEL_OPTIONS: Array<{ value: Channel; label: string }> = [
   { value: InteractionChannel.Other, label: 'Other' },
 ];
 
+/** The sentiments an interaction can be given, each with the emoji that stands for it. */
 export const SENTIMENT_OPTIONS: Array<{
   value: Sentiment;
   label: string;
@@ -29,37 +33,61 @@ export const SENTIMENT_OPTIONS: Array<{
   { value: InteractionSentiment.Difficult, label: 'Difficult', emoji: '😟' },
 ];
 
-/** The channel a segmented button reported; undefined for a value that is not one. */
+/**
+ * The channel a segmented button reported; undefined for a value that is not one.
+ *
+ * @param value - What the segmented group reported.
+ * @returns The matching channel, or `undefined`.
+ */
 function findChannel(value: string): Channel | undefined {
   return CHANNEL_OPTIONS.find((option) => option.value === value)?.value;
 }
 
-/** The sentiment a segmented button reported; undefined for a value that is not one. */
+/**
+ * The sentiment a segmented button reported; undefined for a value that is not one.
+ *
+ * @param value - What the segmented group reported.
+ * @returns The matching sentiment, or `undefined`.
+ */
 function findSentiment(value: string): Sentiment | undefined {
   return SENTIMENT_OPTIONS.find((option) => option.value === value)?.value;
 }
 
+/**
+ * The emoji that stands for a sentiment.
+ *
+ * @param sentiment - The stored sentiment, if the interaction has one.
+ * @returns The emoji, or an empty string for no sentiment or one that is not known.
+ */
 export function sentimentEmoji(sentiment: string | null | undefined): string {
   return SENTIMENT_OPTIONS.find((s) => s.value === sentiment)?.emoji ?? '';
 }
 
+/** What the interaction form holds and submits. */
 export interface InteractionFormValues {
   channel: Channel;
   occurredAt: Date;
+  /** The empty string when no sentiment is chosen. */
   sentiment: Sentiment | '';
   note: string;
+  /** The ids of the tags chosen for the interaction. */
   labelIds: string[];
 }
 
 interface InteractionFormProps {
+  /** Unused. */
   personId: string;
+  /** Every tag the user has. */
   allTags: TagOption[];
+  /** Values to start from; a field left out starts as a call, now, with no sentiment, note or tags. */
   initialValues?: Partial<InteractionFormValues>;
   submitLabel?: string;
+  /** Saves the interaction. A rejection's message is shown in the footer and the form stays as typed. */
   onSubmit: (values: InteractionFormValues) => Promise<void>;
   onCancel: () => void;
 }
 
+/** The interaction fields and their footer. It draws no dialog of its own: render it inside a `FormDialog`. */
 export function InteractionForm({
   personId: _personId,
   allTags,

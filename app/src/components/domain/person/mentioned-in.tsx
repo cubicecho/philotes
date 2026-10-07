@@ -2,9 +2,11 @@ import { Link } from 'expo-router';
 import { Text, View } from 'react-native';
 import { EXCERPT_DEFAULTS } from '@/lib/defaults';
 
+/** A note on someone else's page that mentions this person. */
 export interface MentionedInNote {
   id: string;
   body: string;
+  /** Whose note it is; the “by” line is not drawn without one. */
   person?: { id: string; firstName: string; lastName: string } | null;
 }
 

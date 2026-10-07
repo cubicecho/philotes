@@ -10,8 +10,10 @@ import { relativeTime } from '@/lib/relative-time';
 import { cn } from '@/lib/utils';
 import { InteractionChannel } from '@/lib/vocabulary';
 
+/** A label as a timeline entry shows it. */
 type TimelineLabel = { id: string; label: string; color: string };
 
+/** An interaction as the timeline shows it. */
 export interface TimelineInteraction {
   id: string;
   channel: string;
@@ -21,10 +23,12 @@ export interface TimelineInteraction {
   labels: TimelineLabel[];
 }
 
+/** An important date as the timeline shows it. */
 export interface TimelineImportantDate {
   id: string;
   date: Date;
   name: string;
+  /** A `Milestone` value, which picks the emoji; a regular date has none. */
   milestoneType: string | null | undefined;
   labels: TimelineLabel[];
 }
@@ -34,6 +38,7 @@ export interface PersonTimelineProps {
   importantDates: TimelineImportantDate[];
 }
 
+/** An interaction or an important date, with the moment it is placed at on the timeline. */
 type TimelineItem =
   | { id: string; type: 'interaction'; date: Date; data: TimelineInteraction }
   | { id: string; type: 'importantDate'; date: Date; data: TimelineImportantDate };
@@ -53,14 +58,27 @@ const MILESTONE_EMOJI: Record<string, string> = {
   [Milestone.Other]: '🎉',
 } satisfies Record<Milestone, string>;
 
+/**
+ * The heading of a month's group.
+ *
+ * @param date - Any moment in the month.
+ * @returns The month as `Month YYYY`, in US English and local time.
+ */
 function formatMonthYear(date: Date): string {
   return date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
 }
 
+/**
+ * What two dates share when they fall in the same month.
+ *
+ * @param date - Any moment in the month.
+ * @returns The local month as `YYYY-MM`.
+ */
 function monthYearKey(date: Date): string {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
 }
 
+/** An entry's labels as chips; nothing is drawn without any. */
 function EntryLabels({ labels }: { labels: TimelineLabel[] }) {
   if (labels.length === 0) {
     return null;
@@ -74,6 +92,7 @@ function EntryLabels({ labels }: { labels: TimelineLabel[] }) {
   );
 }
 
+/** An interaction on the timeline: its channel and sentiment emoji, its note and its labels. */
 function InteractionEntry({ item }: { item: TimelineInteraction }) {
   const emoji = sentimentEmoji(item.sentiment);
   const channel = item.channel === InteractionChannel.InPerson ? 'In Person' : item.channel;
@@ -95,6 +114,7 @@ function InteractionEntry({ item }: { item: TimelineInteraction }) {
   );
 }
 
+/** An important date on the timeline, under its milestone's emoji or a calendar. */
 function ImportantDateEntry({ item }: { item: TimelineImportantDate }) {
   const emoji = item.milestoneType ? (MILESTONE_EMOJI[item.milestoneType] ?? '📅') : '📅';
   return (
@@ -108,6 +128,7 @@ function ImportantDateEntry({ item }: { item: TimelineImportantDate }) {
   );
 }
 
+/** A person's interactions and important dates as one list, newest first, grouped by month. */
 export function PersonTimeline({ interactions, importantDates }: PersonTimelineProps) {
   const items: TimelineItem[] = [
     ...interactions.map((i): TimelineItem => ({ id: `i-${i.id}`, type: 'interaction', date: i.occurredAt, data: i })),

@@ -20,7 +20,9 @@ const REPO_ROOT = fileURLToPath(new URL('../../../', import.meta.url));
 
 /** Where better-auth keeps sessions. */
 export type SessionStore = AuthSettings['sessionStore'];
+/** The `SESSION_STORE` value for sessions kept in memory. */
 export const SESSION_STORE_MEMORY = 'memory' as const satisfies SessionStore;
+/** The `SESSION_STORE` value for sessions kept in the database. */
 export const SESSION_STORE_DATABASE = 'database' as const satisfies SessionStore;
 
 /**

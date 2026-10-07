@@ -103,14 +103,21 @@ const DELETE_RELATIONSHIP_TYPE = graphql(`
 
 export interface RelationshipsProps {
   person: Person_RelationshipsFragment;
+  /** Everyone the person could be linked to. */
   allPersons: Array<{ id: string; firstName: string; lastName: string }>;
+  /** Called with a relationship's id after it is removed. */
   onDelete: (id: string) => void;
+  /** Called after a relationship is created, with both people and its type name. */
   onAdd: (fromPersonId: string, toPersonId: string, type: string) => void;
+  /** Called with a relationship's id and its new type name after the change is saved. */
   onEdit: (id: string, type: string) => void;
+  /** Whether the Add Relationship dialog is open. */
   showAdd?: boolean;
+  /** Receives the Add Relationship dialog's open state. */
   onShowAdd?: (show: boolean) => void;
 }
 
+/** What the dialog needs of the relationship it edits. */
 type EditingRelationship = Pick<
   PersonRelationshipEntry,
   'id' | 'type' | 'relatedPersonId' | 'relatedPersonFirstName' | 'relatedPersonLastName'
@@ -119,15 +126,24 @@ type EditingRelationship = Pick<
 interface RelationshipFormDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  /** The person whose page this is; a new relationship starts at them. */
   fromPersonId: string;
+  /** Everyone the person could be linked to. */
   allPersons: Array<{ id: string; firstName: string; lastName: string }>;
+  /** The people already related to this person, who are not offered again. */
   existingRelatedIds: Set<string>;
+  /** Called after a relationship is created, with both people and its type name. */
   onCreate?: (fromPersonId: string, toPersonId: string, type: string) => void;
   /** Set, the dialog changes this relationship's type; the person is fixed. */
   editing?: EditingRelationship | undefined;
+  /** Called with the relationship's id and its new type name after the change is saved. */
   onEdit?: (id: string, type: string) => void;
 }
 
+/**
+ * The dialog that links two people or changes how they are related. It also adds and deletes the relationship types
+ * offered.
+ */
 function RelationshipFormDialog({
   open,
   onOpenChange,
@@ -353,10 +369,13 @@ function RelationshipFormDialog({
 
 interface RelationshipRowProps {
   relationship: PersonRelationshipEntry;
+  /** Called with the relationship's id after it is removed. */
   onDelete: (id: string) => void;
+  /** Called when Edit is pressed. */
   onEditPress: () => void;
 }
 
+/** One relationship: the other person, opening their page when pressed, the type, and edit and remove. */
 function RelationshipRow({ relationship, onDelete, onEditPress }: RelationshipRowProps) {
   const { id, relatedPersonId, relatedPersonFirstName, relatedPersonLastName, type } = relationship;
   const router = useRouter();
@@ -399,6 +418,7 @@ function RelationshipRow({ relationship, onDelete, onEditPress }: RelationshipRo
   );
 }
 
+/** A person's relationships, with the dialog that adds one and the dialog that edits one. */
 export function PersonRelationships({
   person,
   allPersons,

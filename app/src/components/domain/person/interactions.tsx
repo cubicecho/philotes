@@ -83,6 +83,7 @@ const DELETE_INTERACTION = graphql(`
   }
 `);
 
+/** An interaction as its row shows it. */
 export interface InteractionData {
   id: string;
   personId: string;
@@ -90,18 +91,23 @@ export interface InteractionData {
   occurredAt: Date;
   sentiment: string | null | undefined;
   note: string | null | undefined;
+  /** The tags attached to the interaction. */
   labels: TagOption[];
 }
 
 export interface PersonInteractionsProps {
   personId: string;
   interactions: InteractionData[];
+  /** Every tag the user has. */
   allTags: TagOption[];
+  /** Called after an interaction is logged, edited or deleted, or its tags change. */
   onChanged: () => void;
+  /** Whether the Log Interaction dialog is open. */
   createOpen: boolean;
   onCreateOpenChange: (open: boolean) => void;
 }
 
+/** How many characters of an interaction's note a row shows before “more”. */
 const { interactionNoteLength } = EXCERPT_DEFAULTS;
 
 interface InteractionRowProps {
@@ -110,6 +116,10 @@ interface InteractionRowProps {
   onChanged: () => void;
 }
 
+/**
+ * One interaction: when and how it happened, its note cut short behind a “more” toggle, its tags, and its edit and
+ * delete.
+ */
 function InteractionRow({ interaction, allTags, onChanged }: InteractionRowProps) {
   const [expanded, setExpanded] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
@@ -224,6 +234,7 @@ function InteractionRow({ interaction, allTags, onChanged }: InteractionRowProps
   );
 }
 
+/** A person's interactions, in the order given, and the dialog that logs one. */
 export function PersonInteractions({
   personId,
   interactions,

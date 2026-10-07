@@ -9,4 +9,5 @@ const typeName = z
 
 /** Partial, since an update's `set` carries only the changed columns. */
 export const personRelationshipInput = z.object({ type: typeName }).partial();
+/** A user's own relationship type name. Partial for the same reason. */
 export const relationshipTypeInput = z.object({ name: typeName }).partial();

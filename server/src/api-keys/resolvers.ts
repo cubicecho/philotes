@@ -102,6 +102,15 @@ export function applyApiKeysExtension(schema: GraphQLSchema): GraphQLSchema {
   const queries = objectType(extended, 'Query').getFields();
   const mutations = objectType(extended, 'Mutation').getFields();
 
+  /**
+   * Resolves `Query.myApiKeys`. Lists the signed-in caller's API keys, newest first.
+   *
+   * @param _parent - Unused.
+   * @param _args - Unused.
+   * @param ctx - Request context.
+   * @returns The caller's key records.
+   * @throws UNAUTHENTICATED when nobody is signed in.
+   */
   queries.myApiKeys.resolve = async (_parent: unknown, _args: unknown, ctx: Context) => {
     const userId = requireAuth(ctx);
     const rows = await ctx.db
@@ -112,6 +121,19 @@ export function applyApiKeysExtension(schema: GraphQLSchema): GraphQLSchema {
     return rows.map(toApiKeyRecord);
   };
 
+  /**
+   * Resolves `Mutation.myCreateApiKey`. Makes an API key for the signed-in caller. The key carries no
+   * rate limit of its own.
+   *
+   * @param _parent - Unused.
+   * @param args.input.name - What the caller calls the key. Trimmed, and not empty.
+   * @param [args.input.expiresAt] - When the key stops working. Left out or null for a key that never expires.
+   * @param ctx - Request context.
+   * @returns The key's record, and its whole token.
+   * @throws UNAUTHENTICATED when nobody is signed in.
+   * @throws BAD_USER_INPUT for an empty name, an expiry that is unreadable or not in the future, or a key
+   * better-auth refuses.
+   */
   mutations.myCreateApiKey.resolve = async (
     _parent: unknown,
     args: { input: { name: string; expiresAt?: string | null } },
@@ -132,6 +154,16 @@ export function applyApiKeysExtension(schema: GraphQLSchema): GraphQLSchema {
     }
   };
 
+  /**
+   * Resolves `Mutation.myRevokeApiKey`. Deletes one of the signed-in caller's API keys.
+   *
+   * @param _parent - Unused.
+   * @param args.id - The key's id.
+   * @param ctx - Request context.
+   * @returns true once the key is gone.
+   * @throws UNAUTHENTICATED when nobody is signed in.
+   * @throws NOT_FOUND when the id is malformed, or the key is missing or someone else's.
+   */
   mutations.myRevokeApiKey.resolve = async (_parent: unknown, args: { id: string }, ctx: Context) => {
     const userId = requireAuth(ctx);
     // Postgres rejects a malformed uuid with an error, where "not found" is meant.

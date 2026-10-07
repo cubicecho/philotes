@@ -32,6 +32,12 @@ const GET_DATE_DETAIL = graphql(`
   }
 `);
 
+/**
+ * Writes a date in full, in the reader's locale.
+ *
+ * @param date - The date to write.
+ * @returns The date with a long month name, such as "March 9, 2026" in US English.
+ */
 function formatDate(date: Date): string {
   return date.toLocaleDateString(undefined, {
     month: 'long',
@@ -59,6 +65,7 @@ function DatePlaceholder({
   return <EmptyState icon={CalendarDays} title="Date not found." />;
 }
 
+/** One important date of a person, with that person's notes that share a tag with it. */
 export default function ImportantDateDetailPage() {
   const { id: personId, dateId } = useLocalSearchParams<{ id: string; dateId: string }>();
 

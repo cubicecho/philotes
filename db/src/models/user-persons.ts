@@ -12,6 +12,7 @@ export const ContactFrequency = {
 } as const;
 export type ContactFrequency = (typeof ContactFrequency)[keyof typeof ContactFrequency];
 
+/** Puts a person in a user's contacts, and holds what that user alone keeps about them. */
 export const userPersons = pgTable(
   'user_persons',
   {
@@ -38,5 +39,7 @@ export const userPersons = pgTable(
   ],
 );
 
+/** A user-person link row as read. */
 export type UserPerson = typeof userPersons.$inferSelect;
+/** A user-person link row as inserted. */
 export type NewUserPerson = typeof userPersons.$inferInsert;

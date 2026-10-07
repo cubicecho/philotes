@@ -7,7 +7,9 @@ import { Button } from '@/components/ui/button';
 export interface PersonContactActionsProps {
   /** The number Call and Text use; neither is drawn without one. */
   phone: string | null;
+  /** The address Email writes to; the button is not drawn without one. */
   email: string | null | undefined;
+  /** Called when Log Interaction is pressed. */
   onLogInteraction: () => void;
 }
 

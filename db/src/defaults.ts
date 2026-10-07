@@ -14,6 +14,7 @@ export interface DatabaseSettings {
   closeTimeoutSeconds: number;
 }
 
+/** The database settings as shipped. */
 export const DATABASE_DEFAULTS: Readonly<DatabaseSettings> = Object.freeze({
   connectTimeoutMs: 60_000,
   firstRetryDelayMs: 500,
@@ -80,6 +81,7 @@ export interface SeedSettings {
   addressSecondLineChance: number;
 }
 
+/** The seed settings as shipped. */
 export const SEED_DEFAULTS: Readonly<SeedSettings> = Object.freeze({
   minLabelsPerPerson: 1,
   maxLabelsPerPerson: 3,

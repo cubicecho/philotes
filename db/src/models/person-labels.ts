@@ -4,6 +4,7 @@ import { labels } from './labels.ts';
 import { persons } from './persons.ts';
 import { users } from './users.ts';
 
+/** Ties a person to one of a user's labels. */
 export const personLabels = pgTable(
   'person_labels',
   {
@@ -24,5 +25,7 @@ export const personLabels = pgTable(
   ],
 );
 
+/** A person label row as read. */
 export type PersonLabel = typeof personLabels.$inferSelect;
+/** A person label row as inserted. */
 export type NewPersonLabel = typeof personLabels.$inferInsert;

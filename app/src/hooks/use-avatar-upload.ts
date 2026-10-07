@@ -8,6 +8,7 @@ export const AVATAR_ACCEPT = 'image/jpeg,image/png,image/gif,image/webp';
 
 const UPLOAD_FAILED = 'The photo could not be uploaded. Use a JPEG, PNG, GIF or WebP image under 5 MB.';
 
+/** What `useAvatarUpload` hands back. */
 interface AvatarUpload {
   /** `accept` for the picker that feeds `upload`. */
   accept: string;

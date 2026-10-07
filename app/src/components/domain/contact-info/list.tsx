@@ -62,6 +62,7 @@ const DELETE_CONTACT_INFO = graphql(`
   }
 `);
 
+/** The contact types as select options, in the order offered. */
 const CONTACT_TYPE_OPTIONS: Array<{ value: ContactTypeEnum; label: string }> = [
   { value: ContactTypeEnum.Email, label: 'Email' },
   { value: ContactTypeEnum.Phone, label: 'Phone' },
@@ -73,6 +74,7 @@ const CONTACT_TYPE_OPTIONS: Array<{ value: ContactTypeEnum; label: string }> = [
   { value: ContactTypeEnum.Other, label: 'Other' },
 ];
 
+/** An example value for each contact type, shown as the value field's placeholder. */
 const CONTACT_TYPE_PLACEHOLDERS: Record<ContactTypeEnum, string> = {
   [ContactTypeEnum.Email]: 'name@example.com',
   [ContactTypeEnum.Phone]: '+1 (555) 000-0000',
@@ -84,18 +86,34 @@ const CONTACT_TYPE_PLACEHOLDERS: Record<ContactTypeEnum, string> = {
   [ContactTypeEnum.Other]: 'Contact value',
 };
 
-/** A phone number as a `tel:` link, without its spaces and punctuation. */
+/**
+ * A phone number as a `tel:` link, without its spaces and punctuation.
+ *
+ * @param phoneNumber - The number as typed; only its digits and `+` are kept.
+ * @returns The `tel:` href.
+ */
 function telHref(phoneNumber: string): string {
   return `tel:${phoneNumber.replace(/[^\d+]/g, '')}`;
 }
 
-/** A handle as a link to its profile under `profileBase`; a value that is already a URL is kept. */
+/**
+ * A handle as a link to its profile under `profileBase`; a value that is already a URL is kept.
+ *
+ * @param profileBase - The network's profile URL up to the handle, ending in `/`.
+ * @param handle - The handle, with or without its leading `@`, or a full URL.
+ * @returns The profile URL.
+ */
 function profileHref(profileBase: string, handle: string): string {
   const isUrl = handle.startsWith('http');
   return isUrl ? handle : `${profileBase}${handle.replace(/^@/, '')}`;
 }
 
-/** A site as a link; a value that is already a URL is kept. */
+/**
+ * A site as a link; a value that is already a URL is kept.
+ *
+ * @param site - A bare domain or a full URL.
+ * @returns The URL, with `https://` put in front of a bare domain.
+ */
 function websiteHref(site: string): string {
   const isUrl = site.startsWith('http');
   return isUrl ? site : `https://${site}`;
@@ -113,7 +131,13 @@ const CONTACT_HREF_BUILDERS: Record<string, (value: string) => string | null> = 
   [ContactTypeEnum.Other]: () => null,
 } satisfies Record<ContactTypeEnum, (value: string) => string | null>;
 
-/** Actionable href for a contact value — tap to call/text/email/open. */
+/**
+ * Actionable href for a contact value — tap to call/text/email/open.
+ *
+ * @param type - The contact type, one of the `ContactTypeEnum` values.
+ * @param value - The contact value as stored; it is trimmed before use.
+ * @returns The href, or `null` when the type has nothing to open or is not a known one.
+ */
 export function contactHref(type: string, value: string): string | null {
   const buildHref = CONTACT_HREF_BUILDERS[type];
   if (!buildHref) {
@@ -134,28 +158,38 @@ const CONTACT_TYPE_ICONS: Record<string, typeof Ellipsis> = {
   [ContactTypeEnum.Other]: Ellipsis,
 } satisfies Record<ContactTypeEnum, typeof Ellipsis>;
 
+/** The glyph for a contact type; anything unrecognised gets the ellipsis. */
 function ContactTypeIcon({ type, className }: { type: string; className?: string }) {
   const Icon = CONTACT_TYPE_ICONS[type] ?? Ellipsis;
   return <Icon className={className} />;
 }
 
 export interface ContactInfoListProps {
+  /** The person whose contact values are listed. */
   person: ContactInfo_ListFragment;
+  /** Called after a contact value is added. */
   onAdd: () => void;
+  /** Called after a contact value is deleted. */
   onDelete: () => void;
+  /** Whether the add dialog is open, when the owner holds that state; left out, the list holds it. */
   createOpen?: boolean;
+  /** Receives the add dialog's open state when the owner holds it. */
   onCreateOpenChange?: (open: boolean) => void;
 }
 
 interface ContactInfoRowProps {
   id: string;
+  /** The contact type, one of the `ContactTypeEnum` values; it picks the glyph and what a press opens. */
   type: string;
   value: string;
+  /** The user's own name for the value, such as Work; shown under it. */
   label: string | null | undefined;
   isPrimary: boolean;
+  /** Called after the contact value is deleted. */
   onDelete: () => void;
 }
 
+/** One contact value with its type and primary badges. Pressing the row calls, mails or opens the value. */
 function ContactInfoRow({ id, type, value, label, isPrimary, onDelete }: ContactInfoRowProps) {
   const [deleteContactInfo] = useMutation(DELETE_CONTACT_INFO);
 
@@ -197,6 +231,7 @@ function ContactInfoRow({ id, type, value, label, isPrimary, onDelete }: Contact
   );
 }
 
+/** The add-contact-info form's values. */
 interface ContactInfoFields {
   type: ContactTypeEnum;
   value: string;
@@ -204,6 +239,7 @@ interface ContactInfoFields {
   isPrimary: boolean;
 }
 
+/** A blank contact info form; the type starts as email. */
 const EMPTY_CONTACT_INFO: ContactInfoFields = {
   type: ContactTypeEnum.Email,
   value: '',
@@ -212,12 +248,15 @@ const EMPTY_CONTACT_INFO: ContactInfoFields = {
 };
 
 interface AddContactInfoDialogProps {
+  /** The person the contact value is added to. */
   personId: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  /** Called after the contact value is saved and the dialog has been told to close. */
   onAdded: () => void;
 }
 
+/** The dialog that adds one contact value to a person. Changing the type clears the value typed so far. */
 function AddContactInfoDialog({ personId, open, onOpenChange, onAdded }: AddContactInfoDialogProps) {
   const [createContactInfo, { error, reset }] = useMutation(CREATE_CONTACT_INFO);
 
@@ -286,6 +325,7 @@ function AddContactInfoDialog({ personId, open, onOpenChange, onAdded }: AddCont
   );
 }
 
+/** A person's contact values and the dialog that adds one. */
 export function ContactInfoList({ person, onAdd, onDelete, createOpen, onCreateOpenChange }: ContactInfoListProps) {
   const [internalOpen, setInternalOpen] = useState(false);
   const dialogOpen = createOpen ?? internalOpen;

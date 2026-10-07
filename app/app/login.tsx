@@ -94,9 +94,7 @@ function useOpenSession(): (token: string) => void {
   };
 }
 
-/**
- * The form for an instance on a private network: an email is all it asks for.
- */
+/** The form for an instance on a private network: an email is all it asks for. */
 function LocalNetSignIn() {
   const openSession = useOpenSession();
   const [requestSignIn, { error }] = useMutation(REQUEST_SIGN_IN);

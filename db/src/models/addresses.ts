@@ -7,8 +7,10 @@ import { users } from './users.ts';
 export const AddressType = { Home: 'home', Work: 'work', Other: 'other' } as const;
 export type AddressType = (typeof AddressType)[keyof typeof AddressType];
 
+/** The Postgres enum behind an address's `type`. */
 export const addressTypeEnum = pgEnum('address_type', AddressType);
 
+/** A postal address a user keeps for a person. */
 export const addresses = pgTable(
   'addresses',
   {
@@ -37,5 +39,7 @@ export const addresses = pgTable(
   (t) => [index('idx_addresses_person_id').on(t.personId), index('idx_addresses_user_id').on(t.userId)],
 );
 
+/** An address row as read. */
 export type Address = typeof addresses.$inferSelect;
+/** An address row as inserted. */
 export type NewAddress = typeof addresses.$inferInsert;

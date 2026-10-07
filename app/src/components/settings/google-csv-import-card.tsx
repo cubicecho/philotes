@@ -31,6 +31,7 @@ const ImportStage = {
   Error: 'error',
 } as const;
 
+/** The stage an import is at, with what that stage has to show. */
 type ImportState =
   | { stage: typeof ImportStage.Idle }
   | { stage: typeof ImportStage.Preview; contactCount: number; previewNames: string[]; rawCsv: string }
@@ -38,8 +39,13 @@ type ImportState =
   | { stage: typeof ImportStage.Done; imported: number; merged: number; skipped: number; errors: string[] }
   | { stage: typeof ImportStage.Error; message: string };
 
+/** How many names the preview lists before the import is confirmed. */
 const { previewNames: previewNameCount } = CONTACT_IMPORT_DEFAULTS;
 
+/**
+ * The settings card that imports a Google Contacts CSV: choose the file, check a rough preview, import, read the
+ * result.
+ */
 export function GoogleCsvImportCard() {
   const [importState, setImportState] = useState<ImportState>({ stage: ImportStage.Idle });
 

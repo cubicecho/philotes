@@ -22,13 +22,33 @@ const withCode =
   (message: string): GraphQLError =>
     new GraphQLError(message, { extensions: { code } });
 
-/** Arguments the caller can fix. */
+/**
+ * Arguments the caller can fix.
+ *
+ * @param message - Client-readable message.
+ * @returns The error, for the caller to throw.
+ */
 export const badInput = withCode(ErrorCode.BadUserInput);
-/** Missing, or someone else's. Deliberately one code. */
+/**
+ * Missing, or someone else's. Deliberately one code.
+ *
+ * @param message - Client-readable message.
+ * @returns The error, for the caller to throw.
+ */
 export const notFound = withCode(ErrorCode.NotFound);
-/** This kind of caller may never do this. Not for rows they don't own. */
+/**
+ * This kind of caller may never do this. Not for rows they don't own.
+ *
+ * @param message - Client-readable message.
+ * @returns The error, for the caller to throw.
+ */
 export const forbidden = withCode(ErrorCode.Forbidden);
-/** The operation is too deep, too aliased or too costly. */
+/**
+ * The operation is too deep, too aliased or too costly.
+ *
+ * @param message - Client-readable message.
+ * @returns The error, for the caller to throw.
+ */
 export const tooComplex = withCode(ErrorCode.QueryTooComplex);
 
 /**

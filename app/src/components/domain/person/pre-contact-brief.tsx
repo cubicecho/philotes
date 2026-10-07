@@ -10,6 +10,7 @@ import { MS_PER_DAY } from '@/lib/time';
 import { cn } from '@/lib/utils';
 import { InteractionChannel } from '@/lib/vocabulary';
 
+/** An interaction, as far as the brief needs it. */
 interface Interaction {
   id: string;
   occurredAt: Date;
@@ -18,27 +19,34 @@ interface Interaction {
   note: string | null;
 }
 
+/** A note, as far as the brief needs it. */
 interface Note {
   id: string;
   body: string;
 }
 
+/** A task, as far as the brief needs it. */
 interface Task {
   id: string;
   title: string;
   dueAt: Date | null;
+  /** `null` while the task is open. */
   completedAt: Date | null;
 }
 
+/** An important date, as far as the brief needs it. */
 interface ImportantDate {
   id: string;
   name: string;
+  /** Only its UTC month and day are used: the brief treats every date as yearly. */
   date: Date;
 }
 
+/** The brief's tunables, under a shorter name. */
 const BRIEF = PRE_CONTACT_BRIEF_DEFAULTS;
 
 export interface PreContactBriefProps {
+  /** The person, with the rows the brief is drawn from. `notes` are expected newest first. */
   person: {
     firstName: string;
     lastName: string;
@@ -50,13 +58,24 @@ export interface PreContactBriefProps {
   };
 }
 
+/**
+ * How many days from now a moment is.
+ *
+ * @param date - The moment.
+ * @returns The days from now, rounded up to a whole day; negative once a full day has passed.
+ */
 function daysUntil(date: Date): number {
   const now = new Date();
   const diffMs = date.getTime() - now.getTime();
   return Math.ceil(diffMs / MS_PER_DAY);
 }
 
-/** Format relative due date for a task. */
+/**
+ * Format relative due date for a task.
+ *
+ * @param dueAt - When the task is due; `null` when it has no due date.
+ * @returns `overdue N days`, `due today`, `due tomorrow` or `due in N days`; `null` without a due date.
+ */
 function dueDateLabel(dueAt: Date | null): string | null {
   if (!dueAt) {
     return null;
@@ -75,9 +94,11 @@ function dueDateLabel(dueAt: Date | null): string | null {
 }
 
 /**
- * Returns the next occurrence of a month+day date, when it falls inside the brief's window.
- * Handles annual recurrence by projecting the stored date to the current year
- * (or next year if this year's occurrence has already passed).
+ * Returns the next occurrence of a month+day date, when it falls inside the brief's window. Handles annual recurrence
+ * by projecting the stored date to the current year (or next year if this year's occurrence has already passed).
+ *
+ * @param stored - The date; its UTC month and day are what repeats.
+ * @returns Days from now to the next occurrence, rounded up, or `null` when that is past `BRIEF.upcomingWindowDays`.
  */
 function nextOccurrenceInWindow(stored: Date): number | null {
   const month = stored.getUTCMonth();
@@ -95,7 +116,12 @@ function nextOccurrenceInWindow(stored: Date): number | null {
   return isInWindow ? diff : null;
 }
 
-/** How far off an upcoming date is, in the brief's words. */
+/**
+ * How far off an upcoming date is, in the brief's words.
+ *
+ * @param daysAway - Whole days from now.
+ * @returns `today`, `tomorrow` or `in N days`.
+ */
 function daysAwayLabel(daysAway: number): string {
   if (daysAway === 0) {
     return 'today';
@@ -106,6 +132,13 @@ function daysAwayLabel(daysAway: number): string {
   return `in ${daysAway} days`;
 }
 
+/**
+ * Text cut to a length, with an ellipsis where it was cut.
+ *
+ * @param text - The text.
+ * @param maxLength - The most characters kept.
+ * @returns The text unchanged when it fits, otherwise its first `maxLength` characters and `…`.
+ */
 function truncate(text: string, maxLength: number): string {
   if (text.length <= maxLength) {
     return text;
@@ -122,10 +155,17 @@ const CHANNEL_LABELS: Record<string, string> = {
   video: 'Video call',
 };
 
+/**
+ * A channel in the brief's words.
+ *
+ * @param channel - The stored channel.
+ * @returns Its label, or the stored value itself for a channel with none.
+ */
 function channelLabel(channel: string): string {
   return CHANNEL_LABELS[channel] ?? channel;
 }
 
+/** What to know before contacting someone: the last interaction, recent notes, open tasks and the dates coming up. */
 export function PreContactBrief({ person }: PreContactBriefProps) {
   const sortedInteractions = [...person.interactions].sort((a, b) => b.occurredAt.getTime() - a.occurredAt.getTime());
   const lastInteraction = sortedInteractions[0] ?? null;

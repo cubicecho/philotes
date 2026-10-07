@@ -24,6 +24,7 @@ export const db = drizzle({
   },
   relations,
 });
+/** The app client's type, for code that takes the database as an argument. */
 export type DB = typeof db;
 
 /**

@@ -145,6 +145,14 @@ export function applyAuthExtension(schema: GraphQLSchema): GraphQLSchema {
   const queries = objectType(extendedSchema, 'Query').getFields();
   const mutations = objectType(extendedSchema, 'Mutation').getFields();
 
+  /**
+   * Resolves `Query.me`. Anyone may ask.
+   *
+   * @param _parent - Unused.
+   * @param _args - Unused.
+   * @param ctx - Request context.
+   * @returns The signed-in user, or null when nobody is signed in or the user's row is gone.
+   */
   queries.me.resolve = async (_parent: unknown, _args: unknown, ctx: Context) => {
     if (ctx.userId === null) {
       return null;
@@ -153,12 +161,35 @@ export function applyAuthExtension(schema: GraphQLSchema): GraphQLSchema {
     return user === undefined ? null : toUserNode(user);
   };
 
+  /**
+   * Resolves `Query.authConfig`. Tells the sign-in page which ways of signing in this instance offers.
+   * Anyone may ask.
+   *
+   * @param _parent - Unused.
+   * @param _args - Unused.
+   * @param ctx - Request context.
+   * @returns `secureLocalNet` as configured, `magicLink` when the instance can email links, and `password`
+   * as true, always.
+   */
   queries.authConfig.resolve = (_parent: unknown, _args: unknown, ctx: Context) => ({
     secureLocalNet: secureLocalNet(),
     magicLink: sendsMagicLinks(ctx.auth),
     password: true,
   });
 
+  /**
+   * Resolves `Mutation.signUp`. Creates an account with a password and signs it in. Anyone may call it,
+   * within the sign-in throttle.
+   *
+   * @param _parent - Unused.
+   * @param args.email - The new account's address. Lower-cased and trimmed before use.
+   * @param args.password - The password, which better-auth checks.
+   * @param args.name - The user's display name. Trimmed, and not empty.
+   * @param ctx - Request context.
+   * @returns A session token and the new user.
+   * @throws TOO_MANY_REQUESTS when the caller's address or the email is over its budget.
+   * @throws BAD_USER_INPUT for an invalid email, an empty name, or a sign-up better-auth refuses.
+   */
   mutations.signUp.resolve = async (
     _parent: unknown,
     args: { email: string; password: string; name: string },
@@ -179,6 +210,19 @@ export function applyAuthExtension(schema: GraphQLSchema): GraphQLSchema {
     }
   };
 
+  /**
+   * Resolves `Mutation.signIn`. Signs in with an email and a password. Anyone may call it, within the
+   * sign-in throttle.
+   *
+   * @param _parent - Unused.
+   * @param args.email - The account's address. Lower-cased and trimmed before use.
+   * @param args.password - The account's password.
+   * @param ctx - Request context.
+   * @returns A session token and the user.
+   * @throws TOO_MANY_REQUESTS when the caller's address or the email is over its budget.
+   * @throws UNAUTHENTICATED for bad credentials.
+   * @throws BAD_USER_INPUT for any other refusal from better-auth.
+   */
   mutations.signIn.resolve = async (_parent: unknown, args: { email: string; password: string }, ctx: Context) => {
     throttle(ctx, AuthFlow.SignIn, args.email);
     try {
@@ -191,6 +235,18 @@ export function applyAuthExtension(schema: GraphQLSchema): GraphQLSchema {
     }
   };
 
+  /**
+   * Resolves `Mutation.requestSignIn`. Emails a sign-in link to the address. Under SECURE_LOCAL_NET it
+   * signs the address in at once instead, creating the account when there is none. Anyone may call it,
+   * within the sign-in throttle.
+   *
+   * @param _parent - Unused.
+   * @param args.email - The account's address. Lower-cased and trimmed before use.
+   * @param ctx - Request context.
+   * @returns `sent: true` and no session once a link is emailed, or `sent: false` and a session under SECURE_LOCAL_NET.
+   * @throws TOO_MANY_REQUESTS when the caller's address or the email is over its budget.
+   * @throws BAD_USER_INPUT for an invalid email, or when the instance cannot email links.
+   */
   mutations.requestSignIn.resolve = async (_parent: unknown, args: { email: string }, ctx: Context) => {
     throttle(ctx, AuthFlow.RequestSignIn, args.email);
     const email = parseOrThrow(emailInput, normalizeEmail(args.email));
@@ -219,6 +275,17 @@ export function applyAuthExtension(schema: GraphQLSchema): GraphQLSchema {
     return { sent: false, session: { token: session.token, user: toUserNode(user) } };
   };
 
+  /**
+   * Resolves `Mutation.verifyMagicLink`. Trades the token from an emailed link for a session. Anyone may
+   * call it, within the sign-in throttle.
+   *
+   * @param _parent - Unused.
+   * @param args.token - The token from the link's query.
+   * @param ctx - Request context.
+   * @returns A session token and the user.
+   * @throws TOO_MANY_REQUESTS when the caller's address is over its budget.
+   * @throws UNAUTHENTICATED when the token is expired, used or unknown, or the instance does not email links.
+   */
   mutations.verifyMagicLink.resolve = async (_parent: unknown, args: { token: string }, ctx: Context) => {
     throttle(ctx, AuthFlow.VerifyMagicLink);
     const canEmailLinks = sendsMagicLinks(ctx.auth);
@@ -234,6 +301,14 @@ export function applyAuthExtension(schema: GraphQLSchema): GraphQLSchema {
     }
   };
 
+  /**
+   * Resolves `Mutation.signOut`. Ends the session the request carries.
+   *
+   * @param _parent - Unused.
+   * @param _args - Unused.
+   * @param ctx - Request context.
+   * @returns true after ending a live session, false when the request carried none.
+   */
   mutations.signOut.resolve = async (_parent: unknown, _args: unknown, ctx: Context) => {
     const userId = await sessionUserId(ctx.auth, ctx.headers);
     if (userId === null) {

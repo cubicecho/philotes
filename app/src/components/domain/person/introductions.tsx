@@ -5,6 +5,7 @@ import { Avatar } from '@/components/domain/person/avatar';
 import { EmptyState } from '@/components/page';
 import { INTRODUCTION_DEFAULTS } from '@/lib/defaults';
 
+/** A person and the labels they carry, as a candidate for an introduction. */
 export interface PersonWithLabels {
   id: string;
   firstName: string;
@@ -15,18 +16,32 @@ export interface PersonWithLabels {
 }
 
 export interface PersonIntroductionsProps {
+  /** The person the suggestions are for. */
   currentPersonId: string;
   currentPersonLabels: Array<{ id: string; label: string; color: string }>;
+  /** Everyone who could be suggested. */
   allPersons: PersonWithLabels[];
+  /** The people already related to this person, who are not suggested. */
   linkedPersonIds: Set<string>;
 }
 
+/** A person worth introducing, with the labels they share with the current person. */
 interface SuggestedPerson {
   person: PersonWithLabels;
   sharedLabels: Array<{ id: string; label: string; color: string }>;
+  /** How many labels are shared. */
   overlapCount: number;
 }
 
+/**
+ * The people who share a label with the current person and are not yet related to them.
+ *
+ * @param currentPersonId - The person the suggestions are for; they are never suggested to themselves.
+ * @param currentPersonLabels - That person's labels.
+ * @param allPersons - Everyone who could be suggested.
+ * @param linkedPersonIds - The people already related to that person, who are left out.
+ * @returns The matches, most shared labels first, capped at `INTRODUCTION_DEFAULTS.maxSuggestions`.
+ */
 function computeSuggestions(
   currentPersonId: string,
   currentPersonLabels: Array<{ id: string; label: string; color: string }>,
@@ -54,6 +69,7 @@ interface SuggestionRowProps {
   suggestion: SuggestedPerson;
 }
 
+/** One suggested person: their avatar, their name linking to their page, and the labels shared. */
 function SuggestionRow({ suggestion }: SuggestionRowProps) {
   const { person, sharedLabels } = suggestion;
   return (
@@ -76,6 +92,7 @@ function SuggestionRow({ suggestion }: SuggestionRowProps) {
   );
 }
 
+/** People this person might be introduced to, picked by the labels they share. */
 export function PersonIntroductions({
   currentPersonId,
   currentPersonLabels,

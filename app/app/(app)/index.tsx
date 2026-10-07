@@ -61,16 +61,35 @@ const { widgetLimit, upcomingWindowDays, dormantAfterDays, tasksDueWithinDays } 
 /** From this many days without contact, the dormant label counts the years. */
 const TWO_YEARS_IN_DAYS = 2 * DAYS_PER_YEAR;
 
+/**
+ * Gives the start of today.
+ *
+ * @returns Today at local midnight.
+ */
 function todayMidnight(): Date {
   const d = new Date();
   d.setHours(0, 0, 0, 0);
   return d;
 }
 
+/**
+ * Counts the days from one date to another.
+ *
+ * @param a - The date counted from.
+ * @param b - The date counted to.
+ * @returns Days, rounded to the nearest whole one; negative when `b` is before `a`.
+ */
 function daysBetween(a: Date, b: Date): number {
   return Math.round((b.getTime() - a.getTime()) / MS_PER_DAY);
 }
 
+/**
+ * Counts the days until an important date next comes round.
+ *
+ * @param storedDate - The date as recorded.
+ * @param recurrence - How the date repeats; null, undefined or empty means it happens once.
+ * @returns Days from today, 0 for today, or null for a one-off date already past or an unknown recurrence.
+ */
 function daysUntilNextOccurrence(storedDate: Date, recurrence: string | null | undefined): number | null {
   const t = todayMidnight();
   const month = storedDate.getMonth();
@@ -112,12 +131,22 @@ function daysUntilNextOccurrence(storedDate: Date, recurrence: string | null | u
   return null;
 }
 
-/** Whether a person last contacted this many days ago counts as a dormant tie. Never contacted is not dormant. */
+/**
+ * Whether a person last contacted this many days ago counts as a dormant tie.
+ *
+ * @param daysSince - Days since the last contact, or null when there has been none.
+ * @returns True from `dormantAfterDays` on; false for a person never contacted.
+ */
 function isDormant(daysSince: number | null): boolean {
   return daysSince !== null && daysSince >= dormantAfterDays;
 }
 
-/** What the reach-out list says about a dormant tie. */
+/**
+ * What the reach-out list says about a dormant tie.
+ *
+ * @param daysSince - Days since the last contact, or null when there has been none.
+ * @returns The label, counting whole years from two years on.
+ */
 function dormantLabel(daysSince: number | null): string {
   const isOverTwoYears = daysSince !== null && daysSince >= TWO_YEARS_IN_DAYS;
   if (isOverTwoYears) {
@@ -129,6 +158,9 @@ function dormantLabel(daysSince: number | null): string {
 /**
  * One merged "who should I contact" list: people past their check-in window
  * (sorted most-overdue first), then dormant ties (no contact in over a year).
+ *
+ * @param persons - Everyone on the dashboard, each with their latest interaction.
+ * @returns The first `widgetLimit` of the list.
  */
 function computeReachOut(persons: DashboardPerson[]): ReachOutPerson[] {
   const overdue = persons
@@ -172,6 +204,12 @@ function computeReachOut(persons: DashboardPerson[]): ReachOutPerson[] {
   return [...overdue, ...dormant].slice(0, widgetLimit);
 }
 
+/**
+ * Lists the important dates that fall inside the upcoming window, soonest first.
+ *
+ * @param persons - Everyone on the dashboard, each with their important dates.
+ * @returns The first `widgetLimit` dates, each with the person it belongs to.
+ */
 function computeUpcomingDates(persons: DashboardPerson[]): UpcomingDate[] {
   const results: UpcomingDate[] = [];
 
@@ -196,6 +234,13 @@ function computeUpcomingDates(persons: DashboardPerson[]): UpcomingDate[] {
   return results.sort((a, b) => a.daysUntil - b.daysUntil).slice(0, widgetLimit);
 }
 
+/**
+ * Lists the open tasks that are overdue or fall due within `tasksDueWithinDays` days. A task with no
+ * due date is left out.
+ *
+ * @param persons - Everyone on the dashboard, each with their tasks.
+ * @returns The first `widgetLimit` tasks, overdue ones first and then by due date.
+ */
 function computeOpenTasks(persons: DashboardPerson[]): OpenTask[] {
   const now = Date.now();
   const dueSoonBefore = now + tasksDueWithinDays * MS_PER_DAY;
@@ -245,6 +290,12 @@ function computeOpenTasks(persons: DashboardPerson[]): OpenTask[] {
     .slice(0, widgetLimit);
 }
 
+/**
+ * Lists the people added most recently, newest first.
+ *
+ * @param persons - Everyone on the dashboard.
+ * @returns At most one fewer than `widgetLimit` people.
+ */
 function computeRecentlyAdded(persons: DashboardPerson[]): RecentPerson[] {
   return [...persons]
     .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
@@ -261,6 +312,7 @@ function computeRecentlyAdded(persons: DashboardPerson[]): RecentPerson[] {
 /** Two columns from `md` up; the width sits on the cell because `gap-4` is not part of a percentage. */
 const CELL = 'w-full md:w-[calc(50%-0.5rem)]';
 
+/** The dashboard: who to reach out to, what is coming up, open tasks and the people added lately. */
 export default function DashboardPage() {
   const { data, loading, error, refetch } = useAllRows(GET_DASHBOARD, { field: 'persons' });
 

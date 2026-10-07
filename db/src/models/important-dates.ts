@@ -30,6 +30,7 @@ export type MilestoneType = (typeof MilestoneType)[keyof typeof MilestoneType];
  * @typeParam T - The vocabulary's union.
  * @param vocabulary - An `as const` vocabulary object.
  * @returns Its members, in the order they are written.
+ * @throws An error when the vocabulary has no members.
  */
 function membersOf<T extends string>(vocabulary: Readonly<Record<string, T>>): [T, ...T[]] {
   const [first, ...rest] = Object.values(vocabulary);
@@ -39,6 +40,7 @@ function membersOf<T extends string>(vocabulary: Readonly<Record<string, T>>): [
   return [first, ...rest];
 }
 
+/** A date a user keeps for a person, such as a birthday. A null recurrence is a one-time date. */
 export const importantDates = pgTable(
   'important_dates',
   {
@@ -67,6 +69,7 @@ export const importantDates = pgTable(
   ],
 );
 
+/** Ties an important date to a label. */
 export const importantDateTags = pgTable(
   'important_date_tags',
   {
@@ -87,7 +90,11 @@ export const importantDateTags = pgTable(
   ],
 );
 
+/** An important date row as read. */
 export type ImportantDate = typeof importantDates.$inferSelect;
+/** An important date row as inserted. */
 export type NewImportantDate = typeof importantDates.$inferInsert;
+/** An important date tag row as read. */
 export type ImportantDateTag = typeof importantDateTags.$inferSelect;
+/** An important date tag row as inserted. */
 export type NewImportantDateTag = typeof importantDateTags.$inferInsert;

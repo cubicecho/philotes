@@ -2,6 +2,12 @@ import { ContactFrequency } from '@cubicecho/philotes-db/schema';
 import { z } from 'zod';
 import { ADDRESS_DEFAULTS, CONTACT_INFO_DEFAULTS, PERSON_DEFAULTS } from '../core/defaults.ts';
 
+/**
+ * Builds the schema for one of a person's names: trimmed, not empty and within the name length.
+ *
+ * @param label - What the field is called in the messages, such as "First name".
+ * @returns The zod schema.
+ */
 const nameSchema = (label: string) =>
   z.string().trim().min(1, `${label} cannot be empty.`).max(PERSON_DEFAULTS.maxNameLength, `${label} is too long.`);
 const emailSchema = z
@@ -25,9 +31,16 @@ export const userPersonInput = z
   })
   .partial();
 
+/**
+ * Builds the schema for a part of an address that may be null, such as the city.
+ *
+ * @param label - What the part is called in the message.
+ * @returns The zod schema.
+ */
 const addressPart = (label: string) =>
   z.string().max(ADDRESS_DEFAULTS.maxPartLength, `${label} is too long.`).nullable();
 
+/** What an address may hold. Partial, since an update's `set` carries only the changed columns. */
 export const addressInput = z
   .object({
     label: addressPart('Label'),
@@ -44,6 +57,7 @@ export const addressInput = z
   })
   .partial();
 
+/** What a contact detail may hold. Partial, since an update's `set` carries only the changed columns. */
 export const contactInfoInput = z
   .object({
     value: z

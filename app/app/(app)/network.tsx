@@ -34,6 +34,7 @@ const GET_NETWORK_DATA = graphql(`
   }
 `);
 
+/** The network page: every person and their relationships, drawn as a graph. */
 export default function NetworkPage() {
   const router = useRouter();
   const { data, loading, error, refetch } = useAllRows(GET_NETWORK_DATA, {

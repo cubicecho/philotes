@@ -20,7 +20,13 @@ const extensionSDL = parse(`
   }
 `);
 
-/** The person at the far end of a relationship, seen from `personId`. */
+/**
+ * Finds the person at the far end of a relationship.
+ *
+ * @param row - The relationship.
+ * @param personId - The person it is seen from, who is at one end of it.
+ * @returns The id of the person at the other end.
+ */
 function otherPersonId(
   row: Pick<dbSchema.PersonRelationship, 'fromPersonId' | 'toPersonId'>,
   personId: string,
@@ -29,12 +35,27 @@ function otherPersonId(
   return isOutgoing ? row.toPersonId : row.fromPersonId;
 }
 
+/**
+ * Adds `Person.relationships` to the schema.
+ *
+ * @param schema - The schema so far.
+ * @returns The schema with the relationships field.
+ */
 export function applyRelationshipsExtension(schema: GraphQLSchema): GraphQLSchema {
   const extendedSchema = extendSchema(schema, extensionSDL);
 
   const personType = objectType(extendedSchema, 'Person');
   const personFields = personType.getFields();
 
+  /**
+   * Resolves `Person.relationships`. Lists the caller's relationships that have the person at either end.
+   * An anonymous caller gets an empty list, not an error.
+   *
+   * @param parent - The person.
+   * @param _args - Unused.
+   * @param context - Request context.
+   * @returns One entry per relationship, naming the person at the other end.
+   */
   personFields.relationships.resolve = async (parent: { id: string }, _args: unknown, context: Context) => {
     if (!context.userId) {
       return [];

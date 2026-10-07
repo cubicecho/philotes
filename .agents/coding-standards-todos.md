@@ -37,7 +37,7 @@ confirmed in code. Nothing here is implemented until approved.
 | R1 | Refactor [pattern] | Introduces an `ErrorCode` vocabulary and one `errorMessage`, with zod validating resolver input | One error contract | A1 | done |
 | R2 | Refactor [consistency] | Brings the tables to the conventions: timestamps with time zone, `createdAt`/`updatedAt`, indexed foreign keys, named unique constraints | Standard schema; needs a migration | A3 | done |
 | R3 | Refactor [sweep] | P16/P22: a `defaults.ts` per package and `as const` vocabularies for contact type, recurrence, channel and import stage | Clears most of the 118 magic-number warnings | — | done |
-| R4 | Refactor [sweep] | P4: a doc block with `@param` and `@returns` on the 188 functions without one, and the tags on 28 more | Documented code | — | approved |
+| R4 | Refactor [sweep] | P4: a doc block with `@param` and `@returns` on the 188 functions without one, and the tags on 28 more | Documented code | — | done |
 | R5 | Refactor [sweep] | P5/P19: removes 220 divider-comment lines and shortens 15 long comment runs | Less noise | — | done |
 | R6 | Refactor [sweep] | P1: names about 228 unnamed conditions before they are tested | Conditions read as English | — | done |
 | R7 | Refactor [sweep] | P17: removes the type assertions that narrowing or a better type makes unnecessary (103, of which 28 `as any`) | Types that are checked | — | done |
@@ -50,7 +50,7 @@ confirmed in code. Nothing here is implemented until approved.
 | R12 | Refactor [consistency] | Moves the five settings files from raw `gql` and hand-written types to the generated `graphql()` documents | Typed operations | — | done |
 | R13 | Refactor [reuse] | Merges the three near-identical tag components into one | One component | — | done |
 | R14 | Refactor [sweep] | Replaces the 82 shadcn alias classes with cubeui tokens, and updates the docs that allow the aliases | Token colours only | — | done |
-| R15 | Refactor [simplify] | Splits the oversized files, starting with the 792-line person page | Files a reader can hold | R4–R6 | approved |
+| R15 | Refactor [simplify] | Splits the oversized files, starting with the 792-line person page | Files a reader can hold | R4–R6 | done |
 | T1 | Test | Sets up Storybook with `play` stories as the UI tests | UI tests | — | declined |
 | F2 | Feature | Guards the 18 form dialogs against discarding unsaved changes; needs `hasUnsavedChanges` on cubeui's `FormDialog` first | No lost edits | upstream | open |
 | A6 | API change | TypeScript 7 | Standard toolchain | — | open |

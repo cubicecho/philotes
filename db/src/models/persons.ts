@@ -1,5 +1,9 @@
 import { index, pgTable, text, timestamp, uniqueIndex, uuid } from 'drizzle-orm/pg-core';
 
+/**
+ * A person. The row is shared between users: an email belongs to one row, and `user_persons` says whose
+ * contacts the person is in.
+ */
 export const persons = pgTable(
   'persons',
   {
@@ -19,5 +23,7 @@ export const persons = pgTable(
   ],
 );
 
+/** A person row as read. */
 export type Person = typeof persons.$inferSelect;
+/** A person row as inserted. */
 export type NewPerson = typeof persons.$inferInsert;

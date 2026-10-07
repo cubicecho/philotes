@@ -4,9 +4,11 @@ import { SquareCheck } from '@/components/app-icons';
 import { ListItem } from '@/components/list-item';
 import { Widget } from './widget';
 
+/** A task not yet done, with the person it belongs to. */
 export type OpenTask = {
   id: string;
   title: string;
+  /** `null` when the task has no due date. */
   dueAt: Date | null;
   personId: string;
   personFirstName: string;
@@ -14,6 +16,12 @@ export type OpenTask = {
   isOverdue: boolean;
 };
 
+/**
+ * A task's due day, flagged when it has passed.
+ *
+ * @param task - The task.
+ * @returns The day as `Mon D`, after `Overdue · ` when the task is overdue; empty when it has no due date.
+ */
 function dueLabel(task: OpenTask): string {
   if (!task.dueAt) {
     return '';
@@ -22,6 +30,7 @@ function dueLabel(task: OpenTask): string {
   return task.isOverdue ? `Overdue · ${formatted}` : formatted;
 }
 
+/** The dashboard card of open tasks, each with whose it is and when it is due. */
 export function OpenTasks({ tasks }: { tasks: OpenTask[] }) {
   const router = useRouter();
 

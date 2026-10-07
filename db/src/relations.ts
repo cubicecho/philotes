@@ -1,6 +1,7 @@
 import { defineRelations } from 'drizzle-orm';
 import * as schema from './schema.ts';
 
+/** How the tables join. drizzle-graphql builds its relation fields from this, so a table left out gets none. */
 export const relations = defineRelations(schema, (r) => ({
   users: {
     userPersons: r.many.userPersons({

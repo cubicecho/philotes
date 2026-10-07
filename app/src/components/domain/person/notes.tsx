@@ -67,26 +67,37 @@ const DELETE_NOTE_MENTIONS = graphql(`
   }
 `);
 
+/** A note as its row shows it. */
 export interface NoteData {
   id: string;
   body: string;
+  /** The tags attached to the note. */
   labels: TagOption[];
+  /** The people the note mentions. */
   mentions: Array<{ id: string; firstName: string; lastName: string }>;
 }
 
 export interface PersonNotesProps {
   personId: string;
   notes: NoteData[];
+  /** Every tag the user has. */
   allTags: TagOption[];
+  /** Everyone a note can mention. */
   allPersons: Array<{ id: string; firstName: string; lastName: string }>;
+  /** Called after a note is added, edited or deleted, or its tags change. */
   onChanged: () => void;
+  /** Whether the Add Note dialog is open. */
   createOpen: boolean;
   onCreateOpenChange: (open: boolean) => void;
 }
 
+/** What the note form submits. */
 interface NoteFormValues {
+  /** The note text, trimmed and never empty. */
   body: string;
+  /** The ids of the people the body mentions by `@Name`. */
   mentionedPersonIds: string[];
+  /** The ids of the tags chosen; empty when the form has no tag picker. */
   labelIds: string[];
 }
 
@@ -94,13 +105,19 @@ interface NoteFormProps {
   initialBody?: string;
   /** Offered as a tag picker when given; an existing note's tags are managed on its row instead. */
   allTags?: TagOption[];
+  /** Everyone the note can mention. */
   allPersons: MentionablePerson[];
   placeholder: string;
   submitLabel: string;
+  /** Saves the note. A rejection's message is shown in the footer and the form stays as typed. */
   onSubmit: (values: NoteFormValues) => Promise<void>;
   onCancel: () => void;
 }
 
+/**
+ * The note body with its `@` mentions, an optional tag picker, and the footer. Submit is disabled while the body is
+ * blank.
+ */
 function NoteForm({
   initialBody = '',
   allTags = [],
@@ -158,6 +175,10 @@ interface NoteRowProps {
   onChanged: () => void;
 }
 
+/**
+ * One note: its body, its tags, the people it mentions, and its edit and delete. Saving an edit rewrites the
+ * mentions.
+ */
 function NoteRow({ note, allTags, allPersons, onChanged }: NoteRowProps) {
   const [editOpen, setEditOpen] = useState(false);
   const [updateNote] = useMutation(UPDATE_NOTE);
@@ -245,6 +266,7 @@ function NoteRow({ note, allTags, allPersons, onChanged }: NoteRowProps) {
   );
 }
 
+/** A person's notes, in the order given, and the dialog that adds one. */
 export function PersonNotes({
   personId,
   notes,

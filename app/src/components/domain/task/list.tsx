@@ -72,25 +72,39 @@ const DELETE_TASK = graphql(`
   }
 `);
 
+/** A task as its row shows it. */
 export interface TaskData {
   id: string;
   title: string;
   notes: string | null | undefined;
   dueAt: Date | null | undefined;
+  /** When the task was ticked off; `null` or `undefined` while it is open. */
   completedAt: Date | null | undefined;
   createdAt: Date | null | undefined;
 }
 
 export interface TaskListProps {
+  /** The person new tasks are added to. */
   personId: string;
   tasks: TaskData[];
+  /** Called after a task is added. */
   onAdd: () => void;
+  /** Called after a task is deleted. */
   onDelete: () => void;
+  /** Called after a task is ticked off or reopened. */
   onUpdate: () => void;
+  /** Whether the Add Task dialog is open, when the owner holds that state; left out, the list holds it. */
   createOpen?: boolean;
+  /** Receives the Add Task dialog's open state when the owner holds it. */
   onCreateOpenChange?: (open: boolean) => void;
 }
 
+/**
+ * A task's due day, as its row words it.
+ *
+ * @param dueAt - When the task is due.
+ * @returns The day with a short month and the year, in the device's locale.
+ */
 function formatDueDate(dueAt: Date): string {
   return dueAt.toLocaleDateString(undefined, {
     month: 'short',
@@ -101,10 +115,13 @@ function formatDueDate(dueAt: Date): string {
 
 interface TaskRowProps {
   task: TaskData;
+  /** Called after the task is deleted. */
   onDelete: () => void;
+  /** Called after the task is ticked off or reopened. */
   onUpdate: () => void;
 }
 
+/** One task: the checkbox that completes or reopens it, its title, notes and due day, and its delete. */
 function TaskRow({ task, onDelete, onUpdate }: TaskRowProps) {
   const [updateTask] = useMutation(UPDATE_TASK);
   const [deleteTask] = useMutation(DELETE_TASK);
@@ -153,17 +170,22 @@ function TaskRow({ task, onDelete, onUpdate }: TaskRowProps) {
 }
 
 interface AddTaskFormProps {
+  /** The person the task is added to. */
   personId: string;
+  /** Called after the task is saved. */
   onAdded: () => void;
   onCancel: () => void;
 }
 
+/** The add-task form's values. */
 interface AddTaskFields {
   title: string;
   notes: string;
+  /** `null` for a task with no due date. */
   dueAt: Date | null;
 }
 
+/** The add-task fields and their footer. It draws no dialog of its own: render it inside a `FormDialog`. */
 function AddTaskForm({ personId, onAdded, onCancel }: AddTaskFormProps) {
   const [formError, setFormError] = useState<string | null>(null);
   const [createTask] = useMutation(CREATE_TASK);
@@ -212,6 +234,7 @@ function AddTaskForm({ personId, onAdded, onCancel }: AddTaskFormProps) {
   );
 }
 
+/** A person's tasks, the open ones above the done ones, and the dialog that adds one. */
 export function TaskList({
   personId,
   tasks,

@@ -5,9 +5,12 @@ import { Button } from '@/components/ui/button';
 import type { SlotNode } from '@/lib/utils';
 
 interface WidgetProps {
+  /** The glyph in the card's header. */
   iconSlot: SlotNode;
   title: string;
+  /** A short line in the card's header that qualifies the title. */
   description?: string;
+  /** Where the “View all” button goes; no button is drawn without it. */
   actionHref?: string;
   /** What the card says when `contentSlot` has no rows. The tick is added here. */
   emptyTitle: string;

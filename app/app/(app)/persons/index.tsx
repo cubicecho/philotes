@@ -13,6 +13,14 @@ import { SEARCH_DEFAULTS } from '@/lib/defaults';
 import { invalidateQueryFields } from '@/lib/invalidate';
 import { useAllRows } from '@/lib/use-all-rows';
 
+/**
+ * Delays a function until its calls have stopped for a while.
+ *
+ * @typeParam T - The function being delayed.
+ * @param fn - What to call once the calls stop.
+ * @param delay - How long the calls must pause, in milliseconds.
+ * @returns A function that restarts the wait on every call and hands its last arguments to `fn`.
+ */
 function debounce<T extends (...args: Parameters<T>) => void>(fn: T, delay: number): (...args: Parameters<T>) => void {
   let timer: ReturnType<typeof setTimeout>;
   return (...args) => {
@@ -81,13 +89,17 @@ type SortField = (typeof SORT_FIELDS)[number];
 const SORT_DIRS = ['asc', 'desc'] as const;
 type SortDir = (typeof SORT_DIRS)[number];
 
+/** What the people list keeps in the URL's query string. */
 interface PersonsUrlState {
+  /** The search text. */
   q: string;
+  /** Ids of the labels a person must carry, all of them, to be listed. */
   labels: string[];
   sortField: SortField;
   sortDir: SortDir;
 }
 
+/** The people page: the list with its search, label filter and sort, and the dialog that adds a person. */
 export default function PersonsPage() {
   const router = useRouter();
   const { new: newParam } = useLocalSearchParams<{ new?: string }>();

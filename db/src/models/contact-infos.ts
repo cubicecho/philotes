@@ -16,8 +16,10 @@ export const ContactType = {
 } as const;
 export type ContactType = (typeof ContactType)[keyof typeof ContactType];
 
+/** The Postgres enum behind a contact detail's `type`. */
 export const contactTypeEnum = pgEnum('contact_type', ContactType);
 
+/** One way of reaching a person, as a user keeps it: an email, a phone number, a handle. */
 export const contactInfos = pgTable(
   'contact_infos',
   {
@@ -41,5 +43,7 @@ export const contactInfos = pgTable(
   (t) => [index('idx_contact_infos_person_id').on(t.personId), index('idx_contact_infos_user_id').on(t.userId)],
 );
 
+/** A contact detail row as read. */
 export type ContactInfo = typeof contactInfos.$inferSelect;
+/** A contact detail row as inserted. */
 export type NewContactInfo = typeof contactInfos.$inferInsert;

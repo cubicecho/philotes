@@ -21,6 +21,12 @@ function reportFailure(errors: string[], summary: string, err: unknown): void {
   errors.push(summary);
 }
 
+/**
+ * Whether an insert failed on a unique constraint, judged by the words in the error's message.
+ *
+ * @param err - What the insert threw.
+ * @returns true when the message, or its cause's, holds "unique" or "duplicate".
+ */
 function isUniqueViolation(err: unknown): boolean {
   const msg = errorMessage(err);
   const cause = err instanceof Error ? err.cause : undefined;
@@ -65,11 +71,28 @@ interface ImportContactsResult {
   errors: string[];
 }
 
+/**
+ * Adds `importGoogleContacts` to the schema.
+ *
+ * @param schema - The schema so far.
+ * @returns The schema with the import mutation.
+ */
 export function applyImportContactsExtension(schema: GraphQLSchema): GraphQLSchema {
   const extendedSchema = extendSchema(schema, IMPORT_CONTACTS_SDL);
 
   const mutationType = objectType(extendedSchema, 'Mutation');
 
+  /**
+   * Resolves `Mutation.importGoogleContacts`. Adds every contact in a Google Contacts CSV export to the
+   * signed-in caller's contacts, creating the labels it names. A contact whose email a person already holds
+   * is merged into that person. A contact that fails is reported in `errors`, and the rest still go in.
+   *
+   * @param _parent - Unused.
+   * @param args.csv - The export file's text.
+   * @param context - Request context.
+   * @returns How many contacts were imported, merged and skipped, and a message for each failure.
+   * @throws UNAUTHENTICATED when nobody is signed in.
+   */
   mutationType.getFields().importGoogleContacts.resolve = async (
     _parent: unknown,
     args: ImportGoogleContactsArgs,
@@ -201,6 +224,16 @@ export function applyImportContactsExtension(schema: GraphQLSchema): GraphQLSche
   return extendedSchema;
 }
 
+/**
+ * Adds a contact's emails, phones and websites to a person, leaving out any value the user already has
+ * there. The first email is the primary one, and a phone labelled as a mobile is stored as one.
+ *
+ * @param db - Drizzle client.
+ * @param personId - The person the rows belong to.
+ * @param userId - The user importing them.
+ * @param contact - The parsed contact.
+ * @returns Resolves once the new details are in.
+ */
 async function insertContactInfos(db: DB, personId: string, userId: string, contact: ParsedContact): Promise<void> {
   const rows: dbSchema.NewContactInfo[] = [];
 
@@ -261,6 +294,16 @@ async function insertContactInfos(db: DB, personId: string, userId: string, cont
   await db.insert(dbSchema.contactInfos).values(newRows);
 }
 
+/**
+ * Adds a contact's addresses to a person, leaving out any whose first line the user already has there.
+ * An address is home or work when its label says so, and other when it does not.
+ *
+ * @param db - Drizzle client.
+ * @param personId - The person the rows belong to.
+ * @param userId - The user importing them.
+ * @param contact - The parsed contact.
+ * @returns Resolves once the new addresses are in.
+ */
 async function insertAddresses(db: DB, personId: string, userId: string, contact: ParsedContact): Promise<void> {
   if (contact.addresses.length === 0) {
     return;
@@ -298,6 +341,16 @@ async function insertAddresses(db: DB, personId: string, userId: string, contact
   await db.insert(dbSchema.addresses).values(newRows);
 }
 
+/**
+ * Adds a contact's birthday as a yearly important date named "Birthday". A person who already has one
+ * for this user keeps it.
+ *
+ * @param db - Drizzle client.
+ * @param personId - The person the rows belong to.
+ * @param userId - The user importing them.
+ * @param contact - The parsed contact.
+ * @returns Resolves once the date is in, or at once when there is nothing to add.
+ */
 async function insertBirthday(db: DB, personId: string, userId: string, contact: ParsedContact): Promise<void> {
   if (!contact.birthday) {
     return;
@@ -328,6 +381,16 @@ async function insertBirthday(db: DB, personId: string, userId: string, contact:
   });
 }
 
+/**
+ * Tags a person with a contact's labels. A label the person already has is left as it is.
+ *
+ * @param db - Drizzle client.
+ * @param personId - The person to tag.
+ * @param userId - The user importing the contact, who owns the labels.
+ * @param labelNames - The contact's label names, lower-cased.
+ * @param labelNameToId - The user's labels by lower-cased name. A name missing from it is passed over.
+ * @returns Resolves once the tags are in.
+ */
 async function insertPersonLabels(
   db: DB,
   personId: string,

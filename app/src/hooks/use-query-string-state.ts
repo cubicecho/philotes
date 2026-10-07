@@ -1,15 +1,19 @@
 import { useLocalSearchParams, usePathname, useRouter } from 'expo-router';
 
+/** Whether a state change replaces the current history entry or adds one. */
 type HistoryChangeType = 'replace' | 'push';
 
 /** How a query-string value is read back. A key with no entry in the type map is read as a string. */
 type ParamType = 'number' | 'string' | 'boolean' | 'stringArray';
 
+/** How each key of the state is read back from the URL. */
 type TypeMap<T extends object> = {
   [K in keyof T]?: ParamType;
 };
 
+/** What `useQueryStringState` can be told about its state. */
 interface UseQueryStringStateOptions<T extends object> {
+  /** The type of each key that is not a string. */
   typeMap?: TypeMap<T>;
 }
 
@@ -21,6 +25,14 @@ const PARSE_BY_PARAM_TYPE: Record<ParamType, (rawValue: string) => unknown> = {
   stringArray: (rawValue) => rawValue.split(',').filter((s) => s.length > 0),
 };
 
+/**
+ * Reads a query string into state, converting each value by the type its key is given.
+ *
+ * @typeParam T - The state's shape.
+ * @param search - The query string, with or without its leading `?`.
+ * @param [typeMap] - The type of each key that is not a string.
+ * @returns The keys present in the query string. A repeated key keeps its last value.
+ */
 export function parseSearch<T extends object>(search: string, typeMap?: TypeMap<T>): Partial<T> {
   const params = new URLSearchParams(search);
   const paramTypes = new Map<string, ParamType | undefined>(Object.entries(typeMap ?? {}));
@@ -33,6 +45,13 @@ export function parseSearch<T extends object>(search: string, typeMap?: TypeMap<
   return result as Partial<T>;
 }
 
+/**
+ * Writes state as a query string. Blank values and empty arrays are left out, and an array is joined
+ * by commas.
+ *
+ * @param state - The state to write.
+ * @returns The query string with its leading `?`, or an empty string when nothing is left to write.
+ */
 export function stringifyState(state: object): string {
   const params = new URLSearchParams();
   const entries: [string, unknown][] = Object.entries(state);
@@ -54,6 +73,17 @@ export function stringifyState(state: object): string {
   return qs ? `?${qs}` : '';
 }
 
+/**
+ * Keeps a page's state in the URL's query string, so it survives a reload and can be linked to.
+ *
+ * @typeParam T - The state's shape.
+ * @param [defaultState] - The value each key has while the URL does not carry it.
+ * @param [options] - How to read the keys that are not strings.
+ * @returns The current state, and a setter that merges a change into it and navigates.
+ *
+ * @remarks
+ * The setter replaces the history entry unless it is passed `'push'`.
+ */
 export function useQueryStringState<T extends object>(
   defaultState: Partial<T> = {},
   options?: UseQueryStringStateOptions<T>,

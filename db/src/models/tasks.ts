@@ -3,6 +3,7 @@ import { index, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core';
 import { persons } from './persons.ts';
 import { users } from './users.ts';
 
+/** Something a user means to do about a person. */
 export const tasks = pgTable(
   'tasks',
   {
@@ -31,5 +32,7 @@ export const tasks = pgTable(
   ],
 );
 
+/** A task row as read. */
 export type Task = typeof tasks.$inferSelect;
+/** A task row as inserted. */
 export type NewTask = typeof tasks.$inferInsert;

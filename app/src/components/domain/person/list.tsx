@@ -17,13 +17,16 @@ import { fullName } from '@/lib/person-name';
 import { relativeTime } from '@/lib/relative-time';
 import { cn } from '@/lib/utils';
 
+/** One of a person's contact values, as far as the list needs it. */
 export interface PersonContactInfo {
   id: string;
+  /** The contact type, one of the `ContactTypeEnum` values. */
   type: string;
   value: string;
   isPrimary?: boolean | null;
 }
 
+/** A person as a row of the list shows them. */
 export interface PersonRowData {
   id: string;
   firstName: string;
@@ -31,14 +34,19 @@ export interface PersonRowData {
   email: string | null;
   avatarPath?: string | null;
   labels: Array<{ id: string; label: string; color: string }>;
+  /** When they were last contacted; `null` or left out when never. */
   lastContactedAt?: Date | null;
   contactInfos: PersonContactInfo[];
 }
 
+/** What the list can be sorted by. */
 type SortField = 'name' | 'lastContacted';
+/** Which way a sort runs. */
 type SortDir = 'asc' | 'desc';
+/** A sort as the select's value: field, hyphen, direction. */
 type SortOption = `${SortField}-${SortDir}`;
 
+/** The sorts offered, as select options. */
 const SORT_OPTIONS: Array<{ value: SortOption; label: string }> = [
   { value: 'name-asc', label: 'Name (A–Z)' },
   { value: 'name-desc', label: 'Name (Z–A)' },
@@ -46,6 +54,12 @@ const SORT_OPTIONS: Array<{ value: SortOption; label: string }> = [
   { value: 'lastContacted-desc', label: 'Last contacted (recent first)' },
 ];
 
+/**
+ * The number to call a person on.
+ *
+ * @param infos - The person's contact values.
+ * @returns The phone or mobile marked primary, else the first of either; `null` when the person has none.
+ */
 function primaryPhone(infos: PersonContactInfo[]): string | null {
   const phones = infos.filter((i) => {
     const isLandline = i.type === ContactTypeEnum.Phone;
@@ -58,6 +72,12 @@ function primaryPhone(infos: PersonContactInfo[]): string | null {
   return (phones.find((p) => p.isPrimary) ?? phones[0]).value;
 }
 
+/**
+ * The letter a person is grouped under in the name-sorted list.
+ *
+ * @param person - The person.
+ * @returns The first letter of the last name, or of the first name when there is none; `#` when it is not A–Z.
+ */
 function groupLetter(person: PersonRowData): string {
   const basis = person.lastName || person.firstName;
   const first = basis.charAt(0).toUpperCase();
@@ -70,11 +90,17 @@ const LETTER_HEADER = Platform.select({ web: 'sticky top-0 z-10', default: '' })
 
 interface PersonRowProps {
   person: PersonRowData;
+  /** Whether the row is set off from the one above it. */
   divided: boolean;
+  /** Called with the person's id once the delete is confirmed; no delete button is drawn without it. */
   onDeletePress?: (id: string) => void;
+  /** The labels being filtered by; the row's matching chips are drawn selected. */
   activeLabelIds: Set<string>;
 }
 
+/**
+ * One person: avatar, name, last contact (or email when never contacted), labels, and call, email and delete buttons.
+ */
 function PersonRow({ person, divided, onDeletePress, activeLabelIds }: PersonRowProps) {
   const router = useRouter();
   const phone = primaryPhone(person.contactInfos);
@@ -138,19 +164,26 @@ function PersonRow({ person, divided, onDeletePress, activeLabelIds }: PersonRow
 }
 
 export interface PersonListProps {
+  /** The rows to draw, already filtered and sorted by the owner. */
   persons: PersonRowData[];
   /** All labels in the workspace (not just the visible page). */
   allLabels: Array<{ id: string; label: string; color: string }>;
+  /** The ids of the labels being filtered by. */
   activeLabelIds: string[];
+  /** Called with a label's id to turn its filter on or off. */
   onToggleLabel: (id: string) => void;
+  /** The search text. */
   q: string;
   onSearchChange: (q: string) => void;
   loading?: boolean;
+  /** The chosen sort, one of the `SortOption` values. */
   sortValue: string;
   onSortChange: (value: string) => void;
   /** Group rows under sticky letter headers (name sort only). */
   grouped: boolean;
+  /** Called when Add Person is pressed; the button is not drawn without it. */
   onAddPress?: () => void;
+  /** Called with a person's id once their delete is confirmed; no delete buttons are drawn without it. */
   onDeletePress?: (id: string) => void;
 }
 

@@ -23,12 +23,17 @@ const LABEL_LIST = graphql(`
 
 interface LabelRowProps {
   label: Label_ListFragment;
+  /** Whether the row is set off from the one above it. */
   divided: boolean;
+  /** Called with the label's id once the delete is confirmed; the owner deletes it. */
   onDeletePress: (id: string) => void;
+  /** Called with the label when Edit is pressed; no Edit button is drawn without it. */
   onEditPress?: (label: Label_ListFragment) => void;
+  /** Called with the label when Merge is pressed; no Merge button is drawn without it. */
   onMergePress?: (label: Label_ListFragment) => void;
 }
 
+/** One label: its chip, its hex colour and its edit, merge and delete buttons. */
 function LabelRow({ label: from, divided, onDeletePress, onEditPress, onMergePress }: LabelRowProps) {
   const { data: label, complete } = useFragment({
     fragment: LABEL_LIST,
@@ -83,8 +88,11 @@ function LabelRow({ label: from, divided, onDeletePress, onEditPress, onMergePre
 interface LabelListProps {
   labels: Array<Label_ListFragment>;
   onAddPress: () => void;
+  /** Called with a label's id once its delete is confirmed; the owner deletes it. */
   onDeletePress: (id: string) => void;
+  /** Called with a label when its Edit is pressed; no Edit buttons are drawn without it. */
   onEditPress?: (label: Label_ListFragment) => void;
+  /** Called with a label when its Merge is pressed; no Merge buttons are drawn without it. */
   onMergePress?: (label: Label_ListFragment) => void;
 }
 

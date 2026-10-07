@@ -82,6 +82,12 @@ async function copyJunctionRows(
   `);
 }
 
+/**
+ * Adds `mergeLabelInto` to the schema.
+ *
+ * @param schema - The schema so far.
+ * @returns The schema with the merge mutation.
+ */
 export function applyMergeLabelsExtension(schema: GraphQLSchema): GraphQLSchema {
   const extended = extendSchema(schema, parse(MERGE_LABELS_SDL));
 
@@ -90,6 +96,18 @@ export function applyMergeLabelsExtension(schema: GraphQLSchema): GraphQLSchema 
     return extended;
   }
 
+  /**
+   * Resolves `Mutation.mergeLabelInto`. Moves everything tagged with one of the signed-in caller's labels
+   * onto another, then deletes the first, in one transaction. Naming the same label twice changes nothing.
+   *
+   * @param _parent - Unused.
+   * @param args.keepId - The label that stays.
+   * @param args.deleteId - The label merged into it and deleted.
+   * @param context - Request context.
+   * @returns The kept label.
+   * @throws UNAUTHENTICATED when nobody is signed in.
+   * @throws NOT_FOUND when either label is missing or someone else's.
+   */
   mutationType.getFields().mergeLabelInto.resolve = async (
     _parent: unknown,
     { keepId, deleteId }: { keepId: string; deleteId: string },

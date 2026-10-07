@@ -33,6 +33,7 @@ const errorLink = onError(({ graphQLErrors, operation }) => {
   }
 });
 
+/** The app's Apollo client. It sends the session token, and signs out on UNAUTHENTICATED outside sign-in. */
 export const client = new ApolloClient({
   cache: new InMemoryCache({ typePolicies: scalarTypePolicies }),
   link: from([errorLink, authLink, httpLink]),

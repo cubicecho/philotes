@@ -52,6 +52,7 @@ const GET_IMPORTANT_DATES_FOR_EXPORT = graphql(`
   }
 `);
 
+/** The settings card that downloads every interaction and important date as `philotes-events.ics`. */
 export function ExportCalendarCard() {
   const interactionsQuery = useAllRows(GET_INTERACTIONS_FOR_EXPORT, {
     field: 'interactions',

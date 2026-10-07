@@ -23,6 +23,7 @@ export const InteractionSentiment = {
 } as const;
 export type InteractionSentiment = (typeof InteractionSentiment)[keyof typeof InteractionSentiment];
 
+/** One time a user was in touch with a person. */
 export const interactions = pgTable(
   'interactions',
   {
@@ -50,6 +51,7 @@ export const interactions = pgTable(
   ],
 );
 
+/** Ties an interaction to a label. */
 export const interactionTags = pgTable(
   'interaction_tags',
   {
@@ -70,7 +72,11 @@ export const interactionTags = pgTable(
   ],
 );
 
+/** An interaction row as read. */
 export type Interaction = typeof interactions.$inferSelect;
+/** An interaction row as inserted. */
 export type NewInteraction = typeof interactions.$inferInsert;
+/** An interaction tag row as read. */
 export type InteractionTag = typeof interactionTags.$inferSelect;
+/** An interaction tag row as inserted. */
 export type NewInteractionTag = typeof interactionTags.$inferInsert;

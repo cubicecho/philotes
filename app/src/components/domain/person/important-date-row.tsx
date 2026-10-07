@@ -49,19 +49,30 @@ const UPDATE_IMPORTANT_DATE = graphql(`
 
 interface ImportantDateRowProps {
   id: string;
+  /** The person the date belongs to; with `id` it makes the link to the date's own page. */
   personId: string;
   name: string;
+  /** The day as `yyyy-MM-dd`. */
   date: string;
   description: string | null | undefined;
   recurrence: string | null | undefined;
   milestoneType: string | null | undefined;
+  /** The tags attached to this date. */
   tags: TagOption[];
+  /** Every tag the user has. */
   allTags: TagOption[];
+  /** Called with the date's id once the removal is confirmed; the owner deletes it. */
   onDelete: (id: string) => void;
+  /** Called after an edit is saved. */
   onEdit: () => void;
+  /** Called after a tag is attached or detached. */
   onTagChanged: () => void;
 }
 
+/**
+ * One important date: its name linking to its page, its day, recurrence and milestone, its tags, and the dialog that
+ * edits it.
+ */
 export function ImportantDateRow({
   id,
   personId,

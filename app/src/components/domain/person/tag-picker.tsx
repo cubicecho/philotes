@@ -7,9 +7,11 @@ import { Button } from '@/components/ui/button';
 import { type FieldProps, FieldWrapper, useFieldContext } from '@/components/ui/form';
 import { Tag } from '@/components/ui/icons';
 
+/** A label used as a tag on a note, an interaction or an important date. */
 export interface TagOption {
   id: string;
   label: string;
+  /** Hex color of the tag, e.g. "#ef4444". */
   color: string;
 }
 
@@ -21,8 +23,11 @@ function AddTagButton({ onPress }: { onPress: () => void }) {
 }
 
 interface TagPickerPanelProps {
+  /** Every tag the user has. */
   allTags: TagOption[];
+  /** The tags already on the row, which are not offered. */
   attachedTagIds: Set<string>;
+  /** Called with the id of the tag pressed. */
   onSelect: (labelId: string) => void;
   onClose: () => void;
 }

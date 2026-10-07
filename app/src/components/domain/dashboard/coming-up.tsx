@@ -4,15 +4,23 @@ import { ListItem } from '@/components/list-item';
 import { Badge } from '@/components/ui/badge';
 import { Widget } from './widget';
 
+/** An important date coming up, with the person it belongs to. */
 export type UpcomingDate = {
   id: string;
   name: string;
+  /** Whole days from today; 0 is today. */
   daysUntil: number;
   personId: string;
   personFirstName: string;
   personLastName: string;
 };
 
+/**
+ * How far off a date is, in the words its badge shows.
+ *
+ * @param days - Whole days from today.
+ * @returns `Today`, `Tomorrow` or `In N days`.
+ */
 function daysLabel(days: number): string {
   if (days === 0) {
     return 'Today';
@@ -23,6 +31,7 @@ function daysLabel(days: number): string {
   return `In ${days} days`;
 }
 
+/** The dashboard card of the important dates that fall in the next `windowDays` days, each opening its person. */
 export function ComingUp({ dates, windowDays }: { dates: UpcomingDate[]; windowDays: number }) {
   const router = useRouter();
 

@@ -14,6 +14,7 @@ export interface HttpSettings {
   trustProxy: boolean | number | string;
 }
 
+/** The HTTP settings as shipped. */
 export const HTTP_DEFAULTS: Readonly<HttpSettings> = Object.freeze({
   port: 3000,
   bodyLimit: '1mb',
@@ -28,6 +29,7 @@ export interface StorageSettings {
   avatarDir: string;
 }
 
+/** The storage settings as shipped. */
 export const STORAGE_DEFAULTS: Readonly<StorageSettings> = Object.freeze({
   avatarDir: 'avatars',
 });
@@ -42,6 +44,7 @@ export interface RateLimitSettings {
   sweepAtKeys: number;
 }
 
+/** The sign-in throttle settings as shipped. */
 export const RATE_LIMIT_DEFAULTS: Readonly<RateLimitSettings> = Object.freeze({
   maxAttempts: 10,
   windowMinutes: 15,
@@ -60,6 +63,7 @@ export interface AuthSettings {
   secureLocalNet: boolean;
 }
 
+/** The sign-in and credential settings as shipped. */
 export const AUTH_DEFAULTS: Readonly<AuthSettings> = Object.freeze({
   magicLinkTtlMinutes: 15,
   minSecretLength: 32,
@@ -73,6 +77,7 @@ export interface ApiKeySettings {
   shownCharacters: number;
 }
 
+/** The API key settings as shipped. */
 export const API_KEY_DEFAULTS: Readonly<ApiKeySettings> = Object.freeze({
   shownCharacters: 8,
 });
@@ -93,6 +98,7 @@ export interface OperationLimitSettings {
   defaultFieldCost: number;
 }
 
+/** The operation limits as shipped. */
 export const OPERATION_LIMIT_DEFAULTS: Readonly<OperationLimitSettings> = Object.freeze({
   defaultPageSize: 50,
   maxPageSize: 500,
@@ -114,6 +120,7 @@ export interface PersonSettings {
   maxAvatarPathLength: number;
 }
 
+/** The person limits as shipped. */
 export const PERSON_DEFAULTS: Readonly<PersonSettings> = Object.freeze({
   maxNameLength: 200,
   maxEmailLength: 320,
@@ -131,6 +138,7 @@ export interface AddressSettings {
   maxPostalCodeLength: number;
 }
 
+/** The address limits as shipped. */
 export const ADDRESS_DEFAULTS: Readonly<AddressSettings> = Object.freeze({
   maxPartLength: 100,
   maxLineLength: 300,
@@ -145,6 +153,7 @@ export interface ContactInfoSettings {
   maxLabelLength: number;
 }
 
+/** The contact detail limits as shipped. */
 export const CONTACT_INFO_DEFAULTS: Readonly<ContactInfoSettings> = Object.freeze({
   maxValueLength: 500,
   maxLabelLength: 100,
@@ -156,6 +165,7 @@ export interface NoteSettings {
   maxBodyLength: number;
 }
 
+/** The note limits as shipped. */
 export const NOTE_DEFAULTS: Readonly<NoteSettings> = Object.freeze({
   maxBodyLength: 20_000,
 });
@@ -166,6 +176,7 @@ export interface InteractionSettings {
   maxNoteLength: number;
 }
 
+/** The interaction limits as shipped. */
 export const INTERACTION_DEFAULTS: Readonly<InteractionSettings> = Object.freeze({
   maxNoteLength: 10_000,
 });
@@ -178,6 +189,7 @@ export interface TaskSettings {
   maxNotesLength: number;
 }
 
+/** The task limits as shipped. */
 export const TASK_DEFAULTS: Readonly<TaskSettings> = Object.freeze({
   maxTitleLength: 500,
   maxNotesLength: 10_000,
@@ -193,6 +205,7 @@ export interface ImportantDateSettings {
   lookaheadDays: number;
 }
 
+/** The important date limits and lookahead as shipped. */
 export const IMPORTANT_DATE_DEFAULTS: Readonly<ImportantDateSettings> = Object.freeze({
   maxNameLength: 200,
   maxDescriptionLength: 2_000,
@@ -207,6 +220,7 @@ export interface LabelSettings {
   maxColorLength: number;
 }
 
+/** The label limits as shipped. */
 export const LABEL_DEFAULTS: Readonly<LabelSettings> = Object.freeze({
   maxLabelLength: 100,
   maxColorLength: 32,
@@ -218,6 +232,7 @@ export interface RelationshipSettings {
   maxTypeLength: number;
 }
 
+/** The relationship limits as shipped. */
 export const RELATIONSHIP_DEFAULTS: Readonly<RelationshipSettings> = Object.freeze({
   maxTypeLength: 100,
 });

@@ -4,6 +4,7 @@
 import { ContactTypeEnum } from '@/__generated__/graphql';
 import { localIsoDate } from '@/lib/local-date';
 
+/** One way to reach a person, as the CSV export reads it. */
 export interface ExportContactInfo {
   type: string;
   label: string | null;
@@ -11,6 +12,7 @@ export interface ExportContactInfo {
   isPrimary: boolean;
 }
 
+/** A postal address, as the CSV export reads it. */
 export interface ExportAddress {
   type: string;
   label: string | null;
@@ -22,6 +24,7 @@ export interface ExportAddress {
   country?: string | null;
 }
 
+/** An important date, as the CSV export reads it. */
 export interface ExportImportantDate {
   name: string;
   /** Local midnight of the calendar day. */
@@ -29,12 +32,14 @@ export interface ExportImportantDate {
   recurrence?: string | null;
 }
 
+/** A label on an exported person. */
 export interface ExportLabel {
   id: string;
   label: string;
   color: string;
 }
 
+/** A person with everything the CSV export reads about them. */
 export interface ExportPerson {
   id: string;
   firstName: string;
@@ -49,6 +54,12 @@ export interface ExportPerson {
 /** The contact types that fill the CSV's phone columns. */
 const PHONE_TYPES: ReadonlySet<string> = new Set([ContactTypeEnum.Phone, ContactTypeEnum.Mobile]);
 
+/**
+ * Writes one CSV cell, quoting it when it holds a quote, a comma or a line break.
+ *
+ * @param value - The cell's text.
+ * @returns The text as it goes in the file, with inner quotes doubled when quoted.
+ */
 export function csvCell(value: string): string {
   const needsQuoting = value.includes('"') || value.includes(',') || value.includes('\n') || value.includes('\r');
   if (needsQuoting) {
@@ -57,19 +68,45 @@ export function csvCell(value: string): string {
   return value;
 }
 
+/**
+ * Writes one CSV row.
+ *
+ * @param cells - The row's values, in column order.
+ * @returns The cells, each quoted as needed, joined by commas.
+ */
 function csvRow(cells: string[]): string {
   return cells.map(csvCell).join(',');
 }
 
+/**
+ * Capitalises the first letter of a word.
+ *
+ * @param str - The word.
+ * @returns The word with its first letter in upper case and the rest untouched.
+ */
 function capitalizeFirst(str: string): string {
   return str.charAt(0).toUpperCase() + str.slice(1);
 }
 
+/**
+ * Picks the label a contact detail gets in the CSV.
+ *
+ * @param entry - The contact detail.
+ * @param defaultLabel - The label for an entry that has none of its own.
+ * @returns The label, with a leading `* ` when the entry is primary.
+ */
 function contactInfoLabel(entry: ExportContactInfo, defaultLabel: string): string {
   const base = entry.label || defaultLabel;
   return entry.isPrimary ? `* ${base}` : base;
 }
 
+/**
+ * Builds a CSV of people in the columns Google Contacts imports. There are as many e-mail, phone,
+ * website and address column groups as the person with the most of each needs.
+ *
+ * @param persons - The people to write, one row each.
+ * @returns The file's text: a header row and the rows, with CRLF line endings.
+ */
 export function buildPersonsCsv(persons: ExportPerson[]): string {
   // 1. Calculate max counts across all persons
   const maxEmails = Math.max(

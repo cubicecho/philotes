@@ -65,6 +65,7 @@ const MERGE_LABEL_INTO = graphql(`
   }
 `);
 
+/** The labels page: the list of labels, and the dialogs that create, edit and merge them. */
 export default function LabelsPage() {
   const { data, loading, error, refetch } = useAllRows(GET_LABELS, { field: 'labels' });
   const [createLabel] = useMutation(CREATE_LABEL, {

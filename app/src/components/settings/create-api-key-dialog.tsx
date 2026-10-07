@@ -24,9 +24,10 @@ const MY_CREATE_API_KEY = graphql(`
   }
 `);
 
-/** Days until the key expires; `never` sends no `expiresAt` at all. */
+/** The expiry choice for a key that never expires; it sends no `expiresAt` at all. */
 const NO_EXPIRY = 'never';
 
+/** How long a key lasts, as options; each value is a number of days, or `NO_EXPIRY`. */
 const EXPIRY_OPTIONS = [
   { label: '30 days', value: '30' },
   { label: '90 days', value: '90' },
@@ -34,22 +35,32 @@ const EXPIRY_OPTIONS = [
   { label: 'No expiry', value: NO_EXPIRY },
 ] as const;
 
+/** The new-key form's values. */
 interface ApiKeyFields {
   name: string;
+  /** Days until the key expires, as a string, or `NO_EXPIRY`. */
   expiry: string;
 }
 
+/** A blank new-key form: no name, no expiry. */
 const EMPTY_API_KEY: ApiKeyFields = { name: '', expiry: NO_EXPIRY };
 
+/** Where the dialog stands: asking for the key's details, or showing the token just made. */
 type Phase = { phase: 'form' } | { phase: 'reveal'; token: string };
 
 interface CreateApiKeyDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  /** Called as the dialog closes, and only when a key was made. */
   onCreated: () => void;
 }
 
-/** Local midnight `days` from now, in the offset-less form the server expects. */
+/**
+ * Local midnight `days` from now, in the offset-less form the server expects.
+ *
+ * @param days - How many days from today the key expires.
+ * @returns The moment as `YYYY-MM-DDT00:00:00`, with no offset.
+ */
 function expiryDate(days: number): string {
   const d = new Date();
   d.setDate(d.getDate() + days);
@@ -57,6 +68,10 @@ function expiryDate(days: number): string {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T00:00:00`;
 }
 
+/**
+ * The dialog that generates an API key: first its name and expiry, then the token and its calendar URL, shown this
+ * once.
+ */
 export function CreateApiKeyDialog({ open, onOpenChange, onCreated }: CreateApiKeyDialogProps) {
   const [state, setState] = useState<Phase>({ phase: 'form' });
   const [submitError, setSubmitError] = useState<string | null>(null);

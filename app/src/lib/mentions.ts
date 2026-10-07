@@ -5,8 +5,13 @@ export interface MentionablePerson {
   lastName: string;
 }
 
-/** Parse all @FirstName LastName mentions in a body string and return the
- *  matching person IDs from allPersons. */
+/**
+ * Finds the people a note body @-mentions. A mention is `@First Last`, matched to both names in any case.
+ *
+ * @param body - The note's text.
+ * @param allPersons - Everyone who can be mentioned.
+ * @returns The id of each person mentioned, once each.
+ */
 export function parseMentionedPersonIds(body: string, allPersons: MentionablePerson[]): string[] {
   const ids = new Set<string>();
   const pattern = /@([\w'-]+)\s+([\w'-]+)/g;

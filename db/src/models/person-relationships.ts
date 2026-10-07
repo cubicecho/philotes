@@ -3,6 +3,7 @@ import { index, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core';
 import { persons } from './persons.ts';
 import { users } from './users.ts';
 
+/** How two people are related, as one user sees it. `type` is free text. */
 export const personRelationships = pgTable(
   'person_relationships',
   {
@@ -30,5 +31,7 @@ export const personRelationships = pgTable(
   ],
 );
 
+/** A person relationship row as read. */
 export type PersonRelationship = typeof personRelationships.$inferSelect;
+/** A person relationship row as inserted. */
 export type NewPersonRelationship = typeof personRelationships.$inferInsert;

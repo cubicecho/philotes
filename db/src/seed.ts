@@ -43,41 +43,91 @@ const DAYS_PER_YEAR = 365;
 /** The middle of `Math.random`'s range. Subtracting it gives a sort order that is as often negative as positive. */
 const EVEN_ODDS = 0.5;
 
+/**
+ * Makes an id for a row.
+ *
+ * @returns A random UUID.
+ */
 function randomId(): string {
   return crypto.randomUUID();
 }
 
+/**
+ * Picks one item at random, each as likely as the next.
+ *
+ * @typeParam T - The item type.
+ * @param arr - The items to pick from. Must hold at least one.
+ * @returns The picked item.
+ */
 function pickRandom<T>(arr: T[]): T {
   return arr[Math.floor(Math.random() * arr.length)];
 }
 
-/** Picks a whole number from `min` to `max`, both included. */
+/**
+ * Picks a whole number from `min` to `max`, both included.
+ *
+ * @param min - The smallest number that can come back.
+ * @param max - The largest number that can come back.
+ * @returns The number.
+ */
 function randomCount(min: number, max: number): number {
   return min + Math.floor(Math.random() * (max - min + 1));
 }
 
-/** Answers true `probability` of the time, where 1 is always. */
+/**
+ * Answers true `probability` of the time.
+ *
+ * @param probability - From 0 for never to 1 for always.
+ * @returns true on a hit.
+ */
 function chance(probability: number): boolean {
   return Math.random() < probability;
 }
 
+/**
+ * Picks a random handful of items, in random order.
+ *
+ * @typeParam T - The item type.
+ * @param arr - The items to pick from.
+ * @param min - Fewest to pick.
+ * @param max - Most to pick.
+ * @returns Between `min` and `max` of the items, or all of them when `arr` holds fewer than were drawn.
+ */
 function pickRandomSubset<T>(arr: T[], min: number, max: number): T[] {
   const count = randomCount(min, max);
   const shuffled = [...arr].sort(() => Math.random() - EVEN_ODDS);
   return shuffled.slice(0, Math.min(count, shuffled.length));
 }
 
+/**
+ * Picks a moment in the recent past.
+ *
+ * @param yearsBack - How far back it may fall, in years of 365 days.
+ * @returns A moment between then and now.
+ */
 function randomPastDate(yearsBack: number): Date {
   const now = Date.now();
   const msBack = yearsBack * DAYS_PER_YEAR * MS_PER_DAY;
   return new Date(now - Math.random() * msBack);
 }
 
+/**
+ * Picks a moment in the near future.
+ *
+ * @param daysAhead - How far ahead it may fall, in days.
+ * @returns A moment between now and then.
+ */
 function randomFutureDate(daysAhead: number): Date {
   const now = Date.now();
   return new Date(now + Math.random() * daysAhead * MS_PER_DAY);
 }
 
+/**
+ * Formats a moment as a calendar date in UTC.
+ *
+ * @param d - The moment.
+ * @returns The date as `YYYY-MM-DD`.
+ */
 function toIsoDate(d: Date): string {
   return d.toISOString().slice(0, 10);
 }
@@ -87,7 +137,17 @@ const RELATIONSHIP_TYPES = ['friend', 'colleague', 'mentor', 'mentee', 'acquaint
 /** Emails are left out: a seeded person's email is on the person row. */
 const SEEDED_CONTACT_TYPES = Object.values(ContactType).filter((type) => type !== ContactType.Email);
 
+/**
+ * Makes up a social handle.
+ *
+ * @returns A username with an `@` in front.
+ */
 const fakeHandle = () => `@${faker.internet.username()}`;
+/**
+ * Makes up a word.
+ *
+ * @returns One lorem ipsum word.
+ */
 const fakeWord = () => faker.lorem.word();
 
 /** What a made-up contact detail of each type looks like. A type with no entry gets a word. */
@@ -110,6 +170,11 @@ const IMPORTANT_DATE_NAMES = [
   'Moving Day',
 ];
 
+/**
+ * Inserts the seed user, `seed@philotes.local`.
+ *
+ * @returns The new user's id, in an object.
+ */
 async function seedUser() {
   const [user] = await db
     .insert(users)
@@ -122,6 +187,12 @@ async function seedUser() {
   return user;
 }
 
+/**
+ * Inserts the eight seed labels.
+ *
+ * @param userId - The seed user, who owns them.
+ * @returns The labels inserted.
+ */
 async function seedLabels(userId: string) {
   const labelData = [
     { id: randomId(), userId, color: '#ef4444', label: 'Friend' },
@@ -139,6 +210,12 @@ async function seedLabels(userId: string) {
   return labelData;
 }
 
+/**
+ * Inserts fifty made-up persons, each with an email no other has, and puts them in the user's contacts.
+ *
+ * @param userId - The seed user.
+ * @returns The persons inserted.
+ */
 async function seedPersons(userId: string) {
   const usedEmails = new Set<string>();
 
@@ -177,6 +254,14 @@ async function seedPersons(userId: string) {
   return personData;
 }
 
+/**
+ * Gives each person a random handful of the labels.
+ *
+ * @param personData - The seeded persons.
+ * @param labelData - The seeded labels.
+ * @param userId - The seed user.
+ * @returns Resolves once the rows are in.
+ */
 async function seedPersonLabels(personData: { id: string }[], labelData: { id: string }[], userId: string) {
   const personLabelData = personData.flatMap((person) => {
     const assignedLabels = pickRandomSubset(labelData, SEED.minLabelsPerPerson, SEED.maxLabelsPerPerson);
@@ -191,6 +276,14 @@ async function seedPersonLabels(personData: { id: string }[], labelData: { id: s
   console.log(`Inserted ${personLabelData.length} person-label associations`);
 }
 
+/**
+ * Writes notes about each person. Some mention another person, and some are tagged with labels.
+ *
+ * @param personData - The seeded persons. A mention needs at least two.
+ * @param labelData - The seeded labels.
+ * @param userId - The seed user.
+ * @returns Resolves once the notes, mentions and tags are in.
+ */
 async function seedNotes(personData: { id: string }[], labelData: { id: string }[], userId: string) {
   const noteData: NewNote[] = [];
   const noteTagData: Omit<NewNoteTag, 'userId'>[] = [];
@@ -239,6 +332,14 @@ async function seedNotes(personData: { id: string }[], labelData: { id: string }
   }
 }
 
+/**
+ * Gives each person important dates in the past, each with a random recurrence. Some are tagged with a label.
+ *
+ * @param personData - The seeded persons.
+ * @param labelData - The seeded labels.
+ * @param userId - The seed user.
+ * @returns Resolves once the dates and tags are in.
+ */
 async function seedImportantDates(personData: { id: string }[], labelData: { id: string }[], userId: string) {
   const importantDateData: NewImportantDate[] = [];
 
@@ -280,6 +381,14 @@ async function seedImportantDates(personData: { id: string }[], labelData: { id:
   }
 }
 
+/**
+ * Gives each person past interactions. Some are tagged with a label.
+ *
+ * @param personData - The seeded persons.
+ * @param labelData - The seeded labels.
+ * @param userId - The seed user.
+ * @returns Resolves once the interactions and tags are in.
+ */
 async function seedInteractions(personData: { id: string }[], labelData: { id: string }[], userId: string) {
   const interactionData: NewInteraction[] = [];
 
@@ -320,6 +429,14 @@ async function seedInteractions(personData: { id: string }[], labelData: { id: s
   }
 }
 
+/**
+ * Relates random pairs of persons. No person is paired with themselves, and no ordered pair is used twice.
+ * It stops short of the count drawn when ten tries per relationship have not found enough new pairs.
+ *
+ * @param personData - The seeded persons.
+ * @param userId - The seed user.
+ * @returns Resolves once the relationships are in.
+ */
 async function seedPersonRelationships(personData: { id: string }[], userId: string) {
   const targetCount = randomCount(SEED.minRelationships, SEED.maxRelationships);
   const usedPairs = new Set<string>();
@@ -357,6 +474,13 @@ async function seedPersonRelationships(personData: { id: string }[], userId: str
   console.log(`Inserted ${relationshipData.length} person relationships`);
 }
 
+/**
+ * Gives each person tasks. Some are completed, some have a due date and some have notes.
+ *
+ * @param personData - The seeded persons.
+ * @param userId - The seed user.
+ * @returns Resolves once the tasks are in.
+ */
 async function seedTasks(personData: { id: string }[], userId: string) {
   const taskData: NewTask[] = [];
 
@@ -388,6 +512,13 @@ async function seedTasks(personData: { id: string }[], userId: string) {
   console.log(`Inserted ${taskData.length} tasks`);
 }
 
+/**
+ * Gives each person contact details of every type but email. A person's first one is the primary.
+ *
+ * @param personData - The seeded persons.
+ * @param userId - The seed user.
+ * @returns Resolves once the details are in.
+ */
 async function seedContactInfos(personData: { id: string }[], userId: string) {
   const contactInfoData: NewContactInfo[] = [];
 
@@ -418,6 +549,13 @@ async function seedContactInfos(personData: { id: string }[], userId: string) {
   console.log(`Inserted ${contactInfoData.length} contact infos`);
 }
 
+/**
+ * Gives each person US addresses. A person's first one is the primary.
+ *
+ * @param personData - The seeded persons.
+ * @param userId - The seed user.
+ * @returns Resolves once the addresses are in.
+ */
 async function seedAddresses(personData: { id: string }[], userId: string) {
   const addressData: NewAddress[] = [];
 

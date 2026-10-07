@@ -9,8 +9,11 @@ import type { SlotNode } from '@/lib/utils';
 export interface PersonProfileSummaryProps {
   firstName: string;
   lastName: string;
+  /** Drawn as a mail link; nothing is drawn without one. */
   email: string | null | undefined;
+  /** The stored photo's path; without one the initials are drawn. */
   avatarPath: string | null | undefined;
+  /** The contact cadence, shown as a badge; nothing is drawn without one. */
   contactFrequency: string | null | undefined;
   /** `accept` for the photo picker. */
   avatarAccept: string;

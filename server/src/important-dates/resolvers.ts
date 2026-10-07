@@ -49,20 +49,33 @@ const upcomingDatesExtensionSDL = parse(`
   }
 `);
 
-/** Return today at midnight in local time. */
+/**
+ * Reads today's date in the server's time zone.
+ *
+ * @returns Midnight at the start of today, local time.
+ */
 function todayMidnight(): Date {
   const d = new Date();
   d.setHours(0, 0, 0, 0);
   return d;
 }
 
-/** Days between two midnight-normalised dates (can be negative). */
+/**
+ * Counts the days from one midnight to another.
+ *
+ * @param a - The midnight counted from.
+ * @param b - The midnight counted to.
+ * @returns Whole days from `a` to `b`, negative when `b` comes first.
+ */
 function daysBetween(a: Date, b: Date): number {
   return Math.round((b.getTime() - a.getTime()) / MS_PER_DAY);
 }
 
 /**
- * Format a Date as YYYY-MM-DD in local time.
+ * Formats a date in the server's time zone.
+ *
+ * @param d - The date.
+ * @returns The date as `YYYY-MM-DD`.
  */
 function toLocalDateString(d: Date): string {
   const year = d.getFullYear();
@@ -72,8 +85,12 @@ function toLocalDateString(d: Date): string {
 }
 
 /**
- * Compute days until next occurrence and the next occurrence date.
- * Returns null when the event is one-time and has already passed.
+ * Finds when a date next falls, counting from today in the server's time zone.
+ *
+ * @param dateStr - The stored date, as `YYYY-MM-DD`.
+ * @param recurrence - How the date repeats, or null for a one-time date.
+ * @returns The next occurrence and the days until it, 0 for today. null for a one-time date that has passed,
+ * or a recurrence outside the vocabulary.
  */
 function computeNextOccurrence(
   dateStr: string,
@@ -130,12 +147,29 @@ function computeNextOccurrence(
   return null;
 }
 
+/**
+ * Adds `upcomingDates` to the schema.
+ *
+ * @param schema - The schema so far.
+ * @returns The schema with the upcoming dates query.
+ */
 export function applyUpcomingDatesExtension(schema: GraphQLSchema): GraphQLSchema {
   const extendedSchema = extendSchema(schema, upcomingDatesExtensionSDL);
 
   const queryType = objectType(extendedSchema, 'Query');
 
   const upcomingDatesField = queryType.getFields().upcomingDates;
+  /**
+   * Resolves `Query.upcomingDates`. Lists the caller's important dates that next fall within the lookahead,
+   * soonest first. An anonymous caller gets an empty list, not an error.
+   *
+   * @param _parent - Unused.
+   * @param [args.limit] - Most entries to return, capped at the largest page size.
+   * @param [args.offset] - Entries to pass over first.
+   * @param [args.lookaheadDays] - How many days ahead to look, counting today as day 0.
+   * @param context - Request context.
+   * @returns The entries, each with its next date and the days until it.
+   */
   upcomingDatesField.resolve = async (_parent: unknown, args: UpcomingDatesArgs, context: Context) => {
     if (!context.userId) {
       return [];

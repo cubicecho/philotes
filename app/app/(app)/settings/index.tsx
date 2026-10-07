@@ -9,6 +9,7 @@ import { GoogleCsvImportCard } from '@/components/settings/google-csv-import-car
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ThemePicker } from '@/components/ui/theme-picker';
 
+/** The tabs of the settings page. */
 type SettingsTab = 'import-export' | 'api-keys' | 'app';
 
 const TABS: { id: SettingsTab; label: string }[] = [
@@ -17,6 +18,7 @@ const TABS: { id: SettingsTab; label: string }[] = [
   { id: 'app', label: 'App Settings' },
 ];
 
+/** The settings page: imports and exports, API keys, and appearance, a tab each. */
 export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState<SettingsTab>('import-export');
 

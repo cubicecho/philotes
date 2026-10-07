@@ -12,6 +12,7 @@ import { fullName } from '@/lib/person-name';
 import { DAYS_PER_MONTH, DAYS_PER_WEEK, WEEKS_PER_MONTH } from '@/lib/time';
 import { Widget } from './widget';
 
+/** A person the dashboard suggests getting back in touch with. */
 export type ReachOutPerson = {
   id: string;
   firstName: string;
@@ -23,6 +24,7 @@ export type ReachOutPerson = {
   isDormant: boolean;
 };
 
+/** Logs an interaction with no note on the `other` channel: the quick log records that contact happened, not how. */
 const QUICK_LOG_INTERACTION = graphql(`
   mutation QuickLogInteraction($personId: UUID!, $occurredAt: DateTime!) {
     createInteraction(
@@ -35,6 +37,12 @@ const QUICK_LOG_INTERACTION = graphql(`
   }
 `);
 
+/**
+ * How long contact with a person has been overdue, in the largest unit that fits.
+ *
+ * @param days - Whole days past the day contact was due; 0 is due today.
+ * @returns The label, such as `3 weeks overdue`; `Due today` for 0.
+ */
 export function formatOverdueLabel(days: number): string {
   if (days === 0) {
     return 'Due today';
@@ -60,11 +68,13 @@ export function formatOverdueLabel(days: number): string {
 }
 
 interface ReachOutProps {
+  /** The people to list, in the order given. */
   persons: ReachOutPerson[];
   /** Called after a quick-log succeeds so the page can refetch. */
   onLogged?: () => void;
 }
 
+/** The dashboard card of people due for contact, each with a button that logs a contact made just now. */
 export function ReachOut({ persons, onLogged }: ReachOutProps) {
   const router = useRouter();
   const [quickLog] = useMutation(QUICK_LOG_INTERACTION);

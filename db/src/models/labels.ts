@@ -2,6 +2,7 @@ import { index, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core';
 
 import { users } from './users.ts';
 
+/** A user's own tag, with a colour, for people, notes, interactions and important dates. */
 export const labels = pgTable(
   'labels',
   {
@@ -20,5 +21,7 @@ export const labels = pgTable(
   (t) => [index('idx_labels_user_id').on(t.userId)],
 );
 
+/** A label row as read. */
 export type Label = typeof labels.$inferSelect;
+/** A label row as inserted. */
 export type NewLabel = typeof labels.$inferInsert;

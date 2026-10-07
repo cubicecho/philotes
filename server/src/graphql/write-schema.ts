@@ -7,6 +7,12 @@ import { schema } from './schema.ts';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
+/**
+ * Writes the served schema's SDL to `server/__generated__/schema.graphql`, creating the directory when
+ * it is missing.
+ *
+ * @returns Resolves once the file is written.
+ */
 async function main() {
   const projectRoot = resolve(__dirname, '..', '..', '..');
   const outputDir = resolve(projectRoot, 'server', '__generated__');

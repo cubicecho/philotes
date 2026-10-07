@@ -8,11 +8,13 @@ import { cn } from '@/lib/utils';
 interface AvatarProps {
   firstName: string;
   lastName: string;
+  /** The stored photo's path; `null` or left out draws the initials. */
   avatarPath?: string | null;
   size?: 'sm' | 'md' | 'lg';
   className?: string;
 }
 
+/** The box and the initials text classes of each size. */
 const SIZE_CLASSES: Record<NonNullable<AvatarProps['size']>, { box: string; text: string }> = {
   sm: { box: 'h-8 w-8', text: 'text-xs' },
   md: { box: 'h-10 w-10', text: 'text-sm' },

@@ -17,6 +17,7 @@ const VERIFY_MAGIC_LINK = graphql(`
   }
 `);
 
+/** Where a magic link lands: spends its token for a session and opens the app, or says the link is no good. */
 export default function VerifyPage() {
   const router = useRouter();
   const { token } = useLocalSearchParams<{ token?: string }>();

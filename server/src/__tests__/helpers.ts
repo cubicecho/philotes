@@ -177,6 +177,7 @@ export function createClient(db: TestDb, userId: string | null, deps: TestClient
  *
  * @param server - A server listening on port 0.
  * @returns The port.
+ * @throws An error when the server is not listening on a TCP port.
  */
 export function portOf(server: Server): number {
   const address = server.address();
