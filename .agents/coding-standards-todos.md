@@ -63,7 +63,7 @@ Status is `open`, `approved`, `declined` or `done`.
 - Multi-tenancy is configuration in `server/src/tenancy.ts`, not resolver code
 - Vendored cubeui (`app/src/components/ui/`, the shells in `app/src/components/`, `app/src/lib/{utils,format,color,cubeui-theme,readable-text-color}.ts`) is not edited here; fix it upstream
 - App components take no `children`; content goes in `*Slot` props typed `SlotNode`
-- Generated files and the command that rebuilds them: `server/__generated__/`, `app/src/__generated__/` → `npm run codegen`; `db/dist/` → `npm run build -w db`
+- Generated files and the command that rebuilds them: `server/__generated__/`, `app/src/__generated__/` → `npm run codegen`
 - Tests live in `server/src/__tests__/`, run with `npm test`
 - P21 (import style) is overridden by AGENTS.md: `app/` uses the `@/` alias without extensions
 

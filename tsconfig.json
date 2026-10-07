@@ -18,10 +18,5 @@
         "schema": ["./server/__generated__/schema.graphql"]
       }
     ]
-  },
-  "references": [
-    {
-      "path": "./db"
-    }
-  ]
+  }
 }

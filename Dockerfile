@@ -13,8 +13,8 @@ COPY . .
 # Install all dependencies including devDependencies (needed for codegen + vite build)
 RUN npm ci
 
-# Build db package, run GraphQL codegen, build Vite frontend
-RUN npm run build -w db && npm run codegen && npm run build -w app
+# Run GraphQL codegen, build the web app
+RUN npm run codegen && npm run build -w app
 
 # ── Stage 2: production ───────────────────────────────────────────────────────
 FROM node:26-alpine
@@ -39,4 +39,4 @@ EXPOSE 3001
 VOLUME ["/data", "/avatars"]
 
 # Run server directly as TypeScript — no compile step needed
-CMD ["node", "--preserve-symlinks", "server/src/index.ts"]
+CMD ["node", "server/src/index.ts"]

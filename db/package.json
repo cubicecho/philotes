@@ -3,9 +3,13 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "main": "./dist/index.js",
+  "exports": {
+    ".": "./src/index.ts",
+    "./schema": "./src/schema.ts",
+    "./relations": "./src/relations.ts",
+    "./api-keys": "./src/api-keys.ts"
+  },
   "scripts": {
-    "build": "tsc -p tsconfig.build.json",
     "generate": "drizzle-kit generate",
     "migrate": "node --env-file=../.env src/migrate.ts",
     "seed": "node --env-file=../.env src/seed.ts",

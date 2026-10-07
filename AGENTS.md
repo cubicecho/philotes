@@ -92,9 +92,8 @@ npm run dev:server       # Start only the Apollo Server (port 3001, with watch)
 
 ### Building
 ```bash
-npm run build            # Build all workspaces (db → server → app)
+npm run build            # Codegen, then the web export
 npm run build:app        # Build only the frontend
-npm run build:server     # Build only the server
 ```
 
 ### GraphQL Codegen
@@ -109,10 +108,6 @@ npm run codegen:server   # Generate server resolver types (server/__generated__/
 > documents in `app/src/` and `app/app/` (queries, mutations, fragments). The
 > generated files in `app/src/__generated__/` and `server/__generated__/` must
 > be up to date before running type checks, tests, or builds.
->
-> After editing `db/src`, run `npm run build -w db` **first** — codegen reads
-> `@philotes/db` through `db/dist`, so without it you regenerate against the
-> previous schema.
 
 ### Testing
 ```bash
@@ -287,9 +282,8 @@ Do not hand-format — run `npm run check:biome`. The settings, from `biome.json
   import time (not a factory). `DATABASE_URL` selects the driver: a
   `postgres://` URL uses postgres-js, anything else is a PGlite data directory,
   defaulting to `<repo>/pgdata`
-- `@philotes/db` resolves through `db/dist`, so **run `npm run build -w db`
-  after editing `db/src`** — otherwise the server, codegen and tests all read
-  the previous build
+- `@philotes/db` exports its TypeScript sources, which Node runs directly, so
+  there is no build step between editing `db/src` and using it
 - PGlite is embedded Postgres via WASM — no external DB server needed in dev
 
 ### Error Handling

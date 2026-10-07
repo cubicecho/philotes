@@ -40,9 +40,8 @@ import { db, schema } from '@philotes/db';
 import type { Person, NewPerson } from '@philotes/db';
 ```
 
-> `@philotes/db` resolves to `db/dist`, so run `npm run build -w db` after
-> editing anything under `db/src` — otherwise the server and codegen read a
-> stale schema.
+> `@philotes/db` exports its TypeScript sources. Node runs them directly, so an
+> edit under `db/src` needs no build.
 
 **Importing `@philotes/db` opens a database.** Never import it from a test;
 stub it with `vi.mock('@philotes/db')`. See
@@ -213,5 +212,4 @@ After editing a model:
 
 1. `npm run db:generate` and commit the generated migration alongside the
    schema change.
-2. `npm run build -w db` — everything downstream reads `db/dist`.
-3. `npm run codegen` if the change is visible in the API.
+2. `npm run codegen` if the change is visible in the API.

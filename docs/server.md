@@ -121,7 +121,6 @@ free of anything about rows the caller cannot see.
 
 ```bash
 npm run dev:server   # Watch mode
-npm run build:server # Compile to dist/
 ```
 
 ## GraphQL Codegen
@@ -134,9 +133,6 @@ npm run codegen          # Both app + server types
 npm run codegen:server   # Rewrites the SDL snapshot, then resolver types
 npm run codegen:app      # App client types only
 ```
-
-`@philotes/db` resolves through `db/dist`, so run `npm run build -w db` after
-editing `db/src` — otherwise codegen and the server both read the old schema.
 
 Generated output:
 - `server/__generated__/schema.graphql` — SDL snapshot

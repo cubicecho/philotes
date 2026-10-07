@@ -1,6 +1,5 @@
 {
   "extends": "../tsconfig.base.json",
   "compilerOptions": { "types": ["node"] },
-  "include": ["src", "__generated__"],
-  "references": [{ "path": "../db" }]
+  "include": ["src", "__generated__"]
 }

@@ -1,13 +1,5 @@
 {
   "extends": "../tsconfig.base.json",
-  "compilerOptions": {
-    "types": ["node"],
-    "noEmit": false,
-    "composite": true,
-    "emitDeclarationOnly": true,
-    "declaration": true,
-    "rootDir": "./src",
-    "outDir": "./dist"
-  },
+  "compilerOptions": { "types": ["node"] },
   "include": ["src"]
 }

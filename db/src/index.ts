@@ -1,15 +1,10 @@
-import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { isPostgresUrl } from './database-url.ts';
 import { relations } from './relations.ts';
 import * as schema from './schema.ts';
 
-// realpathSync resolves the node_modules/@philotes/db symlink back to db/,
-// so the default pgdata path stays at the repo root even when Node runs
-// with --preserve-symlinks (otherwise it lands in node_modules/@philotes/).
-const __dirname = fs.realpathSync(path.dirname(fileURLToPath(import.meta.url)));
-const projectRoot = path.resolve(__dirname, '../..');
+const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 
 /** Where the database is: a Postgres URL, or a PGlite location. Defaults to `pgdata` at the repo root. */
 export const DATABASE_URL = process.env.DATABASE_URL ?? path.join(projectRoot, 'pgdata');

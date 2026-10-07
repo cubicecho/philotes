@@ -2,7 +2,6 @@ node_modules
 **/node_modules
 app/dist
 server/dist
-db/dist
 *.log
 .git
 pgdata
