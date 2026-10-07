@@ -162,3 +162,60 @@ describe('createPersons', () => {
     );
   });
 });
+
+describe("taking a person who is not in the caller's contacts", () => {
+  let db: TestDb;
+  let client: ReturnType<typeof createClient>;
+  let personId: string;
+  let ownPersonId: string;
+
+  beforeAll(async () => {
+    db = await createTestDb();
+    const userId = await createUser(db, 'owner@example.com');
+    const strangerId = await createUser(db, 'stranger@example.com');
+    personId = await createPerson(db, strangerId, 'Linus');
+    ownPersonId = await createPerson(db, userId, 'Ada');
+    client = createClient(db, userId);
+  });
+
+  /** Asserts the stranger's person is still not among the caller's people. */
+  async function expectNotTaken(): Promise<void> {
+    const listed = await client.expectOk<{ persons: Array<{ id: string }> }>(LIST_PERSONS);
+    expect(listed.persons).toEqual([{ id: ownPersonId }]);
+  }
+
+  it('has no addPersonToMyContacts mutation', async () => {
+    const result = await client.run(
+      'mutation ($personId: UUID!) { addPersonToMyContacts(personId: $personId) { personId } }',
+      { personId },
+    );
+
+    expect(result.errors).toBeDefined();
+    await expectNotTaken();
+  });
+
+  it('has no generated create for the link either', async () => {
+    const one = await client.run(
+      'mutation ($personId: UUID!) { createUserPerson(values: { personId: $personId }) { personId } }',
+      { personId },
+    );
+    const several = await client.run(
+      'mutation ($personId: UUID!) { createUserPersons(values: [{ personId: $personId }]) { personId } }',
+      { personId },
+    );
+
+    expect(one.errors).toBeDefined();
+    expect(several.errors).toBeDefined();
+    await expectNotTaken();
+  });
+
+  it('refuses to point an existing link at the person', async () => {
+    const result = await client.run(
+      'mutation ($from: UUID!, $to: UUID!) { updateUserPersons(set: { personId: $to }, where: { personId: { eq: $from } }) { personId } }',
+      { from: ownPersonId, to: personId },
+    );
+
+    expect(result.errors?.[0].extensions.code).toBe(ErrorCode.NotFound);
+    await expectNotTaken();
+  });
+});
