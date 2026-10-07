@@ -20,7 +20,8 @@ confirmed in code. Nothing here is implemented until approved.
 |---|---|---|---|---|---|
 | B1 | Bug | Stops the server logging the sign-in link in every environment, which needs a mailer first because production sign-in reads that log line | No credentials in logs | A2 | declined |
 | B2 | Bug | Makes revoking an API key answer "not found" for a key that belongs to someone else, as every other resolver does | Does not reveal which key ids exist | — | done |
-| B3 | Bug | Checks who is uploading an avatar before the file is written, and stops serving avatars to callers who are not signed in | Closes an unauthenticated write and read | — | approved |
+| B3 | Bug | Checks who is uploading an avatar, and that the person is in their list, before the file is written; stores it under a random name with the extension of its type. Reading stays open by unguessable name until A2, because an image request cannot carry a bearer token | Closes an unauthenticated write, and one user overwriting another's picture | — | done |
+| B11 | Bug | Shows uploaded avatars: the app prefixed `/avatars/` to a path that already starts with it, so no upload ever displayed | Avatars display | B3 | approved |
 | B4 | Bug | Stops contact import returning raw database error text, and scopes its duplicate check to the importing user | No schema details in responses; no cross-user dedupe | — | done |
 | B5 | Bug | Keeps the owner on the person-label rows that merging two labels re-inserts | Merge does not fail on the NOT NULL owner column | — | done |
 | B6 | Bug | Runs the postgres-js migrator when `DATABASE_URL` is a Postgres URL, not the PGlite one | Migrations apply on a real Postgres | — | approved |
@@ -29,7 +30,7 @@ confirmed in code. Nothing here is implemented until approved.
 | B9 | Bug | Shows loading and error states in the API key and export cards, which today show "empty" while loading | Honest states | — | approved |
 | F1 | Feature | Asks for confirmation before each of the seven one-click deletes | No accidental data loss | — | approved |
 | A1 | API change | Moves the server to graphql-yoga on Express 5 with `createApp(deps)`, the `core/ http/ graphql/ auth/` layout, `/healthz`, graceful shutdown, body cap and operation limits | The cubicecho backend shape; injection replaces `vi.mock` of own modules | — | approved |
-| A2 | API change | Replaces the hand-rolled JWT magic link and API keys with better-auth; every user signs in again and existing API keys stop working | One audited auth stack, with rate limiting | A1 | approved |
+| A2 | API change | Replaces the hand-rolled JWT magic link and API keys with better-auth, and puts `/avatars` behind the session cookie; every user signs in again and existing API keys stop working | One audited auth stack, with rate limiting | A1 | approved |
 | A3 | API change | Makes Postgres the only production database (PGlite for tests), loads the db package from source, and adds `waitForDatabase`; a deployment now needs a Postgres | Production runs what CI tests | A1 | approved |
 | A4 | API change | Moves to drizzle-graphql 13 with `nestedWrites: false`, list bounds and complexity limits; unbounded list queries get a default page size | Bounded queries | A1 | approved |
 | A5 | API change | Rewrites the Dockerfile, compose files, CI (`postgres` and `boot` jobs) and release (GHCR) to the standard, on port 3000 as a non-root user | Standard deployment; image published without Docker Hub secrets | A1, A3 | approved |
