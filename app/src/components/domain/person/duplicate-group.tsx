@@ -10,7 +10,7 @@ import { Alert } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { invalidateQueryFields } from '@/lib/invalidate';
-import { fullName } from '@/lib/person-name';
+import { personName } from '@/lib/person-name';
 
 const MERGE_PERSONS = graphql(`
   mutation MergePersons($keepId: UUID!, $mergeId: UUID!) {
@@ -22,7 +22,8 @@ const MERGE_PERSONS = graphql(`
 const MATCH_TYPE_LABELS: Record<ContactTypeEnum, string> = {
   [ContactTypeEnum.Email]: 'email',
   [ContactTypeEnum.Phone]: 'phone',
-  [ContactTypeEnum.Mobile]: 'mobile',
+  [ContactTypeEnum.Fax]: 'fax',
+  [ContactTypeEnum.Im]: 'messaging handle',
   [ContactTypeEnum.Linkedin]: 'LinkedIn',
   [ContactTypeEnum.Twitter]: 'Twitter',
   [ContactTypeEnum.Instagram]: 'Instagram',
@@ -33,8 +34,8 @@ const MATCH_TYPE_LABELS: Record<ContactTypeEnum, string> = {
 /** A person as a duplicate group shows them. */
 export interface DuplicatePerson {
   id: string;
-  firstName: string;
-  lastName: string;
+  /** The person's name as the server worked it out. Empty when they have none. */
+  displayName: string;
   email: string | null;
 }
 
@@ -90,7 +91,7 @@ export function DuplicateGroupCard({ matchValue, matchType, persons, onMerged, o
               <RadioGroupItem
                 key={person.id}
                 value={person.id}
-                label={fullName(person)}
+                label={personName(person)}
                 description={person.email ?? undefined}
               />
             ))}
@@ -100,13 +101,13 @@ export function DuplicateGroupCard({ matchValue, matchType, persons, onMerged, o
             <Button variant="outline" content="Not a duplicate" disabled={merging} onPress={onDismiss} />
             {kept && (
               <ConfirmButton
-                label={`Merge into ${fullName(kept)}`}
-                content={`Merge into ${fullName(kept)}`}
+                label={`Merge into ${personName(kept)}`}
+                content={`Merge into ${personName(kept)}`}
                 tooltip={false}
                 iconSlot={<GitMerge />}
                 loading={merging}
-                title={`Merge into ${fullName(kept)}?`}
-                description={`${others.map((other) => fullName(other)).join(' and ')} will be removed from your people. Their notes, interactions, tasks, dates, contact details and labels move to ${fullName(kept)}. This cannot be undone.`}
+                title={`Merge into ${personName(kept)}?`}
+                description={`${others.map((other) => personName(other)).join(' and ')} will be removed from your people. Their notes, interactions, tasks, dates, contact details and labels move to ${personName(kept)}. This cannot be undone.`}
                 confirmLabel="Merge"
                 onConfirm={handleMerge}
               />

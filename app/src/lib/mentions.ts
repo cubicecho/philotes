@@ -1,8 +1,8 @@
 /** A person a note body can @-mention. */
 export interface MentionablePerson {
   id: string;
-  firstName: string;
-  lastName: string;
+  /** The name a mention is written with. A person without one cannot be mentioned. */
+  displayName: string;
 }
 
 /**
@@ -16,39 +16,56 @@ function escapePattern(text: string): string {
 }
 
 /**
- * Builds the pattern that finds one person's mention: `@`, their names with any white space between the
- * words, and no letter or digit straight after, so `@Ada Love` is not found in `@Ada Lovelace`.
+ * Splits a name into its words.
  *
- * @param person - The person to look for.
- * @returns The pattern, or `null` for a person missing a first or a last name, who cannot be mentioned.
+ * @param name - The name as shown.
+ * @returns The words, without the white space between them.
  */
-function mentionPattern(person: MentionablePerson): RegExp | null {
-  const firstWords = person.firstName.trim().split(/\s+/).filter(Boolean);
-  const lastWords = person.lastName.trim().split(/\s+/).filter(Boolean);
-  const isMissingName = firstWords.length === 0 || lastWords.length === 0;
-  if (isMissingName) {
-    return null;
-  }
-  const words = [...firstWords, ...lastWords].map(escapePattern).join('\\s+');
-  return new RegExp(`@${words}(?![\\p{L}\\p{N}])`, 'iu');
+function wordsOf(name: string): string[] {
+  return name.trim().split(/\s+/).filter(Boolean);
 }
 
 /**
- * Finds the people a note body @-mentions. A mention is `@First Last`, matched to both names in any case;
- * either name may be several words, and may hold accented letters.
+ * Builds the pattern that finds one name's mentions: `@`, the words with any white space between them,
+ * and no letter or digit straight after, so `@Ada Love` is not found in `@Ada Lovelace`.
+ *
+ * @param words - The name's words. At least one.
+ * @returns The pattern, matching every mention in a body.
+ */
+function mentionPattern(words: string[]): RegExp {
+  return new RegExp(`@${words.map(escapePattern).join('\\s+')}(?![\\p{L}\\p{N}])`, 'giu');
+}
+
+/**
+ * Finds the people a note body @-mentions. A mention is `@` and the person's name as shown, in any case;
+ * the name may be several words, and may hold accented letters. The longest name is looked for first and
+ * its mentions are taken out of the text, so `@Ada Lovelace` mentions Ada Lovelace and not also a person
+ * called Ada.
  *
  * @param body - The note's text.
  * @param allPersons - Everyone who can be mentioned.
  * @returns The id of each person mentioned, once each, in the order of `allPersons`.
  */
 export function parseMentionedPersonIds(body: string, allPersons: MentionablePerson[]): string[] {
-  const ids = new Set<string>();
-  for (const person of allPersons) {
-    const pattern = mentionPattern(person);
-    const isMentioned = pattern?.test(body) === true;
+  const named = allPersons
+    .map((person) => ({ id: person.id, words: wordsOf(person.displayName) }))
+    .filter((person) => person.words.length > 0)
+    .sort((a, b) => b.words.length - a.words.length);
+
+  // People who share a name are all mentioned by it, so each distinct name is taken out once.
+  const mentionedNames = new Set<string>();
+  let remaining = body;
+  for (const { words } of named) {
+    const key = words.join(' ').toLowerCase();
+    const pattern = mentionPattern(words);
+    const isMentioned = mentionedNames.has(key) === false && pattern.test(remaining);
     if (isMentioned) {
-      ids.add(person.id);
+      mentionedNames.add(key);
+      remaining = remaining.replace(mentionPattern(words), ' ');
     }
   }
-  return Array.from(ids);
+
+  return allPersons
+    .filter((person) => mentionedNames.has(wordsOf(person.displayName).join(' ').toLowerCase()))
+    .map((person) => person.id);
 }

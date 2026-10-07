@@ -4,12 +4,13 @@ import { LabelChip } from '@/components/domain/label/label-chip';
 import { Avatar } from '@/components/domain/person/avatar';
 import { EmptyState } from '@/components/page';
 import { INTRODUCTION_DEFAULTS } from '@/lib/defaults';
+import { personName } from '@/lib/person-name';
 
 /** A person and the labels they carry, as a candidate for an introduction. */
 export interface PersonWithLabels {
   id: string;
-  firstName: string;
-  lastName: string;
+  /** The person's name as the server worked it out. Empty when they have none. */
+  displayName: string;
   email: string | null;
   avatarPath?: string | null;
   labels: Array<{ id: string; label: string; color: string }>;
@@ -72,12 +73,13 @@ interface SuggestionRowProps {
 /** One suggested person: their avatar, their name linking to their page, and the labels shared. */
 function SuggestionRow({ suggestion }: SuggestionRowProps) {
   const { person, sharedLabels } = suggestion;
+  const name = person.displayName || person.email || personName(person);
   return (
     <View className="flex-row items-start gap-3 rounded-md border border-foreground/10 px-3 py-2">
-      <Avatar firstName={person.firstName} lastName={person.lastName} avatarPath={person.avatarPath} size="sm" />
+      <Avatar name={name} avatarPath={person.avatarPath} size="sm" />
       <View className="min-w-0 flex-1 gap-1">
         <Link href={`/persons/${person.id}`} className="font-medium text-foreground text-sm">
-          {person.firstName} {person.lastName}
+          {name}
         </Link>
         {person.email ? <Text className="text-foreground/60 text-xs">{person.email}</Text> : null}
         {sharedLabels.length > 0 ? (

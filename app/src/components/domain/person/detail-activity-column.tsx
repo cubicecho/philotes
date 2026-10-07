@@ -62,8 +62,7 @@ export function PersonActivityColumn({
               labels: n.labels ?? [],
               mentions: (n.mentions ?? []).map((m) => ({
                 id: m.id,
-                firstName: m.firstName,
-                lastName: m.lastName,
+                displayName: m.displayName,
               })),
             }))}
             allTags={allLabels}

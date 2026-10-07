@@ -16,7 +16,7 @@ export interface PageSizeSettings {
 
 export const PAGE_SIZE_DEFAULTS: Readonly<PageSizeSettings> = Object.freeze({
   list: 50,
-  peopleExport: 40,
+  peopleExport: 30,
   calendarExport: 500,
   network: 40,
   interactions: 100,

@@ -8,7 +8,7 @@ import {
 } from '@/components/domain/person/detail-queries';
 import { PersonForm, type PersonFormValue } from '@/components/domain/person/form';
 import { FormDialog } from '@/components/ui/form-dialog';
-import { fullName } from '@/lib/person-name';
+import { personName } from '@/lib/person-name';
 
 export interface EditPersonDialogProps {
   /** The person being edited. */
@@ -34,8 +34,16 @@ export function EditPersonDialog({ person, allLabels, open, onOpenChange, onSave
     await updatePerson({
       variables: {
         id,
+        namePrefix: fields.namePrefix,
         firstName: fields.firstName,
+        middleName: fields.middleName,
         lastName: fields.lastName,
+        nameSuffix: fields.nameSuffix,
+        nickname: fields.nickname,
+        organization: fields.organization,
+        jobTitle: fields.jobTitle,
+        department: fields.department,
+        about: fields.about,
         contactFrequency: fields.contactFrequency || null,
         howWeMet: fields.howWeMet || null,
         firstMetDate: fields.firstMetDate || null,
@@ -67,7 +75,7 @@ export function EditPersonDialog({ person, allLabels, open, onOpenChange, onSave
       open={open}
       onOpenChange={onOpenChange}
       title="Edit Person"
-      description={`Update details for ${fullName(person)}.`}
+      description={`Update details for ${personName(person)}.`}
       className="sm:max-w-xl"
     >
       <PersonForm
@@ -78,8 +86,16 @@ export function EditPersonDialog({ person, allLabels, open, onOpenChange, onSave
           __typename: 'Label' as const,
         }))}
         initialValues={{
+          namePrefix: person.namePrefix,
           firstName: person.firstName,
+          middleName: person.middleName,
           lastName: person.lastName,
+          nameSuffix: person.nameSuffix,
+          nickname: person.nickname,
+          organization: person.organization,
+          jobTitle: person.jobTitle,
+          department: person.department,
+          about: person.about,
           labelIds: person.labels.map((l) => l.id),
           contactFrequency: person.contactFrequency,
           howWeMet: person.howWeMet,

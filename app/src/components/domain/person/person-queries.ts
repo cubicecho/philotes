@@ -18,8 +18,7 @@ export const GET_PERSON_NOTES = graphql(`
       }
       mentions(limit: 20) {
         id
-        firstName
-        lastName
+        displayName
       }
     }
   }

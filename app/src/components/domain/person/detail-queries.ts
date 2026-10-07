@@ -14,16 +14,24 @@ export interface DetailLabel {
 /** Another person as a picker names them. */
 export interface PersonStub {
   id: string;
-  firstName: string;
-  lastName: string;
+  displayName: string;
 }
 
 export const GET_PERSON_DETAIL = graphql(`
   query GetPersonDetail($id: UUID!) {
     person(where: { id: { eq: $id } }) {
       id
+      displayName
+      namePrefix
       firstName
+      middleName
       lastName
+      nameSuffix
+      nickname
+      organization
+      jobTitle
+      department
+      about
       avatarPath
       contactFrequency
       howWeMet
@@ -44,6 +52,8 @@ export const GET_PERSON_DETAIL = graphql(`
         name
         description
         date
+        kind
+        hasYear
         recurrence
         milestoneType
         labels(limit: 10) {
@@ -53,8 +63,7 @@ export const GET_PERSON_DETAIL = graphql(`
         }
         taggedPersons(limit: 20) {
           id
-          firstName
-          lastName
+          displayName
         }
       }
       mentionedInNotes(limit: 50) {
@@ -62,16 +71,14 @@ export const GET_PERSON_DETAIL = graphql(`
         body
         person {
           id
-          firstName
-          lastName
+          displayName
         }
       }
       relationships {
         id
         type
         relatedPersonId
-        relatedPersonFirstName
-        relatedPersonLastName
+        relatedPersonDisplayName
       }
       tasks(limit: 200) {
         id
@@ -84,6 +91,7 @@ export const GET_PERSON_DETAIL = graphql(`
       contactInfos(limit: 50) {
         id
         type
+        kind
         value
         label
         isPrimary
@@ -112,8 +120,7 @@ export const GET_ALL_PERSONS = graphql(`
       orderBy: { createdAt: { direction: asc, priority: 1 }, id: { direction: asc, priority: 2 } }
     ) {
       id
-      firstName
-      lastName
+      displayName
       avatarPath
       labels(limit: 20) {
         id
@@ -154,6 +161,8 @@ export const CREATE_IMPORTANT_DATE = graphql(`
     $date: String!
     $personId: UUID!
     $description: String
+    $kind: ImportantDatesKindEnum
+    $hasYear: Boolean
     $recurrence: String
     $milestoneType: ImportantDatesMilestoneTypeEnum
   ) {
@@ -163,6 +172,8 @@ export const CREATE_IMPORTANT_DATE = graphql(`
         date: $date
         personId: $personId
         description: $description
+        kind: $kind
+        hasYear: $hasYear
         recurrence: $recurrence
         milestoneType: $milestoneType
       }
@@ -170,6 +181,8 @@ export const CREATE_IMPORTANT_DATE = graphql(`
       id
       name
       date
+      kind
+      hasYear
       description
       recurrence
       milestoneType
@@ -181,16 +194,32 @@ export const CREATE_IMPORTANT_DATE = graphql(`
 export const UPDATE_PERSON = graphql(`
   mutation UpdatePerson(
     $id: UUID!
-    $firstName: String!
-    $lastName: String!
+    $namePrefix: String
+    $firstName: String
+    $middleName: String
+    $lastName: String
+    $nameSuffix: String
+    $nickname: String
+    $organization: String
+    $jobTitle: String
+    $department: String
+    $about: String
     $contactFrequency: String
     $howWeMet: String
     $firstMetDate: String
   ) {
     updatePerson(
       set: {
+        namePrefix: $namePrefix
         firstName: $firstName
+        middleName: $middleName
         lastName: $lastName
+        nameSuffix: $nameSuffix
+        nickname: $nickname
+        organization: $organization
+        jobTitle: $jobTitle
+        department: $department
+        about: $about
         contactFrequency: $contactFrequency
         howWeMet: $howWeMet
         firstMetDate: $firstMetDate
@@ -198,8 +227,18 @@ export const UPDATE_PERSON = graphql(`
       where: { id: { eq: $id } }
     ) {
       id
+      displayName
+      sortName
+      namePrefix
       firstName
+      middleName
       lastName
+      nameSuffix
+      nickname
+      organization
+      jobTitle
+      department
+      about
       contactFrequency
       howWeMet
       firstMetDate

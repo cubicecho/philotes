@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { buildIcsContent, type CalendarEventsData } from '../lib/ics-export';
 
-const ada = { id: 'p1', firstName: 'Ada', lastName: 'Lovelace' };
+const ada = { id: 'p1', displayName: 'Ada Lovelace' };
 
 function events(overrides: Partial<CalendarEventsData> = {}): CalendarEventsData {
   return { interactions: [], importantDates: [], ...overrides };
@@ -68,6 +68,32 @@ describe('buildIcsContent', () => {
     expect(ics).toContain('DTSTART;VALUE=DATE:18151210');
     expect(ics).toContain('SUMMARY:Birthday (Ada Lovelace)');
     expect(ics).toContain('RRULE:FREQ=YEARLY');
+  });
+
+  it('starts a date with no known year in the current year', () => {
+    const ics = buildIcsContent(
+      events({
+        importantDates: [
+          {
+            id: 'd1',
+            name: 'Birthday',
+            date: new Date(1604, 5, 15),
+            hasYear: false,
+            recurrence: 'yearly',
+            person: ada,
+          },
+        ],
+      }),
+    );
+    expect(ics).toContain(`DTSTART;VALUE=DATE:${new Date().getFullYear()}0615`);
+  });
+
+  it('names a person with no name by a contact detail', () => {
+    const unnamed = { id: 'p2', displayName: '', contactInfos: [{ type: 'email', value: 'ada@example.com' }] };
+    const ics = buildIcsContent(
+      events({ importantDates: [{ id: 'd1', name: 'Birthday', date: new Date(2020, 0, 1), person: unnamed }] }),
+    );
+    expect(ics).toContain('SUMMARY:Birthday (ada@example.com)');
   });
 
   it('only recurs a date whose recurrence is yearly', () => {

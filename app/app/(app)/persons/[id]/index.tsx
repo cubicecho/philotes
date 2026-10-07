@@ -27,7 +27,7 @@ import { Spinner } from '@/components/ui/spinner';
 import { useAvatarUpload } from '@/hooks/use-avatar-upload';
 import { PAGE_SIZE_DEFAULTS } from '@/lib/defaults';
 import { invalidateQueryFields } from '@/lib/invalidate';
-import { fullName } from '@/lib/person-name';
+import { personName } from '@/lib/person-name';
 import { primaryEmail, primaryPhone } from '@/lib/primary-contact';
 import { useAllRows } from '@/lib/use-all-rows';
 
@@ -99,7 +99,7 @@ export default function PersonDetailPage() {
     );
   }
 
-  const personName = fullName(person);
+  const name = personName(person);
   const reload = () => {
     refetch();
     void notesQuery.refetch();
@@ -108,14 +108,12 @@ export default function PersonDetailPage() {
 
   const allPersonStubs = (allPersonsData?.persons ?? []).map((p) => ({
     id: p.id,
-    firstName: p.firstName,
-    lastName: p.lastName,
+    displayName: p.displayName,
   }));
 
   const allPersonsWithLabels = (allPersonsData?.persons ?? []).map((p) => ({
     id: p.id,
-    firstName: p.firstName,
-    lastName: p.lastName,
+    displayName: p.displayName,
     email: primaryEmail(p.contactInfos ?? []),
     avatarPath: p.avatarPath,
     labels: (p.labels ?? []).map((l) => ({
@@ -142,7 +140,7 @@ export default function PersonDetailPage() {
   return (
     <>
       <PageLayout
-        title={personName}
+        title={name}
         breadcrumbsSlot={backLink}
         actionSlot={
           <>
@@ -157,13 +155,13 @@ export default function PersonDetailPage() {
               onPress={() => setEditPersonOpen(true)}
             />
             <ConfirmButton
-              label={`Delete ${personName}`}
+              label={`Delete ${name}`}
               variant="ghost"
               size="icon-sm"
               iconSlot={<Trash2 />}
               disabled={deleting}
-              title={`Delete ${personName}?`}
-              description={`This will permanently delete ${person.firstName} and all their associated data including interactions, notes, tasks, and contact information. This cannot be undone.`}
+              title={`Delete ${name}?`}
+              description={`This will permanently delete ${name} and all their associated data including interactions, notes, tasks, and contact information. This cannot be undone.`}
               onConfirm={handleDeletePerson}
             />
           </>
@@ -172,8 +170,10 @@ export default function PersonDetailPage() {
           <View className="gap-6 py-4">
             {avatarUpload.error ? <Alert variant="destructive" title={avatarUpload.error} /> : null}
             <PersonProfileSummary
-              firstName={person.firstName}
-              lastName={person.lastName}
+              name={name}
+              nickname={person.nickname}
+              work={[person.jobTitle, person.department, person.organization]}
+              about={person.about}
               email={email}
               avatarPath={person.avatarPath}
               contactFrequency={person.contactFrequency}

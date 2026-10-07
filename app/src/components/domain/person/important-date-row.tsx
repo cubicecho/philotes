@@ -3,7 +3,7 @@ import { Link } from 'expo-router';
 import { useState } from 'react';
 import { Text, View } from 'react-native';
 import { graphql } from '@/__generated__/gql';
-import { ImportantDatesMilestoneTypeEnum } from '@/__generated__/graphql';
+import { type ImportantDatesKindEnum, ImportantDatesMilestoneTypeEnum } from '@/__generated__/graphql';
 import { ActionButton } from '@/components/action-button';
 import { ConfirmButton } from '@/components/confirm-button';
 import type { PersonStub } from '@/components/domain/person/detail-queries';
@@ -19,13 +19,15 @@ import { RowTags, type TagOption } from '@/components/domain/person/tag-picker';
 import { Badge } from '@/components/ui/badge';
 import { FormDialog } from '@/components/ui/form-dialog';
 import { Pencil, Trash2 } from '@/components/ui/icons';
-import { parseLocalDay } from '@/lib/local-date';
+import { formatDay, parseLocalDay } from '@/lib/local-date';
 
 const UPDATE_IMPORTANT_DATE = graphql(`
   mutation UpdateImportantDate(
     $id: UUID!
     $name: String!
     $date: String!
+    $kind: ImportantDatesKindEnum
+    $hasYear: Boolean
     $description: String
     $recurrence: String
     $milestoneType: ImportantDatesMilestoneTypeEnum
@@ -34,6 +36,8 @@ const UPDATE_IMPORTANT_DATE = graphql(`
       set: {
         name: $name
         date: $date
+        kind: $kind
+        hasYear: $hasYear
         description: $description
         recurrence: $recurrence
         milestoneType: $milestoneType
@@ -43,6 +47,8 @@ const UPDATE_IMPORTANT_DATE = graphql(`
       id
       name
       date
+      kind
+      hasYear
       description
       recurrence
       milestoneType
@@ -57,6 +63,10 @@ interface ImportantDateRowProps {
   name: string;
   /** The day as `yyyy-MM-dd`. */
   date: string;
+  /** Birthday, anniversary or other. */
+  kind: ImportantDatesKindEnum;
+  /** false when only the month and day are known; the day is then shown without its year. */
+  hasYear: boolean;
   description: string | null | undefined;
   recurrence: string | null | undefined;
   milestoneType: string | null | undefined;
@@ -85,6 +95,8 @@ export function ImportantDateRow({
   personId,
   name,
   date,
+  kind,
+  hasYear,
   description,
   recurrence,
   milestoneType,
@@ -98,6 +110,7 @@ export function ImportantDateRow({
 }: ImportantDateRowProps) {
   const recurrenceLabel = RECURRENCE_OPTIONS.find((o) => o.value === recurrence)?.label;
   const milestoneLabel = MILESTONE_TYPE_OPTIONS.find((o) => o.value === milestoneType)?.label;
+  const day = parseLocalDay(date);
   const [editOpen, setEditOpen] = useState(false);
   const [attachTag] = useMutation(ATTACH_IMPORTANT_DATE_TAG);
   const [detachTag] = useMutation(DETACH_IMPORTANT_DATE_TAG);
@@ -113,6 +126,8 @@ export function ImportantDateRow({
         id,
         name: values.name,
         date: values.date,
+        kind: values.kind,
+        hasYear: values.hasYear,
         description: values.description ?? null,
         recurrence: values.recurrence ?? null,
         milestoneType: milestoneType ?? null,
@@ -137,7 +152,7 @@ export function ImportantDateRow({
               {description && <Text className="text-xs text-foreground/60">{description}</Text>}
             </View>
             <View className="flex-row flex-wrap items-center gap-1.5">
-              <Text className="text-xs text-foreground/60">{parseLocalDay(date)?.toLocaleDateString() ?? date}</Text>
+              <Text className="text-xs text-foreground/60">{day ? formatDay(day, hasYear) : date}</Text>
               {recurrenceLabel && <Badge variant="secondary">{recurrenceLabel}</Badge>}
               {milestoneLabel && <Badge variant="info">{milestoneLabel}</Badge>}
             </View>
@@ -184,6 +199,8 @@ export function ImportantDateRow({
           initialValues={{
             name,
             date,
+            kind,
+            hasYear,
             description: description ?? undefined,
             recurrence: recurrence ?? undefined,
             milestoneType: milestoneType ?? undefined,

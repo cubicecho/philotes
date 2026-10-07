@@ -7,8 +7,7 @@ export const PERSON_RELATIONSHIPS = graphql(`
       id
       type
       relatedPersonId
-      relatedPersonFirstName
-      relatedPersonLastName
+      relatedPersonDisplayName
     }
   }
 `);

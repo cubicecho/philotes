@@ -3,6 +3,7 @@ import { View } from 'react-native';
 import { PageLayout } from '@/components/page-layout';
 import { Section } from '@/components/section';
 import { ApiKeyManager } from '@/components/settings/api-key-manager';
+import { DefaultCountryCard } from '@/components/settings/default-country-card';
 import { ExportCalendarCard } from '@/components/settings/export-calendar-card';
 import { ExportPeopleCard } from '@/components/settings/export-people-card';
 import { GoogleCsvImportCard } from '@/components/settings/google-csv-import-card';
@@ -54,12 +55,15 @@ export default function SettingsPage() {
             <ApiKeyManager />
           </TabsContent>
           <TabsContent value="app">
-            <Section
-              surface="card"
-              title="Appearance"
-              description="Customize how Philotes looks on your device."
-              contentSlot={<ThemePicker />}
-            />
+            <View className="gap-6">
+              <Section
+                surface="card"
+                title="Appearance"
+                description="Customize how Philotes looks on your device."
+                contentSlot={<ThemePicker />}
+              />
+              <DefaultCountryCard />
+            </View>
           </TabsContent>
         </Tabs>
       }

@@ -4,7 +4,7 @@ import { graphql } from '@/__generated__/gql';
 import type { PersonStub } from '@/components/domain/person/detail-queries';
 import { MultiSelect } from '@/components/multi-select';
 import { Alert } from '@/components/ui/alert';
-import { fullName } from '@/lib/person-name';
+import { personName } from '@/lib/person-name';
 
 const TAG_PERSON_ON_DATE = graphql(`
   mutation TagPersonOnImportantDate($importantDateId: UUID!, $personId: UUID!) {
@@ -72,7 +72,7 @@ export function ImportantDatePersons({
         // A tagged person stays an option even when the contacts list has not loaded them yet.
         options={[...taggedPersons, ...candidates.filter((p) => taggedIds.includes(p.id) === false)].map((p) => ({
           value: p.id,
-          label: fullName(p),
+          label: personName(p),
         }))}
         value={taggedIds}
         onValueChange={handleChange}

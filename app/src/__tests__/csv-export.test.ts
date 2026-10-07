@@ -32,8 +32,34 @@ describe('csvCell', () => {
 describe('buildPersonsCsv', () => {
   it('emits only the fixed columns when nobody has contact info', () => {
     const csv = buildPersonsCsv([person()]);
-    expect(rows(csv)[0]).toBe('First Name,Last Name,Birthday,Labels');
-    expect(rows(csv)[1]).toBe('Ada,Lovelace,,');
+    expect(rows(csv)[0]).toBe(
+      'Name Prefix,First Name,Middle Name,Last Name,Name Suffix,Nickname,' +
+        'Organization Name,Organization Title,Organization Department,Birthday,Notes,Labels',
+    );
+    expect(rows(csv)[1]).toBe(',Ada,,Lovelace,,,,,,,,');
+  });
+
+  it('writes every name and work field, and what the user keeps about the person', () => {
+    const csv = buildPersonsCsv([
+      person({
+        namePrefix: 'Dr',
+        middleName: 'King',
+        nameSuffix: 'FRS',
+        nickname: 'Countess',
+        organization: 'Analytical Engines',
+        jobTitle: 'Programmer',
+        department: 'Research',
+        about: 'Met at the Royal Society',
+      }),
+    ]);
+    expect(rows(csv)[1]).toBe(
+      'Dr,Ada,King,Lovelace,FRS,Countess,Analytical Engines,Programmer,Research,,Met at the Royal Society,',
+    );
+  });
+
+  it('writes a company with no name of a person', () => {
+    const csv = buildPersonsCsv([person({ firstName: null, lastName: null, organization: 'Analytical Engines' })]);
+    expect(rows(csv)[1]).toBe(',,,,,,Analytical Engines,,,,,');
   });
 
   it('uses CRLF line endings and one row per person', () => {
@@ -64,7 +90,7 @@ describe('buildPersonsCsv', () => {
       person({
         contactInfos: [
           { type: 'email', label: null, value: 'a@example.com', isPrimary: true },
-          { type: 'mobile', label: 'Cell', value: '555', isPrimary: false },
+          { type: 'phone', kind: 'mobile', label: 'Cell', value: '555', isPrimary: false },
         ],
       }),
     ]);
@@ -73,16 +99,18 @@ describe('buildPersonsCsv', () => {
     expect(row).toContain('Cell,555');
   });
 
-  it('treats phone and mobile as one column group', () => {
+  it('labels a phone number with no label by its kind', () => {
     const csv = buildPersonsCsv([
       person({
         contactInfos: [
           { type: 'phone', label: null, value: '111', isPrimary: false },
-          { type: 'mobile', label: null, value: '222', isPrimary: false },
+          { type: 'phone', kind: 'mobile', label: null, value: '222', isPrimary: false },
+          { type: 'fax', kind: 'work', label: null, value: '333', isPrimary: false },
         ],
       }),
     ]);
     expect(rows(csv)[0]).toContain('Phone 2 - Value');
+    expect(rows(csv)[0]).not.toContain('Phone 3 - Value');
     expect(rows(csv)[1]).toContain('Phone,111,Mobile,222');
   });
 
@@ -90,8 +118,8 @@ describe('buildPersonsCsv', () => {
     const csv = buildPersonsCsv([
       person({
         importantDates: [
-          { name: 'Anniversary', date: new Date(2000, 5, 1), recurrence: 'yearly' },
-          { name: 'Birthday', date: new Date(1815, 11, 10), recurrence: 'yearly' },
+          { name: 'Anniversary', kind: 'anniversary', date: new Date(2000, 5, 1), recurrence: 'yearly' },
+          { name: 'Born', kind: 'birthday', date: new Date(1815, 11, 10), hasYear: true, recurrence: 'yearly' },
         ],
         labels: [
           { id: 'l1', label: 'Friend', color: '#fff' },
@@ -99,7 +127,14 @@ describe('buildPersonsCsv', () => {
         ],
       }),
     ]);
-    expect(rows(csv)[1]).toBe('Ada,Lovelace,1815-12-10,Friend ::: Work');
+    expect(rows(csv)[1]).toBe(',Ada,,Lovelace,,,,,,1815-12-10,,Friend ::: Work');
+  });
+
+  it('writes a birthday with no known year as a month and day', () => {
+    const csv = buildPersonsCsv([
+      person({ importantDates: [{ name: 'Birthday', kind: 'birthday', date: new Date(1604, 5, 15), hasYear: false }] }),
+    ]);
+    expect(rows(csv)[1]).toBe(',Ada,,Lovelace,,,,,,--06-15,,');
   });
 
   it('labels an address by its type when it has no label of its own', () => {
@@ -122,6 +157,6 @@ describe('buildPersonsCsv', () => {
 
   it('quotes a value that contains a comma', () => {
     const csv = buildPersonsCsv([person({ lastName: 'Lovelace, Countess' })]);
-    expect(rows(csv)[1]).toBe('Ada,"Lovelace, Countess",,');
+    expect(rows(csv)[1]).toBe(',Ada,,"Lovelace, Countess",,,,,,,,');
   });
 });

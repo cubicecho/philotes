@@ -1,11 +1,10 @@
 import * as d3 from 'd3';
 import type { Dispatch, SetStateAction } from 'react';
 import { nameToColor } from '@/lib/name-color';
-import { fullName } from '@/lib/person-name';
+import { initialsOf, personName } from '@/lib/person-name';
 import {
   GRAPH,
   type GraphData,
-  getInitials,
   getNodeRadius,
   linkEndId,
   resolvedNode,
@@ -228,7 +227,7 @@ export function drawGraph({
 
   nodeGroup.call(drag);
 
-  const nodeColor = (d: SimNode) => d.labels[0]?.color ?? nameToColor(fullName(d));
+  const nodeColor = (d: SimNode) => d.labels[0]?.color ?? nameToColor(personName(d));
 
   // Outer ring for well-connected hub nodes (drawn before main circle so it sits underneath)
   nodeGroup
@@ -252,7 +251,7 @@ export function drawGraph({
   // Initials text centred inside the circle
   nodeGroup
     .append('text')
-    .text((d) => getInitials(d.firstName, d.lastName))
+    .text((d) => initialsOf(personName(d)))
     .attr('text-anchor', 'middle')
     .attr('dominant-baseline', 'central')
     .attr('fill', '#fff')
@@ -265,7 +264,7 @@ export function drawGraph({
   // Full name label below node — paint-order halo keeps it readable over any bg
   nodeGroup
     .append('text')
-    .text((d) => fullName(d))
+    .text((d) => personName(d))
     .attr('text-anchor', 'middle')
     .attr('dominant-baseline', 'hanging')
     .attr('fill', 'var(--foreground)')

@@ -3,14 +3,13 @@
 
 import { CALENDAR_EXPORT_DEFAULTS } from '@/lib/defaults';
 import { localIsoDate } from '@/lib/local-date';
+import { type NamedPerson, personName } from '@/lib/person-name';
 import { MS_PER_MINUTE } from '@/lib/time';
 import { Recurrence } from '@/lib/vocabulary';
 
 /** The person an exported event is about. */
-export interface CalendarPerson {
+export interface CalendarPerson extends NamedPerson {
   id: string;
-  firstName: string;
-  lastName?: string | null;
 }
 
 /** An interaction, as the calendar export reads it. */
@@ -29,6 +28,8 @@ export interface CalendarImportantDate {
   description?: string | null;
   /** Local midnight of the calendar day. */
   date: Date;
+  /** False when only the month and day are known; the year of `date` then means nothing. */
+  hasYear?: boolean | null;
   recurrence?: string | null;
   milestoneType?: string | null;
   person?: CalendarPerson | null;
@@ -44,13 +45,13 @@ export interface CalendarEventsData {
  * Writes the name an event shows for its person.
  *
  * @param [person] - The person, when the event has one.
- * @returns First and last name, or "Unknown" when there is no person.
+ * @returns The person's name as shown, or "Unknown" when there is no person.
  */
 function buildCalendarPersonName(person?: CalendarPerson | null): string {
   if (!person) {
     return 'Unknown';
   }
-  return [person.firstName, person.lastName].filter(Boolean).join(' ');
+  return personName(person);
 }
 
 /**
@@ -94,9 +95,9 @@ function escapeIcsText(text: string): string {
  * @returns The event's lines, joined by CRLF.
  */
 function buildInteractionEvent(interaction: CalendarInteraction, now: string): string {
-  const personName = buildCalendarPersonName(interaction.person);
+  const who = buildCalendarPersonName(interaction.person);
   const summary = escapeIcsText(
-    `${interaction.channel.charAt(0).toUpperCase()}${interaction.channel.slice(1)} with ${personName}`,
+    `${interaction.channel.charAt(0).toUpperCase()}${interaction.channel.slice(1)} with ${who}`,
   );
   const dtStart = formatIcsDateTime(interaction.occurredAt);
   const dtEnd = formatIcsDateTime(
@@ -164,6 +165,27 @@ function recurrenceRule(date: Date, recurrence: string | null | undefined): stri
 }
 
 /**
+ * Picks the day an important date's event starts on. A date with no known year starts this year, since
+ * the year it is stored under is a placeholder a calendar would show as the event's first occurrence.
+ * A 29 February starts on the 28th in a year that has no leap day.
+ *
+ * @param importantDate - The date to write.
+ * @returns Local midnight of the first occurrence.
+ */
+function firstOccurrence(importantDate: CalendarImportantDate): Date {
+  const { date } = importantDate;
+  const isDated = importantDate.hasYear !== false;
+  if (isDated) {
+    return date;
+  }
+  const year = new Date().getFullYear();
+  const thisYear = new Date(year, date.getMonth(), date.getDate());
+  const isSameMonth = thisYear.getMonth() === date.getMonth();
+  // Day zero of the next month is the last day of this one.
+  return isSameMonth ? thisYear : new Date(year, date.getMonth() + 1, 0);
+}
+
+/**
  * Builds the all-day VEVENT for an important date, repeating as the date does.
  *
  * @param importantDate - The date to write.
@@ -171,9 +193,9 @@ function recurrenceRule(date: Date, recurrence: string | null | undefined): stri
  * @returns The event's lines, joined by CRLF.
  */
 function buildImportantDateEvent(importantDate: CalendarImportantDate, now: string): string {
-  const personName = buildCalendarPersonName(importantDate.person);
-  const summary = escapeIcsText(`${importantDate.name} (${personName})`);
-  const dtStart = formatIcsDateOnly(importantDate.date);
+  const who = buildCalendarPersonName(importantDate.person);
+  const summary = escapeIcsText(`${importantDate.name} (${who})`);
+  const dtStart = formatIcsDateOnly(firstOccurrence(importantDate));
   const lines = [
     'BEGIN:VEVENT',
     `UID:importantdate-${importantDate.id}@philotes`,

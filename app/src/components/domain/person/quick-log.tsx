@@ -2,13 +2,11 @@ import { useMutation } from '@apollo/client';
 import { InteractionForm, type InteractionFormValues } from '@/components/domain/person/interaction-form';
 import { CREATE_INTERACTION } from '@/components/domain/person/interactions';
 import { FormDialog } from '@/components/ui/form-dialog';
-import { fullName } from '@/lib/person-name';
+import { type NamedPerson, personName } from '@/lib/person-name';
 
 /** The person an interaction is being logged with. */
-export interface QuickLogPerson {
+export interface QuickLogPerson extends NamedPerson {
   id: string;
-  firstName: string;
-  lastName: string;
 }
 
 interface QuickLogDialogProps {
@@ -51,7 +49,7 @@ export function QuickLogDialog({ person, onClose, onLogged }: QuickLogDialogProp
         }
       }}
       title="Log Interaction"
-      description={person ? `Record a contact with ${fullName(person)}.` : undefined}
+      description={person ? `Record a contact with ${personName(person)}.` : undefined}
     >
       {/* Tags are left to the person's page: the list does not load them. */}
       {person && <InteractionForm personId={person.id} allTags={[]} onSubmit={handleSubmit} onCancel={onClose} />}

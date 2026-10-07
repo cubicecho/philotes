@@ -16,16 +16,24 @@ const GET_EXPORT_PERSONS = graphql(`
       limit: $limit
       offset: $offset
       orderBy: {
-        lastName: { direction: asc, priority: 1 }
-        firstName: { direction: asc, priority: 2 }
-        id: { direction: asc, priority: 3 }
+        sortName: { direction: asc, priority: 1 }
+        id: { direction: asc, priority: 2 }
       }
     ) {
       id
+      namePrefix
       firstName
+      middleName
       lastName
+      nameSuffix
+      nickname
+      organization
+      jobTitle
+      department
+      about
       contactInfos(limit: 20) {
         type
+        kind
         label
         value
         isPrimary
@@ -40,9 +48,11 @@ const GET_EXPORT_PERSONS = graphql(`
         postalCode
         country
       }
-      importantDates(where: { name: { eq: "Birthday" } }, limit: 5) {
+      importantDates(where: { kind: { eq: birthday } }, limit: 5) {
         name
+        kind
         date
+        hasYear
         recurrence
       }
       labels(limit: 20) {

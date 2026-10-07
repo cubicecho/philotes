@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Text, View } from 'react-native';
 import { LabelChip } from '@/components/domain/label/label-chip';
 import { Button } from '@/components/ui/button';
+import { personName } from '@/lib/person-name';
 import { primaryEmail } from '@/lib/primary-contact';
 import { drawGraph } from './graph-drawing';
 import { buildGraphData, GRAPH, type SimLink, type SimNode, type TooltipState } from './graph-model';
@@ -110,9 +111,7 @@ export function NetworkGraph({ persons, onOpenPerson }: NetworkGraphProps) {
           className="absolute min-w-40 rounded-lg border border-foreground/10 bg-secondary px-3 py-2 shadow-lg"
           style={{ left: tooltip.x + GRAPH.tooltipOffsetX, top: tooltip.y - GRAPH.tooltipOffsetY }}
         >
-          <Text className="font-semibold text-foreground text-sm">
-            {tooltip.person.firstName} {tooltip.person.lastName}
-          </Text>
+          <Text className="font-semibold text-foreground text-sm">{personName(tooltip.person)}</Text>
           {tooltipEmail ? <Text className="mt-0.5 text-foreground/60 text-xs">{tooltipEmail}</Text> : null}
           {tooltip.person.labels.length > 0 && (
             <View className="mt-1.5 flex-row flex-wrap gap-1">

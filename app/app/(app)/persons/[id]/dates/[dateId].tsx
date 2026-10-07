@@ -13,6 +13,7 @@ import { Section } from '@/components/section';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft } from '@/components/ui/icons';
 import { Spinner } from '@/components/ui/spinner';
+import { formatDay } from '@/lib/local-date';
 import { useAllRows } from '@/lib/use-all-rows';
 
 const GET_DATE_DETAIL = graphql(`
@@ -22,6 +23,7 @@ const GET_DATE_DETAIL = graphql(`
       name
       description
       date
+      hasYear
       recurrence
       labels(limit: 10) {
         id
@@ -31,20 +33,6 @@ const GET_DATE_DETAIL = graphql(`
     }
   }
 `);
-
-/**
- * Writes a date in full, in the reader's locale.
- *
- * @param date - The date to write.
- * @returns The date with a long month name, such as "March 9, 2026" in US English.
- */
-function formatDate(date: Date): string {
-  return date.toLocaleDateString(undefined, {
-    month: 'long',
-    day: 'numeric',
-    year: 'numeric',
-  });
-}
 
 /** What stands in for the page until there is a date: the failure, a spinner, or "not found". */
 function DatePlaceholder({
@@ -106,10 +94,12 @@ export default function ImportantDateDetailPage() {
     .map((note) => ({ id: note.id, body: note.body, labels: note.labels ?? [] }))
     .filter((note) => note.labels.some((l) => dateLabelIds.has(l.id)));
 
+  const dayLabel = formatDay(date.date, date.hasYear);
+
   return (
     <PageLayout
       title={date.name}
-      description={recurrenceLabel ? `${formatDate(date.date)} · ${recurrenceLabel}` : formatDate(date.date)}
+      description={recurrenceLabel ? `${dayLabel} · ${recurrenceLabel}` : dayLabel}
       iconSlot={<CalendarDays />}
       breadcrumbsSlot={backLink}
       contentSlot={

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { ScrollView } from 'react-native';
 import { z } from 'zod';
 import type { Label_ListFragment } from '@/__generated__/graphql';
 import { useAppForm } from '@/components/app-form';
@@ -27,10 +28,36 @@ const FREQUENCY_SELECT_OPTIONS = CONTACT_FREQUENCY_OPTIONS.map((opt) => ({
   label: opt.label,
 }));
 
+/** The text fields that say who a person is and where they work, each stored as null when left empty. */
+const TEXT_FIELDS = [
+  'namePrefix',
+  'firstName',
+  'middleName',
+  'lastName',
+  'nameSuffix',
+  'nickname',
+  'organization',
+  'jobTitle',
+  'department',
+  'about',
+] as const;
+type TextField = (typeof TEXT_FIELDS)[number];
+
+/** The fields a person can be called by. A new person needs one of them, as the server requires. */
+const NAMING_FIELDS = ['firstName', 'lastName', 'nickname', 'organization'] as const satisfies readonly TextField[];
+
 /** What the person form must hold before it submits. */
 const personSchema = z.object({
-  firstName: z.string().min(1, 'First name is required.'),
-  lastName: z.string().min(1, 'Last name is required.'),
+  namePrefix: z.string(),
+  firstName: z.string(),
+  middleName: z.string(),
+  lastName: z.string(),
+  nameSuffix: z.string(),
+  nickname: z.string(),
+  organization: z.string(),
+  jobTitle: z.string(),
+  department: z.string(),
+  about: z.string(),
   email: z.union([z.literal(''), z.string().trim().email('Please enter a valid email address.')]),
   contactFrequency: z.string(),
   howWeMet: z.string(),
@@ -40,6 +67,9 @@ const personSchema = z.object({
 
 /** The person form's values while it is being edited. */
 type PersonFormFields = z.infer<typeof personSchema>;
+
+/** What a new person's name fields say when all of them are empty. */
+const UNNAMED_MESSAGE = 'Give a name, a nickname or an organization.';
 
 /**
  * `YYYY-MM-DD` read as a local day: `new Date(str)` would be UTC midnight, the day before out west.
@@ -75,9 +105,7 @@ function formatDay(date: Date): string {
 }
 
 /** The person columns the form submits. */
-export interface PersonFormPerson {
-  firstName: string;
-  lastName: string;
+export interface PersonFormPerson extends Record<TextField, string | null> {
   /** `null` when no cadence is chosen. */
   contactFrequency?: string | null;
   howWeMet?: string | null;
@@ -94,9 +122,7 @@ export interface PersonFormValue {
 }
 
 /** A stored person's values, to start an edit from. */
-export interface PersonFormInitialValues {
-  firstName: string;
-  lastName: string;
+export interface PersonFormInitialValues extends Partial<Record<TextField, string | null>> {
   labelIds?: string[];
   contactFrequency?: string | null;
   howWeMet?: string | null;
@@ -120,8 +146,16 @@ export function PersonForm({ availableLabels, initialValues, submitLabel, onSubm
   const [formError, setFormError] = useState<string | null>(null);
 
   const defaultValues: PersonFormFields = {
+    namePrefix: initialValues?.namePrefix ?? '',
     firstName: initialValues?.firstName ?? '',
+    middleName: initialValues?.middleName ?? '',
     lastName: initialValues?.lastName ?? '',
+    nameSuffix: initialValues?.nameSuffix ?? '',
+    nickname: initialValues?.nickname ?? '',
+    organization: initialValues?.organization ?? '',
+    jobTitle: initialValues?.jobTitle ?? '',
+    department: initialValues?.department ?? '',
+    about: initialValues?.about ?? '',
     email: '',
     contactFrequency: initialValues?.contactFrequency || NO_FREQUENCY,
     howWeMet: initialValues?.howWeMet ?? '',
@@ -129,18 +163,35 @@ export function PersonForm({ availableLabels, initialValues, submitLabel, onSubm
     labelIds: initialValues?.labelIds ?? [],
   };
 
+  const isEdit = initialValues !== undefined;
+
   const form = useAppForm({
     defaultValues,
     validators: {
       onSubmit: personSchema,
     },
     onSubmit: async ({ value }) => {
+      // A new person has to have something to be called by, as the server requires. A stored one may
+      // have nothing: a contact a phone synced with only a number.
+      const isNamed = isEdit || NAMING_FIELDS.some((field) => value[field].trim() !== '');
+      if (isNamed === false) {
+        setFormError(UNNAMED_MESSAGE);
+        return;
+      }
       setFormError(null);
       try {
         await onSubmit({
           person: {
-            firstName: value.firstName,
-            lastName: value.lastName,
+            namePrefix: value.namePrefix.trim() || null,
+            firstName: value.firstName.trim() || null,
+            middleName: value.middleName.trim() || null,
+            lastName: value.lastName.trim() || null,
+            nameSuffix: value.nameSuffix.trim() || null,
+            nickname: value.nickname.trim() || null,
+            organization: value.organization.trim() || null,
+            jobTitle: value.jobTitle.trim() || null,
+            department: value.department.trim() || null,
+            about: value.about.trim() || null,
             contactFrequency: value.contactFrequency === NO_FREQUENCY ? null : value.contactFrequency,
             howWeMet: value.howWeMet || null,
             firstMetDate: value.firstMetDate ? formatDay(value.firstMetDate) : null,
@@ -161,56 +212,82 @@ export function PersonForm({ availableLabels, initialValues, submitLabel, onSubm
     },
   });
 
-  const isEdit = initialValues !== undefined;
   const label = submitLabel ?? (isEdit ? 'Save' : 'Create');
 
   return (
     <form.AppForm>
       <Form className="gap-4">
-        <FieldRow>
-          <form.AppField name="firstName">{(field) => <field.InputField label="First Name" />}</form.AppField>
-          <form.AppField name="lastName">{(field) => <field.InputField label="Last Name" />}</form.AppField>
-        </FieldRow>
-        {/* A stored person's addresses are edited with their other contact details, on their page. */}
-        {isEdit ? null : (
-          <form.AppField name="email">
-            {(field) => <field.InputField label="Email (optional)" type="email" autoCapitalize="none" />}
+        {/* The fields outgrow a short screen. They scroll, and the buttons under them stay put. */}
+        <ScrollView className="max-h-[60vh]" contentContainerClassName="gap-4 p-1" keyboardShouldPersistTaps="handled">
+          <FieldRow>
+            <form.AppField name="firstName">{(field) => <field.InputField label="First Name" />}</form.AppField>
+            <form.AppField name="lastName">{(field) => <field.InputField label="Last Name" />}</form.AppField>
+          </FieldRow>
+          <FieldRow>
+            <form.AppField name="namePrefix">{(field) => <field.InputField label="Prefix" />}</form.AppField>
+            <form.AppField name="middleName">{(field) => <field.InputField label="Middle Name" />}</form.AppField>
+            <form.AppField name="nameSuffix">{(field) => <field.InputField label="Suffix" />}</form.AppField>
+          </FieldRow>
+          <form.AppField name="nickname">{(field) => <field.InputField label="Nickname" />}</form.AppField>
+          <FieldRow>
+            <form.AppField name="organization">{(field) => <field.InputField label="Organization" />}</form.AppField>
+            <form.AppField name="jobTitle">{(field) => <field.InputField label="Job Title" />}</form.AppField>
+          </FieldRow>
+          <form.AppField name="department">{(field) => <field.InputField label="Department" />}</form.AppField>
+          {/* A stored person's addresses are edited with their other contact details, on their page. */}
+          {isEdit ? null : (
+            <form.AppField name="email">
+              {(field) => <field.InputField label="Email (optional)" type="email" autoCapitalize="none" />}
+            </form.AppField>
+          )}
+          <form.AppField name="contactFrequency">
+            {(field) => <field.SelectField label="Contact Frequency" options={FREQUENCY_SELECT_OPTIONS} />}
           </form.AppField>
-        )}
-        <form.AppField name="contactFrequency">
-          {(field) => <field.SelectField label="Contact Frequency" options={FREQUENCY_SELECT_OPTIONS} />}
-        </form.AppField>
-        <form.AppField name="howWeMet">
-          {(field) => (
-            <field.TextareaField label="How We Met (optional)" rows={3} placeholder="Share the story of how you met…" />
-          )}
-        </form.AppField>
-        <form.AppField name="firstMetDate">
-          {(field) => (
-            <field.DateTimeField label="First Met Date (optional)" mode="date" clearable placeholder="Pick a date" />
-          )}
-        </form.AppField>
-        {availableLabels.length > 0 && (
-          <form.AppField name="labelIds">
+          <form.AppField name="howWeMet">
             {(field) => (
-              <FieldWrapper
-                label="Labels"
-                asGroup
-                controlSlot={
-                  <MultiSelect
-                    options={availableLabels.map((l) => ({ value: l.id, label: l.label, color: l.color }))}
-                    value={field.state.value}
-                    onValueChange={(next) => field.handleChange(next)}
-                    onBlur={field.handleBlur}
-                    placeholder="Add labels…"
-                    searchLabel="Search labels"
-                    popoverLabel="Labels"
-                  />
-                }
+              <field.TextareaField
+                label="How We Met (optional)"
+                rows={3}
+                placeholder="Share the story of how you met…"
               />
             )}
           </form.AppField>
-        )}
+          <form.AppField name="about">
+            {(field) => (
+              <field.TextareaField
+                label="About (optional)"
+                rows={3}
+                placeholder="Anything worth keeping with the contact…"
+              />
+            )}
+          </form.AppField>
+          <form.AppField name="firstMetDate">
+            {(field) => (
+              <field.DateTimeField label="First Met Date (optional)" mode="date" clearable placeholder="Pick a date" />
+            )}
+          </form.AppField>
+          {availableLabels.length > 0 && (
+            <form.AppField name="labelIds">
+              {(field) => (
+                <FieldWrapper
+                  label="Labels"
+                  asGroup
+                  controlSlot={
+                    <MultiSelect
+                      options={availableLabels.map((l) => ({ value: l.id, label: l.label, color: l.color }))}
+                      value={field.state.value}
+                      onValueChange={(next) => field.handleChange(next)}
+                      onBlur={field.handleBlur}
+                      placeholder="Add labels…"
+                      searchLabel="Search labels"
+                      popoverLabel="Labels"
+                    />
+                  }
+                />
+              )}
+            </form.AppField>
+          )}
+        </ScrollView>
         <FormDialogFooter onCancel={onCancel} error={formError}>
           <form.SubmitButton
             isEdit={isEdit}

@@ -1,13 +1,14 @@
 import { Link } from 'expo-router';
 import { Text, View } from 'react-native';
 import { EXCERPT_DEFAULTS } from '@/lib/defaults';
+import { personName } from '@/lib/person-name';
 
 /** A note on someone else's page that mentions this person. */
 export interface MentionedInNote {
   id: string;
   body: string;
   /** Whose note it is; the “by” line is not drawn without one. */
-  person?: { id: string; firstName: string; lastName: string } | null;
+  person?: { id: string; displayName: string } | null;
 }
 
 export interface PersonMentionedInProps {
@@ -28,7 +29,7 @@ export function PersonMentionedIn({ notes }: PersonMentionedInProps) {
             <Text className="text-foreground/60 text-xs">
               by{' '}
               <Link href={`/persons/${n.person.id}`} className="text-foreground/80 underline">
-                {n.person.firstName} {n.person.lastName}
+                {personName(n.person)}
               </Link>
             </Text>
           ) : null}
