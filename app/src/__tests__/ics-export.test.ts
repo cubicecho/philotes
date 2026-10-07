@@ -101,6 +101,19 @@ describe('buildIcsContent', () => {
     expect(ics).toContain('RRULE:FREQ=MONTHLY;BYMONTHDAY=28,29,30,31;BYSETPOS=-1');
   });
 
+  it('keeps a yearly 29 February on the 28th outside a leap year', () => {
+    const ics = buildIcsContent(
+      events({
+        importantDates: [
+          { id: 'd1', name: 'Birthday', date: new Date(2020, 1, 29), recurrence: 'yearly', person: ada },
+          { id: 'd2', name: 'Birthday', date: new Date(2020, 1, 28), recurrence: 'yearly', person: ada },
+        ],
+      }),
+    );
+    expect(ics).toContain('RRULE:FREQ=YEARLY;BYMONTH=2;BYMONTHDAY=28,29;BYSETPOS=-1\r\n');
+    expect(ics).toContain('RRULE:FREQ=YEARLY\r\n');
+  });
+
   it('escapes the characters RFC 5545 reserves', () => {
     const ics = buildIcsContent(
       events({

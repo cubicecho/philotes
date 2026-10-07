@@ -47,8 +47,9 @@ import type { Person, NewPerson } from '@cubicecho/philotes-db';
 > `@cubicecho/philotes-db` exports its TypeScript sources. Node runs them directly, so an
 > edit under `db/src` needs no build.
 
-**Importing `@cubicecho/philotes-db` opens a database.** Never import it from a test;
-stub it with `vi.mock('@cubicecho/philotes-db')`. See
+**Importing `@cubicecho/philotes-db` opens a database.** Never import it from a test,
+and do not mock it either. Import tables from `@cubicecho/philotes-db/schema` and get a
+database from `createTestDb()` in `server/src/__tests__/helpers.ts`. See
 [`AGENTS.md`](../AGENTS.md#testing).
 
 ## Tables

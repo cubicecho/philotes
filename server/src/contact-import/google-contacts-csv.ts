@@ -22,7 +22,7 @@ export interface ParsedContact {
   }>;
   /** As `YYYY-MM-DD`, or null when the row has none or gives no year. */
   birthday: string | null;
-  /** Lower-cased, each once, without Google's own "my contacts" group. */
+  /** In the case the file gave them, each once whatever its case, without Google's own "my contacts" group. */
   labels: string[];
 }
 
@@ -347,7 +347,7 @@ export function parseGoogleContactsCsv(csvText: string): {
     // Parse birthday
     const birthday = parseBirthday(col(row, 'Birthday'));
 
-    // Parse labels — split on " ::: ", strip "* " prefix, lowercase, dedupe
+    // Parse labels — split on " ::: ", strip "* " prefix, dedupe whatever the case
     const rawLabelsCell = col(row, 'Labels');
     const parsedLabels: string[] = [];
     if (rawLabelsCell) {
@@ -373,7 +373,7 @@ export function parseGoogleContactsCsv(csvText: string): {
           continue;
         }
         seenLabels.add(lower);
-        parsedLabels.push(lower);
+        parsedLabels.push(stripped);
       }
     }
 

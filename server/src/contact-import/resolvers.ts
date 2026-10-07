@@ -112,7 +112,9 @@ export function applyImportContactsExtension(schema: GraphQLSchema): GraphQLSche
 
       // Insert any labels not already in the DB (user-scoped)
       for (const name of allLabelNames) {
-        const isKnownLabel = labelNameToId.has(name);
+        // A label is the same one whatever its case, and the first spelling met is the one kept.
+        const key = name.toLowerCase();
+        const isKnownLabel = labelNameToId.has(key);
         if (isKnownLabel) {
           continue;
         }
@@ -123,7 +125,7 @@ export function applyImportContactsExtension(schema: GraphQLSchema): GraphQLSche
           .returning({ id: dbSchema.labels.id });
 
         if (inserted) {
-          labelNameToId.set(name, inserted.id);
+          labelNameToId.set(key, inserted.id);
         }
       }
     }
@@ -374,7 +376,7 @@ async function insertBirthday(db: DB, personId: string, userId: string, contact:
  * @param db - Drizzle client.
  * @param personId - The person to tag.
  * @param userId - The user importing the contact, who owns the labels.
- * @param labelNames - The contact's label names, lower-cased.
+ * @param labelNames - The contact's label names, in the case the file gave them.
  * @param labelNameToId - The user's labels by lower-cased name. A name missing from it is passed over.
  * @returns Resolves once the tags are in.
  */
@@ -391,7 +393,7 @@ async function insertPersonLabels(
 
   const rows: dbSchema.NewPersonLabel[] = [];
   for (const name of labelNames) {
-    const labelId = labelNameToId.get(name);
+    const labelId = labelNameToId.get(name.toLowerCase());
     if (!labelId) {
       continue;
     }

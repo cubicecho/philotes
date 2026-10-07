@@ -52,4 +52,28 @@ describe('importGoogleContacts', () => {
       .where(eq(dbSchema.contactInfos.userId, firstUserId));
     expect(details.map((row) => row.value).sort()).toEqual(CONTACT_VALUES);
   });
+
+  it('creates a label in the case the file gives it, and reuses one that differs only by case', async () => {
+    const userId = await createUser(db, 'labels@example.com');
+    await db.insert(dbSchema.labels).values({ label: 'family', color: '#6b7280', userId });
+    const csv = ['First Name,Last Name,Labels', 'Grace,Hopper,Family ::: Book Club', 'Alan,Turing,book club'].join(
+      '\n',
+    );
+
+    const result = await createClient(db, userId).run(IMPORT, { csv });
+
+    expect(result.errors).toBeUndefined();
+    const labels: Array<{ id: string; label: string }> = await db
+      .select({ id: dbSchema.labels.id, label: dbSchema.labels.label })
+      .from(dbSchema.labels)
+      .where(eq(dbSchema.labels.userId, userId));
+    expect(labels.map((row) => row.label).sort()).toEqual(['Book Club', 'family']);
+    const tagged: Array<{ labelId: string }> = await db
+      .select({ labelId: dbSchema.personLabels.labelId })
+      .from(dbSchema.personLabels)
+      .where(eq(dbSchema.personLabels.userId, userId));
+    const bookClubId = labels.find((row) => row.label === 'Book Club')?.id;
+    expect(tagged.filter((row) => row.labelId === bookClubId)).toHaveLength(2);
+    expect(tagged).toHaveLength(3);
+  });
 });

@@ -224,12 +224,12 @@ function computeOpenTasks(persons: DashboardPerson[]): OpenTask[] {
  * Lists the people added most recently, newest first.
  *
  * @param persons - Everyone on the dashboard.
- * @returns At most one fewer than `widgetLimit` people.
+ * @returns The first `widgetLimit` people.
  */
 function computeRecentlyAdded(persons: DashboardPerson[]): RecentPerson[] {
   return [...persons]
     .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
-    .slice(0, widgetLimit - 1)
+    .slice(0, widgetLimit)
     .map((p) => ({
       id: p.id,
       firstName: p.firstName,
