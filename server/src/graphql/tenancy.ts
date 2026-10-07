@@ -1,7 +1,7 @@
 import { db, schema as dbSchema } from '@philotes/db';
 import type { BuildSchemaConfig, RowScope } from '@vantreeseba/drizzle-graphql';
 import { eq, inArray } from 'drizzle-orm';
-import { requireAuth } from '../auth/resolvers.ts';
+import { requireAuth } from '../core/errors.ts';
 import type { Context } from './handler.ts';
 
 // Multi-tenancy, expressed as drizzle-graphql configuration rather than as

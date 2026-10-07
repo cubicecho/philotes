@@ -1,7 +1,7 @@
 import { schema as dbSchema } from '@philotes/db';
 import { and, eq } from 'drizzle-orm';
 import { extendSchema, type GraphQLObjectType, type GraphQLSchema, parse } from 'graphql';
-import { requireAuth } from '../auth/resolvers.ts';
+import { errorMessage, requireAuth } from '../core/errors.ts';
 import type { Context } from '../graphql/handler.ts';
 import { type ParsedContact, parseGoogleContactsCsv } from './google-contacts-csv.ts';
 
@@ -22,7 +22,7 @@ function reportFailure(errors: string[], summary: string, err: unknown): void {
 }
 
 function isUniqueViolation(err: unknown): boolean {
-  const msg = err instanceof Error ? err.message : String(err);
+  const msg = errorMessage(err);
   const causeMsg = err instanceof Error && err.cause instanceof Error ? err.cause.message : '';
   return (
     msg.includes('unique') || msg.includes('duplicate') || causeMsg.includes('unique') || causeMsg.includes('duplicate')

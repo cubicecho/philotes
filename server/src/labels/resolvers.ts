@@ -1,7 +1,7 @@
 import { schema as dbSchema } from '@philotes/db';
 import { and, eq, inArray } from 'drizzle-orm';
-import { extendSchema, GraphQLError, type GraphQLSchema, parse } from 'graphql';
-import { requireAuth } from '../auth/resolvers.ts';
+import { extendSchema, type GraphQLSchema, parse } from 'graphql';
+import { notFound, requireAuth } from '../core/errors.ts';
 import type { Context } from '../graphql/handler.ts';
 
 const MERGE_LABELS_SDL = `
@@ -81,7 +81,7 @@ export function applyMergeLabelsExtension(schema: GraphQLSchema): GraphQLSchema 
     const ownedIds = new Set(owned.map((l) => l.id));
     const isForeignLabel = ownedIds.has(keepId) === false || ownedIds.has(deleteId) === false;
     if (isForeignLabel) {
-      throw new GraphQLError('Label not found');
+      throw notFound('Label not found');
     }
 
     const returnKept = async () => {

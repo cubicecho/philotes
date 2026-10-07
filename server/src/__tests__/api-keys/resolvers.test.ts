@@ -1,6 +1,7 @@
 import { apiKeys, db } from '@philotes/db';
 import { eq } from 'drizzle-orm';
 import { beforeAll, describe, expect, it } from 'vitest';
+import { ErrorCode } from '../../core/errors.ts';
 import { createUser, migrateTestDatabase, run } from '../helpers.ts';
 
 const CREATE = 'mutation ($input: CreateApiKeyInput!) { myCreateApiKey(input: $input) { apiKey { id } } }';
@@ -45,7 +46,8 @@ describe('myRevokeApiKey', () => {
     const foreign = await run(strangerId, REVOKE, { id: keyId });
     const missing = await run(strangerId, REVOKE, { id: UNKNOWN_ID });
 
-    expect(foreign.errors?.[0].message).toBe('API key not found');
+    expect(foreign.errors?.[0].extensions.code).toBe(ErrorCode.NotFound);
+    expect(missing.errors?.[0].extensions.code).toBe(ErrorCode.NotFound);
     expect(missing.errors?.[0].message).toBe(foreign.errors?.[0].message);
     const [row] = await db.select({ revokedAt: apiKeys.revokedAt }).from(apiKeys).where(eq(apiKeys.id, keyId));
     expect(row.revokedAt).toBeNull();

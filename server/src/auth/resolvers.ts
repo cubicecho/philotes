@@ -1,7 +1,8 @@
 import { schema as dbSchema } from '@philotes/db';
 import { eq } from 'drizzle-orm';
-import { extendSchema, GraphQLError, type GraphQLObjectType, type GraphQLSchema, parse } from 'graphql';
+import { extendSchema, type GraphQLObjectType, type GraphQLSchema, parse } from 'graphql';
 import jwt from 'jsonwebtoken';
+import { unauthenticated } from '../core/errors.ts';
 import type { Context } from '../graphql/handler.ts';
 
 const JWT_SECRET = process.env.JWT_SECRET ?? 'dev-secret-change-in-production';
@@ -59,15 +60,6 @@ export function extractUserId(req: { headers: { authorization?: string } }): str
   return verifyToken(auth.slice(7))?.userId ?? null;
 }
 
-export function requireAuth(ctx: Context): string {
-  if (!ctx.userId) {
-    throw new GraphQLError('Unauthenticated', {
-      extensions: { code: 'UNAUTHENTICATED' },
-    });
-  }
-  return ctx.userId;
-}
-
 export function applyAuthExtension(schema: GraphQLSchema): GraphQLSchema {
   const extendedSchema = extendSchema(schema, AUTH_SDL);
   const mutationType = extendedSchema.getType('Mutation') as GraphQLObjectType;
@@ -87,9 +79,7 @@ export function applyAuthExtension(schema: GraphQLSchema): GraphQLSchema {
   fields.verifyMagicLink.resolve = async (_parent: unknown, args: { token: string }, context: Context) => {
     const payload = verifyMagicToken(args.token);
     if (!payload) {
-      throw new GraphQLError('Invalid or expired magic link', {
-        extensions: { code: 'UNAUTHENTICATED' },
-      });
+      throw unauthenticated('Invalid or expired magic link');
     }
 
     // biome-ignore lint/suspicious/noExplicitAny: drizzle-orm 1.0 column type compat
@@ -107,7 +97,7 @@ export function applyAuthExtension(schema: GraphQLSchema): GraphQLSchema {
     } else {
       const [created] = await db.insert(dbSchema.users).values({ email }).returning({ id: dbSchema.users.id });
       if (!created) {
-        throw new GraphQLError('Failed to create user');
+        throw new Error('The user insert returned no row.');
       }
       userId = created.id;
     }

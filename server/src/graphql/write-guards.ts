@@ -1,8 +1,7 @@
 import { schema as dbSchema } from '@philotes/db';
 import type { BuildSchemaConfig } from '@vantreeseba/drizzle-graphql';
 import { and, eq, inArray } from 'drizzle-orm';
-import { GraphQLError } from 'graphql';
-import { requireAuth } from '../auth/resolvers.ts';
+import { notFound, requireAuth } from '../core/errors.ts';
 import type { Context } from './handler.ts';
 
 // A row scope confines reads, updates and deletes, but it cannot reach a plain
@@ -97,7 +96,7 @@ async function assertForeignKeysOwned(
     const owned = new Set(await fk.owned(tx, userId, referenced));
     const missing = referenced.find((id) => owned.has(id) === false);
     if (missing !== undefined) {
-      throw new GraphQLError(`${fk.entity} not found`, { extensions: { code: 'NOT_FOUND' } });
+      throw notFound(`${fk.entity} not found`);
     }
   }
 }

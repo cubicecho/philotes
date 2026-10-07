@@ -1,6 +1,7 @@
 import { db, schema as dbSchema } from '@philotes/db';
 import { eq } from 'drizzle-orm';
 import { beforeAll, describe, expect, it } from 'vitest';
+import { ErrorCode } from '../../core/errors.ts';
 import { createPerson, createUser, migrateTestDatabase, run } from '../helpers.ts';
 
 const MERGE =
@@ -54,6 +55,6 @@ describe('mergeLabelInto', () => {
 
     const result = await run(userId, MERGE, { keepId, deleteId: foreignId });
 
-    expect(result.errors?.[0].message).toBe('Label not found');
+    expect(result.errors?.[0].extensions.code).toBe(ErrorCode.NotFound);
   });
 });

@@ -1,7 +1,7 @@
 import { schema as dbSchema } from '@philotes/db';
 import { and, eq } from 'drizzle-orm';
-import { extendSchema, GraphQLError, type GraphQLObjectType, type GraphQLSchema, parse } from 'graphql';
-import { requireAuth } from '../auth/resolvers.ts';
+import { extendSchema, type GraphQLObjectType, type GraphQLSchema, parse } from 'graphql';
+import { errorMessage, notFound, requireAuth } from '../core/errors.ts';
 import type { Context } from '../graphql/handler.ts';
 
 // Row-level tenancy — which rows a user may read and write, and the userId
@@ -43,12 +43,6 @@ const USER_SCOPE_SDL = parse(`
 
 // biome-ignore lint/suspicious/noExplicitAny: drizzle-orm 1.0 column type compat
 type AnyDB = any;
-
-function notFound(entity: string): never {
-  throw new GraphQLError(`${entity} not found`, {
-    extensions: { code: 'NOT_FOUND' },
-  });
-}
 
 // ── Per-user person context ──────────────────────────────────────────────────
 //
@@ -114,11 +108,11 @@ function overridePersonMutations(schema: GraphQLSchema): void {
         .values({ ...args.values })
         .returning({ id: dbSchema.persons.id });
       if (!inserted) {
-        throw new GraphQLError('Failed to create person');
+        throw new Error('The person insert returned no row.');
       }
       personId = inserted.id;
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : String(err);
+      const msg = errorMessage(err);
       const isOtherFailure = msg.includes('unique') === false && msg.includes('duplicate') === false;
       if (isOtherFailure) {
         throw err;
@@ -206,7 +200,7 @@ function addUserPersonsResolvers(schema: GraphQLSchema): void {
       .from(dbSchema.persons)
       .where(eq(dbSchema.persons.id, args.personId));
     if (!person) {
-      notFound('Person');
+      throw notFound('Person not found');
     }
 
     await db.insert(dbSchema.userPersons).values({ userId, personId: args.personId }).onConflictDoNothing();
@@ -242,7 +236,7 @@ function addUserPersonsResolvers(schema: GraphQLSchema): void {
       .returning();
 
     if (!row) {
-      notFound('UserPerson');
+      throw notFound('Person not found');
     }
     return row;
   };

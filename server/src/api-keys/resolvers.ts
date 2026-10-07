@@ -1,7 +1,7 @@
 import { apiKeys } from '@philotes/db';
 import { and, desc, eq, isNull } from 'drizzle-orm';
-import { extendSchema, GraphQLError, type GraphQLObjectType, type GraphQLSchema, parse } from 'graphql';
-import { requireAuth } from '../auth/resolvers.ts';
+import { extendSchema, type GraphQLObjectType, type GraphQLSchema, parse } from 'graphql';
+import { badInput, notFound, requireAuth } from '../core/errors.ts';
 import type { Context } from '../graphql/handler.ts';
 import { generateApiKey } from './tokens.ts';
 
@@ -72,7 +72,7 @@ export function applyApiKeysExtension(schema: GraphQLSchema): GraphQLSchema {
     const { name, expiresAt } = args.input;
 
     if (!name?.trim()) {
-      throw new GraphQLError('Name is required');
+      throw badInput('Name is required.');
     }
 
     const { token, hash, prefix } = generateApiKey();
@@ -96,7 +96,7 @@ export function applyApiKeysExtension(schema: GraphQLSchema): GraphQLSchema {
       });
 
     if (!row) {
-      throw new GraphQLError('Failed to create API key');
+      throw new Error('The API key insert returned no row.');
     }
 
     return { apiKey: row, token };
@@ -115,7 +115,7 @@ export function applyApiKeysExtension(schema: GraphQLSchema): GraphQLSchema {
 
     const isMissing = revoked.length === 0;
     if (isMissing) {
-      throw new GraphQLError('API key not found');
+      throw notFound('API key not found');
     }
 
     return true;
