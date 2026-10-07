@@ -1,3 +1,10 @@
+# [5.1.0](https://github.com/cubicecho/philotes/compare/v5.0.0...v5.1.0) (2026-10-07)
+
+
+### Features
+
+* number every change to a user's people ([4e1f2fd](https://github.com/cubicecho/philotes/commit/4e1f2fd5ca6684b2d563c623b2c4197f2b500560)), closes [#31](https://github.com/cubicecho/philotes/issues/31)
+
 # [5.0.0](https://github.com/cubicecho/philotes/compare/v4.0.0...v5.0.0) (2026-10-07)
 
 
