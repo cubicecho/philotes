@@ -13,6 +13,7 @@ import { Form } from '@/components/ui/form';
 import { FormDialog, FormDialogFooter } from '@/components/ui/form-dialog';
 import { Pencil, Trash2 } from '@/components/ui/icons';
 import { type MentionablePerson, parseMentionedPersonIds } from '@/lib/mentions';
+import { fullName } from '@/lib/person-name';
 
 // ---------------------------------------------------------------------------
 // Mutations
@@ -257,7 +258,7 @@ function NoteRow({ note, allTags, allPersons, onChanged }: NoteRowProps) {
             <Text className="text-xs font-medium text-muted-foreground">Mentions:</Text>
             {note.mentions.map((m) => (
               <Link key={m.id} href={`/persons/${m.id}`} asChild>
-                <Button variant="secondary" size="xs" content={`${m.firstName} ${m.lastName}`} />
+                <Button variant="secondary" size="xs" content={fullName(m)} />
               </Link>
             ))}
           </View>

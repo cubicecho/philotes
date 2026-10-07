@@ -14,6 +14,7 @@ import { Button } from '@/components/ui/button';
 import { FieldWrapper, Form } from '@/components/ui/form';
 import { FormDialog, FormDialogFooter } from '@/components/ui/form-dialog';
 import { Pencil, Trash2 } from '@/components/ui/icons';
+import { fullName } from '@/lib/person-name';
 
 // ---------------------------------------------------------------------------
 // Fragments & queries
@@ -210,7 +211,7 @@ function RelationshipFormDialog({
       ]
     : allPersons
         .filter((p) => p.id !== fromPersonId && existingRelatedIds.has(p.id) === false)
-        .map((p) => ({ value: p.id, label: `${p.firstName} ${p.lastName}` }));
+        .map((p) => ({ value: p.id, label: fullName(p) }));
 
   // A relationship keeps its type's name after the type is deleted, so the one being edited may
   // no longer be in the list.

@@ -41,6 +41,7 @@ import { ArrowLeft, Clock, Pencil, Trash2 } from '@/components/ui/icons';
 import { Spinner } from '@/components/ui/spinner';
 import { useAvatarUpload } from '@/hooks/use-avatar-upload';
 import { invalidateQueryFields } from '@/lib/invalidate';
+import { fullName } from '@/lib/person-name';
 import type { SlotNode } from '@/lib/utils';
 
 // ---------------------------------------------------------------------------
@@ -374,7 +375,7 @@ export default function PersonDetailPage() {
     );
   }
 
-  const fullName = `${person.firstName} ${person.lastName}`;
+  const personName = fullName(person);
   const reload = () => {
     refetch();
   };
@@ -694,7 +695,7 @@ export default function PersonDetailPage() {
   return (
     <>
       <PageLayout
-        title={fullName}
+        title={personName}
         breadcrumbsSlot={backLink}
         actionSlot={
           <>
@@ -709,12 +710,12 @@ export default function PersonDetailPage() {
               onPress={() => setEditPersonOpen(true)}
             />
             <ConfirmButton
-              label={`Delete ${fullName}`}
+              label={`Delete ${personName}`}
               variant="ghost"
               size="icon-sm"
               iconSlot={<Trash2 />}
               disabled={deleting}
-              title={`Delete ${fullName}?`}
+              title={`Delete ${personName}?`}
               description={`This will permanently delete ${person.firstName} and all their associated data including interactions, notes, tasks, and contact information. This cannot be undone.`}
               onConfirm={handleDeletePerson}
             />
@@ -762,7 +763,7 @@ export default function PersonDetailPage() {
         open={dateDialogOpen}
         onOpenChange={setDateDialogOpen}
         title="Add Important Date"
-        description={`Record a memorable date for ${fullName}.`}
+        description={`Record a memorable date for ${personName}.`}
       >
         <ImportantDateForm onSubmit={handleCreateDate} onCancel={() => setDateDialogOpen(false)} />
       </FormDialog>
@@ -771,7 +772,7 @@ export default function PersonDetailPage() {
         open={editPersonOpen}
         onOpenChange={setEditPersonOpen}
         title="Edit Person"
-        description={`Update details for ${fullName}.`}
+        description={`Update details for ${personName}.`}
         className="sm:max-w-xl"
       >
         <PersonForm

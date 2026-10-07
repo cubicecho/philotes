@@ -4,6 +4,7 @@ import { Text, View } from 'react-native';
 import { LabelChip } from '@/components/domain/label/label-chip';
 import { Button } from '@/components/ui/button';
 import { nameToColor } from '@/lib/name-color';
+import { fullName } from '@/lib/person-name';
 import type { NetworkGraphProps, NetworkPerson } from './types';
 
 type SimNode = d3.SimulationNodeDatum & NetworkPerson;
@@ -256,7 +257,7 @@ export function NetworkGraph({ persons, onOpenPerson }: NetworkGraphProps) {
 
     nodeGroup.call(drag);
 
-    const nodeColor = (d: SimNode) => d.labels[0]?.color ?? nameToColor(`${d.firstName} ${d.lastName}`);
+    const nodeColor = (d: SimNode) => d.labels[0]?.color ?? nameToColor(fullName(d));
 
     // Outer ring for well-connected hub nodes (drawn before main circle so it sits underneath)
     nodeGroup
@@ -293,7 +294,7 @@ export function NetworkGraph({ persons, onOpenPerson }: NetworkGraphProps) {
     // Full name label below node — paint-order halo keeps it readable over any bg
     nodeGroup
       .append('text')
-      .text((d) => `${d.firstName} ${d.lastName}`)
+      .text((d) => fullName(d))
       .attr('text-anchor', 'middle')
       .attr('dominant-baseline', 'hanging')
       .attr('fill', 'var(--foreground)')

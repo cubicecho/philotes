@@ -3,6 +3,7 @@ import { Pressable, Text, View } from 'react-native';
 import { type FieldProps, FieldWrapper, splitProps, useFieldContext } from '@/components/ui/form';
 import { Textarea, type TextareaHandle } from '@/components/ui/textarea';
 import type { MentionablePerson } from '@/lib/mentions';
+import { fullName } from '@/lib/person-name';
 
 // ---------------------------------------------------------------------------
 // @-Mention dropdown
@@ -18,7 +19,7 @@ interface MentionDropdownProps {
 export function MentionDropdown({ query, allPersons, onSelect }: MentionDropdownProps) {
   const lower = query.toLowerCase();
   const filtered = allPersons.filter((p) => {
-    const full = `${p.firstName} ${p.lastName}`.toLowerCase();
+    const full = fullName(p).toLowerCase();
     return full.startsWith(lower) || p.firstName.toLowerCase().startsWith(lower);
   });
 
@@ -59,7 +60,7 @@ export function trailingMentionQuery(text: string): string | null {
 
 /** Replace the trailing partial `@query` with `@FirstName LastName`. */
 export function completeMention(text: string, person: MentionablePerson): string {
-  return text.replace(TRAILING_MENTION, `@${person.firstName} ${person.lastName}`);
+  return text.replace(TRAILING_MENTION, `@${fullName(person)}`);
 }
 
 type MentionTextareaFieldProps = FieldProps & {

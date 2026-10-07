@@ -2,6 +2,7 @@ import { useRouter } from 'expo-router';
 import { UserPlus } from '@/components/app-icons';
 import { Avatar } from '@/components/domain/person/avatar';
 import { ListItem } from '@/components/list-item';
+import { fullName } from '@/lib/person-name';
 import { relativeTime } from '@/lib/relative-time';
 import { Widget } from './widget';
 
@@ -26,7 +27,7 @@ export function RecentlyAdded({ persons }: { persons: RecentPerson[] }) {
         <ListItem
           key={p.id}
           leadingSlot={<Avatar firstName={p.firstName} lastName={p.lastName} avatarPath={p.avatarPath} size="sm" />}
-          title={`${p.firstName} ${p.lastName}`}
+          title={fullName(p)}
           meta={relativeTime(p.createdAt)}
           onPress={() => router.push(`/persons/${p.id}`)}
         />

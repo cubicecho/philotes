@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Image, Text, View } from 'react-native';
 import { avatarUrl } from '@/lib/api-url';
 import { nameToColor } from '@/lib/name-color';
+import { fullName } from '@/lib/person-name';
 import { cn } from '@/lib/utils';
 
 interface AvatarProps {
@@ -25,7 +26,7 @@ const SIZE_CLASSES: Record<NonNullable<AvatarProps['size']>, { box: string; text
 export function Avatar({ firstName, lastName, avatarPath, size = 'md', className }: AvatarProps) {
   const [failed, setFailed] = useState(false);
   const { box, text } = SIZE_CLASSES[size];
-  const name = `${firstName} ${lastName}`;
+  const name = fullName({ firstName, lastName });
 
   if (avatarPath && !failed) {
     return (

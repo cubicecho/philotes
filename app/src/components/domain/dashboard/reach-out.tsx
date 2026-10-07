@@ -8,6 +8,7 @@ import { Avatar } from '@/components/domain/person/avatar';
 import { ListItem } from '@/components/list-item';
 import { Button } from '@/components/ui/button';
 import { Check } from '@/components/ui/icons';
+import { fullName } from '@/lib/person-name';
 import { Widget } from './widget';
 
 // ---------------------------------------------------------------------------
@@ -103,7 +104,7 @@ export function ReachOut({ persons, onLogged }: ReachOutProps) {
         <ListItem
           key={p.id}
           leadingSlot={<Avatar firstName={p.firstName} lastName={p.lastName} avatarPath={p.avatarPath} size="sm" />}
-          title={`${p.firstName} ${p.lastName}`}
+          title={fullName(p)}
           // Dormant entries keep the row's own muted line; overdue ones are called out.
           description={p.isDormant ? p.statusLabel : <Text className="text-warning text-xs">{p.statusLabel}</Text>}
           onPress={() => router.push(`/persons/${p.id}`)}

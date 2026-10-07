@@ -3,6 +3,7 @@ import { LabelChip } from '@/components/domain/label/label-chip';
 import { ChannelIcon } from '@/components/domain/person/channel-icon';
 import { EmptyState } from '@/components/page';
 import { SectionHeading } from '@/components/section-heading';
+import { formatDate } from '@/lib/format';
 import { relativeTime } from '@/lib/relative-time';
 import { cn } from '@/lib/utils';
 
@@ -62,10 +63,6 @@ const MILESTONE_EMOJI: Record<string, string> = {
   loss: '🕊️',
   other: '🎉',
 };
-
-function formatDate(date: Date): string {
-  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-}
 
 function formatMonthYear(date: Date): string {
   return date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });

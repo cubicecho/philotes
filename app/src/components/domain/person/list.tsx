@@ -12,6 +12,7 @@ import { PageLayout } from '@/components/page-layout';
 import { Button } from '@/components/ui/button';
 import { Search, Trash2, X } from '@/components/ui/icons';
 import { SearchInput } from '@/components/ui/search-input';
+import { fullName } from '@/lib/person-name';
 import { relativeTime } from '@/lib/relative-time';
 import { cn } from '@/lib/utils';
 
@@ -92,7 +93,7 @@ function PersonRow({ person, divided, onClickDelete, activeLabelIds }: PersonRow
       leadingSlot={
         <Avatar firstName={person.firstName} lastName={person.lastName} avatarPath={person.avatarPath} size="md" />
       }
-      title={`${person.firstName} ${person.lastName}`}
+      title={fullName(person)}
       description={
         person.lastContactedAt ? `Last contact: ${relativeTime(person.lastContactedAt)}` : (person.email ?? '')
       }
@@ -129,9 +130,9 @@ function PersonRow({ person, divided, onClickDelete, activeLabelIds }: PersonRow
             <ConfirmButton
               variant="ghost"
               size="icon-sm"
-              label={`Delete ${person.firstName} ${person.lastName}`}
+              label={`Delete ${fullName(person)}`}
               iconSlot={<Trash2 />}
-              title={`Delete ${person.firstName} ${person.lastName}?`}
+              title={`Delete ${fullName(person)}?`}
               description={`This will permanently delete ${person.firstName} and all their associated data. This cannot be undone.`}
               onConfirm={() => onClickDelete(person.id)}
             />

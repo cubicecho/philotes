@@ -14,6 +14,7 @@ import { QueryError } from '@/components/query-state';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Clock } from '@/components/ui/icons';
 import { Spinner } from '@/components/ui/spinner';
+import { fullName } from '@/lib/person-name';
 
 // ---------------------------------------------------------------------------
 // GraphQL
@@ -71,7 +72,7 @@ export default function PersonTimelinePage() {
         variant="link"
         size="xs"
         iconSlot={<ArrowLeft />}
-        content={person ? `Back to ${person.firstName} ${person.lastName}` : 'Back'}
+        content={person ? `Back to ${fullName(person)}` : 'Back'}
       />
     </Link>
   );
@@ -116,7 +117,7 @@ export default function PersonTimelinePage() {
   return (
     <PageLayout
       title="Timeline"
-      description={`${person.firstName} ${person.lastName}`}
+      description={fullName(person)}
       iconSlot={<Clock />}
       breadcrumbsSlot={backLink}
       contentSlot={

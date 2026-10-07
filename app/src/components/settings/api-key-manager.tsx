@@ -7,6 +7,8 @@ import { QueryState } from '@/components/query-state';
 import { Section } from '@/components/section';
 import { Button } from '@/components/ui/button';
 import { Plus } from '@/components/ui/icons';
+import { formatDate } from '@/lib/format';
+import { relativeTime } from '@/lib/relative-time';
 import { CreateApiKeyDialog } from './create-api-key-dialog';
 
 const MY_API_KEYS = gql`
@@ -37,48 +39,14 @@ interface ApiKeyRecord {
   createdAt: string;
 }
 
-function formatRelative(dateVal: string | null): string {
-  if (!dateVal) {
-    return 'never';
-  }
-  const date = new Date(dateVal);
-  if (Number.isNaN(date.getTime())) {
-    return 'never';
-  }
-  const diff = Date.now() - date.getTime();
-  const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-  if (days === 0) {
-    return 'today';
-  }
-  if (days === 1) {
-    return 'yesterday';
-  }
-  if (days < 30) {
-    return `${days}d ago`;
-  }
-  const months = Math.floor(days / 30);
-  if (months < 12) {
-    return `${months}mo ago`;
-  }
-  return `${Math.floor(months / 12)}y ago`;
-}
-
-function formatDate(dateVal: string | null): string {
-  if (!dateVal) {
-    return '—';
-  }
-  const date = new Date(dateVal);
-  if (Number.isNaN(date.getTime())) {
-    return '—';
-  }
-  return date.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
-}
+/** What stands in for a date the key does not have. */
+const NO_DATE = '—';
 
 function keyDetails(key: ApiKeyRecord): string {
   return [
-    `Last used: ${formatRelative(key.lastUsedAt)}`,
-    key.expiresAt ? `Expires: ${formatDate(key.expiresAt)}` : null,
-    `Created: ${formatDate(key.createdAt)}`,
+    `Last used: ${key.lastUsedAt ? relativeTime(new Date(key.lastUsedAt)) : 'never'}`,
+    key.expiresAt ? `Expires: ${formatDate(key.expiresAt) || NO_DATE}` : null,
+    `Created: ${formatDate(key.createdAt) || NO_DATE}`,
   ]
     .filter(Boolean)
     .join(' · ');
