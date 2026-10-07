@@ -222,10 +222,11 @@ describe('saving and reading a contact card', () => {
     const [stored] = await readCards(db, userId);
     expect(saved).toEqual({ personId, isNew: false, hasChanged: true });
     expect(stored.card).toMatchObject({ firstName: 'Augusta', lastName: 'Test', organization: 'Analytical Engines' });
-    expect(stored.card.contactInfos.map((info) => info.value)).toEqual([
-      'ADA@example.com',
-      '202-555-0199',
+    // Sorted: the two numbers are saved moments apart, and which reads first is not what is being checked.
+    expect(stored.card.contactInfos.map((info) => info.value).sort()).toEqual([
       '(202) 555-0100',
+      '202-555-0199',
+      'ADA@example.com',
     ]);
     expect(stored.card.addresses).toHaveLength(1);
     expect(stored.card.labels).toEqual(['Friends', 'Mathematicians']);
@@ -364,8 +365,8 @@ describe('saving and reading a contact card', () => {
 
       expect(data).toEqual({ importVCards: { imported: 2, merged: 0, skipped: 1, errors: [] } });
       const cards = await readCards(db, userId);
-      expect(cards.map((stored) => stored.card.firstName)).toEqual(['Ada', 'Grace']);
-      expect(cards[0].card.labels).toEqual(['Friends']);
+      expect(cards.map((stored) => stored.card.firstName).sort()).toEqual(['Ada', 'Grace']);
+      expect(cards.find((stored) => stored.card.firstName === 'Ada')?.card.labels).toEqual(['Friends']);
       expect([...files.values()]).toEqual([Buffer.from('picture')]);
     });
 
