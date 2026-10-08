@@ -276,6 +276,8 @@ npm run dev:app        # Expo dev server (port 8081)
 npm run build:app      # Static web export → app/dist/
 ```
 
+The Android build has a document of its own: [`android.md`](android.md).
+
 ## Codegen
 
 After changing any GraphQL query, mutation, or fragment:

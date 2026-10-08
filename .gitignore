@@ -1,5 +1,6 @@
 node_modules
 dist
+dist-android
 *.db
 *.db-journal
 pgdata/

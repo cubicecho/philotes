@@ -40,7 +40,9 @@ import SettingsSource from 'lucide-react-native/icons/settings';
 import SquareSource from 'lucide-react-native/icons/square';
 import SunSource from 'lucide-react-native/icons/sun';
 import TagSource from 'lucide-react-native/icons/tag';
-import Trash2Source from 'lucide-react-native/icons/trash-2';
+// lucide 1.41 renamed `trash-2` to `trash` and ships no file for the old name. `Trash2` stays the
+// export, so no caller changes.
+import Trash2Source from 'lucide-react-native/icons/trash';
 import TriangleAlertSource from 'lucide-react-native/icons/triangle-alert';
 import Undo2Source from 'lucide-react-native/icons/undo-2';
 import UploadSource from 'lucide-react-native/icons/upload';
