@@ -79,6 +79,24 @@ to it. The web app shows neither.
   type }` on a device. Only the photo library is used, so `app.json` blocks
   the camera and microphone permissions the module would otherwise declare.
 
+## The phone layout
+
+- **Safe area.** The root layout (`app/app/_layout.tsx`) wraps every route in
+  `react-native-safe-area-context`'s `SafeAreaView`, so nothing is drawn under
+  the status bar or the navigation bar. cubeui's shells measure no insets
+  themselves; that is left to the app.
+- **Navigation.** Under `md` the app shell (`components/layouts/app-shell.tsx`)
+  swaps the rail for cubeui's bar across the top, with the same places.
+- **The people list** is a virtualised `SectionList` in a `PageLayout` whose
+  body does not scroll, so a few thousand people cost what a screenful does.
+  Pulling it down loads the list again.
+- **Importing a file.** `ImportFileButton` (`components/settings/`) opens the
+  system's file picker through `expo-document-picker` and reads the file with
+  `expo-file-system`. Android names a `.vcf` or a `.csv` by several MIME
+  types, so the picker offers every file and the name is checked afterwards.
+  The web half is cubeui's `FilePickerButton`, whose native half is a stub by
+  design.
+
 ## Keeping Expo packages in step
 
 Every `expo-*` package, and the React Native libraries Expo pins, have one
@@ -92,8 +110,9 @@ drifted, and CI fails on it; `npx expo install --fix` puts them back.
 - Nothing in this document has run on a device yet. It is checked by the
   bundle building and by the web app, which shares everything but the
   platform halves named above.
-- The file picker (imports in Settings) and the phone layout still assume a
-  browser.
+- The exports in Settings (`DownloadButton`) have not been tried on a device.
+- The bar on a phone is at the top. A bar along the bottom needs cubeui to
+  offer one.
 - A build that carries its own JavaScript (EAS `preview` or `production`)
   needs `npm run codegen` to run on the builder first, since the generated
   GraphQL types are not in the repository. No such profile exists yet.

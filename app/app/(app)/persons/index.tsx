@@ -56,7 +56,7 @@ const GET_PERSONS = graphql(`
 
 const GET_LABELS = graphql(`
   query GetLabelsForPersonForm($limit: Int!, $offset: Int!) {
-    labels(limit: $limit, offset: $offset, orderBy: { label: { direction: asc, priority: 1 }, id: { direction: asc, priority: 2 } }) {
+    labels(limit: $limit, offset: $offset, orderBy: { label: { direction: asc, priority: 2 }, id: { direction: asc, priority: 1 } }) {
       id
       color
       label
@@ -164,9 +164,9 @@ export default function PersonsPage() {
     variables: {
       where,
       orderBy: {
-        sortName: { direction: isNameSort ? orderDirection : OrderDirection.Asc, priority: 1 },
+        sortName: { direction: isNameSort ? orderDirection : OrderDirection.Asc, priority: 2 },
         // Paging needs one fixed order, and two people can share a name.
-        id: { direction: OrderDirection.Asc, priority: 2 },
+        id: { direction: OrderDirection.Asc, priority: 1 },
       },
     },
   });
@@ -318,6 +318,7 @@ export default function PersonsPage() {
           onDeletePress={handleDelete}
           // The row's last-contact line reads the newest interaction.
           onLogged={() => refetch()}
+          onRefresh={refetch}
         />
       )}
     </>

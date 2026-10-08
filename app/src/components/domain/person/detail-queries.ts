@@ -117,7 +117,7 @@ export const GET_ALL_PERSONS = graphql(`
     persons(
       limit: $limit
       offset: $offset
-      orderBy: { createdAt: { direction: asc, priority: 1 }, id: { direction: asc, priority: 2 } }
+      orderBy: { createdAt: { direction: asc, priority: 2 }, id: { direction: asc, priority: 1 } }
     ) {
       id
       displayName
@@ -139,7 +139,7 @@ export const GET_ALL_PERSONS = graphql(`
 
 export const GET_ALL_LABELS = graphql(`
   query GetAllLabelsForDetail($limit: Int!, $offset: Int!) {
-    labels(limit: $limit, offset: $offset, orderBy: { label: { direction: asc, priority: 1 }, id: { direction: asc, priority: 2 } }) {
+    labels(limit: $limit, offset: $offset, orderBy: { label: { direction: asc, priority: 2 }, id: { direction: asc, priority: 1 } }) {
       id
       label
       color

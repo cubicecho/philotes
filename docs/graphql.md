@@ -98,6 +98,13 @@ notes(where: {
 persons(orderBy: { sortName: { direction: asc, priority: 1 } }, limit: 20, offset: 40) { id }
 ```
 
+With more than one key, **the highest `priority` sorts first**. A list ordered by name with the id as
+the tiebreak gives the name the higher number:
+
+```graphql
+persons(orderBy: { sortName: { direction: asc, priority: 2 }, id: { direction: asc, priority: 1 } }, limit: 20, offset: 0) { id }
+```
+
 For stable paging over a large list, prefer the keyset cursor: select `cursor`
 on a row and pass it back as `after` under the same `orderBy`.
 
