@@ -32,6 +32,8 @@ export interface AllRowsOptions<TData, TVariables> {
   /** Rows per request. Lower it for a document whose rows are costly. */
   pageSize?: number;
   fetchPolicy?: WatchQueryFetchPolicy;
+  /** Reads nothing while true, and hands back no data. */
+  skip?: boolean;
 }
 
 /** What `useAllRows` hands back: the parts of `useQuery`'s result the pages use. */
@@ -82,6 +84,7 @@ export function useAllRows<TData, TVariables extends OperationVariables & PageVa
   const { data, previousData, error, networkStatus, fetchMore, refetch } = useQuery(document, {
     variables,
     fetchPolicy,
+    skip: options.skip,
     notifyOnNetworkStatusChange: true,
   });
 

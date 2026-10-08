@@ -12,6 +12,10 @@ export interface PageSizeSettings {
   network: number;
   /** Interactions per page on a person's page and timeline. An interaction row is small. */
   interactions: number;
+  /** People per page when the device's copy of the list is brought up to date. Each carries the list row's labels and contact details. */
+  peopleSync: number;
+  /** Rows per page of the two small reads of that refresh: deleted people, and each person's last contact. */
+  peopleSyncLight: number;
 }
 
 export const PAGE_SIZE_DEFAULTS: Readonly<PageSizeSettings> = Object.freeze({
@@ -20,6 +24,37 @@ export const PAGE_SIZE_DEFAULTS: Readonly<PageSizeSettings> = Object.freeze({
   calendarExport: 500,
   network: 40,
   interactions: 100,
+  peopleSync: 75,
+  peopleSyncLight: 500,
+});
+
+/** The copy of the cache a device keeps, so the app opens with no connection. */
+export interface CacheStoreSettings {
+  /** Largest copy kept, in characters of JSON. A cache past this is not stored at all. */
+  maxChars: number;
+  /** How long the cache must be quiet before the copy is rewritten. */
+  persistDebounceMs: number;
+}
+
+export const CACHE_STORE_DEFAULTS: Readonly<CacheStoreSettings> = Object.freeze({
+  maxChars: 20_000_000,
+  persistDebounceMs: 1000,
+});
+
+/** How the app decides whether its server can be reached. */
+export interface ConnectionSettings {
+  /** How long a query waits for the server before the app gives up on it and counts itself offline. */
+  queryTimeoutMs: number;
+  /** How often the app asks whether the server is back, while offline. */
+  probeIntervalMs: number;
+  /** How long one such check waits for an answer. */
+  probeTimeoutMs: number;
+}
+
+export const CONNECTION_DEFAULTS: Readonly<ConnectionSettings> = Object.freeze({
+  queryTimeoutMs: 15_000,
+  probeIntervalMs: 5000,
+  probeTimeoutMs: 5000,
 });
 
 /** What the dashboard's widgets show. */

@@ -1,0 +1,20 @@
+# Fields that exist only in the app's cache. No request ever asks the server for them: a document
+# marks them `@client`.
+
+extend type Query {
+  """
+  Every person the signed-in user has, as the device last saw them. Null until the first load.
+  """
+  peopleSnapshot: PeopleSnapshot
+}
+
+"""
+The people list a device keeps, with how current it is.
+"""
+type PeopleSnapshot {
+  """
+  The value of `User.personsRevision` the list is complete up to.
+  """
+  revision: Float!
+  people: [Person!]!
+}

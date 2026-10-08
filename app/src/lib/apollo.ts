@@ -1,11 +1,13 @@
-import { ApolloClient, from, HttpLink, InMemoryCache } from '@apollo/client';
+import { ApolloClient, type DefaultOptions, from, HttpLink, InMemoryCache } from '@apollo/client';
 import { setContext } from '@apollo/client/link/context';
 import { onError } from '@apollo/client/link/error';
 import { router } from 'expo-router';
 import { Platform } from 'react-native';
 import { scalarTypePolicies } from '@/__generated__/type-policies';
 import { graphqlUrl } from '@/lib/api-url';
-import { authHeaders, clearToken } from '@/lib/auth';
+import { authHeaders, clearToken, isAuthenticated } from '@/lib/auth';
+import { keepCache } from '@/lib/cache-store';
+import { createConnectionLink, onConnectionChange } from '@/lib/connection';
 // Imported for what it does at import: it restores the server address a device was given.
 import '@/lib/server-address';
 
@@ -17,6 +19,8 @@ const authLink = setContext((_, { headers }) => ({ headers: { ...headers, ...aut
 /** The sign-in operations, where UNAUTHENTICATED means wrong credentials and the page shows it. */
 const SIGN_IN_OPERATIONS = new Set(['SignIn', 'SignUp', 'RequestSignIn', 'VerifyMagicLink']);
 
+const connectionLink = createConnectionLink({ alwaysSent: SIGN_IN_OPERATIONS });
+
 const LOGIN_ROUTE = '/login';
 
 /** Leaves for the sign-in page with nothing of the ended session left in memory. */
@@ -27,7 +31,7 @@ function openLogin(): void {
     return;
   }
   router.replace(LOGIN_ROUTE);
-  client.clearStore().catch((error: unknown) => {
+  forgetCachedData().catch((error: unknown) => {
     console.error('Could not clear the cache after the session ended', error);
   });
 }
@@ -42,8 +46,64 @@ const errorLink = onError(({ graphQLErrors, operation }) => {
   }
 });
 
+const cache = new InMemoryCache({ typePolicies: scalarTypePolicies });
+
+/** The copy of the cache a device keeps between runs. */
+const cacheStore = keepCache(cache);
+
 /** The app's Apollo client. It sends the session token, and signs out on UNAUTHENTICATED outside sign-in. */
 export const client = new ApolloClient({
-  cache: new InMemoryCache({ typePolicies: scalarTypePolicies }),
-  link: from([errorLink, authLink, httpLink]),
+  cache,
+  link: from([errorLink, connectionLink, authLink, httpLink]),
 });
+
+/** Whether the cache has to be filled from the device before the first screen is drawn. */
+export const RESTORES_CACHE = cacheStore.isKept;
+
+// A cache that outlives the run would, read first and trusted, show last week's answer for ever.
+// So where one is kept, a query shows what the cache has and asks the server as well; once the
+// server has answered, the cache is current and is trusted again.
+const ONLINE_QUERIES: DefaultOptions = {
+  watchQuery: { fetchPolicy: 'cache-and-network', nextFetchPolicy: 'cache-first' },
+};
+// Offline, asking as well would only put an error beside data that is there.
+const OFFLINE_QUERIES: DefaultOptions = { watchQuery: { fetchPolicy: 'cache-first' } };
+
+if (RESTORES_CACHE) {
+  client.defaultOptions = ONLINE_QUERIES;
+}
+
+onConnectionChange((isOffline) => {
+  if (RESTORES_CACHE) {
+    client.defaultOptions = isOffline ? OFFLINE_QUERIES : ONLINE_QUERIES;
+  }
+  if (isOffline === false) {
+    // Back: whatever is on screen was read while the server was away.
+    client.reFetchObservableQueries().catch((error: unknown) => {
+      console.error('Could not refresh after coming back online', error);
+    });
+  }
+});
+
+/**
+ * Fills the cache with what the device kept from the last run. Without a session there is nobody the
+ * copy could belong to, and it is deleted instead.
+ *
+ * @returns Once the cache is ready to read. Never rejects.
+ */
+export async function restoreCachedData(): Promise<void> {
+  if (isAuthenticated()) {
+    await cacheStore.restore();
+    return;
+  }
+  await cacheStore.forget();
+}
+
+/**
+ * Drops everything fetched in a session, from memory and from the device. Called wherever a session
+ * ends: what was fetched belongs to the user and the server it came from.
+ */
+export async function forgetCachedData(): Promise<void> {
+  await client.clearStore();
+  await cacheStore.forget();
+}

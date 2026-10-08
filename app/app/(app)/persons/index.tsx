@@ -2,15 +2,18 @@ import { useMutation } from '@apollo/client';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { graphql } from '@/__generated__/gql';
-import { OrderDirection, type PersonFilters } from '@/__generated__/graphql';
+import { OrderDirection, type PersonFilters, type PersonRowFragment } from '@/__generated__/graphql';
 import { PersonForm, type PersonFormValue } from '@/components/domain/person/form';
 import { PersonList, type PersonRowData } from '@/components/domain/person/list';
 import { PageLayout } from '@/components/page-layout';
 import { QueryState } from '@/components/query-state';
 import { FormDialog } from '@/components/ui/form-dialog';
+import { usePeople } from '@/hooks/use-people';
 import { useQueryStringState } from '@/hooks/use-query-string-state';
+import { useIsOffline } from '@/lib/connection';
 import { SEARCH_DEFAULTS } from '@/lib/defaults';
 import { invalidateQueryFields } from '@/lib/invalidate';
+import { PeopleSort, SortDirection, searchPeople, sortPeople } from '@/lib/people';
 import { useAllRows } from '@/lib/use-all-rows';
 
 /**
@@ -29,27 +32,12 @@ function debounce<T extends (...args: Parameters<T>) => void>(fn: T, delay: numb
   };
 }
 
-const GET_PERSONS = graphql(`
-  query GetPersons($where: PersonFilters, $orderBy: PersonOrderBy, $limit: Int!, $offset: Int!) {
+// The search, which the server runs whenever it can be reached. The whole list is not read here:
+// `usePeople` keeps it.
+const SEARCH_PERSONS = graphql(`
+  query SearchPersons($where: PersonFilters, $orderBy: PersonOrderBy, $limit: Int!, $offset: Int!) {
     persons(where: $where, orderBy: $orderBy, limit: $limit, offset: $offset) {
-      id
-      displayName
-      sortName
-      avatarPath
-      labels(limit: 20) {
-        id
-        label
-        color
-      }
-      contactInfos(limit: 10) {
-        id
-        type
-        value
-        isPrimary
-      }
-      interactions(limit: 1, orderBy: { occurredAt: { direction: desc, priority: 1 } }) {
-        occurredAt
-      }
+      ...PersonRow
     }
   }
 `);
@@ -88,13 +76,35 @@ const DELETE_PERSON = graphql(`
   }
 `);
 
-/** What the list can be ordered by, as the sort picker and the URL spell it. */
-const SORT_FIELDS = ['name', 'lastContacted'] as const;
-type SortField = (typeof SORT_FIELDS)[number];
+const SORT_FIELDS: readonly PeopleSort[] = Object.values(PeopleSort);
+const SORT_DIRS: readonly SortDirection[] = Object.values(SortDirection);
 
-/** The two directions of a sort, as the sort picker and the URL spell them. */
-const SORT_DIRS = ['asc', 'desc'] as const;
-type SortDir = (typeof SORT_DIRS)[number];
+/** The order the search is read in. Paging needs one fixed order, and two people can share a name. */
+const SEARCH_ORDER = {
+  sortName: { direction: OrderDirection.Asc, priority: 2 },
+  id: { direction: OrderDirection.Asc, priority: 1 },
+} as const;
+
+/** Reads everyone's last contact as well as what changed: the refresh for someone who asked for one. */
+const THOROUGH = { withLastContact: true } as const;
+
+/**
+ * Shapes a person for the list.
+ *
+ * @param person - The person as the API or the cache gives them.
+ * @returns The row.
+ */
+function toRow(person: PersonRowFragment): PersonRowData {
+  return {
+    id: person.id,
+    displayName: person.displayName,
+    sortName: person.sortName,
+    avatarPath: person.avatarPath,
+    labels: person.labels,
+    contactInfos: person.contactInfos,
+    lastContactedAt: person.interactions[0]?.occurredAt ?? null,
+  };
+}
 
 /** What the people list keeps in the URL's query string. */
 interface PersonsUrlState {
@@ -102,8 +112,8 @@ interface PersonsUrlState {
   q: string;
   /** Ids of the labels a person must carry, all of them, to be listed. */
   labels: string[];
-  sortField: SortField;
-  sortDir: SortDir;
+  sortField: PeopleSort;
+  sortDir: SortDirection;
 }
 
 /** The people page: the list with its search, label filter and sort, and the dialog that adds a person. */
@@ -116,16 +126,16 @@ export default function PersonsPage() {
     {
       q: '',
       labels: [],
-      sortField: 'name',
-      sortDir: 'asc',
+      sortField: PeopleSort.Name,
+      sortDir: SortDirection.Ascending,
     },
     { typeMap: { labels: 'stringArray' } },
   );
 
   const urlQ = urlState.q ?? '';
   const activeLabelIds = urlState.labels ?? [];
-  const sortField: SortField = urlState.sortField ?? 'name';
-  const sortDir: SortDir = urlState.sortDir ?? 'asc';
+  const sortField: PeopleSort = urlState.sortField ?? PeopleSort.Name;
+  const sortDir: SortDirection = urlState.sortDir ?? SortDirection.Ascending;
 
   // Local search state — instant input feedback, debounced URL/query update
   const [searchValue, setSearchValue] = useState(urlQ);
@@ -155,23 +165,23 @@ export default function PersonsPage() {
       }
     : undefined;
 
-  const isNameSort = sortField === 'name';
-  const orderDirection = sortDir === 'asc' ? OrderDirection.Asc : OrderDirection.Desc;
+  const isNameSort = sortField === PeopleSort.Name;
+  const isSearching = trimmedQ !== '';
+  const isOffline = useIsOffline();
 
-  // Data fetching — the whole (searched) list; sorting by name on the server
-  const { data, previousData, loading, error, refetch } = useAllRows(GET_PERSONS, {
+  // Everyone, from the device's own copy.
+  const everyone = usePeople();
+  // The search is the server's whenever the server is there. Until it answers, and for as long as
+  // it cannot be reached, the same text is looked for in the copy.
+  const search = useAllRows(SEARCH_PERSONS, {
     field: 'persons',
-    variables: {
-      where,
-      orderBy: {
-        sortName: { direction: isNameSort ? orderDirection : OrderDirection.Asc, priority: 2 },
-        // Paging needs one fixed order, and two people can share a name.
-        id: { direction: OrderDirection.Asc, priority: 1 },
-      },
-    },
+    variables: { where, orderBy: SEARCH_ORDER },
+    skip: isSearching === false || isOffline,
   });
+  const hasServerMatches = isSearching && isOffline === false && search.loading === false && search.error === undefined;
+  const serverMatches = hasServerMatches ? search.data?.persons : undefined;
+  const matches = serverMatches ?? searchPeople(everyone.people ?? [], trimmedQ);
 
-  const displayData = data ?? previousData;
   const { data: labelsData } = useAllRows(GET_LABELS, { field: 'labels' });
 
   // The dashboard and the network graph list people too, so the field goes, not one query.
@@ -195,35 +205,8 @@ export default function PersonsPage() {
     }
   }, [newParam, router]);
 
-  // Shape raw data
-  const rawPersons: PersonRowData[] = (displayData?.persons ?? []).map((p) => ({
-    id: p.id,
-    displayName: p.displayName,
-    sortName: p.sortName,
-    avatarPath: p.avatarPath,
-    labels: p.labels ?? [],
-    contactInfos: p.contactInfos ?? [],
-    lastContactedAt: p.interactions[0]?.occurredAt ?? null,
-  }));
-
-  // Client-side sort for lastContacted (server can't sort by relation)
-  const sortedPersons = isNameSort
-    ? rawPersons
-    : [...rawPersons].sort((a, b) => {
-        const aTime = a.lastContactedAt ? a.lastContactedAt.getTime() : null;
-        const bTime = b.lastContactedAt ? b.lastContactedAt.getTime() : null;
-        const isNeitherContacted = aTime === null && bTime === null;
-        if (isNeitherContacted) {
-          return 0;
-        }
-        if (aTime === null) {
-          return 1;
-        }
-        if (bTime === null) {
-          return -1;
-        }
-        return sortDir === 'asc' ? aTime - bTime : bTime - aTime;
-      });
+  // Ordered here, since the copy has no order of its own and the server cannot order by a relation.
+  const sortedPersons = sortPeople(matches, sortField, sortDir).map(toRow);
 
   // Label filtering (client-side — server cannot filter by nested relation)
   const hasLabelFilter = activeLabelIds.length > 0;
@@ -237,6 +220,7 @@ export default function PersonsPage() {
 
   const handleDelete = async (id: string): Promise<void> => {
     await deletePerson({ variables: { id } });
+    await everyone.refresh();
   };
 
   const handleSubmit = async ({ person, email }: PersonFormValue): Promise<void> => {
@@ -247,6 +231,7 @@ export default function PersonsPage() {
       await createPersonEmail({ variables: { personId, value: email } });
     }
     setDialogOpen(false);
+    await everyone.refresh();
   };
 
   const handleToggleLabel = (id: string): void => {
@@ -271,7 +256,10 @@ export default function PersonsPage() {
     setUrlState({ sortField: field, sortDir: dir });
   };
 
-  const pending = !displayData && loading;
+  // With a list to show, a failed refresh only leaves it out of date, which the offline banner says.
+  const hasList = everyone.people !== undefined;
+  const error = hasList ? undefined : everyone.error;
+  const pending = hasList === false && error === undefined;
   const showsQueryState = pending || error !== undefined;
 
   return (
@@ -296,7 +284,7 @@ export default function PersonsPage() {
           title="People"
           contentSlot={
             <QueryState
-              query={{ isPending: pending, isError: error !== undefined, error, refetch }}
+              query={{ isPending: pending, isError: error !== undefined, error, refetch: () => everyone.refresh() }}
               what="your people"
               count={filteredPersons.length}
             />
@@ -310,15 +298,15 @@ export default function PersonsPage() {
           onToggleLabel={handleToggleLabel}
           q={searchValue}
           onSearchChange={handleSearchChange}
-          loading={loading}
+          loading={isSearching && search.loading}
           sortValue={`${sortField}-${sortDir}`}
           onSortChange={handleSortChange}
           grouped={isNameSort}
           onAddPress={() => setDialogOpen(true)}
           onDeletePress={handleDelete}
           // The row's last-contact line reads the newest interaction.
-          onLogged={() => refetch()}
-          onRefresh={refetch}
+          onLogged={() => void everyone.refresh(THOROUGH)}
+          onRefresh={() => everyone.refresh(THOROUGH)}
         />
       )}
     </>

@@ -45,7 +45,8 @@
           "cameraPermission": false,
           "microphonePermission": false
         }
-      ]
+      ],
+      "expo-sqlite"
     ],
     "owner": "cubicecho",
     "extra": {

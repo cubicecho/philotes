@@ -1,7 +1,8 @@
 import type { CodegenConfig } from '@graphql-codegen/cli';
 
 const config: CodegenConfig = {
-  schema: '../server/__generated__/schema.graphql',
+  // The server's schema, and the fields that only the app's cache has.
+  schema: ['../server/__generated__/schema.graphql', './client-schema.graphql'],
   importExtension: '.ts',
   documents: ['./src/**/*.ts', './src/**/*.tsx', './app/**/*.ts', './app/**/*.tsx'],
   ignoreNoDocuments: true,

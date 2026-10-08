@@ -48,7 +48,9 @@ export default function NetworkPage() {
 
   const persons = data?.persons ?? [];
   const pending = loading && !data;
-  const showsQueryState = pending || error !== undefined;
+  // What is already here stays on the page when a refresh fails, as it does with no connection.
+  const hasFailedEmpty = error !== undefined && data === undefined;
+  const showsQueryState = pending || hasFailedEmpty;
   const graphSlot =
     persons.length === 0 ? (
       <EmptyState icon={Users} title="No contacts yet." />

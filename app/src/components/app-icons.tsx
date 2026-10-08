@@ -22,6 +22,7 @@ import UserPlusSource from 'lucide-react-native/icons/user-plus';
 import UserRoundPlusSource from 'lucide-react-native/icons/user-round-plus';
 import UsersSource from 'lucide-react-native/icons/users';
 import VideoSource from 'lucide-react-native/icons/video';
+import WifiOffSource from 'lucide-react-native/icons/wifi-off';
 import { icon } from '@/components/ui/icons';
 
 /**
@@ -52,3 +53,4 @@ export const UserPlus = icon(UserPlusSource);
 export const UserRoundPlus = icon(UserRoundPlusSource);
 export const Users = icon(UsersSource);
 export const Video = icon(VideoSource);
+export const WifiOff = icon(WifiOffSource);

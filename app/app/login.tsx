@@ -1,4 +1,4 @@
-import { useApolloClient, useMutation, useQuery } from '@apollo/client';
+import { useMutation, useQuery } from '@apollo/client';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Text, View } from 'react-native';
@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Form } from '@/components/ui/form';
 import { Spinner } from '@/components/ui/spinner';
 import { apiUrl, normalizeServerUrl } from '@/lib/api-url';
+import { forgetCachedData } from '@/lib/apollo';
 import { clearToken, setToken } from '@/lib/auth';
 import { CAN_CHOOSE_SERVER, hasServerAddress, saveServerAddress } from '@/lib/server-address';
 
@@ -117,8 +118,6 @@ function ChangeServerButton({ onChangeServer }: { onChangeServer: () => void }) 
  * @param props.onSaved - Called once the address is stored and requests go to it.
  */
 function ServerAddressForm({ onSaved }: { onSaved: () => void }) {
-  const apollo = useApolloClient();
-
   const form = useAppForm({
     defaultValues: { address: apiUrl() },
     onSubmit: async ({ value }) => {
@@ -128,7 +127,7 @@ function ServerAddressForm({ onSaved }: { onSaved: () => void }) {
       }
       // A session and a cache belong to the server they came from.
       clearToken();
-      await apollo.clearStore();
+      await forgetCachedData();
       saveServerAddress(url);
       onSaved();
     },

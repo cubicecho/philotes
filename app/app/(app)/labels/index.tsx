@@ -119,7 +119,9 @@ export default function LabelsPage() {
 
   // Only the first load: a refetch after a mutation keeps the list (and any open dialog) on screen.
   const pending = loading && !data;
-  const showsQueryState = pending || error !== undefined;
+  // What is already here stays on the page when a refresh fails, as it does with no connection.
+  const hasFailedEmpty = error !== undefined && data === undefined;
+  const showsQueryState = pending || hasFailedEmpty;
   if (showsQueryState) {
     return (
       <PageLayout
@@ -128,7 +130,7 @@ export default function LabelsPage() {
           <QueryState
             query={{ isPending: pending, isError: error !== undefined, error, refetch }}
             what="your labels"
-            count={data?.labels.length ?? 0}
+            count={0}
           />
         }
       />
