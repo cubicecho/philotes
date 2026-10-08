@@ -154,6 +154,7 @@ const MERGE_LABELS =
 const IMPORT = 'mutation ($csv: String!) { importGoogleContacts(csv: $csv) { imported merged errors } }';
 const CHANGED_SINCE =
   'query ($since: Float!) { persons(where: { revision: { gt: $since } }) { id revision } personTombstones(where: { revision: { gt: $since } }) { uid revision } }';
+const MY_REVISION = '{ me { personsRevision } }';
 const CREATE_TOMBSTONE = 'mutation { createPersonTombstone(values: { uid: "x", revision: 1 }) { uid } }';
 const SET_REVISION =
   'mutation ($id: UUID!) { updatePerson(set: { revision: 99 }, where: { id: { eq: $id } }) { firstName } }';
@@ -262,6 +263,15 @@ describe("a person's revision", () => {
     // The fixture's person was inserted behind the API's back, and is swept up with the new one.
     expect(people.map((person) => person.revision)).toEqual([countBefore + 1, countBefore + 1]);
     expect(await counterOf(userId)).toBe(countBefore + 1);
+  });
+
+  it('tells the user how many changes their people have seen', async () => {
+    const client = createClient(db, userId);
+    await client.expectOk(CREATE_PERSON);
+
+    const data = await client.expectOk<{ me: { personsRevision: number } }>(MY_REVISION);
+
+    expect(data.me.personsRevision).toBe(await counterOf(userId));
   });
 
   it('counts a batch of new people as one change', async () => {

@@ -80,6 +80,7 @@ export async function loadUserNode(ctx: Context, userId: string) {
       emailVerified: users.emailVerified,
       image: users.image,
       defaultCountry: users.defaultCountry,
+      personsRevision: users.personsRevision,
       createdAt: users.createdAt,
       updatedAt: users.updatedAt,
     })
