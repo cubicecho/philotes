@@ -38,6 +38,8 @@ philotes/
 │   │   ├── hooks/           # useQueryStringState, useAvatarUpload
 │   │   └── lib/             # auth, apollo, defaults.ts, vocabulary.ts, time.ts, useAllRows, exports
 │   ├── app.json             # Expo config
+│   ├── eas.json             # EAS build profiles (Android development build)
+│   ├── assets/              # App icon, adaptive icon, splash, favicon
 │   ├── components.json      # shadcn CLI config — points at the cubeui native registry
 │   ├── global.css           # Imports cubeui-tokens.css (generated — do not edit)
 │   └── metro.config.js      # Metro bundler config
@@ -78,6 +80,7 @@ Consult these docs before making changes to the corresponding area:
 | CardDAV address book: paths, sign-in, sync tokens, known gaps | [`docs/carddav.md`](docs/carddav.md) |
 | React app, routing, Apollo Client, form pattern | [`docs/frontend.md`](docs/frontend.md) |
 | UI primitives, domain components, layout pattern | [`docs/components.md`](docs/components.md) |
+| Android: EAS development build, config, keeping Expo packages in step | [`docs/android.md`](docs/android.md) |
 | Mutation-with-callback pattern for detail-view sub-components | [`docs/patterns.md`](docs/patterns.md) |
 | Researched but not-yet-built features | [`docs/backlog.md`](docs/backlog.md) |
 | Background research behind the product decisions | [`docs/research/`](docs/research/) |
@@ -97,6 +100,9 @@ npm run dev:server       # Start only the API server (port 3000, with watch)
 ```bash
 npm run build            # Codegen, then the web export
 npm run build:app        # Build only the frontend
+npm run build:android    # Export the Android JavaScript bundle (what CI checks)
+npm run android          # Metro for an installed development build
+npm run android:build    # Queue an EAS development build (uses the account's quota)
 ```
 
 ### GraphQL Codegen

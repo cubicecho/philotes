@@ -6,12 +6,44 @@
     "orientation": "portrait",
     "scheme": "philotes",
     "userInterfaceStyle": "automatic",
+    "icon": "./assets/icon.png",
+    "android": {
+      "package": "com.cubicecho.philotes",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "monochromeImage": "./assets/adaptive-icon-monochrome.png",
+        "backgroundColor": "#1a1a1a"
+      }
+    },
     "web": {
       "bundler": "metro",
       "output": "single",
       "favicon": "./assets/favicon.png"
     },
     "platforms": ["ios", "android", "web"],
-    "plugins": ["expo-router", "expo-status-bar"]
+    "plugins": [
+      "expo-router",
+      "expo-status-bar",
+      "expo-sharing",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 160,
+          "backgroundColor": "#ffffff",
+          "dark": {
+            "image": "./assets/splash-icon-dark.png",
+            "backgroundColor": "#1a1a1a"
+          }
+        }
+      ]
+    ],
+    "owner": "cubicecho",
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "35622938-503e-48ca-a1b9-3a4d558da242"
+      }
+    }
   }
 }

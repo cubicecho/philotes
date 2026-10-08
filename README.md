@@ -160,6 +160,9 @@ npm run check        # Codegen, lint, and type-check
 npm run db:studio    # Open Drizzle Studio to browse the local database
 ```
 
+The Android app is an Expo development build for now; see
+[`docs/android.md`](docs/android.md).
+
 ---
 
 ## Running with Docker
