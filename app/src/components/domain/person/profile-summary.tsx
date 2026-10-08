@@ -1,9 +1,8 @@
 import { Linking, Text, View } from 'react-native';
-import { Camera } from '@/components/app-icons';
 import { Avatar } from '@/components/domain/person/avatar';
+import { AvatarPickerButton } from '@/components/domain/person/avatar-picker-button';
 import { Badge } from '@/components/ui/badge';
-import { FilePickerButton } from '@/components/ui/file-picker';
-import type { PickedFile } from '@/components/ui/file-picker-base';
+import type { PickedPhoto } from '@/lib/avatar-photo';
 import type { SlotNode } from '@/lib/utils';
 
 export interface PersonProfileSummaryProps {
@@ -21,10 +20,8 @@ export interface PersonProfileSummaryProps {
   avatarPath: string | null | undefined;
   /** The contact cadence, shown as a badge; nothing is drawn without one. */
   contactFrequency: string | null | undefined;
-  /** `accept` for the photo picker. */
-  avatarAccept: string;
-  /** Called with the picked photo, read as bytes. */
-  onPickAvatar: (files: PickedFile[]) => void;
+  /** Called with the photo picked to replace this one. */
+  onPickAvatar: (photo: PickedPhoto) => void;
   /** The person's label chips, drawn under the email line. */
   labelsSlot?: SlotNode;
 }
@@ -38,7 +35,6 @@ export function PersonProfileSummary({
   email,
   avatarPath,
   contactFrequency,
-  avatarAccept,
   onPickAvatar,
   labelsSlot,
 }: PersonProfileSummaryProps) {
@@ -51,16 +47,7 @@ export function PersonProfileSummary({
         <Avatar name={name} avatarPath={avatarPath} size="lg" />
         {/* Always drawn, not revealed on hover, so it is reachable by touch. */}
         <View className="absolute -right-1 -bottom-1">
-          <FilePickerButton
-            label="Upload photo"
-            accept={avatarAccept}
-            read="bytes"
-            variant="secondary"
-            size="icon-xs"
-            className="rounded-full"
-            iconSlot={<Camera />}
-            onPickMany={onPickAvatar}
-          />
+          <AvatarPickerButton label="Upload photo" onPick={onPickAvatar} />
         </View>
       </View>
       <View className="min-w-0 flex-1 gap-1.5">

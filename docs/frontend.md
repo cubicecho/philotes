@@ -14,9 +14,15 @@ react-native-web turns into DOM. **Do not write `<div>` / `<span>` /
 - **Entry point**: `expo-router/entry` (see `app/package.json` `main`)
 - **Root layout**: `app/app/_layout.tsx`
 - **Dev server**: `http://localhost:8081`
-- **GraphQL endpoint**: `${EXPO_PUBLIC_API_URL}/graphql`. `app/.env.development`
-  points it at `http://localhost:3000` for `npm run dev`; a production build
-  leaves it unset, so the request goes to the origin that served the app
+- **GraphQL endpoint**: `graphqlUrl()` in `@/lib/api-url`, read at each
+  request. On the web it is `${EXPO_PUBLIC_API_URL}/graphql`:
+  `app/.env.development` points it at `http://localhost:3000` for
+  `npm run dev`, and a production build leaves it unset, so the request goes to
+  the origin that served the app. A device is told its server on the sign-in
+  screen ([`android.md`](android.md#signing-in-on-a-device)). Build an address
+  with the functions in `@/lib/api-url`, never from the environment variable.
+  Metro caches the inlined value: after changing it for a web export, run
+  `npx expo export --platform web --clear` from `app/`
 
 ## Directory Structure
 
@@ -55,7 +61,7 @@ app/
     │   ├── layouts/            # app-shell.tsx
     │   ├── settings/           # API keys, imports and exports
     │   └── ui/                 # cubeui primitives, vendored (no app logic here)
-    ├── hooks/                  # use-query-string-state, use-avatar-upload
+    ├── hooks/                  # use-query-string-state, use-avatar-image, use-avatar-upload
     └── lib/                    # auth, apollo, utils (cn), date-type-policy, …
 ```
 
@@ -78,14 +84,16 @@ There is no generated route tree to keep in sync.
 
 `app/app/(app)/_layout.tsx` gates the authenticated area: no token means
 `<Redirect href="/login" />`. The token itself is read and written through
-`@/lib/auth`.
+`@/lib/auth`, which keeps it in `@/lib/device-store`: `localStorage` in a
+browser, the system's encrypted store on a device.
 
-It decides after mount, because the token lives in `localStorage` and the first
-render cannot read it.
+It decides after mount, because in a browser the first render cannot read
+`localStorage`.
 
 The Apollo link chain in `@/lib/apollo` attaches `Authorization: Bearer <token>`
-to every request, and an error link clears the token and sends the browser to
-`/login` on an `UNAUTHENTICATED` response.
+to every request, and an error link clears the token and returns to `/login`
+on an `UNAUTHENTICATED` response. A request Apollo does not send, such as an
+avatar upload, takes the same header from `authHeaders()`.
 
 ## Data Fetching
 

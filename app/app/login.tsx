@@ -1,4 +1,4 @@
-import { useMutation, useQuery } from '@apollo/client';
+import { useApolloClient, useMutation, useQuery } from '@apollo/client';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Text, View } from 'react-native';
@@ -9,7 +9,9 @@ import { QueryError } from '@/components/query-state';
 import { Button } from '@/components/ui/button';
 import { Form } from '@/components/ui/form';
 import { Spinner } from '@/components/ui/spinner';
-import { setToken } from '@/lib/auth';
+import { apiUrl, normalizeServerUrl } from '@/lib/api-url';
+import { clearToken, setToken } from '@/lib/auth';
+import { CAN_CHOOSE_SERVER, hasServerAddress, saveServerAddress } from '@/lib/server-address';
 
 const AUTH_CONFIG = graphql(`
   query AuthConfig {
@@ -94,8 +96,84 @@ function useOpenSession(): (token: string) => void {
   };
 }
 
-/** The form for an instance on a private network: an email is all it asks for. */
-function LocalNetSignIn() {
+/** What a sign-in form is told about the server it signs in to. */
+interface ServerChoiceProps {
+  /** Opens the server address form. Left out where the server is not the user's to choose. */
+  onChangeServer?: (() => void) | undefined;
+}
+
+/**
+ * The button under a sign-in form that leads back to the server address.
+ *
+ * @param props.onChangeServer - Opens the server address form.
+ */
+function ChangeServerButton({ onChangeServer }: { onChangeServer: () => void }) {
+  return <Button variant="ghost" content="Change server" onPress={onChangeServer} />;
+}
+
+/**
+ * Asks a device which server to sign in to. The web app never shows it: its server is the one that served it.
+ *
+ * @param props.onSaved - Called once the address is stored and requests go to it.
+ */
+function ServerAddressForm({ onSaved }: { onSaved: () => void }) {
+  const apollo = useApolloClient();
+
+  const form = useAppForm({
+    defaultValues: { address: apiUrl() },
+    onSubmit: async ({ value }) => {
+      const url = normalizeServerUrl(value.address);
+      if (url === null) {
+        return;
+      }
+      // A session and a cache belong to the server they came from.
+      clearToken();
+      await apollo.clearStore();
+      saveServerAddress(url);
+      onSaved();
+    },
+  });
+
+  return (
+    <CenteredLayout
+      className="bg-background"
+      level={1}
+      title="Connect to your server"
+      description="Enter the address of your Philotes server, as you open it in a browser."
+      contentSlot={
+        <form.AppForm>
+          <Form className="gap-4">
+            <form.AppField
+              name="address"
+              validators={{
+                onChange: ({ value }) =>
+                  normalizeServerUrl(value) === null ? 'Enter an address, such as philotes.example.com.' : undefined,
+              }}
+            >
+              {(field) => (
+                <field.InputField
+                  label="Server address"
+                  type="url"
+                  placeholder="https://philotes.example.com"
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                />
+              )}
+            </form.AppField>
+            <form.SubmitButton createLabel="Continue" savingLabel="Connecting…" />
+          </Form>
+        </form.AppForm>
+      }
+    />
+  );
+}
+
+/**
+ * The form for an instance on a private network: an email is all it asks for.
+ *
+ * @param props.onChangeServer - Opens the server address form, where there is one.
+ */
+function LocalNetSignIn({ onChangeServer }: ServerChoiceProps) {
   const openSession = useOpenSession();
   const [requestSignIn, { error }] = useMutation(REQUEST_SIGN_IN);
 
@@ -131,6 +209,7 @@ function LocalNetSignIn() {
           </Form>
         </form.AppForm>
       }
+      footerActionsSlot={onChangeServer ? <ChangeServerButton onChangeServer={onChangeServer} /> : null}
     />
   );
 }
@@ -139,8 +218,9 @@ function LocalNetSignIn() {
  * The email and password form, with account creation and, when the instance can send mail, a sign-in link.
  *
  * @param props.offersMagicLink - Whether to offer "email me a sign-in link".
+ * @param props.onChangeServer - Opens the server address form, where there is one.
  */
-function PasswordSignIn({ offersMagicLink }: { offersMagicLink: boolean }) {
+function PasswordSignIn({ offersMagicLink, onChangeServer }: ServerChoiceProps & { offersMagicLink: boolean }) {
   const openSession = useOpenSession();
   const [mode, setMode] = useState<Mode>(Mode.SignIn);
   // The address a link went to. Null until one has been requested.
@@ -248,20 +328,28 @@ function PasswordSignIn({ offersMagicLink }: { offersMagicLink: boolean }) {
               setMode(OTHER_MODE[mode]);
             }}
           />
+          {onChangeServer ? <ChangeServerButton onChangeServer={onChangeServer} /> : null}
         </View>
       }
     />
   );
 }
 
-/** The sign-in page, showing only the methods this instance offers. */
+/** The sign-in page, showing only the methods this instance offers. A device is first asked for its server. */
 export default function LoginPage() {
-  const { data, error, refetch } = useQuery(AUTH_CONFIG);
+  const [isChoosingServer, setIsChoosingServer] = useState(() => hasServerAddress() === false);
+  const { data, error, refetch } = useQuery(AUTH_CONFIG, { skip: isChoosingServer });
+  const onChangeServer = CAN_CHOOSE_SERVER ? () => setIsChoosingServer(true) : undefined;
 
+  if (isChoosingServer) {
+    return <ServerAddressForm onSaved={() => setIsChoosingServer(false)} />;
+  }
   if (error) {
     return (
-      <View role="main" className="min-h-full flex-1 items-center justify-center bg-background p-4">
+      <View role="main" className="min-h-full flex-1 items-center justify-center gap-4 bg-background p-4">
         <QueryError error={error} onRetry={() => refetch()} what="the sign-in page" />
+        {/* A wrong address is the likeliest reason a device gets here. */}
+        {onChangeServer ? <ChangeServerButton onChangeServer={onChangeServer} /> : null}
       </View>
     );
   }
@@ -273,8 +361,8 @@ export default function LoginPage() {
     );
   }
   return data.authConfig.secureLocalNet ? (
-    <LocalNetSignIn />
+    <LocalNetSignIn onChangeServer={onChangeServer} />
   ) : (
-    <PasswordSignIn offersMagicLink={data.authConfig.magicLink} />
+    <PasswordSignIn offersMagicLink={data.authConfig.magicLink} onChangeServer={onChangeServer} />
   );
 }

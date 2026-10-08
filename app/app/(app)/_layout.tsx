@@ -6,9 +6,9 @@ import { isAuthenticated } from '@/lib/auth';
 
 /** The signed-in area: the app shell around its routes, or a redirect to /login when there is no token. */
 export default function AppLayout() {
-  // The token lives in localStorage, which the first render cannot read during
-  // hydration — so decide after mount rather than redirecting a signed-in user
-  // to /login for one frame.
+  // In a browser the token lives in localStorage, which the first render cannot
+  // read during hydration — so decide after mount rather than redirecting a
+  // signed-in user to /login for one frame.
   const [signedIn, setSignedIn] = useState<boolean | null>(null);
   useEffect(() => {
     setSignedIn(isAuthenticated());

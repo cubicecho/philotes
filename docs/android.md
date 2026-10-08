@@ -32,12 +32,52 @@ npm run build:android   # Export the Android JavaScript bundle → app/dist-andr
    code changes: a new Expo module, or a change to `app.json`.
 2. `npm run android` starts Metro. Open the app on the device and pick the
    server (same network), or scan the QR code.
-3. The app reaches the API at `EXPO_PUBLIC_API_URL`, read when Metro bundles.
-   On a device that must be an address the phone can reach, not `localhost`.
+3. The app asks for the server's address on its sign-in screen; see
+   [Signing in on a device](#signing-in-on-a-device).
 
 `npm run build:android` involves no Android SDK. It is what CI runs (the
 `android` job), and it fails on anything Metro cannot resolve for a device,
 such as a module that exists only in its `.web` form.
+
+## Signing in on a device
+
+A device is not served by the server, so it has to be told where the server
+is. The sign-in screen opens on **Connect to your server** until an address is
+stored, and every sign-in form has a **Change server** button that leads back
+to it. The web app shows neither.
+
+- The address is typed as it is opened in a browser. `normalizeServerUrl`
+  (`app/src/lib/api-url.ts`) adds `https://` when no scheme is typed and drops
+  a trailing slash. `EXPO_PUBLIC_API_URL`, read when Metro bundles, only
+  pre-fills the field.
+- Nothing reads the address at import. `apiUrl()` is read at each request, so
+  the Apollo client and the avatar requests follow a change at once.
+  `app/src/lib/server-address.ts` stores it and restores it at start.
+- The address and the session token are kept by `app/src/lib/device-store.ts`:
+  the system's encrypted store (`expo-secure-store`) on a device,
+  `localStorage` in its `.web.ts` half. Changing the server clears the token
+  and the Apollo cache, since both belong to the server they came from.
+- A session that has expired sends the app back to the sign-in screen through
+  the router; the browser does it with a full page load.
+- A development build may talk to a plain `http://` server, which is what a
+  server on the home network usually is. Android refuses cleartext traffic in
+  a release build unless the app opts in, which is for the day there is one.
+- A sign-in link sent by email opens the server's web app, not this one. On a
+  device, sign in with a password, or with an email alone on a
+  `SECURE_LOCAL_NET` server.
+
+## Photos
+
+- **Showing.** Avatars sit behind the session. A device's image loader sends
+  the bearer token as a header (`use-avatar-image.ts`); a browser's `<img>`
+  cannot, so the web half fetches the photo and shows it from an object URL
+  (`use-avatar-image.web.ts`).
+- **Uploading.** `AvatarPickerButton` (`domain/person/`) opens the system
+  photo picker through `expo-image-picker` on a device and the file dialog on
+  the web. Both hand `useAvatarUpload` a `PickedPhoto`, whose `part` is the
+  form part that platform uploads: a `Blob` in a browser, a `{ uri, name,
+  type }` on a device. Only the photo library is used, so `app.json` blocks
+  the camera and microphone permissions the module would otherwise declare.
 
 ## Keeping Expo packages in step
 
@@ -49,10 +89,11 @@ drifted, and CI fails on it; `npx expo install --fix` puts them back.
 
 ## Not done yet
 
-- The token is kept in web storage only, and the server address is fixed at
-  bundle time. Sign-in on a device, with a server address typed in, is the
-  next piece of work.
-- Avatars, the file picker and the phone layout still assume a browser.
+- Nothing in this document has run on a device yet. It is checked by the
+  bundle building and by the web app, which shares everything but the
+  platform halves named above.
+- The file picker (imports in Settings) and the phone layout still assume a
+  browser.
 - A build that carries its own JavaScript (EAS `preview` or `production`)
   needs `npm run codegen` to run on the builder first, since the generated
   GraphQL types are not in the repository. No such profile exists yet.

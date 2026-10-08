@@ -36,7 +36,7 @@ philotes/
 │   │   │   ├── layouts/     # The app shell (sidebar rail + phone bar)
 │   │   │   └── settings/    # API keys, imports and exports
 │   │   ├── hooks/           # useQueryStringState, useAvatarUpload
-│   │   └── lib/             # auth, apollo, defaults.ts, vocabulary.ts, time.ts, useAllRows, exports
+│   │   └── lib/             # auth, apollo, api-url, device-store, defaults.ts, vocabulary.ts, time.ts, useAllRows, exports
 │   ├── app.json             # Expo config
 │   ├── eas.json             # EAS build profiles (Android development build)
 │   ├── assets/              # App icon, adaptive icon, splash, favicon
@@ -298,7 +298,8 @@ Do not hand-format — run `npm run check:biome`. The settings, from `biome.json
   `useAllRows`
 - To add custom mutations/queries, extend the generated schema (see
   [`docs/server.md`](docs/server.md) for the extension pattern)
-- Server runs on port **3000**; the app reaches it via `EXPO_PUBLIC_API_URL`
+- Server runs on port **3000**; the web app reaches it via `EXPO_PUBLIC_API_URL`,
+  a device via the address typed at sign-in. Both go through `@/lib/api-url`
 - See [`docs/server.md`](docs/server.md) and [`docs/graphql.md`](docs/graphql.md)
 
 ### Database / Drizzle

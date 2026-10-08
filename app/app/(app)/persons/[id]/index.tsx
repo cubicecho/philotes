@@ -177,7 +177,6 @@ export default function PersonDetailPage() {
               email={email}
               avatarPath={person.avatarPath}
               contactFrequency={person.contactFrequency}
-              avatarAccept={avatarUpload.accept}
               onPickAvatar={avatarUpload.upload}
               labelsSlot={
                 <PersonLabels
