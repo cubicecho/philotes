@@ -1,3 +1,15 @@
+# [5.6.0](https://github.com/cubicecho/philotes/compare/v5.5.0...v5.6.0) (2026-10-08)
+
+
+### Bug Fixes
+
+* **app:** order lists by their name, not by the id tiebreak ([21caf0e](https://github.com/cubicecho/philotes/commit/21caf0e54007bd379f3d5441f8e6d42c19a79d35)), closes [#32](https://github.com/cubicecho/philotes/issues/32)
+
+
+### Features
+
+* **app:** lay the app out for a phone ([cb6fe93](https://github.com/cubicecho/philotes/commit/cb6fe935494bbddfc91fcf9fc6d031852f3429b0)), closes [#32](https://github.com/cubicecho/philotes/issues/32)
+
 # [5.5.0](https://github.com/cubicecho/philotes/compare/v5.4.0...v5.5.0) (2026-10-08)
 
 
