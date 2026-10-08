@@ -144,6 +144,50 @@ const { data, loading, error, refetch } = useAllRows(GET_DASHBOARD, { field: 'pe
 Pass `pageSize` from `PAGE_SIZE_DEFAULTS` when a row is costly. A nested list
 takes a literal `limit` in the document, and that limit is a hard cap.
 
+## Reading offline
+
+A device opens with no connection and shows what it last had. The web app does
+none of this: it is served by the server it talks to.
+
+- **The cache is kept on the device.** `src/lib/cache-store.ts` writes the
+  Apollo cache to `expo-sqlite`'s key-value store a second after it changes
+  (`CACHE_STORE_DEFAULTS`), and the root layout restores it behind the splash
+  screen before the first page renders. Its `.web.ts` half keeps nothing.
+  `src/lib/cache-codec.ts` is what makes the round trip safe: JSON turns a
+  `Date` into a string and `cache.restore` runs no type policy, so the codec
+  revives every date scalar from the generated `scalarTypePolicies`. A copy
+  written by another `CACHE_FORMAT` is thrown away. Signing out, changing the
+  server and an expired session all go through `forgetCachedData()`, which
+  empties the cache and the copy.
+- **Knowing the server is gone.** `src/lib/connection.ts` is a link in the
+  Apollo chain. A request that fails without an answer, a gateway status, or a
+  query still unanswered after `CONNECTION_DEFAULTS.queryTimeoutMs`, marks the
+  app offline; any answer marks it online. `OfflineBanner` in the app shell
+  says so and asks `/healthz` on a timer and when the app comes to the front.
+  Read it with `useIsOffline()`.
+- **Nothing is saved offline.** While offline the link refuses a mutation
+  with an `OfflineError` before it is sent, so a form shows its usual error
+  and nothing is queued. Queued edits are [#47](https://github.com/cubicecho/philotes/issues/47).
+- **Fetch policies.** A kept cache would answer `cache-first` for ever, so on
+  a device the client's default is `cache-and-network` while online and
+  `cache-first` while offline, and active queries refetch when the server is
+  back. A page that already has data keeps it when a refetch fails: test
+  `error !== undefined && data === undefined`, not the error alone.
+- **The people list** is the one list kept whole. `usePeople()`
+  (`src/hooks/use-people.ts`) reads it from a field that exists only in the
+  app (`peopleSnapshot`, declared in `app/client-schema.graphql`), and
+  `syncPeople` (`src/lib/people-sync.ts`) brings it up to date: it reads
+  `me.personsRevision`, and when that has moved asks for the people whose
+  `revision` is greater than the one the list is complete up to, and for the
+  tombstones since. Logging an interaction does not move a person's revision,
+  so a pull-to-refresh, and the first refresh of each run, also re-reads
+  everyone's last contact. Sorting is done on the device
+  (`src/lib/people.ts`). Search asks the server while it can be reached and
+  looks through the kept list when it cannot.
+- **A person's page** shows whatever the cache has. One never opened on this
+  device falls back to the list's row (`KeptPersonSummary`): name,
+  organisation, labels and contact details.
+
 ## Defaults and vocabularies
 
 No number or closed-set string is written where it is used.

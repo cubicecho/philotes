@@ -66,6 +66,19 @@ to it. The web app shows neither.
   device, sign in with a password, or with an email alone on a
   `SECURE_LOCAL_NET` server.
 
+## Reading offline
+
+The app opens without a connection and shows what it last had: the people
+list in full, and any page opened before. Changes need the server. How it
+works is in [`frontend.md`](./frontend.md#reading-offline). The copy is kept by
+`expo-sqlite`, a native module, so a development build made before it was
+added has to be rebuilt.
+
+A session that ends takes the copy with it, since the copy belongs to whoever
+was signed in. With the default `SESSION_STORE=memory` every restart of the
+server ends every session, so a server a phone relies on wants
+`SESSION_STORE=database`.
+
 ## Photos
 
 - **Showing.** Avatars sit behind the session. A device's image loader sends
@@ -110,6 +123,10 @@ drifted, and CI fails on it; `npx expo install --fix` puts them back.
 - Nothing in this document has run on a device yet. It is checked by the
   bundle building and by the web app, which shares everything but the
   platform halves named above.
+- Reading offline has been run in a browser with the server stopped, and as
+  unit tests. The copy kept by `expo-sqlite`, and a start in airplane mode,
+  have not been tried on a device. Photos are not kept: a picture the image
+  cache does not hold shows as initials.
 - The exports in Settings (`DownloadButton`) have not been tried on a device.
 - The bar on a phone is at the top. A bar along the bottom needs cubeui to
   offer one.

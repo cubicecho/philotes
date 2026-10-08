@@ -35,8 +35,8 @@ philotes/
 │   │   │   ├── domain/      # Feature components (person/, label/, task/, …)
 │   │   │   ├── layouts/     # The app shell (sidebar rail + phone bar)
 │   │   │   └── settings/    # API keys, imports and exports
-│   │   ├── hooks/           # useQueryStringState, useAvatarUpload
-│   │   └── lib/             # auth, apollo, api-url, device-store, defaults.ts, vocabulary.ts, time.ts, useAllRows, exports
+│   │   ├── hooks/           # useQueryStringState, useAvatarUpload, usePeople
+│   │   └── lib/             # auth, apollo, api-url, device-store, connection, cache-store, people-sync, defaults.ts, vocabulary.ts, time.ts, useAllRows, exports
 │   ├── app.json             # Expo config
 │   ├── eas.json             # EAS build profiles (Android development build)
 │   ├── assets/              # App icon, adaptive icon, splash, favicon
