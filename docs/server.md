@@ -25,7 +25,7 @@ subject needs, under the same file names everywhere:
 
 The folders are `persons`, `notes`, `gratitudes`, `interactions`, `tasks`,
 `important-dates`, `labels`, `relationships`, `contact-import`, `vcard`,
-`api-keys`, `users` and `auth`. `persons` has a second extension file, `duplicates.ts`, for
+`carddav`, `api-keys`, `users` and `auth`. `persons` has a second extension file, `duplicates.ts`, for
 `potentialDuplicates` and `mergePersons`, and `normalized-values.ts`, which
 fills a contact info's `normalizedValue` on every write. `users` holds the
 caller's settings (`setDefaultCountry`). Three more hold what no domain owns:
@@ -163,8 +163,8 @@ update and delete.
 ## vCard
 
 `vcard/` turns a person into a vCard and back. It has no route of its own: the
-Settings import and export use it today, and the CardDAV endpoint is built on
-the same calls.
+Settings import and export use it, and so does the CardDAV endpoint in
+`carddav/`, which has a document of its own: [`carddav.md`](carddav.md).
 
 | File | Holds |
 | --- | --- |
@@ -236,8 +236,10 @@ request's session cookie or bearer token. A resolver that needs a user calls
 `requireAuth(ctx)`, which throws `UNAUTHENTICATED`, and never reads `userId`
 itself.
 
-The iCal feed (`important-dates/ical.ts`) and avatar uploads
-(`persons/avatars.ts`) are plain Express routes and authenticate on their own.
+The iCal feed (`important-dates/ical.ts`), avatar uploads
+(`persons/avatars.ts`) and the CardDAV address book (`carddav/`, under `/dav`)
+are plain Express routes and authenticate on their own. The CardDAV routes are
+mounted before `cors()`, which would otherwise answer their `OPTIONS` itself.
 
 ### Avatar storage
 

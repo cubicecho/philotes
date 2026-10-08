@@ -1,5 +1,25 @@
 // Every value someone might tune, as plain data. Nothing here computes, reads the environment or imports.
 
+/** Settings for the CardDAV address book a phone syncs with. */
+export interface CardDavSettings {
+  /** What a phone shows as the address book's name. */
+  addressBookName: string;
+  /** Largest PROPFIND or REPORT body, as `express.text` reads it. A multiget names a few hundred cards. */
+  xmlBodyLimit: string;
+  /** Largest card a phone may send. A card carries its picture in base64, a third larger than the file. */
+  cardBodyLimit: string;
+  /** The same limit in bytes, which is how a phone is told it. Keep the two in step. */
+  cardMaxBytes: number;
+}
+
+/** The CardDAV settings as shipped. */
+export const CARDDAV_DEFAULTS: Readonly<CardDavSettings> = Object.freeze({
+  addressBookName: 'Philotes',
+  xmlBodyLimit: '1mb',
+  cardBodyLimit: '8mb',
+  cardMaxBytes: 8_388_608,
+});
+
 /** Settings for the HTTP doors and the process behind them. */
 export interface HttpSettings {
   /** The port to listen on. `PORT` overrides it. */

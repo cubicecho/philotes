@@ -8,6 +8,7 @@ import { ExportCalendarCard } from '@/components/settings/export-calendar-card';
 import { ExportPeopleCard } from '@/components/settings/export-people-card';
 import { ExportVCardsCard } from '@/components/settings/export-vcards-card';
 import { GoogleCsvImportCard } from '@/components/settings/google-csv-import-card';
+import { PhoneSyncCard } from '@/components/settings/phone-sync-card';
 import { VCardImportCard } from '@/components/settings/vcard-import-card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ThemePicker } from '@/components/ui/theme-picker';
@@ -56,7 +57,10 @@ export default function SettingsPage() {
             </View>
           </TabsContent>
           <TabsContent value="api-keys">
-            <ApiKeyManager />
+            <View className="gap-6">
+              <PhoneSyncCard />
+              <ApiKeyManager />
+            </View>
           </TabsContent>
           <TabsContent value="app">
             <View className="gap-6">

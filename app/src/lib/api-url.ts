@@ -14,3 +14,16 @@ export const API_URL = process.env.EXPO_PUBLIC_API_URL ?? '';
 export function avatarUrl(avatarPath: string): string {
   return `${API_URL}${avatarPath}`;
 }
+
+/** The path of the CardDAV root, which a contacts client is pointed at. */
+const CARDDAV_PATH = '/dav/';
+
+/**
+ * The address a contacts app syncs with: the server's CardDAV root.
+ *
+ * @returns The URL, or only its path when the page's own address is not known.
+ */
+export function cardDavUrl(): string {
+  const origin = API_URL || (globalThis.location?.origin ?? '');
+  return `${origin}${CARDDAV_PATH}`;
+}

@@ -98,6 +98,7 @@ product, and Philotes isn't a platform. It's a tool. The boundary matters.
 - **Suggested Introductions** — surfaces people who share labels but aren't yet connected
 - **Network View** — a graph of your relationships
 - **Review Page** — a to-do-style overview for pending follow-ups
+- **Phone Sync** — a CardDAV address book, so your people are in your phone's contacts and edits come back
 - **Import & Export** — vCard (`.vcf`) files from a phone or another contacts app, Google Contacts CSV in, CSV and calendar files out
 
 ---
@@ -225,6 +226,32 @@ off for local and private addresses unless the URL sets `sslmode`.
 
 Released images are published to Docker Hub (`vantreeseba/philotes`) and to
 GHCR (`ghcr.io/cubicecho/philotes`).
+
+---
+
+## Sync with Your Phone
+
+Philotes is a CardDAV address book. A contacts app that speaks CardDAV keeps
+your people in the phone's own contacts, both ways: an edit on the phone comes
+back to Philotes.
+
+On Android, with [DAVx⁵](https://www.davx5.com/):
+
+1. In Philotes, open **Settings → API Keys** and generate a key. Copy the
+   token; it is shown once.
+2. In DAVx⁵, add an account and choose **Login with URL and user name**.
+3. Base URL: `https://<your-host>/dav/`. User name: your Philotes email.
+   Password: the token.
+4. Select the **Philotes** address book and sync.
+
+Revoking the key stops the phone syncing. Only what a contact card holds is
+synced: names, numbers, addresses, dates, labels and the picture. Notes,
+interactions and tasks stay in Philotes. Deleting a contact on the phone
+deletes the person in Philotes, with everything kept about them.
+
+The phone sends the key with every request, so use HTTPS for anything beyond
+a private network. The protocol details are in
+[`docs/carddav.md`](docs/carddav.md).
 
 ---
 

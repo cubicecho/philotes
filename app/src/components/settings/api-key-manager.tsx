@@ -81,8 +81,8 @@ export function ApiKeyManager() {
     <>
       <Section
         surface="card"
-        title="API Keys / Calendar Access"
-        description="Generate a key to subscribe your important dates (birthdays, anniversaries, etc.) into any calendar app via a private URL at /ical?key=…"
+        title="API Keys"
+        description="A key lets another app read your data without your sign-in: a calendar app subscribes to your important dates at a private URL (/ical?key=…), and a contacts app uses one as its password."
         actionSlot={
           <Button
             size="sm"
@@ -100,7 +100,10 @@ export function ApiKeyManager() {
               what="your API keys"
               count={keys.length}
               emptySlot={
-                <EmptyState compact title="No keys yet. Generate one to get your calendar subscription URL." />
+                <EmptyState
+                  compact
+                  title="No keys yet. Generate one for a calendar subscription or to sync your phone."
+                />
               }
             />
           ) : (
@@ -119,7 +122,7 @@ export function ApiKeyManager() {
                     label={`Revoke ${key.name}`}
                     content="Revoke"
                     title={`Revoke ${key.name}?`}
-                    description="Every calendar subscribed with this key stops updating, and the key cannot be restored. A new key gives a new URL."
+                    description="Every calendar and phone that uses this key stops updating, and the key cannot be restored. A new key gives a new calendar URL and a new password."
                     confirmLabel="Revoke"
                     onConfirm={() => void revokeApiKey({ variables: { id: key.id } })}
                   />

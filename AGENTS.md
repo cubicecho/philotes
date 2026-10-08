@@ -75,6 +75,7 @@ Consult these docs before making changes to the corresponding area:
 | Database tables, migrations, Drizzle patterns | [`docs/database.md`](docs/database.md) |
 | Server layout, schema generation, validation, custom resolvers | [`docs/server.md`](docs/server.md) |
 | GraphQL queries, mutations, types, filtering | [`docs/graphql.md`](docs/graphql.md) |
+| CardDAV address book: paths, sign-in, sync tokens, known gaps | [`docs/carddav.md`](docs/carddav.md) |
 | React app, routing, Apollo Client, form pattern | [`docs/frontend.md`](docs/frontend.md) |
 | UI primitives, domain components, layout pattern | [`docs/components.md`](docs/components.md) |
 | Mutation-with-callback pattern for detail-view sub-components | [`docs/patterns.md`](docs/patterns.md) |
