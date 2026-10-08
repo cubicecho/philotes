@@ -1,3 +1,10 @@
+# [5.3.0](https://github.com/cubicecho/philotes/compare/v5.2.0...v5.3.0) (2026-10-08)
+
+
+### Features
+
+* serve people as a CardDAV address book ([2c13fdf](https://github.com/cubicecho/philotes/commit/2c13fdfa19bb61fbf392938a583631867c2ae8b3)), closes [#31](https://github.com/cubicecho/philotes/issues/31)
+
 # [5.2.0](https://github.com/cubicecho/philotes/compare/v5.1.0...v5.2.0) (2026-10-07)
 
 
