@@ -121,7 +121,7 @@ async function requireOwnPerson(db: DB, req: Request, res: AvatarResponse, next:
  * @param avatarPath - The path as stored on the row, such as `/avatars/<name>`.
  * @returns Nothing.
  */
-async function removeAvatarFile(store: AvatarStore, avatarPath: string): Promise<void> {
+export async function removeAvatarFile(store: AvatarStore, avatarPath: string): Promise<void> {
   // `basename` keeps a stored path from ever naming anything outside the store.
   const name = basename(avatarPath);
   await store.remove(name).catch((error: unknown) => {
