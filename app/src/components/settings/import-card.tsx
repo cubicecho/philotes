@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { Text, View } from 'react-native';
 import { Section } from '@/components/section';
+import { ImportFileButton } from '@/components/settings/import-file-button';
 import { Alert } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
-import { FilePickerButton } from '@/components/ui/file-picker';
 import { Upload } from '@/components/ui/icons';
 import { Spinner } from '@/components/ui/spinner';
 import { CONTACT_IMPORT_DEFAULTS } from '@/lib/defaults';
@@ -96,7 +96,7 @@ export function ImportCard({ title, description, pickLabel, accept, preview, onI
       contentSlot={
         <View className="items-start gap-3">
           {importState.stage === ImportStage.Idle ? (
-            <FilePickerButton variant="outline" label={pickLabel} accept={accept} onPick={handlePick} />
+            <ImportFileButton label={pickLabel} accept={accept} onPick={handlePick} />
           ) : null}
 
           {importState.stage === ImportStage.Preview ? (

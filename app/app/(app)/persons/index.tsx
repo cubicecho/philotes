@@ -318,6 +318,7 @@ export default function PersonsPage() {
           onDeletePress={handleDelete}
           // The row's last-contact line reads the newest interaction.
           onLogged={() => refetch()}
+          onRefresh={refetch}
         />
       )}
     </>

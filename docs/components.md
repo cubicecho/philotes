@@ -102,7 +102,9 @@ in a component.
 ### `PersonList` + `PersonRow` (`domain/person/list.tsx`)
 
 `PersonList` renders search, sort, an "Add Person" button and a list of
-`PersonRow` rows inside a `PageLayout`.
+`PersonRow` rows inside a `PageLayout`. The rows are a virtualised
+`SectionList`, one section per letter when the list is sorted by name, and the
+page's body is told not to scroll (`scroll={false}`) because the list does.
 
 It takes **plain typed props** — `PersonRowData`, `PersonContactInfo` — rather
 than a fragment. This is the default for new components: the route owns the
@@ -155,8 +157,9 @@ route is a `PageLayout`.
 `CreateApiKeyDialog` mints one and shows the plaintext key exactly once. See
 [`server.md`](./server.md) for the API-key model. `ExportCalendarCard`,
 `ExportPeopleCard`, `ExportVCardsCard`, `VCardImportCard` and
-`GoogleCsvImportCard` are the import/export tab; picking and downloading files
-works on the web only. Both imports are an `ImportCard`, which owns the stages
+`GoogleCsvImportCard` are the import/export tab. A file is picked through
+`ImportFileButton`, which is the browser's file dialog on the web and the
+system's file picker on a device. Both imports are an `ImportCard`, which owns the stages
 (choose, preview, importing, result) and is handed the file type, a rough
 preview from `lib/import-preview.ts` and the mutation to run. The vCard export
 asks the server for the file (`exportVCards`) when the button is pressed; the

@@ -1,6 +1,6 @@
 import { Link, useRouter } from 'expo-router';
 import { useState } from 'react';
-import { Linking, Platform, Text, View } from 'react-native';
+import { Linking, SectionList, Text, View } from 'react-native';
 import { ActionButton } from '@/components/action-button';
 import { GitMerge, Mail, MessageSquarePlus, Phone, UserPlus, Users } from '@/components/app-icons';
 import { ConfirmButton } from '@/components/confirm-button';
@@ -65,8 +65,33 @@ function groupLetter(person: PersonRowData): string {
   return isLetter ? first : '#';
 }
 
-// Sticky under the page header on the web; on device the letter scrolls with its rows.
-const LETTER_HEADER = Platform.select({ web: 'sticky top-0 z-10', default: '' });
+/** The rows under one letter, or every row when the list is not grouped. */
+interface PersonSection {
+  /** The letter over the rows; `null` when the list is not grouped, and no heading is drawn. */
+  letter: string | null;
+  data: PersonRowData[];
+}
+
+/**
+ * Splits a list sorted by name into the runs that share a first letter.
+ *
+ * @param persons - The people, in the order they are drawn.
+ * @returns One section per run of the same letter.
+ */
+function sectionsByLetter(persons: PersonRowData[]): PersonSection[] {
+  const sections: Array<{ letter: string; data: PersonRowData[] }> = [];
+  for (const person of persons) {
+    const letter = groupLetter(person);
+    const last = sections[sections.length - 1];
+    const isSameLetter = last !== undefined && last.letter === letter;
+    if (isSameLetter) {
+      last.data.push(person);
+    } else {
+      sections.push({ letter, data: [person] });
+    }
+  }
+  return sections;
+}
 
 interface PersonRowProps {
   person: PersonRowData;
@@ -176,9 +201,14 @@ export interface PersonListProps {
   onDeletePress?: (id: string) => void;
   /** Called after an interaction is logged from a row; no log buttons are drawn without it. */
   onLogged?: () => void;
+  /** Loads the list again when it is pulled down on a device; the list cannot be pulled without it. */
+  onRefresh?: () => Promise<unknown>;
 }
 
-/** The people screen: it is its own `PageLayout`, so a route renders it as the whole page. */
+/**
+ * The people screen: it is its own `PageLayout`, so a route renders it as the whole page. The rows are
+ * virtualised, so a few thousand people cost what a screenful does.
+ */
 export function PersonList({
   persons,
   allLabels,
@@ -193,8 +223,10 @@ export function PersonList({
   onAddPress,
   onDeletePress,
   onLogged,
+  onRefresh,
 }: PersonListProps) {
   const [loggingPerson, setLoggingPerson] = useState<PersonRowData | null>(null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const activeLabelSet = new Set(activeLabelIds);
   const hasFilters = q.trim().length > 0 || activeLabelIds.length > 0;
 
@@ -205,20 +237,23 @@ export function PersonList({
     }
   };
 
-  // Group under letters (list arrives sorted by name from the caller).
-  const groups: Array<{ letter: string; rows: PersonRowData[] }> = [];
-  if (grouped) {
-    for (const person of persons) {
-      const letter = groupLetter(person);
-      const last = groups[groups.length - 1];
-      const isSameLetter = last !== undefined && last.letter === letter;
-      if (isSameLetter) {
-        last.rows.push(person);
-      } else {
-        groups.push({ letter, rows: [person] });
-      }
+  /** Reloads the list, showing the pull indicator until it has. A failure shows where the list's errors do. */
+  async function handleRefresh() {
+    if (!onRefresh) {
+      return;
+    }
+    setIsRefreshing(true);
+    try {
+      await onRefresh();
+    } catch (err) {
+      console.error('Refreshing the people list failed', err);
+    } finally {
+      setIsRefreshing(false);
     }
   }
+
+  // Grouped, the list arrives sorted by name from the caller.
+  const sections: PersonSection[] = grouped ? sectionsByLetter(persons) : [{ letter: null, data: persons }];
 
   const emptyState = hasFilters ? (
     <EmptyState
@@ -242,38 +277,13 @@ export function PersonList({
     />
   );
 
-  const rows = (list: PersonRowData[]) => (
-    <View role="list">
-      {list.map((p, index) => (
-        <View key={p.id} role="listitem">
-          <PersonRow
-            person={p}
-            divided={index > 0}
-            onDeletePress={onDeletePress}
-            onLogPress={onLogged ? setLoggingPerson : undefined}
-            activeLabelIds={activeLabelSet}
-          />
-        </View>
-      ))}
-    </View>
-  );
-
-  const listSlot = grouped
-    ? groups.map((group) => (
-        <View key={group.letter}>
-          <View className={cn('bg-background px-3 py-1', LETTER_HEADER)}>
-            <Text className="font-semibold text-foreground text-xs">{group.letter}</Text>
-          </View>
-          {rows(group.rows)}
-        </View>
-      ))
-    : rows(persons);
-
   return (
     <>
       {onLogged && <QuickLogDialog person={loggingPerson} onClose={() => setLoggingPerson(null)} onLogged={onLogged} />}
       <PageLayout
         title="People"
+        // The list is the scroller: a virtualised list inside a scrolling body would draw every row.
+        scroll={false}
         actionSlot={
           <View className="flex-row items-center gap-2">
             <Link href="/persons/dedupe" asChild>
@@ -325,7 +335,35 @@ export function PersonList({
           </View>
         }
         contentSlot={
-          <View className={cn(loading && 'opacity-60')}>{persons.length === 0 ? emptyState : listSlot}</View>
+          persons.length === 0 ? (
+            emptyState
+          ) : (
+            <SectionList
+              className={cn('min-h-0 flex-1', loading && 'opacity-60')}
+              sections={sections}
+              keyExtractor={(person) => person.id}
+              stickySectionHeadersEnabled
+              keyboardShouldPersistTaps="handled"
+              refreshing={onRefresh ? isRefreshing : undefined}
+              onRefresh={onRefresh ? handleRefresh : undefined}
+              renderSectionHeader={({ section }) =>
+                section.letter === null ? null : (
+                  <View className="bg-background px-3 py-1">
+                    <Text className="font-semibold text-foreground text-xs">{section.letter}</Text>
+                  </View>
+                )
+              }
+              renderItem={({ item, index }) => (
+                <PersonRow
+                  person={item}
+                  divided={index > 0}
+                  onDeletePress={onDeletePress}
+                  onLogPress={onLogged ? setLoggingPerson : undefined}
+                  activeLabelIds={activeLabelSet}
+                />
+              )}
+            />
+          )
         }
         footerSlot={
           persons.length > 0 ? (
