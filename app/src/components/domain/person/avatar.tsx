@@ -28,13 +28,12 @@ const SIZE_CLASSES: Record<NonNullable<AvatarProps['size']>, { box: string; text
 export function Avatar({ name, avatarPath, size = 'md', className }: AvatarProps) {
   const [failed, setFailed] = useState(false);
   const { box, text } = SIZE_CLASSES[size];
-  const imageUri = useAvatarImage(avatarPath ?? null);
+  const source = useAvatarImage(avatarPath ?? null);
 
-  const showsPhoto = imageUri !== null && failed === false;
-  if (showsPhoto) {
+  if (source !== null && failed === false) {
     return (
       <Image
-        source={{ uri: imageUri }}
+        source={source}
         accessibilityLabel={name}
         onError={() => setFailed(true)}
         className={cn('shrink-0 rounded-full', box, className)}

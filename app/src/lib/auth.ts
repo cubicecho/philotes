@@ -1,35 +1,28 @@
-import { Platform } from 'react-native';
+import { readItem, removeItem, writeItem } from '@/lib/device-store';
 
 const TOKEN_KEY = 'philotes_token';
 
 /**
  * Reads the stored session token.
  *
- * @returns The token, or null when signed out. Always null off the web, where nothing stores one.
+ * @returns The token, or null when signed out.
  */
 export function getToken(): string | null {
-  if (Platform.OS === 'web') {
-    return window.localStorage.getItem(TOKEN_KEY);
-  }
-  return null;
+  return readItem(TOKEN_KEY);
 }
 
 /**
- * Stores the session token, which signs the user in. Does nothing off the web.
+ * Stores the session token, which signs the user in.
  *
  * @param token - The bearer token the server issued.
  */
 export function setToken(token: string): void {
-  if (Platform.OS === 'web') {
-    window.localStorage.setItem(TOKEN_KEY, token);
-  }
+  writeItem(TOKEN_KEY, token);
 }
 
-/** Removes the stored session token, which signs the user out. Does nothing off the web. */
+/** Removes the stored session token, which signs the user out. */
 export function clearToken(): void {
-  if (Platform.OS === 'web') {
-    window.localStorage.removeItem(TOKEN_KEY);
-  }
+  removeItem(TOKEN_KEY);
 }
 
 /**
@@ -39,4 +32,14 @@ export function clearToken(): void {
  */
 export function isAuthenticated(): boolean {
   return getToken() !== null;
+}
+
+/**
+ * The header that carries the session to the server, for requests Apollo does not send.
+ *
+ * @returns The `authorization` header, or no headers when signed out.
+ */
+export function authHeaders(): Record<string, string> {
+  const token = getToken();
+  return token === null ? {} : { authorization: `Bearer ${token}` };
 }

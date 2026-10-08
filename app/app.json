@@ -13,7 +13,8 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "monochromeImage": "./assets/adaptive-icon-monochrome.png",
         "backgroundColor": "#1a1a1a"
-      }
+      },
+      "blockedPermissions": ["android.permission.CAMERA", "android.permission.RECORD_AUDIO"]
     },
     "web": {
       "bundler": "metro",
@@ -35,6 +36,14 @@
             "image": "./assets/splash-icon-dark.png",
             "backgroundColor": "#1a1a1a"
           }
+        }
+      ],
+      "expo-secure-store",
+      [
+        "expo-image-picker",
+        {
+          "cameraPermission": false,
+          "microphonePermission": false
         }
       ]
     ],

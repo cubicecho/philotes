@@ -1,6 +1,6 @@
 import { ApolloProvider } from '@apollo/client';
 import { type ErrorBoundaryProps, Stack } from 'expo-router';
-import { View } from 'react-native';
+import { Platform, View } from 'react-native';
 import { RouteError } from '@/components/route-error';
 import { Button } from '@/components/ui/button';
 import { PaletteProvider, useThemePreference } from '@/components/ui/theme-preference';
@@ -35,7 +35,12 @@ export function ErrorBoundary({ error, retry }: ErrorBoundaryProps) {
         error={error}
         reset={() => void retry()}
         details
-        actionsSlot={<Button variant="outline" size="sm" onPress={() => window.location.reload()} content="Reload" />}
+        // Only a browser has a page to load again; on a device "Try again" is the way back.
+        actionsSlot={
+          Platform.OS === 'web' ? (
+            <Button variant="outline" size="sm" onPress={() => window.location.reload()} content="Reload" />
+          ) : null
+        }
       />
     </View>
   );
