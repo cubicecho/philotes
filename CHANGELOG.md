@@ -1,3 +1,10 @@
+# [5.4.0](https://github.com/cubicecho/philotes/compare/v5.3.0...v5.4.0) (2026-10-08)
+
+
+### Features
+
+* **app:** configure the Android development build ([afa9bcd](https://github.com/cubicecho/philotes/commit/afa9bcdbbb9b86eb6ab6c0d464040cfeced7a92e)), closes [cubicecho/cubeui#316](https://github.com/cubicecho/cubeui/issues/316) [#32](https://github.com/cubicecho/philotes/issues/32)
+
 # [5.3.0](https://github.com/cubicecho/philotes/compare/v5.2.0...v5.3.0) (2026-10-08)
 
 
