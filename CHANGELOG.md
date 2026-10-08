@@ -1,3 +1,10 @@
+# [5.5.0](https://github.com/cubicecho/philotes/compare/v5.4.0...v5.5.0) (2026-10-08)
+
+
+### Features
+
+* **app:** sign in and show photos on a device ([c335776](https://github.com/cubicecho/philotes/commit/c3357768e10e779fd59201dc43097291febcc343)), closes [#32](https://github.com/cubicecho/philotes/issues/32)
+
 # [5.4.0](https://github.com/cubicecho/philotes/compare/v5.3.0...v5.4.0) (2026-10-08)
 
 
