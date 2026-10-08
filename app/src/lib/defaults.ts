@@ -22,6 +22,19 @@ export const PAGE_SIZE_DEFAULTS: Readonly<PageSizeSettings> = Object.freeze({
   interactions: 100,
 });
 
+/** The copy of the cache a device keeps, so the app opens with no connection. */
+export interface CacheStoreSettings {
+  /** Largest copy kept, in characters of JSON. A cache past this is not stored at all. */
+  maxChars: number;
+  /** How long the cache must be quiet before the copy is rewritten. */
+  persistDebounceMs: number;
+}
+
+export const CACHE_STORE_DEFAULTS: Readonly<CacheStoreSettings> = Object.freeze({
+  maxChars: 20_000_000,
+  persistDebounceMs: 1000,
+});
+
 /** What the dashboard's widgets show. */
 export interface DashboardSettings {
   /** Most rows one widget lists. */

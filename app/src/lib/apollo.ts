@@ -5,7 +5,8 @@ import { router } from 'expo-router';
 import { Platform } from 'react-native';
 import { scalarTypePolicies } from '@/__generated__/type-policies';
 import { graphqlUrl } from '@/lib/api-url';
-import { authHeaders, clearToken } from '@/lib/auth';
+import { authHeaders, clearToken, isAuthenticated } from '@/lib/auth';
+import { keepCache } from '@/lib/cache-store';
 // Imported for what it does at import: it restores the server address a device was given.
 import '@/lib/server-address';
 
@@ -27,7 +28,7 @@ function openLogin(): void {
     return;
   }
   router.replace(LOGIN_ROUTE);
-  client.clearStore().catch((error: unknown) => {
+  forgetCachedData().catch((error: unknown) => {
     console.error('Could not clear the cache after the session ended', error);
   });
 }
@@ -42,8 +43,39 @@ const errorLink = onError(({ graphQLErrors, operation }) => {
   }
 });
 
+const cache = new InMemoryCache({ typePolicies: scalarTypePolicies });
+
+/** The copy of the cache a device keeps between runs. */
+const cacheStore = keepCache(cache);
+
 /** The app's Apollo client. It sends the session token, and signs out on UNAUTHENTICATED outside sign-in. */
 export const client = new ApolloClient({
-  cache: new InMemoryCache({ typePolicies: scalarTypePolicies }),
+  cache,
   link: from([errorLink, authLink, httpLink]),
 });
+
+/** Whether the cache has to be filled from the device before the first screen is drawn. */
+export const RESTORES_CACHE = cacheStore.isKept;
+
+/**
+ * Fills the cache with what the device kept from the last run. Without a session there is nobody the
+ * copy could belong to, and it is deleted instead.
+ *
+ * @returns Once the cache is ready to read. Never rejects.
+ */
+export async function restoreCachedData(): Promise<void> {
+  if (isAuthenticated()) {
+    await cacheStore.restore();
+    return;
+  }
+  await cacheStore.forget();
+}
+
+/**
+ * Drops everything fetched in a session, from memory and from the device. Called wherever a session
+ * ends: what was fetched belongs to the user and the server it came from.
+ */
+export async function forgetCachedData(): Promise<void> {
+  await client.clearStore();
+  await cacheStore.forget();
+}

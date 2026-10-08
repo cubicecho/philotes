@@ -1,4 +1,4 @@
-import { useApolloClient, useMutation } from '@apollo/client';
+import { useMutation } from '@apollo/client';
 import { Link, usePathname, useRouter } from 'expo-router';
 import { Text, View } from 'react-native';
 import { graphql } from '@/__generated__/gql';
@@ -9,6 +9,7 @@ import { SidebarLayout } from '@/components/split-layout';
 import { Button } from '@/components/ui/button';
 import { Settings, Tag } from '@/components/ui/icons';
 import { forgetAvatarImages } from '@/hooks/use-avatar-image';
+import { forgetCachedData } from '@/lib/apollo';
 import { clearToken } from '@/lib/auth';
 import type { SlotNode } from '@/lib/utils';
 
@@ -36,7 +37,6 @@ export function AppShell({ contentSlot }: { contentSlot: SlotNode }) {
   const router = useRouter();
 
   const [endSession] = useMutation(SIGN_OUT);
-  const apollo = useApolloClient();
 
   /** Ends the session on the server, then forgets it and everything fetched with it. */
   async function signOut() {
@@ -44,7 +44,7 @@ export function AppShell({ contentSlot }: { contentSlot: SlotNode }) {
     await endSession().catch(() => null);
     clearToken();
     forgetAvatarImages();
-    await apollo.clearStore();
+    await forgetCachedData();
     router.replace('/login');
   }
 
