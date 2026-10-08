@@ -13,7 +13,7 @@ import { useAllRows } from '@/lib/use-all-rows';
 
 const GET_LABELS = graphql(`
   query GetLabels($limit: Int!, $offset: Int!) {
-    labels(limit: $limit, offset: $offset, orderBy: { label: { direction: asc, priority: 1 }, id: { direction: asc, priority: 2 } }) {
+    labels(limit: $limit, offset: $offset, orderBy: { label: { direction: asc, priority: 2 }, id: { direction: asc, priority: 1 } }) {
       __typename
       id
       ...Label_List

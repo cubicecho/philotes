@@ -16,8 +16,8 @@ const GET_EXPORT_PERSONS = graphql(`
       limit: $limit
       offset: $offset
       orderBy: {
-        sortName: { direction: asc, priority: 1 }
-        id: { direction: asc, priority: 2 }
+        sortName: { direction: asc, priority: 2 }
+        id: { direction: asc, priority: 1 }
       }
     ) {
       id

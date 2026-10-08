@@ -7,7 +7,7 @@ export const GET_PERSON_NOTES = graphql(`
       where: { personId: { eq: $personId } }
       limit: $limit
       offset: $offset
-      orderBy: { createdAt: { direction: desc, priority: 1 }, id: { direction: asc, priority: 2 } }
+      orderBy: { createdAt: { direction: desc, priority: 2 }, id: { direction: asc, priority: 1 } }
     ) {
       id
       body
@@ -31,7 +31,7 @@ export const GET_PERSON_INTERACTIONS = graphql(`
       where: { personId: { eq: $personId } }
       limit: $limit
       offset: $offset
-      orderBy: { occurredAt: { direction: desc, priority: 1 }, id: { direction: asc, priority: 2 } }
+      orderBy: { occurredAt: { direction: desc, priority: 2 }, id: { direction: asc, priority: 1 } }
     ) {
       id
       personId

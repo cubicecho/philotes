@@ -15,7 +15,7 @@ const GET_INTERACTIONS_FOR_EXPORT = graphql(`
     interactions(
       limit: $limit
       offset: $offset
-      orderBy: { occurredAt: { direction: asc, priority: 1 }, id: { direction: asc, priority: 2 } }
+      orderBy: { occurredAt: { direction: asc, priority: 2 }, id: { direction: asc, priority: 1 } }
     ) {
       id
       channel
@@ -34,7 +34,7 @@ const GET_IMPORTANT_DATES_FOR_EXPORT = graphql(`
     importantDates(
       limit: $limit
       offset: $offset
-      orderBy: { date: { direction: asc, priority: 1 }, id: { direction: asc, priority: 2 } }
+      orderBy: { date: { direction: asc, priority: 2 }, id: { direction: asc, priority: 1 } }
     ) {
       id
       name

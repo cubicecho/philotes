@@ -14,7 +14,7 @@ export const PERSON_RELATIONSHIPS = graphql(`
 
 export const GET_RELATIONSHIP_TYPES = graphql(`
   query GetRelationshipTypes($limit: Int!, $offset: Int!) {
-    relationshipTypes(limit: $limit, offset: $offset, orderBy: { name: { direction: asc, priority: 1 }, id: { direction: asc, priority: 2 } }) {
+    relationshipTypes(limit: $limit, offset: $offset, orderBy: { name: { direction: asc, priority: 2 }, id: { direction: asc, priority: 1 } }) {
       id
       name
     }
