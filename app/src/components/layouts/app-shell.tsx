@@ -4,6 +4,7 @@ import { Text, View } from 'react-native';
 import { graphql } from '@/__generated__/gql';
 import { ActionButton } from '@/components/action-button';
 import { House, LogOut, Share2, UserRoundPlus, Users } from '@/components/app-icons';
+import { OfflineBanner } from '@/components/layouts/offline-banner';
 import { BarNavItem, Sidebar, SidebarNavItem, SidebarSection } from '@/components/sidebar';
 import { SidebarLayout } from '@/components/split-layout';
 import { Button } from '@/components/ui/button';
@@ -123,6 +124,7 @@ export function AppShell({ contentSlot }: { contentSlot: SlotNode }) {
       // pinned header, and that needs a height to divide.
       contentSlot={
         <View role="main" className="min-h-0 min-w-0 flex-1">
+          <OfflineBanner />
           {contentSlot}
         </View>
       }

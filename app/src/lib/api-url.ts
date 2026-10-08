@@ -66,6 +66,15 @@ export function graphqlUrl(): string {
 }
 
 /**
+ * The address the server answers at to say it is up.
+ *
+ * @returns The URL.
+ */
+export function healthUrl(): string {
+  return `${apiUrl()}/healthz`;
+}
+
+/**
  * The address of a stored avatar. The server stores the path with its `/avatars/` prefix, so it
  * is used as it is and only the origin is added.
  *

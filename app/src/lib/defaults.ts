@@ -35,6 +35,22 @@ export const CACHE_STORE_DEFAULTS: Readonly<CacheStoreSettings> = Object.freeze(
   persistDebounceMs: 1000,
 });
 
+/** How the app decides whether its server can be reached. */
+export interface ConnectionSettings {
+  /** How long a query waits for the server before the app gives up on it and counts itself offline. */
+  queryTimeoutMs: number;
+  /** How often the app asks whether the server is back, while offline. */
+  probeIntervalMs: number;
+  /** How long one such check waits for an answer. */
+  probeTimeoutMs: number;
+}
+
+export const CONNECTION_DEFAULTS: Readonly<ConnectionSettings> = Object.freeze({
+  queryTimeoutMs: 15_000,
+  probeIntervalMs: 5000,
+  probeTimeoutMs: 5000,
+});
+
 /** What the dashboard's widgets show. */
 export interface DashboardSettings {
   /** Most rows one widget lists. */

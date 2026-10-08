@@ -7,6 +7,7 @@ import { scalarTypePolicies } from '@/__generated__/type-policies';
 import { graphqlUrl } from '@/lib/api-url';
 import { authHeaders, clearToken, isAuthenticated } from '@/lib/auth';
 import { keepCache } from '@/lib/cache-store';
+import { createConnectionLink } from '@/lib/connection';
 // Imported for what it does at import: it restores the server address a device was given.
 import '@/lib/server-address';
 
@@ -17,6 +18,8 @@ const authLink = setContext((_, { headers }) => ({ headers: { ...headers, ...aut
 
 /** The sign-in operations, where UNAUTHENTICATED means wrong credentials and the page shows it. */
 const SIGN_IN_OPERATIONS = new Set(['SignIn', 'SignUp', 'RequestSignIn', 'VerifyMagicLink']);
+
+const connectionLink = createConnectionLink({ alwaysSent: SIGN_IN_OPERATIONS });
 
 const LOGIN_ROUTE = '/login';
 
@@ -51,7 +54,7 @@ const cacheStore = keepCache(cache);
 /** The app's Apollo client. It sends the session token, and signs out on UNAUTHENTICATED outside sign-in. */
 export const client = new ApolloClient({
   cache,
-  link: from([errorLink, authLink, httpLink]),
+  link: from([errorLink, connectionLink, authLink, httpLink]),
 });
 
 /** Whether the cache has to be filled from the device before the first screen is drawn. */

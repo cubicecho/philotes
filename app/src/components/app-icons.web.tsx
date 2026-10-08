@@ -28,4 +28,5 @@ export {
   UserRoundPlus,
   Users,
   Video,
+  WifiOff,
 } from 'lucide-react';
