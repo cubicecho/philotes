@@ -1,3 +1,17 @@
+# [5.7.0](https://github.com/cubicecho/philotes/compare/v5.6.0...v5.7.0) (2026-10-08)
+
+
+### Bug Fixes
+
+* **server:** serve personsRevision on me ([fe27bb8](https://github.com/cubicecho/philotes/commit/fe27bb83fc5d5247ac8961835c878fc96fb5e535)), closes [#33](https://github.com/cubicecho/philotes/issues/33)
+
+
+### Features
+
+* **app:** keep the cache on the device between runs ([df089ec](https://github.com/cubicecho/philotes/commit/df089ecd5e7ddf71e19fba4e776e4a11ecf42117)), closes [#33](https://github.com/cubicecho/philotes/issues/33)
+* **app:** keep the people list on the device and refresh it by revision ([bd97794](https://github.com/cubicecho/philotes/commit/bd97794090fdd4b492f7176307d730db319db5d2)), closes [#33](https://github.com/cubicecho/philotes/issues/33)
+* **app:** show when the server cannot be reached ([031093c](https://github.com/cubicecho/philotes/commit/031093cd305ced47c85280a598a3551819402328)), closes [#33](https://github.com/cubicecho/philotes/issues/33)
+
 # [5.6.0](https://github.com/cubicecho/philotes/compare/v5.5.0...v5.6.0) (2026-10-08)
 
 
