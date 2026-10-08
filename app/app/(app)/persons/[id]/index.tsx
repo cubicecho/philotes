@@ -14,6 +14,7 @@ import {
   GET_PERSON_DETAIL,
 } from '@/components/domain/person/detail-queries';
 import { EditPersonDialog } from '@/components/domain/person/edit-person-dialog';
+import { KeptPersonSummary, useKeptPerson } from '@/components/domain/person/kept-summary';
 import { PersonLabels } from '@/components/domain/person/labels';
 import { GET_PERSON_INTERACTIONS, GET_PERSON_NOTES } from '@/components/domain/person/person-queries';
 import { PersonProfileSummary } from '@/components/domain/person/profile-summary';
@@ -85,10 +86,21 @@ export default function PersonDetailPage() {
   const avatarUpload = useAvatarUpload(id, refetch);
 
   const person = data?.person;
+  const keptPerson = useKeptPerson(id);
 
   // Only the first load replaces the page: a refetch behind an open dialog must not unmount it.
   if (!person) {
     const pending = loading && !error;
+    // The page was never opened on this device and cannot be fetched: the list's row stands in.
+    if (error && keptPerson) {
+      return (
+        <PageLayout
+          title={keptPerson.displayName}
+          breadcrumbsSlot={backLink}
+          contentSlot={<KeptPersonSummary person={keptPerson} />}
+        />
+      );
+    }
     return (
       <PageLayout
         title="Person"

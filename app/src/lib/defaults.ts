@@ -12,6 +12,10 @@ export interface PageSizeSettings {
   network: number;
   /** Interactions per page on a person's page and timeline. An interaction row is small. */
   interactions: number;
+  /** People per page when the device's copy of the list is brought up to date. Each carries the list row's labels and contact details. */
+  peopleSync: number;
+  /** Rows per page of the two small reads of that refresh: deleted people, and each person's last contact. */
+  peopleSyncLight: number;
 }
 
 export const PAGE_SIZE_DEFAULTS: Readonly<PageSizeSettings> = Object.freeze({
@@ -20,6 +24,8 @@ export const PAGE_SIZE_DEFAULTS: Readonly<PageSizeSettings> = Object.freeze({
   calendarExport: 500,
   network: 40,
   interactions: 100,
+  peopleSync: 75,
+  peopleSyncLight: 500,
 });
 
 /** The copy of the cache a device keeps, so the app opens with no connection. */

@@ -1,4 +1,4 @@
-import { ApolloClient, from, HttpLink, InMemoryCache } from '@apollo/client';
+import { ApolloClient, type DefaultOptions, from, HttpLink, InMemoryCache } from '@apollo/client';
 import { setContext } from '@apollo/client/link/context';
 import { onError } from '@apollo/client/link/error';
 import { router } from 'expo-router';
@@ -7,7 +7,7 @@ import { scalarTypePolicies } from '@/__generated__/type-policies';
 import { graphqlUrl } from '@/lib/api-url';
 import { authHeaders, clearToken, isAuthenticated } from '@/lib/auth';
 import { keepCache } from '@/lib/cache-store';
-import { createConnectionLink } from '@/lib/connection';
+import { createConnectionLink, onConnectionChange } from '@/lib/connection';
 // Imported for what it does at import: it restores the server address a device was given.
 import '@/lib/server-address';
 
@@ -59,6 +59,31 @@ export const client = new ApolloClient({
 
 /** Whether the cache has to be filled from the device before the first screen is drawn. */
 export const RESTORES_CACHE = cacheStore.isKept;
+
+// A cache that outlives the run would, read first and trusted, show last week's answer for ever.
+// So where one is kept, a query shows what the cache has and asks the server as well; once the
+// server has answered, the cache is current and is trusted again.
+const ONLINE_QUERIES: DefaultOptions = {
+  watchQuery: { fetchPolicy: 'cache-and-network', nextFetchPolicy: 'cache-first' },
+};
+// Offline, asking as well would only put an error beside data that is there.
+const OFFLINE_QUERIES: DefaultOptions = { watchQuery: { fetchPolicy: 'cache-first' } };
+
+if (RESTORES_CACHE) {
+  client.defaultOptions = ONLINE_QUERIES;
+}
+
+onConnectionChange((isOffline) => {
+  if (RESTORES_CACHE) {
+    client.defaultOptions = isOffline ? OFFLINE_QUERIES : ONLINE_QUERIES;
+  }
+  if (isOffline === false) {
+    // Back: whatever is on screen was read while the server was away.
+    client.reFetchObservableQueries().catch((error: unknown) => {
+      console.error('Could not refresh after coming back online', error);
+    });
+  }
+});
 
 /**
  * Fills the cache with what the device kept from the last run. Without a session there is nobody the

@@ -51,6 +51,24 @@ export function useIsOffline(): boolean {
   return useReactiveVar(isOfflineVar);
 }
 
+/** Called with the new state each time the app goes offline or comes back. */
+export type ConnectionListener = (isOffline: boolean) => void;
+
+const listeners = new Set<ConnectionListener>();
+
+/**
+ * Hears of every change between online and offline, outside a component.
+ *
+ * @param listener - Called with the new state.
+ * @returns A function that stops the calls.
+ */
+export function onConnectionChange(listener: ConnectionListener): () => void {
+  listeners.add(listener);
+  return () => {
+    listeners.delete(listener);
+  };
+}
+
 /**
  * Records whether the server answered.
  *
@@ -58,8 +76,12 @@ export function useIsOffline(): boolean {
  */
 export function setReachable(isReachable: boolean): void {
   const isChanged = isOfflineVar() === isReachable;
-  if (isChanged) {
-    isOfflineVar(isReachable === false);
+  if (isChanged === false) {
+    return;
+  }
+  isOfflineVar(isReachable === false);
+  for (const listener of listeners) {
+    listener(isReachable === false);
   }
 }
 
