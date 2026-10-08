@@ -119,16 +119,20 @@ drifted, and CI fails on it; `npx expo install --fix` puts them back.
 
 ## `npx expo-doctor`
 
-Run it from `app/` after changing dependencies. Two findings are known and left:
+Run it from `app/` after changing dependencies. One finding is known and left:
 
 - **Metro config.** `metro.config.js` sets `resolver.nodeModulesPaths` itself,
   because of the workspace layout. The bundle builds for both targets with it.
-- **Hermes memory regression.** Expo SDK 56 ships a Hermes with a known memory
-  regression that SDK 57 fixes. It is tolerable in a development build and goes
-  away with the SDK upgrade.
 
 A native build holds one copy of each native module, so the root
 `package.json` pins `react-native-screens` and `react-native-svg` in
-`overrides` to the versions SDK 56 expects. Without them `expo-router` and
-`lucide-react-native` each bring a second, newer copy. Move the pins when the
-SDK moves.
+`overrides` to the versions the SDK expects (SDK 57 kept the ones SDK 56 had).
+Without them `expo-router` and `lucide-react-native` each bring a second, newer
+copy. Move the pins when the SDK moves.
+
+An SDK upgrade can leave the previous React Native hoisted at the root of
+`package-lock.json` beside the new one under `app/`, which the doctor reports
+as duplicate dependencies. `npm dedupe` does not clear it. Remove the
+`react-native`, `react-native-reanimated`, `react-native-worklets` and
+`@react-native/*` entries from the lockfile and run `npm install`, which
+resolves them again as one copy.
