@@ -62,9 +62,10 @@ to it. The web app shows neither.
 - A development build may talk to a plain `http://` server, which is what a
   server on the home network usually is. Android refuses cleartext traffic in
   a release build unless the app opts in, which is for the day there is one.
-- A sign-in link sent by email opens the server's web app, not this one. On a
-  device, sign in with a password, or with an email alone on a
-  `SECURE_LOCAL_NET` server.
+- A sign-in link sent by email opens the server's web app, not this one, and so
+  would an OIDC provider's callback, which is why the device build does not show
+  the provider's button. On a device, sign in with a password, or with an email
+  alone on a `SECURE_LOCAL_NET` server.
 
 ## Reading offline
 

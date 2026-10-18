@@ -49,8 +49,9 @@ philotes/
 │       ├── index.ts         # Server entry point (port 3000)
 │       ├── core/            # config (env), defaults (tunables), wire, context, errors, validation
 │       ├── graphql/         # build-schema, tenancy, write-guards, operation-limits, handler
-│       ├── http/            # createApp, health, static files, shutdown
-│       ├── auth/            # better-auth, sign-in resolvers, rate limit, email
+│       ├── http/            # createApp, health, static files, shutdown, sso (the OIDC redirects)
+│       ├── auth/            # better-auth, auth-host, admin, sign-in resolvers, rate limit, email
+│       ├── sso/             # Pairing an OIDC provider from the app (Dynamic Client Registration)
 │       ├── <domain>/        # persons, notes, tasks, …: input.ts, hooks.ts, resolvers.ts
 │       └── __tests__/       # Server tests
 ├── db/                      # Database layer (Drizzle ORM on Postgres)
@@ -298,6 +299,13 @@ Do not hand-format — run `npm run check:biome`. The settings, from `biome.json
   `useAllRows`
 - To add custom mutations/queries, extend the generated schema (see
   [`docs/server.md`](docs/server.md) for the extension pattern)
+- **OIDC sign-in** comes from `OIDC_ISSUER` in the environment, which wins and
+  is read-only from the app, or from a provider paired by pasting its setup URL
+  (`sso/`). Anyone may pair while nobody has signed up, and only the admin after;
+  the first account is the admin. Pairing rebuilds better-auth through
+  `AuthHost`, so everything that needs auth asks `authHost.current()` per
+  request and never holds an instance from boot. The callback (`http/sso.ts`)
+  hands the app a one-time token that `/auth/sso` swaps for a bearer session
 - Server runs on port **3000**; the web app reaches it via `EXPO_PUBLIC_API_URL`,
   a device via the address typed at sign-in. Both go through `@/lib/api-url`
 - See [`docs/server.md`](docs/server.md) and [`docs/graphql.md`](docs/graphql.md)
@@ -328,7 +336,8 @@ Do not hand-format — run `npm run check:biome`. The settings, from `biome.json
   not a `GraphQLError`. Use the helpers in `server/src/core/errors.ts`
   (`badInput`, `notFound`, `requireAuth`) when a client needs to branch on the code
 - Never let an error message reveal a row the caller is not allowed to see —
-  report "not found" rather than "forbidden"
+  report "not found" rather than "forbidden". The one `FORBIDDEN` about
+  sign-in is `pairSso`/`unpairSso`: they are about the instance, not a row
 - Frontend: use Apollo Client error states from `useQuery`/`useMutation`. The
   root layout clears the token and redirects on an `UNAUTHENTICATED` code
 - Never swallow errors silently — always surface them to the user or log them

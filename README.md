@@ -200,6 +200,11 @@ Then open [http://localhost:3000](http://localhost:3000).
 | `SESSION_STORE` | `memory` | `database` keeps sessions across restarts |
 | `SMTP_URL` | none | SMTP server for sign-in links. Unset, sign-in is by password only |
 | `SMTP_FROM` | `philotes@<APP_URL host>` | From address of sign-in emails |
+| `OIDC_ISSUER`, `OIDC_CLIENT_ID` | none | An OpenID Connect provider to sign in with. Set both or neither. Unset, a provider can be paired from the app with a setup URL instead |
+| `OIDC_CLIENT_SECRET` | none | The client's secret. Unset means a public client (PKCE only) |
+| `OIDC_CLIENT_AUTH` | `client_secret_basic` | How the secret is sent: `client_secret_basic` or `client_secret_post` |
+| `OIDC_NAME` | `SSO` | What the login page's button calls the provider |
+| `SERVER_URL` | `APP_URL` in production | Where a browser reaches the server, for the OIDC redirects. The redirect URI is `<SERVER_URL>/api/auth/callback/oidc` |
 | `APP_URL` | `http://localhost:<PORT>` | Public URL the app is served at |
 | `PORT` | `3000` | Port the server listens on |
 | `AVATAR_DIR` | `./avatars`, `/data/avatars` in the image | Where uploaded avatars are kept, unless `S3_ENDPOINT` is set |
@@ -231,6 +236,26 @@ Released images are published to Docker Hub (`vantreeseba/philotes`) and to
 GHCR (`ghcr.io/cubicecho/philotes`).
 
 ---
+
+## Sign In with Your Identity Provider
+
+Philotes can add a **Sign in with …** button for an OpenID Connect provider
+(heautou, Keycloak, Authentik, …). Passwords keep working beside it.
+
+- **Pair it from the app.** Ask your provider for a setup URL for Philotes
+  (`<issuer>#setup=<token>&name=<name>`) and paste it into **Set up sign-in**
+  on the sign-in page of a new instance, or **Settings → App Settings →
+  Sign-in** as the admin. Philotes registers itself with the provider (OAuth
+  2.0 Dynamic Client Registration) and the button appears without a restart.
+  Disconnecting deletes the client at the provider.
+- **Or pin it in the environment** with `OIDC_ISSUER` and `OIDC_CLIENT_ID`
+  (see the table above), and register the redirect URI the server prints at
+  boot. A provider set this way wins and cannot be changed from the app.
+
+The first account on an instance is its admin, and only the admin can change
+how people sign in once anyone has an account. An address the provider vouches
+for signs in to the existing Philotes account with that address. The button is
+offered in the web app; the Android build signs in with a password.
 
 ## Sync with Your Phone
 

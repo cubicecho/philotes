@@ -78,6 +78,13 @@ Nineteen tables, plus `api_keys`:
 | `relationship_types` | `models/relationship-types.ts` | `user_id` |
 | `tasks` | `models/tasks.ts` | `user_id` |
 | `api_keys` | `api-keys.ts` | `user_id` |
+| `oidc_settings` | `models/oidc-settings.ts` | none: the instance's |
+
+`oidc_settings` is the OIDC provider the instance was paired with: one row or
+none (a check constraint pins its `id`), written only by the server. It holds a
+client secret and a registration access token, so it is excluded from the
+GraphQL schema. `users.is_admin` marks the account that may change it; the
+first account to be created gets it (see [`server.md`](server.md#oidc-sign-in)).
 
 `api_keys` lives outside `models/` deliberately: it is not part of the
 generated GraphQL schema, and is reached only through the hand-written API-key

@@ -10,7 +10,8 @@ no hand-written resolvers for standard CRUD, and none for tenancy either — see
 - **Entry point**: `server/src/index.ts`
 - **Port**: `3000`
 - **Protocol**: GraphQL over HTTP at `/graphql`
-- **Auth**: better-auth (`server/src/auth/`), by session cookie or bearer token
+- **Auth**: better-auth (`server/src/auth/`), by bearer token: a password, an
+  emailed link, `SECURE_LOCAL_NET`, or an OIDC provider (see [OIDC Sign-in](#oidc-sign-in))
 
 ## Layout
 
@@ -25,7 +26,7 @@ subject needs, under the same file names everywhere:
 
 The folders are `persons`, `notes`, `gratitudes`, `interactions`, `tasks`,
 `important-dates`, `labels`, `relationships`, `contact-import`, `vcard`,
-`carddav`, `api-keys`, `users` and `auth`. `persons` has a second extension file, `duplicates.ts`, for
+`carddav`, `api-keys`, `users`, `auth` and `sso`. `persons` has a second extension file, `duplicates.ts`, for
 `potentialDuplicates` and `mergePersons`, and `normalized-values.ts`, which
 fills a contact info's `normalizedValue` on every write. `users` holds the
 caller's settings (`setDefaultCountry`). Three more hold what no domain owns:
@@ -34,7 +35,7 @@ caller's settings (`setDefaultCountry`). Three more hold what no domain owns:
 | --- | --- |
 | `core/` | `config.ts` (the only reader of `process.env`), `defaults.ts` (every tunable), `wire.ts` (HTTP statuses and unit conversions), `context.ts`, `errors.ts`, `validation.ts`, `preflight.ts` |
 | `graphql/` | `build-schema.ts`, `schema.ts`, `tenancy.ts`, `write-guards.ts`, `operation-limits.ts`, `handler.ts` |
-| `http/` | `app.ts` (`createApp`), `health.ts`, `static.ts`, `shutdown.ts` |
+| `http/` | `app.ts` (`createApp`), `health.ts`, `static.ts`, `shutdown.ts`, `sso.ts` (the OIDC sign-in's start and callback) |
 
 `server/__generated__/schema.graphql` and `server/__generated__/resolvers.ts`
 are generated. Do not edit them.
@@ -87,8 +88,8 @@ stamps it from the request. Ownership is therefore unstatable rather than
 merely overwritten.
 
 **`exclude`** drops better-auth's tables (`sessions`, `accounts`,
-`verifications`, `apikeys`) from the schema entirely: not readable, not
-filterable. **`features`** removes the generated `users` mutations, since
+`verifications`, `apikeys`) and the server's own `oidc_settings`, which holds a
+client secret, from the schema entirely: not readable, not filterable. **`features`** removes the generated `users` mutations, since
 accounts belong to the auth flow, and keeps nested writes off, since they
 would bypass the child table's hooks.
 
@@ -281,6 +282,47 @@ is the fullest example: it moves every row a user recorded about one person to
 another. **A new table with a person column has to be added to
 `PERSON_OWNED_TABLES` or `PERSON_JUNCTIONS` there**, or a merge leaves its rows
 on the person who was merged away.
+
+## OIDC Sign-in
+
+One OpenID Connect provider per instance, under better-auth's provider id
+`oidc`, through its `genericOAuth` plugin (PKCE, state and nonce are
+better-auth's). It comes from one of two places, and `effectiveOidc` in
+`sso/settings.ts` is the only code that decides which:
+
+1. `OIDC_ISSUER` + `OIDC_CLIENT_ID` in the environment. It wins, and the app
+   cannot change it.
+2. A pairing: the `oidc_settings` row, written when someone pastes a provider's
+   setup URL (`<issuer>#setup=<initial access token>&name=<name>`).
+   `sso/pairing.ts` checks the discovery document names the same issuer before
+   the token goes anywhere, registers at its `registration_endpoint`
+   (RFC 7591), and keeps the client. `unpairSso` deletes it there (RFC 7592) and
+   forgets the row whatever the provider answers.
+
+better-auth fixes its plugins at creation, so pairing builds a new instance.
+`AuthHost` (`auth/auth-host.ts`) holds the current one; the GraphQL context,
+CardDAV, `/ical` and `/avatars` all ask `authHost.current()` per request. The
+host passes one session store to every instance it builds, so with
+`SESSION_STORE=memory` a rebuild signs nobody out.
+
+**Who may pair** (`sso/resolvers.ts`): anyone while there are no users, so the
+person installing it can set sign-in up from the login page; only the admin
+after. `users.isAdmin` is set by `claimFirstAdmin` in better-auth's
+`databaseHooks.user.create`, which every way of making an account goes through;
+the migration made the oldest existing user admin. Refusals are `FORBIDDEN`,
+pairing twice is `CONFLICT`, and a provider's refusal is `BAD_USER_INPUT` (or
+`TOO_MANY_REQUESTS`) with `extensions.reason` from `PairingFailure`.
+
+**The browser legs** (`http/sso.ts`) are the only better-auth routes served over
+HTTP: `GET /sso/oidc` starts (`signInSocial`, with its state cookie), and
+`GET /api/auth/callback/oidc` is better-auth's callback. The callback's session
+cookie is dropped; the browser lands on the app's `/auth/sso?token=…` with a
+one-time token, and `verifyOneTimeToken` swaps it for a bearer session. A spent
+or expired token is `BAD_USER_INPUT`, never `UNAUTHENTICATED`.
+
+`SERVER_URL` is where those routes live, and the redirect URI is
+`<SERVER_URL>/api/auth/callback/oidc`. It defaults to `APP_URL` in production
+and `http://localhost:PORT` in development, where the app is on the Expo port.
 
 ## Error Handling
 

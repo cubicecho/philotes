@@ -35,6 +35,7 @@ app/
 │   ├── _layout.tsx             # Theme, ApolloProvider, <Stack>, ErrorBoundary; imports global.css
 │   ├── login.tsx               # /login
 │   ├── auth/verify.tsx         # /auth/verify (sign-in link landing)
+│   ├── auth/sso.tsx            # /auth/sso (OIDC sign-in landing: swaps its one-time token)
 │   └── (app)/                  # Authenticated group — no URL segment
 │       ├── _layout.tsx         # Redirects to /login; renders the AppShell
 │       ├── index.tsx           # /
