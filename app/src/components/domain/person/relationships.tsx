@@ -3,13 +3,13 @@ import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { View } from 'react-native';
 import type { Person_RelationshipsFragment, PersonRelationshipEntry } from '@/__generated__/graphql';
-import { ActionButton } from '@/components/action-button';
 import { ConfirmButton } from '@/components/confirm-button';
 import { type EditingRelationship, RelationshipFormDialog } from '@/components/domain/person/relationship-form-dialog';
 import { DELETE_RELATIONSHIP } from '@/components/domain/person/relationship-queries';
 import { ListItem } from '@/components/list-item';
 import { EmptyState } from '@/components/page';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Pencil, Trash2 } from '@/components/ui/icons';
 import { personName } from '@/lib/person-name';
 
@@ -57,17 +57,17 @@ function RelationshipRow({ relationship, onDelete, onEditPress }: RelationshipRo
       onPress={() => router.push(`/persons/${relatedPersonId}`)}
       actionSlot={
         <>
-          <ActionButton
+          <Button
             variant="ghost"
             size="icon-sm"
-            label="Edit relationship"
+            aria-label="Edit relationship"
             onPress={onEditPress}
             iconSlot={<Pencil className="h-4 w-4" />}
           />
           <ConfirmButton
             variant="ghost"
             size="icon-sm"
-            label="Remove relationship"
+            aria-label="Remove relationship"
             title="Remove this relationship?"
             description={`${name} is no longer linked as ${type}. Neither person is deleted.`}
             confirmLabel="Remove"

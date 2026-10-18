@@ -1,9 +1,11 @@
 import { useState } from 'react';
 import { useAppForm } from '@/components/app-form';
+import { DialogLayout } from '@/components/dialog-layout';
 import { ChannelIcon } from '@/components/domain/person/channel-icon';
-import { type TagOption, TagsField } from '@/components/domain/person/tag-picker';
+import { type TagOption, tagsFieldProps } from '@/components/domain/person/tag-picker';
+import { Alert } from '@/components/ui/alert';
+import { Button } from '@/components/ui/button';
 import { FieldWrapper, Form } from '@/components/ui/form';
-import { FormDialogFooter } from '@/components/ui/form-dialog';
 import { SegmentedButton, SegmentedGroup } from '@/components/ui/segmented';
 import { InteractionChannel, InteractionSentiment } from '@/lib/vocabulary';
 
@@ -74,28 +76,35 @@ export interface InteractionFormValues {
   labelIds: string[];
 }
 
-interface InteractionFormProps {
-  /** Unused. */
-  personId: string;
+interface InteractionFormDialogProps {
+  open: boolean;
+  /** Called when the dialog asks to close, and with `false` once the interaction is saved. */
+  onOpenChange: (open: boolean) => void;
+  title: string;
+  description?: string | undefined;
   /** Every tag the user has. */
   allTags: TagOption[];
   /** Values to start from; a field left out starts as a call, now, with no sentiment, note or tags. */
   initialValues?: Partial<InteractionFormValues>;
   submitLabel?: string;
-  /** Saves the interaction. A rejection's message is shown in the footer and the form stays as typed. */
+  /**
+   * Saves the interaction. On success the form resets and the dialog closes; a rejection's message is shown under
+   * the fields and the form stays as typed.
+   */
   onSubmit: (values: InteractionFormValues) => Promise<void>;
-  onCancel: () => void;
 }
 
-/** The interaction fields and their footer. It draws no dialog of its own: render it inside a `FormDialog`. */
-export function InteractionForm({
-  personId: _personId,
+/** The dialog that logs or edits an interaction: when, the channel, the sentiment, a note and its tags. */
+export function InteractionFormDialog({
+  open,
+  onOpenChange,
+  title,
+  description,
   allTags,
   initialValues,
   submitLabel = 'Add Interaction',
   onSubmit,
-  onCancel,
-}: InteractionFormProps) {
+}: InteractionFormDialogProps) {
   const [formError, setFormError] = useState<string | null>(null);
   const defaultValues: InteractionFormValues = {
     channel: initialValues?.channel ?? InteractionChannel.Call,
@@ -113,82 +122,118 @@ export function InteractionForm({
         await onSubmit(value);
       } catch (err: unknown) {
         setFormError(err instanceof Error ? err.message : 'An unexpected error occurred.');
+        return;
       }
+      form.reset();
+      onOpenChange(false);
     },
   });
 
+  // The dialog stays mounted while shut, so whatever way it closes, the next opening starts afresh.
+  const handleOpenChange = (next: boolean) => {
+    const isClosing = next === false;
+    if (isClosing) {
+      form.reset();
+      setFormError(null);
+    }
+    onOpenChange(next);
+  };
+
   return (
-    <form.AppForm>
-      <Form className="gap-4">
-        <form.AppField name="occurredAt">
-          {(field) => <field.DateTimeField label="Date & Time" required />}
-        </form.AppField>
+    <DialogLayout
+      open={open}
+      onOpenChange={handleOpenChange}
+      title={title}
+      description={description}
+      hasUnsavedChanges={() => form.state.isDefaultValue === false}
+      contentSlot={
+        <form.AppForm>
+          <Form className="gap-4">
+            <form.AppField name="occurredAt">
+              {(field) => <field.DateTimeField label="Date & Time" required />}
+            </form.AppField>
 
-        <form.AppField name="channel">
-          {(field) => (
-            <FieldWrapper
-              label="Channel"
-              asGroup
-              controlSlot={
-                <SegmentedGroup
-                  variant="plain"
-                  className="flex-wrap"
-                  value={field.state.value}
-                  onValueChange={(next) => {
-                    const channel = findChannel(next);
-                    if (channel) {
-                      field.handleChange(channel);
-                    }
-                  }}
-                >
-                  {CHANNEL_OPTIONS.map((opt) => (
-                    <SegmentedButton key={opt.value} value={opt.value} iconSlot={<ChannelIcon channel={opt.value} />}>
-                      {opt.label}
-                    </SegmentedButton>
-                  ))}
-                </SegmentedGroup>
-              }
-            />
-          )}
-        </form.AppField>
+            <form.AppField name="channel">
+              {(field) => (
+                <FieldWrapper
+                  label="Channel"
+                  asGroup
+                  controlSlot={
+                    <SegmentedGroup
+                      variant="plain"
+                      className="flex-wrap"
+                      value={field.state.value}
+                      onValueChange={(next) => {
+                        const channel = findChannel(next);
+                        if (channel) {
+                          field.handleChange(channel);
+                        }
+                      }}
+                    >
+                      {CHANNEL_OPTIONS.map((opt) => (
+                        <SegmentedButton
+                          key={opt.value}
+                          value={opt.value}
+                          iconSlot={<ChannelIcon channel={opt.value} />}
+                        >
+                          {opt.label}
+                        </SegmentedButton>
+                      ))}
+                    </SegmentedGroup>
+                  }
+                />
+              )}
+            </form.AppField>
 
-        <form.AppField name="sentiment">
-          {(field) => (
-            <FieldWrapper
-              label="Sentiment"
-              asGroup
-              controlSlot={
-                <SegmentedGroup
-                  variant="plain"
-                  className="flex-wrap"
-                  value={field.state.value}
-                  // Pressing the current sentiment again clears it: it is optional.
-                  onValueChange={(next) => {
-                    const isCurrent = field.state.value === next;
-                    field.handleChange(isCurrent ? '' : (findSentiment(next) ?? ''));
-                  }}
-                >
-                  {SENTIMENT_OPTIONS.map((opt) => (
-                    <SegmentedButton key={opt.value} value={opt.value}>
-                      {`${opt.emoji} ${opt.label}`}
-                    </SegmentedButton>
-                  ))}
-                </SegmentedGroup>
-              }
-            />
-          )}
-        </form.AppField>
+            <form.AppField name="sentiment">
+              {(field) => (
+                <FieldWrapper
+                  label="Sentiment"
+                  asGroup
+                  controlSlot={
+                    <SegmentedGroup
+                      variant="plain"
+                      className="flex-wrap"
+                      value={field.state.value}
+                      // Pressing the current sentiment again clears it: it is optional.
+                      onValueChange={(next) => {
+                        const isCurrent = field.state.value === next;
+                        field.handleChange(isCurrent ? '' : (findSentiment(next) ?? ''));
+                      }}
+                    >
+                      {SENTIMENT_OPTIONS.map((opt) => (
+                        <SegmentedButton key={opt.value} value={opt.value}>
+                          {`${opt.emoji} ${opt.label}`}
+                        </SegmentedButton>
+                      ))}
+                    </SegmentedGroup>
+                  }
+                />
+              )}
+            </form.AppField>
 
-        <form.AppField name="note">
-          {(field) => <field.TextareaField label="Note" rows={3} placeholder="What happened?" />}
-        </form.AppField>
+            <form.AppField name="note">
+              {(field) => <field.TextareaField label="Note" rows={3} placeholder="What happened?" />}
+            </form.AppField>
 
-        {allTags.length > 0 && <form.AppField name="labelIds">{() => <TagsField allTags={allTags} />}</form.AppField>}
+            {allTags.length > 0 && (
+              <form.AppField name="labelIds">
+                {(field) => <field.ComboboxField multiple {...tagsFieldProps(allTags)} />}
+              </form.AppField>
+            )}
 
-        <FormDialogFooter onCancel={onCancel} error={formError}>
-          <form.SubmitButton createLabel={submitLabel} savingLabel="Saving..." />
-        </FormDialogFooter>
-      </Form>
-    </form.AppForm>
+            {formError ? <Alert variant="destructive" title={formError} /> : null}
+          </Form>
+        </form.AppForm>
+      }
+      footerActionsSlot={(close) => (
+        <>
+          <Button variant="outline" onPress={close} content="Cancel" />
+          <form.AppForm>
+            <form.SubmitButton createLabel={submitLabel} savingLabel="Saving..." />
+          </form.AppForm>
+        </>
+      )}
+    />
   );
 }

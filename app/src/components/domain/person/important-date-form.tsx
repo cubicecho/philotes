@@ -1,10 +1,12 @@
 import { format, parseISO } from 'date-fns';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { z } from 'zod';
 import { ImportantDatesKindEnum as Kind, ImportantDatesMilestoneTypeEnum as Milestone } from '@/__generated__/graphql';
 import { useAppForm } from '@/components/app-form';
+import { DialogLayout } from '@/components/dialog-layout';
+import { Alert } from '@/components/ui/alert';
+import { Button } from '@/components/ui/button';
 import { Form } from '@/components/ui/form';
-import { FormDialogFooter } from '@/components/ui/form-dialog';
 import { YEARLESS_DATE_YEAR } from '@/lib/time';
 import { Recurrence } from '@/lib/vocabulary';
 
@@ -142,16 +144,29 @@ export interface ImportantDateFormValue {
   milestoneType?: string;
 }
 
-interface ImportantDateFormProps {
-  /** Saves the date. A rejection's message is shown in the footer and the form stays as typed. */
+interface ImportantDateDialogProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  title: string;
+  description?: string;
+  /**
+   * Saves the date and closes the dialog. A rejection's message is shown under the fields and the form stays as
+   * typed.
+   */
   onSubmit: (value: ImportantDateFormValue) => Promise<void>;
-  onCancel: () => void;
   /** The date being edited; left out, the form starts blank. */
   initialValues?: ImportantDateFormValue;
 }
 
-/** The important-date fields and their footer. It draws no dialog of its own: render it inside a `FormDialog`. */
-export function ImportantDateForm({ onSubmit, onCancel, initialValues }: ImportantDateFormProps) {
+/** The dialog that adds or edits an important date. Each time it opens, it starts from `initialValues`. */
+export function ImportantDateDialog({
+  open,
+  onOpenChange,
+  title,
+  description,
+  onSubmit,
+  initialValues,
+}: ImportantDateDialogProps) {
   const [formError, setFormError] = useState<string | null>(null);
   const defaultValues: z.input<typeof importantDateSchema> = {
     name: initialValues?.name ?? '',
@@ -197,47 +212,71 @@ export function ImportantDateForm({ onSubmit, onCancel, initialValues }: Importa
     },
   });
 
-  return (
-    <form.AppForm>
-      <Form className="gap-4">
-        <form.AppField
-          name="kind"
-          listeners={{
-            onChange: ({ value }) => {
-              // A birthday or an anniversary names itself and comes round every year.
-              const kindName = KIND_NAMES[value];
-              if (kindName === '') {
-                return;
-              }
-              const isUnnamed = form.getFieldValue('name').trim() === '';
-              if (isUnnamed) {
-                form.setFieldValue('name', kindName);
-              }
-              form.setFieldValue('recurrence', Recurrence.Yearly);
-            },
-          }}
-        >
-          {(field) => <field.SelectField label="Kind" options={KIND_OPTIONS} />}
-        </form.AppField>
-        <form.AppField name="name">{(field) => <field.InputField label="Name" />}</form.AppField>
-        <form.AppField name="date">{(field) => <field.DateTimeField label="Date" mode="date" />}</form.AppField>
-        <form.AppField name="yearUnknown">
-          {(field) => <field.CheckboxField label="I don't know the year" />}
-        </form.AppField>
-        <form.AppField name="description">
-          {(field) => <field.InputField label="Description (optional)" />}
-        </form.AppField>
-        <form.AppField name="recurrence">
-          {(field) => <field.SelectField label="Recurrence" options={RECURRENCE_SELECT_OPTIONS} />}
-        </form.AppField>
-        <form.AppField name="milestoneType">
-          {(field) => <field.SelectField label="Milestone Type (optional)" options={MILESTONE_TYPE_SELECT_OPTIONS} />}
-        </form.AppField>
+  // The dialog keeps its form while it is shut, so a reopened one starts again from the date as it now stands.
+  useEffect(() => {
+    if (open) {
+      form.reset();
+      setFormError(null);
+    }
+  }, [open, form]);
 
-        <FormDialogFooter onCancel={onCancel} error={formError}>
-          <form.SubmitButton createLabel="Save" savingLabel="Saving..." />
-        </FormDialogFooter>
-      </Form>
-    </form.AppForm>
+  return (
+    <DialogLayout
+      open={open}
+      onOpenChange={onOpenChange}
+      title={title}
+      description={description}
+      hasUnsavedChanges={() => form.state.isDefaultValue === false}
+      contentSlot={
+        <form.AppForm>
+          <Form className="gap-4">
+            <form.AppField
+              name="kind"
+              listeners={{
+                onChange: ({ value }) => {
+                  // A birthday or an anniversary names itself and comes round every year.
+                  const kindName = KIND_NAMES[value];
+                  if (kindName === '') {
+                    return;
+                  }
+                  const isUnnamed = form.getFieldValue('name').trim() === '';
+                  if (isUnnamed) {
+                    form.setFieldValue('name', kindName);
+                  }
+                  form.setFieldValue('recurrence', Recurrence.Yearly);
+                },
+              }}
+            >
+              {(field) => <field.SelectField label="Kind" options={KIND_OPTIONS} />}
+            </form.AppField>
+            <form.AppField name="name">{(field) => <field.InputField label="Name" />}</form.AppField>
+            <form.AppField name="date">{(field) => <field.DateTimeField label="Date" mode="date" />}</form.AppField>
+            <form.AppField name="yearUnknown">
+              {(field) => <field.CheckboxField label="I don't know the year" />}
+            </form.AppField>
+            <form.AppField name="description">
+              {(field) => <field.InputField label="Description (optional)" />}
+            </form.AppField>
+            <form.AppField name="recurrence">
+              {(field) => <field.SelectField label="Recurrence" options={RECURRENCE_SELECT_OPTIONS} />}
+            </form.AppField>
+            <form.AppField name="milestoneType">
+              {(field) => (
+                <field.SelectField label="Milestone Type (optional)" options={MILESTONE_TYPE_SELECT_OPTIONS} />
+              )}
+            </form.AppField>
+            {formError ? <Alert variant="destructive" title={formError} /> : null}
+          </Form>
+        </form.AppForm>
+      }
+      footerActionsSlot={(close) => (
+        <>
+          <Button variant="outline" onPress={close} content="Cancel" />
+          <form.AppForm>
+            <form.SubmitButton createLabel="Save" savingLabel="Saving..." />
+          </form.AppForm>
+        </>
+      )}
+    />
   );
 }

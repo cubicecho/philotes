@@ -167,7 +167,7 @@ export default function PersonDetailPage() {
               onPress={() => setEditPersonOpen(true)}
             />
             <ConfirmButton
-              label={`Delete ${name}`}
+              aria-label={`Delete ${name}`}
               variant="ghost"
               size="icon-sm"
               iconSlot={<Trash2 />}

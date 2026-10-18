@@ -1,11 +1,11 @@
-import { useState } from 'react';
-import { ScrollView } from 'react-native';
+import { useEffect, useState } from 'react';
 import { z } from 'zod';
 import type { Label_ListFragment } from '@/__generated__/graphql';
 import { useAppForm } from '@/components/app-form';
-import { MultiSelect } from '@/components/multi-select';
-import { FieldRow, FieldWrapper, Form } from '@/components/ui/form';
-import { FormDialogFooter } from '@/components/ui/form-dialog';
+import { DialogLayout } from '@/components/dialog-layout';
+import { Alert } from '@/components/ui/alert';
+import { Button } from '@/components/ui/button';
+import { FieldRow, Form } from '@/components/ui/form';
 import { ContactFrequency } from '@/lib/vocabulary';
 
 /** How often to stay in touch, as options; the empty value is no cadence. */
@@ -130,19 +130,34 @@ export interface PersonFormInitialValues extends Partial<Record<TextField, strin
   firstMetDate?: string | Date | null;
 }
 
-interface PersonFormProps {
+interface PersonFormDialogProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  title: string;
+  description?: string;
   /** Every label the person could be given. */
   availableLabels: Label_ListFragment[];
   /** The person being edited; left out, the form adds one and clears itself after each save. */
   initialValues?: PersonFormInitialValues;
   submitLabel?: string;
-  /** Saves the person. A rejection's message is shown in the footer and the form stays as typed. */
+  /**
+   * Saves the person and closes the dialog. A rejection's message is shown under the fields and the form stays as
+   * typed.
+   */
   onSubmit: (value: PersonFormValue) => Promise<void>;
-  onCancel: () => void;
 }
 
-/** The person fields and their footer. It draws no dialog of its own: render it inside a `FormDialog`. */
-export function PersonForm({ availableLabels, initialValues, submitLabel, onSubmit, onCancel }: PersonFormProps) {
+/** The dialog that adds or edits a person. Each time it opens, it starts from `initialValues`. */
+export function PersonFormDialog({
+  open,
+  onOpenChange,
+  title,
+  description,
+  availableLabels,
+  initialValues,
+  submitLabel,
+  onSubmit,
+}: PersonFormDialogProps) {
   const [formError, setFormError] = useState<string | null>(null);
 
   const defaultValues: PersonFormFields = {
@@ -214,89 +229,123 @@ export function PersonForm({ availableLabels, initialValues, submitLabel, onSubm
 
   const label = submitLabel ?? (isEdit ? 'Save' : 'Create');
 
+  // The dialog keeps its form while it is shut, so a reopened one starts again from the person as they now stand.
+  useEffect(() => {
+    if (open) {
+      form.reset();
+      setFormError(null);
+    }
+  }, [open, form]);
+
   return (
-    <form.AppForm>
-      <Form className="gap-4">
-        {/* The fields outgrow a short screen. They scroll, and the buttons under them stay put. */}
-        <ScrollView className="max-h-[60vh]" contentContainerClassName="gap-4 p-1" keyboardShouldPersistTaps="handled">
-          <FieldRow>
-            <form.AppField name="firstName">{(field) => <field.InputField label="First Name" />}</form.AppField>
-            <form.AppField name="lastName">{(field) => <field.InputField label="Last Name" />}</form.AppField>
-          </FieldRow>
-          <FieldRow>
-            <form.AppField name="namePrefix">{(field) => <field.InputField label="Prefix" />}</form.AppField>
-            <form.AppField name="middleName">{(field) => <field.InputField label="Middle Name" />}</form.AppField>
-            <form.AppField name="nameSuffix">{(field) => <field.InputField label="Suffix" />}</form.AppField>
-          </FieldRow>
-          <form.AppField name="nickname">{(field) => <field.InputField label="Nickname" />}</form.AppField>
-          <FieldRow>
-            <form.AppField name="organization">{(field) => <field.InputField label="Organization" />}</form.AppField>
-            <form.AppField name="jobTitle">{(field) => <field.InputField label="Job Title" />}</form.AppField>
-          </FieldRow>
-          <form.AppField name="department">{(field) => <field.InputField label="Department" />}</form.AppField>
-          {/* A stored person's addresses are edited with their other contact details, on their page. */}
-          {isEdit ? null : (
-            <form.AppField name="email">
-              {(field) => <field.InputField label="Email (optional)" type="email" autoCapitalize="none" />}
+    <DialogLayout
+      open={open}
+      onOpenChange={onOpenChange}
+      title={title}
+      description={description}
+      size="lg"
+      hasUnsavedChanges={() => form.state.isDefaultValue === false}
+      contentSlot={
+        <form.AppForm>
+          <Form className="gap-4">
+            <FieldRow
+              contentSlot={
+                <>
+                  <form.AppField name="firstName">{(field) => <field.InputField label="First Name" />}</form.AppField>
+                  <form.AppField name="lastName">{(field) => <field.InputField label="Last Name" />}</form.AppField>
+                </>
+              }
+            />
+            <FieldRow
+              perRow={3}
+              contentSlot={
+                <>
+                  <form.AppField name="namePrefix">{(field) => <field.InputField label="Prefix" />}</form.AppField>
+                  <form.AppField name="middleName">{(field) => <field.InputField label="Middle Name" />}</form.AppField>
+                  <form.AppField name="nameSuffix">{(field) => <field.InputField label="Suffix" />}</form.AppField>
+                </>
+              }
+            />
+            <form.AppField name="nickname">{(field) => <field.InputField label="Nickname" />}</form.AppField>
+            <FieldRow
+              contentSlot={
+                <>
+                  <form.AppField name="organization">
+                    {(field) => <field.InputField label="Organization" />}
+                  </form.AppField>
+                  <form.AppField name="jobTitle">{(field) => <field.InputField label="Job Title" />}</form.AppField>
+                </>
+              }
+            />
+            <form.AppField name="department">{(field) => <field.InputField label="Department" />}</form.AppField>
+            {/* A stored person's addresses are edited with their other contact details, on their page. */}
+            {isEdit ? null : (
+              <form.AppField name="email">
+                {(field) => <field.InputField label="Email (optional)" type="email" autoCapitalize="none" />}
+              </form.AppField>
+            )}
+            <form.AppField name="contactFrequency">
+              {(field) => <field.SelectField label="Contact Frequency" options={FREQUENCY_SELECT_OPTIONS} />}
             </form.AppField>
-          )}
-          <form.AppField name="contactFrequency">
-            {(field) => <field.SelectField label="Contact Frequency" options={FREQUENCY_SELECT_OPTIONS} />}
-          </form.AppField>
-          <form.AppField name="howWeMet">
-            {(field) => (
-              <field.TextareaField
-                label="How We Met (optional)"
-                rows={3}
-                placeholder="Share the story of how you met…"
-              />
-            )}
-          </form.AppField>
-          <form.AppField name="about">
-            {(field) => (
-              <field.TextareaField
-                label="About (optional)"
-                rows={3}
-                placeholder="Anything worth keeping with the contact…"
-              />
-            )}
-          </form.AppField>
-          <form.AppField name="firstMetDate">
-            {(field) => (
-              <field.DateTimeField label="First Met Date (optional)" mode="date" clearable placeholder="Pick a date" />
-            )}
-          </form.AppField>
-          {availableLabels.length > 0 && (
-            <form.AppField name="labelIds">
+            <form.AppField name="howWeMet">
               {(field) => (
-                <FieldWrapper
-                  label="Labels"
-                  asGroup
-                  controlSlot={
-                    <MultiSelect
-                      options={availableLabels.map((l) => ({ value: l.id, label: l.label, color: l.color }))}
-                      value={field.state.value}
-                      onValueChange={(next) => field.handleChange(next)}
-                      onBlur={field.handleBlur}
-                      placeholder="Add labels…"
-                      searchLabel="Search labels"
-                      popoverLabel="Labels"
-                    />
-                  }
+                <field.TextareaField
+                  label="How We Met (optional)"
+                  rows={3}
+                  placeholder="Share the story of how you met…"
                 />
               )}
             </form.AppField>
-          )}
-        </ScrollView>
-        <FormDialogFooter onCancel={onCancel} error={formError}>
-          <form.SubmitButton
-            isEdit={isEdit}
-            createLabel={label}
-            editLabel={label}
-            savingLabel={isEdit ? 'Saving...' : 'Creating...'}
-          />
-        </FormDialogFooter>
-      </Form>
-    </form.AppForm>
+            <form.AppField name="about">
+              {(field) => (
+                <field.TextareaField
+                  label="About (optional)"
+                  rows={3}
+                  placeholder="Anything worth keeping with the contact…"
+                />
+              )}
+            </form.AppField>
+            <form.AppField name="firstMetDate">
+              {(field) => (
+                <field.DateTimeField
+                  label="First Met Date (optional)"
+                  mode="date"
+                  clearable
+                  placeholder="Pick a date"
+                />
+              )}
+            </form.AppField>
+            {availableLabels.length > 0 && (
+              <form.AppField name="labelIds">
+                {(field) => (
+                  <field.ComboboxField
+                    multiple
+                    label="Labels"
+                    options={availableLabels.map((l) => ({ value: l.id, label: l.label, color: l.color }))}
+                    placeholder="Add labels…"
+                    searchLabel="Search labels"
+                    popoverLabel="Labels"
+                  />
+                )}
+              </form.AppField>
+            )}
+            {formError ? <Alert variant="destructive" title={formError} /> : null}
+          </Form>
+        </form.AppForm>
+      }
+      footerActionsSlot={(close) => (
+        <>
+          <Button variant="outline" onPress={close} content="Cancel" />
+          <form.AppForm>
+            <form.SubmitButton
+              isEdit={isEdit}
+              createLabel={label}
+              editLabel={label}
+              savingLabel={isEdit ? 'Saving...' : 'Creating...'}
+            />
+          </form.AppForm>
+        </>
+      )}
+    />
   );
 }

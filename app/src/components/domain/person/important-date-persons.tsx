@@ -1,8 +1,8 @@
 import { useMutation } from '@apollo/client';
 import { useState } from 'react';
 import { graphql } from '@/__generated__/gql';
+import { Combobox } from '@/components/combobox';
 import type { PersonStub } from '@/components/domain/person/detail-queries';
-import { MultiSelect } from '@/components/multi-select';
 import { Alert } from '@/components/ui/alert';
 import { personName } from '@/lib/person-name';
 
@@ -68,7 +68,8 @@ export function ImportantDatePersons({
 
   return (
     <>
-      <MultiSelect
+      <Combobox
+        multiple
         // A tagged person stays an option even when the contacts list has not loaded them yet.
         options={[...taggedPersons, ...candidates.filter((p) => taggedIds.includes(p.id) === false)].map((p) => ({
           value: p.id,

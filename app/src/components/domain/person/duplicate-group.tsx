@@ -101,9 +101,7 @@ export function DuplicateGroupCard({ matchValue, matchType, persons, onMerged, o
             <Button variant="outline" content="Not a duplicate" disabled={merging} onPress={onDismiss} />
             {kept && (
               <ConfirmButton
-                label={`Merge into ${personName(kept)}`}
                 content={`Merge into ${personName(kept)}`}
-                tooltip={false}
                 iconSlot={<GitMerge />}
                 loading={merging}
                 title={`Merge into ${personName(kept)}?`}

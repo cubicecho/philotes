@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import { View } from 'react-native';
 import type { PersonRelationshipEntry } from '@/__generated__/graphql';
 import { useAppForm } from '@/components/app-form';
+import { DialogLayout } from '@/components/dialog-layout';
 import {
   CREATE_RELATIONSHIP,
   CREATE_RELATIONSHIP_TYPE,
@@ -10,13 +11,12 @@ import {
   GET_RELATIONSHIP_TYPES,
   UPDATE_RELATIONSHIP,
 } from '@/components/domain/person/relationship-queries';
-import { OptionSelect } from '@/components/option-select';
 import { EmptyState } from '@/components/page';
+import { Alert } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
-import { FieldWrapper, Form } from '@/components/ui/form';
-import { FormDialog, FormDialogFooter } from '@/components/ui/form-dialog';
+import { Form } from '@/components/ui/form';
 import { personName } from '@/lib/person-name';
 import { useAllRows } from '@/lib/use-all-rows';
 
@@ -92,7 +92,7 @@ export function RelationshipFormDialog({
           onCreate?.(fromPersonId, toPersonId, type);
         }
       } catch {
-        // Stay open with what was chosen; the footer shows the mutation's error.
+        // Stay open with what was chosen; the alert under the fields shows the mutation's error.
         return;
       }
       onOpenChange(false);
@@ -154,118 +154,124 @@ export function RelationshipFormDialog({
   const hasNobodyToLink = isEditing === false && personOptions.length === 0;
 
   return (
-    <FormDialog open={open} onOpenChange={onOpenChange} title={isEditing ? 'Edit Relationship' : 'Add Relationship'}>
-      {hasNobodyToLink ? (
-        <EmptyState compact title="No other persons available to link." />
-      ) : (
-        <form.AppForm>
-          <Form className="gap-4">
-            <form.AppField
-              name="toPersonId"
-              validators={{ onChange: ({ value }) => (value ? undefined : 'Please select a person.') }}
-            >
-              {(field) => (
-                <FieldWrapper
-                  label="Person"
-                  asGroup
-                  controlSlot={
-                    <OptionSelect
-                      options={personOptions}
-                      value={field.state.value}
-                      onValueChange={(value) => {
-                        field.handleChange(value);
-                        field.handleBlur();
-                      }}
-                      disabled={isEditing}
-                      placeholder="Select person…"
-                      searchable
-                      searchPlaceholder="Search persons…"
-                      searchLabel="Search persons"
-                      emptyMessage="No persons found."
-                    />
-                  }
-                />
-              )}
-            </form.AppField>
-
-            <form.AppField
-              name="type"
-              validators={{
-                onChange: ({ value }) => (value ? undefined : 'Please select or create a relationship type.'),
-              }}
-            >
-              {(field) => (
-                <field.SelectField
-                  label="Relationship type"
-                  options={typeOptions}
-                  placeholder={types.length === 0 ? 'No types yet — add one below' : 'Select type…'}
-                />
-              )}
-            </form.AppField>
-
-            <View className="flex-row items-end gap-2">
-              <form.AppField name="newTypeName">
+    <DialogLayout
+      open={open}
+      onOpenChange={onOpenChange}
+      title={isEditing ? 'Edit Relationship' : 'Add Relationship'}
+      hasUnsavedChanges={() => hasNobodyToLink === false && form.state.isDefaultValue === false}
+      contentSlot={
+        hasNobodyToLink ? (
+          <EmptyState compact title="No other persons available to link." />
+        ) : (
+          <form.AppForm>
+            <Form className="gap-4">
+              <form.AppField
+                name="toPersonId"
+                validators={{ onChange: ({ value }) => (value ? undefined : 'Please select a person.') }}
+              >
                 {(field) => (
-                  <field.InputField
-                    className="flex-1"
-                    label="New relationship type"
-                    placeholder="New type…"
-                    // Enter here adds the type; it must not submit the relationship.
-                    onSubmitEditing={() => void addType()}
+                  <field.ComboboxField
+                    label="Person"
+                    options={personOptions}
+                    disabled={isEditing}
+                    placeholder="Select person…"
+                    searchable
+                    searchPlaceholder="Search persons…"
+                    searchLabel="Search persons"
+                    emptyMessage="No persons found."
                   />
                 )}
               </form.AppField>
-              <form.Subscribe selector={(state) => state.values.newTypeName}>
-                {(newTypeName) => {
-                  const isAddBlocked = newTypeName.trim() === '' || creatingType;
-                  return (
-                    <Button variant="outline" content="Add" disabled={isAddBlocked} onPress={() => void addType()} />
-                  );
+
+              <form.AppField
+                name="type"
+                validators={{
+                  onChange: ({ value }) => (value ? undefined : 'Please select or create a relationship type.'),
                 }}
-              </form.Subscribe>
-            </View>
+              >
+                {(field) => (
+                  <field.SelectField
+                    label="Relationship type"
+                    options={typeOptions}
+                    placeholder={types.length === 0 ? 'No types yet — add one below' : 'Select type…'}
+                  />
+                )}
+              </form.AppField>
 
-            {types.length > 0 ? (
-              <View className="flex-row flex-wrap gap-1.5">
-                {types.map((t) => (
-                  <Badge
-                    key={t.id}
-                    variant="secondary"
-                    removeLabel={`Delete ${t.name}`}
-                    onRemove={() => setTypeToDelete(t)}
-                  >
-                    {t.name}
-                  </Badge>
-                ))}
+              <View className="flex-row items-end gap-2">
+                <form.AppField name="newTypeName">
+                  {(field) => (
+                    <field.InputField
+                      className="flex-1"
+                      label="New relationship type"
+                      placeholder="New type…"
+                      // Enter here adds the type; it must not submit the relationship.
+                      onSubmitEditing={() => void addType()}
+                    />
+                  )}
+                </form.AppField>
+                <form.Subscribe selector={(state) => state.values.newTypeName}>
+                  {(newTypeName) => {
+                    const isAddBlocked = newTypeName.trim() === '' || creatingType;
+                    return (
+                      <Button variant="outline" content="Add" disabled={isAddBlocked} onPress={() => void addType()} />
+                    );
+                  }}
+                </form.Subscribe>
               </View>
-            ) : null}
 
-            <ConfirmDialog
-              open={typeToDelete !== null}
-              onOpenChange={(open) => {
-                const isClosing = open === false;
-                if (isClosing) {
+              {types.length > 0 ? (
+                <View className="flex-row flex-wrap gap-1.5">
+                  {types.map((t) => (
+                    <Badge
+                      key={t.id}
+                      variant="secondary"
+                      removeLabel={`Delete ${t.name}`}
+                      onRemove={() => setTypeToDelete(t)}
+                    >
+                      {t.name}
+                    </Badge>
+                  ))}
+                </View>
+              ) : null}
+
+              <ConfirmDialog
+                open={typeToDelete !== null}
+                onOpenChange={(open) => {
+                  const isClosing = open === false;
+                  if (isClosing) {
+                    setTypeToDelete(null);
+                  }
+                }}
+                title={`Delete ${typeToDelete?.name ?? 'this type'}?`}
+                description="It is no longer offered when you link two people. Relationships that already use it keep it."
+                confirmLabel="Delete"
+                cancelLabel="Cancel"
+                onConfirm={() => {
+                  if (typeToDelete) {
+                    void deleteType({ variables: { id: typeToDelete.id } });
+                  }
                   setTypeToDelete(null);
-                }
-              }}
-              title={`Delete ${typeToDelete?.name ?? 'this type'}?`}
-              description="It is no longer offered when you link two people. Relationships that already use it keep it."
-              confirmLabel="Delete"
-              cancelLabel="Cancel"
-              onConfirm={() => {
-                if (typeToDelete) {
-                  void deleteType({ variables: { id: typeToDelete.id } });
-                }
-                setTypeToDelete(null);
-              }}
-            />
+                }}
+              />
 
-            <FormDialogFooter onCancel={() => onOpenChange(false)} error={error?.message ?? null}>
-              <form.SubmitButton isEdit={isEditing} createLabel="Add" editLabel="Save" />
-            </FormDialogFooter>
-          </Form>
-        </form.AppForm>
-      )}
-    </FormDialog>
+              {error ? <Alert variant="destructive" title={error.message} /> : null}
+            </Form>
+          </form.AppForm>
+        )
+      }
+      footerActionsSlot={
+        hasNobodyToLink
+          ? undefined
+          : (close) => (
+              <>
+                <Button variant="outline" onPress={close} content="Cancel" />
+                <form.AppForm>
+                  <form.SubmitButton isEdit={isEditing} createLabel="Add" editLabel="Save" />
+                </form.AppForm>
+              </>
+            )
+      }
+    />
   );
 }

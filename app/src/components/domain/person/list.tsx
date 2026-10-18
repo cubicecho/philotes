@@ -1,14 +1,13 @@
 import { Link, useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Linking, SectionList, Text, View } from 'react-native';
-import { ActionButton } from '@/components/action-button';
 import { GitMerge, Mail, MessageSquarePlus, Phone, UserPlus, Users } from '@/components/app-icons';
+import { Combobox } from '@/components/combobox';
 import { ConfirmButton } from '@/components/confirm-button';
 import { LabelChip } from '@/components/domain/label/label-chip';
 import { Avatar } from '@/components/domain/person/avatar';
 import { QuickLogDialog } from '@/components/domain/person/quick-log';
 import { ListItem } from '@/components/list-item';
-import { OptionSelect } from '@/components/option-select';
 import { EmptyState } from '@/components/page';
 import { PageLayout } from '@/components/page-layout';
 import { Button } from '@/components/ui/button';
@@ -134,28 +133,28 @@ function PersonRow({ person, divided, onDeletePress, onLogPress, activeLabelIds 
       actionSlot={
         <>
           {onLogPress && (
-            <ActionButton
+            <Button
               variant="ghost"
               size="icon-sm"
-              label={`Log interaction with ${name}`}
+              aria-label={`Log interaction with ${name}`}
               iconSlot={<MessageSquarePlus />}
               onPress={() => onLogPress(person)}
             />
           )}
           {phone && (
-            <ActionButton
+            <Button
               variant="ghost"
               size="icon-sm"
-              label={`Call ${name}`}
+              aria-label={`Call ${name}`}
               iconSlot={<Phone />}
               onPress={() => Linking.openURL(`tel:${phone}`)}
             />
           )}
           {email && (
-            <ActionButton
+            <Button
               variant="ghost"
               size="icon-sm"
-              label={`Email ${name}`}
+              aria-label={`Email ${name}`}
               iconSlot={<Mail />}
               onPress={() => Linking.openURL(`mailto:${email}`)}
             />
@@ -164,7 +163,7 @@ function PersonRow({ person, divided, onDeletePress, onLogPress, activeLabelIds 
             <ConfirmButton
               variant="ghost"
               size="icon-sm"
-              label={`Delete ${name}`}
+              aria-label={`Delete ${name}`}
               iconSlot={<Trash2 />}
               title={`Delete ${name}?`}
               description={`This will permanently delete ${name} and all their associated data. This cannot be undone.`}
@@ -307,7 +306,7 @@ export function PersonList({
                 />
               </View>
               <View className="shrink-0">
-                <OptionSelect
+                <Combobox
                   aria-label="Sort people"
                   options={SORT_OPTIONS}
                   value={sortValue}

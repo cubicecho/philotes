@@ -4,11 +4,11 @@ import { View } from 'react-native';
 import { graphql } from '@/__generated__/gql';
 import type { Person_LabelsFragment } from '@/__generated__/graphql';
 import { useAppForm } from '@/components/app-form';
+import { DialogLayout } from '@/components/dialog-layout';
 import { LabelChip } from '@/components/domain/label/label-chip';
-import { MultiSelect } from '@/components/multi-select';
+import { Alert } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
-import { FieldWrapper, Form } from '@/components/ui/form';
-import { FormDialog, FormDialogFooter } from '@/components/ui/form-dialog';
+import { Form } from '@/components/ui/form';
 import { Plus } from '@/components/ui/icons';
 
 export const PERSON_LABELS = graphql(`
@@ -124,37 +124,42 @@ function AddLabelDialog({ personId, available, open, onOpenChange, onAdd }: AddL
   }, [open, form]);
 
   return (
-    <FormDialog open={open} onOpenChange={onOpenChange} title="Add Label">
-      <form.AppForm>
-        <Form className="gap-4">
-          <form.AppField
-            name="labelIds"
-            validators={{ onSubmit: ({ value }) => (value.length > 0 ? undefined : 'Pick at least one label.') }}
-          >
-            {(field) => (
-              <FieldWrapper
-                label="Labels"
-                asGroup
-                controlSlot={
-                  <MultiSelect
-                    options={available.map((l) => ({ value: l.id, label: l.label, color: l.color }))}
-                    value={field.state.value}
-                    onValueChange={(next) => field.handleChange(next)}
-                    onBlur={field.handleBlur}
-                    placeholder="Add labels…"
-                    searchLabel="Search labels"
-                    popoverLabel="Labels"
-                  />
-                }
-              />
-            )}
-          </form.AppField>
-          <FormDialogFooter onCancel={() => onOpenChange(false)} error={formError}>
+    <DialogLayout
+      open={open}
+      onOpenChange={onOpenChange}
+      title="Add Label"
+      hasUnsavedChanges={() => form.state.isDefaultValue === false}
+      contentSlot={
+        <form.AppForm>
+          <Form className="gap-4">
+            <form.AppField
+              name="labelIds"
+              validators={{ onSubmit: ({ value }) => (value.length > 0 ? undefined : 'Pick at least one label.') }}
+            >
+              {(field) => (
+                <field.ComboboxField
+                  multiple
+                  label="Labels"
+                  options={available.map((l) => ({ value: l.id, label: l.label, color: l.color }))}
+                  placeholder="Add labels…"
+                  searchLabel="Search labels"
+                  popoverLabel="Labels"
+                />
+              )}
+            </form.AppField>
+            {formError ? <Alert variant="destructive" title={formError} /> : null}
+          </Form>
+        </form.AppForm>
+      }
+      footerActionsSlot={(close) => (
+        <>
+          <Button variant="outline" onPress={close} content="Cancel" />
+          <form.AppForm>
             <form.SubmitButton createLabel="Add" savingLabel="Adding..." />
-          </FormDialogFooter>
-        </Form>
-      </form.AppForm>
-    </FormDialog>
+          </form.AppForm>
+        </>
+      )}
+    />
   );
 }
 

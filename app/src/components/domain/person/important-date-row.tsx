@@ -4,11 +4,10 @@ import { useState } from 'react';
 import { Text, View } from 'react-native';
 import { graphql } from '@/__generated__/gql';
 import { type ImportantDatesKindEnum, ImportantDatesMilestoneTypeEnum } from '@/__generated__/graphql';
-import { ActionButton } from '@/components/action-button';
 import { ConfirmButton } from '@/components/confirm-button';
 import type { PersonStub } from '@/components/domain/person/detail-queries';
 import {
-  ImportantDateForm,
+  ImportantDateDialog,
   type ImportantDateFormValue,
   MILESTONE_TYPE_OPTIONS,
   RECURRENCE_OPTIONS,
@@ -17,7 +16,7 @@ import { ImportantDatePersons } from '@/components/domain/person/important-date-
 import { ATTACH_IMPORTANT_DATE_TAG, DETACH_IMPORTANT_DATE_TAG } from '@/components/domain/person/tag-mutations';
 import { RowTags, type TagOption } from '@/components/domain/person/tag-picker';
 import { Badge } from '@/components/ui/badge';
-import { FormDialog } from '@/components/ui/form-dialog';
+import { Button } from '@/components/ui/button';
 import { Pencil, Trash2 } from '@/components/ui/icons';
 import { formatDay, parseLocalDay } from '@/lib/local-date';
 
@@ -158,15 +157,15 @@ export function ImportantDateRow({
             </View>
           </View>
           <View className="shrink-0 flex-row">
-            <ActionButton
-              label="Edit important date"
+            <Button
+              aria-label="Edit important date"
               variant="ghost"
               size="icon-sm"
               iconSlot={<Pencil />}
               onPress={() => setEditOpen(true)}
             />
             <ConfirmButton
-              label="Remove important date"
+              aria-label="Remove important date"
               variant="ghost"
               size="icon-sm"
               iconSlot={<Trash2 />}
@@ -194,21 +193,21 @@ export function ImportantDateRow({
         </View>
       </View>
 
-      <FormDialog open={editOpen} onOpenChange={setEditOpen} title="Edit Important Date">
-        <ImportantDateForm
-          initialValues={{
-            name,
-            date,
-            kind,
-            hasYear,
-            description: description ?? undefined,
-            recurrence: recurrence ?? undefined,
-            milestoneType: milestoneType ?? undefined,
-          }}
-          onSubmit={handleEdit}
-          onCancel={() => setEditOpen(false)}
-        />
-      </FormDialog>
+      <ImportantDateDialog
+        open={editOpen}
+        onOpenChange={setEditOpen}
+        title="Edit Important Date"
+        initialValues={{
+          name,
+          date,
+          kind,
+          hasYear,
+          description: description ?? undefined,
+          recurrence: recurrence ?? undefined,
+          milestoneType: milestoneType ?? undefined,
+        }}
+        onSubmit={handleEdit}
+      />
     </>
   );
 }

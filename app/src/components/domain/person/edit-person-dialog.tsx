@@ -6,8 +6,7 @@ import {
   type PersonDetail,
   UPDATE_PERSON,
 } from '@/components/domain/person/detail-queries';
-import { PersonForm, type PersonFormValue } from '@/components/domain/person/form';
-import { FormDialog } from '@/components/ui/form-dialog';
+import { PersonFormDialog, type PersonFormValue } from '@/components/domain/person/form';
 import { personName } from '@/lib/person-name';
 
 export interface EditPersonDialogProps {
@@ -71,40 +70,35 @@ export function EditPersonDialog({ person, allLabels, open, onOpenChange, onSave
   };
 
   return (
-    <FormDialog
+    <PersonFormDialog
       open={open}
       onOpenChange={onOpenChange}
       title="Edit Person"
       description={`Update details for ${personName(person)}.`}
-      className="sm:max-w-xl"
-    >
-      <PersonForm
-        availableLabels={allLabels.map((l) => ({
-          id: l.id,
-          label: l.label,
-          color: l.color,
-          __typename: 'Label' as const,
-        }))}
-        initialValues={{
-          namePrefix: person.namePrefix,
-          firstName: person.firstName,
-          middleName: person.middleName,
-          lastName: person.lastName,
-          nameSuffix: person.nameSuffix,
-          nickname: person.nickname,
-          organization: person.organization,
-          jobTitle: person.jobTitle,
-          department: person.department,
-          about: person.about,
-          labelIds: person.labels.map((l) => l.id),
-          contactFrequency: person.contactFrequency,
-          howWeMet: person.howWeMet,
-          firstMetDate: person.firstMetDate ?? null,
-        }}
-        submitLabel="Save Changes"
-        onSubmit={handleSubmit}
-        onCancel={() => onOpenChange(false)}
-      />
-    </FormDialog>
+      availableLabels={allLabels.map((l) => ({
+        id: l.id,
+        label: l.label,
+        color: l.color,
+        __typename: 'Label' as const,
+      }))}
+      initialValues={{
+        namePrefix: person.namePrefix,
+        firstName: person.firstName,
+        middleName: person.middleName,
+        lastName: person.lastName,
+        nameSuffix: person.nameSuffix,
+        nickname: person.nickname,
+        organization: person.organization,
+        jobTitle: person.jobTitle,
+        department: person.department,
+        about: person.about,
+        labelIds: person.labels.map((l) => l.id),
+        contactFrequency: person.contactFrequency,
+        howWeMet: person.howWeMet,
+        firstMetDate: person.firstMetDate ?? null,
+      }}
+      submitLabel="Save Changes"
+      onSubmit={handleSubmit}
+    />
   );
 }

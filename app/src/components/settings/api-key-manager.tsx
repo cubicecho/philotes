@@ -119,7 +119,7 @@ export function ApiKeyManager() {
                     size="sm"
                     variant="destructive"
                     disabled={revoking}
-                    label={`Revoke ${key.name}`}
+                    aria-label={`Revoke ${key.name}`}
                     content="Revoke"
                     title={`Revoke ${key.name}?`}
                     description="Every calendar and phone that uses this key stops updating, and the key cannot be restored. A new key gives a new calendar URL and a new password."

@@ -2,13 +2,12 @@ import { useMutation } from '@apollo/client';
 import { useState } from 'react';
 import { Text, View } from 'react-native';
 import { graphql } from '@/__generated__/gql';
-import { ActionButton } from '@/components/action-button';
 import { ConfirmButton } from '@/components/confirm-button';
 import { ChannelIcon } from '@/components/domain/person/channel-icon';
 import {
   CHANNEL_OPTIONS,
   type Channel,
-  InteractionForm,
+  InteractionFormDialog,
   type InteractionFormValues,
   type Sentiment,
   sentimentEmoji,
@@ -17,7 +16,6 @@ import { ATTACH_INTERACTION_TAG, DETACH_INTERACTION_TAG } from '@/components/dom
 import { RowTags, type TagOption } from '@/components/domain/person/tag-picker';
 import { EmptyState } from '@/components/page';
 import { Button } from '@/components/ui/button';
-import { FormDialog } from '@/components/ui/form-dialog';
 import { Pencil, Trash2 } from '@/components/ui/icons';
 import { EXCERPT_DEFAULTS } from '@/lib/defaults';
 import { relativeTime } from '@/lib/relative-time';
@@ -164,7 +162,6 @@ function InteractionRow({ interaction, allTags, onChanged }: InteractionRowProps
         await detachTag({ variables: { interactionId: interaction.id, labelId } });
       }
     }
-    setEditOpen(false);
     onChanged();
   };
 
@@ -200,15 +197,15 @@ function InteractionRow({ interaction, allTags, onChanged }: InteractionRowProps
             </View>
           </View>
           <View className="shrink-0 flex-row gap-1">
-            <ActionButton
-              label="Edit interaction"
+            <Button
+              aria-label="Edit interaction"
               variant="ghost"
               size="icon-xs"
               iconSlot={<Pencil />}
               onPress={() => setEditOpen(true)}
             />
             <ConfirmButton
-              label="Delete interaction"
+              aria-label="Delete interaction"
               variant="ghost"
               size="icon-xs"
               iconSlot={<Trash2 />}
@@ -228,24 +225,23 @@ function InteractionRow({ interaction, allTags, onChanged }: InteractionRowProps
         />
       </View>
 
-      <FormDialog open={editOpen} onOpenChange={setEditOpen} title="Edit Interaction">
-        <InteractionForm
-          personId={interaction.personId}
-          allTags={allTags}
-          initialValues={{
-            // Both asserted, not narrowed: a stored value the form no longer offers (an old `video`
-            // channel) has to reach the save unchanged, and narrowing would replace it.
-            channel: interaction.channel as Channel,
-            occurredAt: interaction.occurredAt,
-            sentiment: (interaction.sentiment as Sentiment | undefined) ?? '',
-            note: interaction.note ?? '',
-            labelIds: interaction.labels.map((l) => l.id),
-          }}
-          submitLabel="Save Changes"
-          onSubmit={handleEdit}
-          onCancel={() => setEditOpen(false)}
-        />
-      </FormDialog>
+      <InteractionFormDialog
+        open={editOpen}
+        onOpenChange={setEditOpen}
+        title="Edit Interaction"
+        allTags={allTags}
+        initialValues={{
+          // Both asserted, not narrowed: a stored value the form no longer offers (an old `video`
+          // channel) has to reach the save unchanged, and narrowing would replace it.
+          channel: interaction.channel as Channel,
+          occurredAt: interaction.occurredAt,
+          sentiment: (interaction.sentiment as Sentiment | undefined) ?? '',
+          note: interaction.note ?? '',
+          labelIds: interaction.labels.map((l) => l.id),
+        }}
+        submitLabel="Save Changes"
+        onSubmit={handleEdit}
+      />
     </>
   );
 }
@@ -281,7 +277,6 @@ export function PersonInteractions({
         await attachTag({ variables: { interactionId, labelId } });
       }
     }
-    onCreateOpenChange(false);
     onChanged();
   };
 
@@ -293,14 +288,13 @@ export function PersonInteractions({
         <InteractionRow key={interaction.id} interaction={interaction} allTags={allTags} onChanged={onChanged} />
       ))}
 
-      <FormDialog open={createOpen} onOpenChange={onCreateOpenChange} title="Log Interaction">
-        <InteractionForm
-          personId={personId}
-          allTags={allTags}
-          onSubmit={handleCreate}
-          onCancel={() => onCreateOpenChange(false)}
-        />
-      </FormDialog>
+      <InteractionFormDialog
+        open={createOpen}
+        onOpenChange={onCreateOpenChange}
+        title="Log Interaction"
+        allTags={allTags}
+        onSubmit={handleCreate}
+      />
     </View>
   );
 }

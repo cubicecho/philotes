@@ -4,11 +4,11 @@ import { View } from 'react-native';
 import { graphql } from '@/__generated__/gql';
 import { useAppForm } from '@/components/app-form';
 import { DescriptionList, PropertyRow } from '@/components/description-list';
+import { DialogLayout } from '@/components/dialog-layout';
 import { Alert } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { CopyButton } from '@/components/ui/copy-button';
 import { Form } from '@/components/ui/form';
-import { FormDialog, FormDialogFooter } from '@/components/ui/form-dialog';
 
 const MY_CREATE_API_KEY = graphql(`
   mutation MyCreateApiKey($input: CreateApiKeyInput!) {
@@ -113,67 +113,74 @@ export function CreateApiKeyDialog({ open, onOpenChange, onCreated }: CreateApiK
     const icalUrl = `${globalThis.location?.origin ?? ''}/ical?key=${state.token}`;
 
     return (
-      <FormDialog
+      <DialogLayout
         open={open}
         onOpenChange={handleClose}
         title="API Key Generated"
         description="Copy the calendar URL below and paste it into your calendar app. The token will not be shown again."
-      >
-        <View className="gap-4">
-          <Alert variant="warning" title="Store your token securely — it will not be shown again." />
-          <DescriptionList
-            layout="stacked"
-            contentSlot={
-              <>
-                <PropertyRow
-                  label="Calendar Subscription URL"
-                  value={icalUrl}
-                  valueClassName="font-mono text-xs"
-                  hint={
-                    'Paste this URL into Google Calendar → "Other calendars" → "From URL", or Apple Calendar → File → New Calendar Subscription.'
-                  }
-                  actionSlot={<CopyButton value={icalUrl} label="Copy URL" />}
-                />
-                <PropertyRow
-                  label="Raw Token"
-                  value={state.token}
-                  valueClassName="font-mono text-xs"
-                  actionSlot={<CopyButton value={state.token} label="Copy token" />}
-                />
-              </>
-            }
-          />
-          <View className="flex-row justify-end">
-            <Button content="Done" onPress={() => handleClose(false)} />
+        contentSlot={
+          <View className="gap-4">
+            <Alert variant="warning" title="Store your token securely — it will not be shown again." />
+            <DescriptionList
+              layout="stacked"
+              contentSlot={
+                <>
+                  <PropertyRow
+                    label="Calendar Subscription URL"
+                    value={icalUrl}
+                    valueClassName="font-mono text-xs"
+                    hint={
+                      'Paste this URL into Google Calendar → "Other calendars" → "From URL", or Apple Calendar → File → New Calendar Subscription.'
+                    }
+                    actionSlot={<CopyButton value={icalUrl} label="Copy URL" />}
+                  />
+                  <PropertyRow
+                    label="Raw Token"
+                    value={state.token}
+                    valueClassName="font-mono text-xs"
+                    actionSlot={<CopyButton value={state.token} label="Copy token" />}
+                  />
+                </>
+              }
+            />
           </View>
-        </View>
-      </FormDialog>
+        }
+        footerActionsSlot={(close) => <Button content="Done" onPress={close} />}
+      />
     );
   }
 
   return (
-    <FormDialog
+    <DialogLayout
       open={open}
       onOpenChange={handleClose}
       title="Generate API Key"
       description="Create an API key to subscribe to your important dates calendar in any calendar app. The full token is shown only once."
-    >
-      <form.AppForm>
-        <Form>
-          <form.AppField
-            name="name"
-            validators={{ onSubmit: ({ value }) => (value.trim() ? undefined : 'Name is required') }}
-          >
-            {(field) => <field.InputField label="Name" placeholder="e.g. Google Calendar" maxLength={60} />}
-          </form.AppField>
-          <form.AppField name="expiry">
-            {(field) => <field.SelectField label="Expiry" options={EXPIRY_OPTIONS} />}
-          </form.AppField>
-          <FormDialogFooter onCancel={() => handleClose(false)} error={submitError}>
+      hasUnsavedChanges={() => form.state.isDefaultValue === false}
+      contentSlot={
+        <form.AppForm>
+          <Form>
+            <form.AppField
+              name="name"
+              validators={{ onSubmit: ({ value }) => (value.trim() ? undefined : 'Name is required') }}
+            >
+              {(field) => <field.InputField label="Name" placeholder="e.g. Google Calendar" maxLength={60} />}
+            </form.AppField>
+            <form.AppField name="expiry">
+              {(field) => <field.SelectField label="Expiry" options={EXPIRY_OPTIONS} />}
+            </form.AppField>
+            {submitError ? <Alert variant="destructive" title={submitError} /> : null}
+          </Form>
+        </form.AppForm>
+      }
+      footerActionsSlot={(close) => (
+        <>
+          <Button variant="outline" onPress={close} content="Cancel" />
+          <form.AppForm>
             <form.SubmitButton createLabel="Generate Key" savingLabel="Generating…" />
-          </FormDialogFooter>
-        </Form>
-      </form.AppForm>
-    </FormDialog>
+          </form.AppForm>
+        </>
+      )}
+    />
   );
 }
