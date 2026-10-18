@@ -5,16 +5,26 @@ import { printSchema } from 'graphql';
 import { describe, expect, it } from 'vitest';
 import type { Context } from '../../core/context.ts';
 import { createSchema, WRITE_HOOKS } from '../../graphql/build-schema.ts';
-import { AUTH_TABLES, contextValues, exclude, features, scope, USER_OWNED_TABLES } from '../../graphql/tenancy.ts';
+import {
+  AUTH_TABLES,
+  contextValues,
+  exclude,
+  features,
+  SERVER_TABLES,
+  scope,
+  USER_OWNED_TABLES,
+} from '../../graphql/tenancy.ts';
 import { writtenRows } from '../../graphql/write-guards.ts';
 import { createTestDb } from '../helpers.ts';
 
-const AUTH_TABLE_NAMES = new Set<string>(AUTH_TABLES);
-/** The tables the API serves. better-auth's own are excluded from it outright. */
+/** better-auth's tables and the server's own, which the API never serves. */
+const UNSERVED_TABLES = [...AUTH_TABLES, ...SERVER_TABLES];
+const UNSERVED_TABLE_NAMES = new Set<string>(UNSERVED_TABLES);
+/** The tables the API serves. */
 const TABLES = Object.entries(dbSchema)
   .filter(([, value]) => is(value, Table))
   .map(([name]) => name)
-  .filter((name) => AUTH_TABLE_NAMES.has(name) === false);
+  .filter((name) => UNSERVED_TABLE_NAMES.has(name) === false);
 
 /** A feature switch is a boolean or a per-table predicate. */
 const allows = (feature: FeatureSwitch | undefined, table: string) =>
@@ -95,17 +105,22 @@ describe('exclude and features', () => {
     expect(features.nestedWrites).toBe(false);
   });
 
-  it('excludes every auth table', () => {
-    expect(exclude.tables).toEqual([...AUTH_TABLES]);
+  it('excludes every auth and server table, and finds each one in the schema', () => {
+    expect(exclude.tables).toEqual(UNSERVED_TABLES);
+    const found = Object.entries(dbSchema)
+      .filter(([name, value]) => is(value, Table) && UNSERVED_TABLE_NAMES.has(name))
+      .map(([name]) => name);
+    expect(found.sort()).toEqual([...UNSERVED_TABLES].sort());
   });
 
-  it('serves no type, field or argument for sessions, credentials, tokens or API key hashes', async () => {
+  it('serves no type, field or argument for sessions, credentials, tokens, API key hashes or the OIDC pairing', async () => {
     const { schema } = createSchema(await createTestDb());
     const printed = printSchema(schema);
 
     // ApiKeyRecord is the hand-written, hash-free view of a key.
     expect(printed).not.toMatch(/\b(Session|Account|Verification|Apikey)s?(\b|[A-Z_])/);
     expect(printed).not.toMatch(/\b(sessions|accounts|verifications|apikeys)\b/);
+    expect(printed).not.toMatch(/\b[Oo]idcSettings?\b|clientSecret|registrationAccessToken/);
   });
 
   it('leaves user rows to the auth flow', () => {

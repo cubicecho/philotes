@@ -68,6 +68,21 @@ export const port = (): number => envNumber(process.env.PORT, HTTP_DEFAULTS.port
 export const appUrl = (): string => process.env.APP_URL ?? `http://localhost:${port()}`;
 
 /**
+ * Where a browser reaches this server: the OIDC sign-in's start and callback live here. In
+ * production the server serves the app, so it is `APP_URL`; in development the Expo dev server is
+ * a second origin and this one is on its own port.
+ *
+ * @returns `SERVER_URL`, `APP_URL` in production, or this server's own localhost address.
+ */
+export function serverUrl(): string {
+  const configured = process.env.SERVER_URL?.trim().replace(/\/+$/, '');
+  if (configured) {
+    return configured;
+  }
+  return isProduction() ? appUrl() : `http://localhost:${port()}`;
+}
+
+/**
  * Whether this is a production run. Preflight is stricter and GraphiQL is off.
  *
  * @returns True when `NODE_ENV` is "production".
@@ -225,3 +240,52 @@ const VERSION = readVersion();
  * @returns The released version, or "unknown".
  */
 export const version = (): string => VERSION;
+
+/** The id the OIDC provider is registered under in better-auth, and so the last part of its callback path. */
+export const OIDC_PROVIDER_ID = 'oidc';
+/** The `OIDC_CLIENT_AUTH` values a provider can expect. */
+export const OIDC_CLIENT_AUTH_METHODS = ['client_secret_basic', 'client_secret_post'] as const;
+
+/** An OpenID Connect provider to sign in with: heautou, Keycloak, Authentik, … */
+export interface OidcConfig {
+  /** The issuer URL, no trailing slash. Its discovery document is `/.well-known/openid-configuration` under it. */
+  issuer: string;
+  clientId: string;
+  /** Unset for a public client, which proves itself with PKCE alone. */
+  clientSecret: string | undefined;
+  /** How a confidential client sends its secret. The provider must expect the same. */
+  clientAuth: AuthSettings['oidcClientAuth'];
+  /** What the login page's button calls the provider. */
+  name: string;
+}
+
+/**
+ * Reads the OIDC provider set in the environment. preflight.ts refuses one of `OIDC_ISSUER` and
+ * `OIDC_CLIENT_ID` without the other, and an `OIDC_CLIENT_AUTH` it does not know.
+ *
+ * @returns The provider when `OIDC_ISSUER` and `OIDC_CLIENT_ID` are both set, otherwise null.
+ */
+export function oidcConfig(): OidcConfig | null {
+  const issuer = process.env.OIDC_ISSUER?.trim();
+  const clientId = process.env.OIDC_CLIENT_ID?.trim();
+  if (!issuer || !clientId) {
+    return null;
+  }
+  const clientAuth = process.env.OIDC_CLIENT_AUTH?.trim();
+  return {
+    issuer: issuer.replace(/\/+$/, ''),
+    clientId,
+    clientSecret: process.env.OIDC_CLIENT_SECRET?.trim() || undefined,
+    clientAuth: clientAuth === 'client_secret_post' ? clientAuth : AUTH_DEFAULTS.oidcClientAuth,
+    name: process.env.OIDC_NAME?.trim() || AUTH_DEFAULTS.oidcName,
+  };
+}
+
+/**
+ * Names the address to register with the OIDC provider as this client's redirect URI.
+ *
+ * @returns better-auth's callback for the provider, under `serverUrl()`.
+ */
+export function oidcRedirectUri(): string {
+  return `${serverUrl()}/api/auth/callback/${OIDC_PROVIDER_ID}`;
+}

@@ -1,4 +1,5 @@
 import type { DB } from '@cubicecho/philotes-db';
+import type { AuthHost } from '../auth/auth-host.ts';
 import type { Auth } from '../auth/better-auth.ts';
 import type { RateLimiter } from '../auth/rate-limit.ts';
 import type { AvatarStore } from '../persons/avatar-store.ts';
@@ -10,8 +11,10 @@ export const UNKNOWN_IP = 'unknown';
 export interface Context {
   /** The Drizzle client the request reads and writes through. */
   db: DB;
-  /** better-auth instance; auth resolvers call `ctx.auth.api.*`. */
+  /** The better-auth instance for this request; auth resolvers call `ctx.auth.api.*`. */
   auth: Auth;
+  /** Where `auth` came from. Pairing a provider rebuilds it, so later requests get the new one. */
+  authHost: AuthHost;
   /** Sign-in throttle; the auth mutations call it. */
   limiter: RateLimiter;
   /** Client address, for rate-limit keys. Never an identity. */

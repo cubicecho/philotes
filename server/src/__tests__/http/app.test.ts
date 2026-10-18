@@ -1,5 +1,6 @@
 import type { Server } from 'node:http';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { fixedAuthHost } from '../../auth/auth-host.ts';
 import type { Auth } from '../../auth/better-auth.ts';
 import { OPERATION_LIMIT_DEFAULTS } from '../../core/defaults.ts';
 import { ErrorCode } from '../../core/errors.ts';
@@ -49,7 +50,7 @@ describe('the app over HTTP', () => {
     const db = await createTestDb();
     userId = await createUser(db, 'http@example.com');
     ({ auth } = createTestAuth(db));
-    server = createApp({ db, auth }).listen(0, '127.0.0.1');
+    server = createApp({ db, authHost: fixedAuthHost(auth) }).listen(0, '127.0.0.1');
     await new Promise((resolve) => server.once('listening', resolve));
     baseUrl = `http://127.0.0.1:${portOf(server)}`;
   });

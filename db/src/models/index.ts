@@ -7,6 +7,7 @@ export * from './important-dates.ts';
 export * from './interactions.ts';
 export * from './labels.ts';
 export * from './notes.ts';
+export * from './oidc-settings.ts';
 export * from './person-labels.ts';
 export * from './person-relationships.ts';
 export * from './person-tombstones.ts';

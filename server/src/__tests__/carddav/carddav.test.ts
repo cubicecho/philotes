@@ -4,6 +4,7 @@ import * as dbSchema from '@cubicecho/philotes-db/schema';
 import { eq } from 'drizzle-orm';
 import { XMLParser } from 'fast-xml-parser';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { fixedAuthHost } from '../../auth/auth-host.ts';
 import type { Auth } from '../../auth/better-auth.ts';
 import { DavPath } from '../../carddav/dav.ts';
 import { HttpStatus } from '../../core/wire.ts';
@@ -213,7 +214,7 @@ describe('CardDAV', () => {
     ({ auth } = createTestAuth(db));
     const memory = memoryStore();
     files = memory.files;
-    server = createApp({ db, auth, avatarStore: memory.store }).listen(0, '127.0.0.1');
+    server = createApp({ db, authHost: fixedAuthHost(auth), avatarStore: memory.store }).listen(0, '127.0.0.1');
     await new Promise((resolve) => server.once('listening', resolve));
     baseUrl = `http://127.0.0.1:${portOf(server)}`;
     ({ header: owner, userId: ownerId } = await signUp('dav-owner@example.com'));

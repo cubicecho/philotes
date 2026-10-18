@@ -8,6 +8,7 @@ import * as dbSchema from '@cubicecho/philotes-db/schema';
 import { and, eq } from 'drizzle-orm';
 import express from 'express';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import { fixedAuthHost } from '../../auth/auth-host.ts';
 import type { Auth } from '../../auth/better-auth.ts';
 import { HttpStatus } from '../../core/wire.ts';
 import { type AvatarStore, createDiskAvatarStore } from '../../persons/avatar-store.ts';
@@ -165,7 +166,7 @@ describe.each(STORES)('avatar routes, kept in $kind', ({ makeStore }) => {
     await stored.store.prepare();
 
     const app = express();
-    app.use('/avatars', createAvatarRouter({ db, auth, store: stored.store }));
+    app.use('/avatars', createAvatarRouter({ db, authHost: fixedAuthHost(auth), store: stored.store }));
     server = app.listen(0, '127.0.0.1');
     await new Promise((resolve) => server.once('listening', resolve));
     baseUrl = `http://127.0.0.1:${portOf(server)}`;

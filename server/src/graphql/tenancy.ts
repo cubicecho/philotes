@@ -80,9 +80,12 @@ export const contextValues: NonNullable<BuildSchemaConfig['contextValues']> = {
 /** better-auth's tables: sessions, credentials, one-time tokens and API key hashes. */
 export const AUTH_TABLES = ['sessions', 'accounts', 'verifications', 'apikeys'] as const;
 
-/** Auth tables never cross the API: not readable, not filterable, not reachable as a relation. */
+/** Tables only the server reads: the OIDC pairing holds a client secret and a registration token. */
+export const SERVER_TABLES = ['oidcSettings'] as const;
+
+/** Auth and server tables never cross the API: not readable, not filterable, not reachable as a relation. */
 export const exclude: NonNullable<BuildSchemaConfig['exclude']> = {
-  tables: [...AUTH_TABLES],
+  tables: [...AUTH_TABLES, ...SERVER_TABLES],
   // What a phone sent that Philotes has no field for. Only the vCard codec reads or writes it.
   columns: { persons: ['vcardExtra'] },
 };

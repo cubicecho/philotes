@@ -17,6 +17,7 @@ import { applyDuplicatesExtension } from '../persons/duplicates.ts';
 import { personWriteHooks } from '../persons/hooks.ts';
 import { relationshipWriteHooks } from '../relationships/hooks.ts';
 import { applyRelationshipsExtension } from '../relationships/resolvers.ts';
+import { applySsoExtension } from '../sso/resolvers.ts';
 import { taskWriteHooks } from '../tasks/hooks.ts';
 import { applyUserSettingsExtension } from '../users/resolvers.ts';
 import { applyVCardExtension } from '../vcard/resolvers.ts';
@@ -50,6 +51,7 @@ const EXTENSIONS: Array<(schema: GraphQLSchema) => GraphQLSchema> = [
   applyDuplicatesExtension,
   applyApiKeysExtension,
   applyUserSettingsExtension,
+  applySsoExtension,
 ];
 
 /**

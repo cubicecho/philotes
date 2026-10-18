@@ -17,6 +17,8 @@ export const users = pgTable('users', {
    * remembers this one can ask for what changed after it.
    */
   personsRevision: bigint('persons_revision', { mode: 'number' }).notNull().default(0),
+  /** Whether this account manages the instance: pairs sign-in with an OIDC provider. The first account is. */
+  isAdmin: boolean('is_admin').notNull().default(false),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true })
     .notNull()

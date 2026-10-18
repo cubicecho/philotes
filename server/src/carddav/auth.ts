@@ -2,7 +2,8 @@ import type { DB } from '@cubicecho/philotes-db';
 import { users } from '@cubicecho/philotes-db/schema';
 import { eq } from 'drizzle-orm';
 import type { NextFunction, Request, Response } from 'express';
-import { API_KEY_PREFIX, type Auth } from '../auth/better-auth.ts';
+import type { AuthHost } from '../auth/auth-host.ts';
+import { API_KEY_PREFIX } from '../auth/better-auth.ts';
 import { BASIC_AUTH_SCHEME, HttpStatus } from '../core/wire.ts';
 import { AUTH_REALM } from './dav.ts';
 
@@ -20,8 +21,8 @@ export type DavUserResponse = Response<unknown, DavLocals>;
 export interface DavAuthDeps {
   /** Drizzle client. */
   db: DB;
-  /** Verifies the API key. */
-  auth: Auth;
+  /** Hands out the auth instance that verifies the API key. */
+  authHost: AuthHost;
 }
 
 /** What separates the user name from the password once the header is decoded. */
@@ -51,18 +52,18 @@ function readBasicCredentials(header: string | undefined): { username: string; p
  * Finds the user a pair of credentials belongs to: the user name is their email, the password one of
  * their API keys.
  *
- * @param deps - The database and the auth instance.
+ * @param deps - The database and the auth host.
  * @param header - The `Authorization` header, if the request carries one.
  * @returns The user, or null when the credentials are not theirs.
  */
-async function userOf({ db, auth }: DavAuthDeps, header: string | undefined): Promise<DavLocals | null> {
+async function userOf({ db, authHost }: DavAuthDeps, header: string | undefined): Promise<DavLocals | null> {
   const credentials = readBasicCredentials(header);
   const isApiKey = credentials?.password.startsWith(API_KEY_PREFIX) === true;
   if (credentials === null || isApiKey === false) {
     return null;
   }
   // Also records the use, which is what the settings page shows as "last used".
-  const { valid, key: verified } = await auth.api.verifyApiKey({ body: { key: credentials.password } });
+  const { valid, key: verified } = await authHost.current().api.verifyApiKey({ body: { key: credentials.password } });
   const isRefused = valid === false || verified === null;
   if (isRefused) {
     return null;
@@ -76,7 +77,7 @@ async function userOf({ db, auth }: DavAuthDeps, header: string | undefined): Pr
 /**
  * Lets a request through only when it carries a user's email and one of their API keys.
  *
- * @param deps - The database and the auth instance.
+ * @param deps - The database and the auth host.
  * @param req - The request, carrying `Authorization: Basic`.
  * @param res - The response; `res.locals` receives the user.
  * @param next - Continues to the handler.

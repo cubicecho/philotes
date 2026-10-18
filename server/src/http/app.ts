@@ -1,7 +1,7 @@
 import type { DB } from '@cubicecho/philotes-db';
 import cors from 'cors';
 import express, { type Express } from 'express';
-import type { Auth } from '../auth/better-auth.ts';
+import type { AuthHost } from '../auth/auth-host.ts';
 import { createRateLimiter, type RateLimiter } from '../auth/rate-limit.ts';
 import { DavPath } from '../carddav/dav.ts';
 import { createCardDavRouter } from '../carddav/router.ts';
@@ -13,12 +13,17 @@ import { createIcalHandler } from '../important-dates/ical.ts';
 import type { AvatarStore } from '../persons/avatar-store.ts';
 import { createAvatarRouter } from '../persons/avatars.ts';
 import { checkHealth } from './health.ts';
+import { mountSso } from './sso.ts';
 import { createStaticHandler } from './static.ts';
 
 /** What the app talks to. Tests pass PGlite and leave the avatar store out. */
 export interface AppDeps {
   db: DB;
-  auth: Auth;
+  /**
+   * Hands out the current auth instance. Production passes `createAuthHost(db)`, which reads the paired
+   * provider; tests pass a `fixedAuthHost` over one that captures links.
+   */
+  authHost: AuthHost;
   /**
    * Throttles sign-in attempts.
    *
@@ -35,22 +40,22 @@ export interface AppDeps {
 }
 
 /**
- * Builds the Express app: /dav, /graphql, /healthz, /ical, /avatars and the built app.
+ * Builds the Express app: /dav, /graphql, /healthz, /ical, /avatars, the OIDC redirects and the built app.
  *
  * @param deps - What the app talks to.
  * @returns The app, not listening.
  */
-export function createApp({ db, auth, limiter = createRateLimiter(), avatarStore, staticDir }: AppDeps): Express {
+export function createApp({ db, authHost, limiter = createRateLimiter(), avatarStore, staticDir }: AppDeps): Express {
   const app = express();
   // Which proxy hops may set X-Forwarded-For, and so what `req.ip` is.
   app.set('trust proxy', trustProxy());
   // Before CORS, which answers every OPTIONS itself: a contacts client reads what the server can do from
   // that answer, and is not a browser.
   app.all(DavPath.WellKnown, (_req, res) => res.redirect(HttpStatus.MovedPermanently, DavPath.Root));
-  app.use(DavPath.Mount, createCardDavRouter({ db, auth, avatarStore: avatarStore ?? null }));
+  app.use(DavPath.Mount, createCardDavRouter({ db, authHost, avatarStore: avatarStore ?? null }));
   // The app is same-origin in production. The list only adds the dev app's origin.
   app.use(cors({ origin: allowedOrigins() }));
-  const graphql = createGraphQLHandler({ db, auth, limiter, avatarStore });
+  const graphql = createGraphQLHandler({ db, authHost, limiter, avatarStore });
 
   // Yoga reads a body Express already parsed, so this is where the size cap goes. Over it: 413.
   app.use(graphql.graphqlEndpoint, express.json({ limit: HTTP_DEFAULTS.bodyLimit }));
@@ -62,10 +67,13 @@ export function createApp({ db, auth, limiter = createRateLimiter(), avatarStore
     const status = health.ok ? HttpStatus.Ok : HttpStatus.ServiceUnavailable;
     res.status(status).json(health);
   });
-  app.get('/ical', createIcalHandler({ db, auth }));
+  app.get('/ical', createIcalHandler({ db, authHost }));
   if (avatarStore !== undefined) {
-    app.use('/avatars', createAvatarRouter({ db, auth, store: avatarStore }));
+    app.use('/avatars', createAvatarRouter({ db, authHost, store: avatarStore }));
   }
+  // Before the static handler, whose fallback would answer both paths with the app. Always
+  // mounted, because a provider can be paired while the server runs.
+  mountSso(app, authHost);
   if (staticDir !== undefined) {
     app.use(createStaticHandler(staticDir));
   }
