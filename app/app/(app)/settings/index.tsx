@@ -1,5 +1,7 @@
+import { useQuery } from '@apollo/client';
 import { useState } from 'react';
 import { View } from 'react-native';
+import { graphql } from '@/__generated__/gql';
 import { PageLayout } from '@/components/page-layout';
 import { Section } from '@/components/section';
 import { ApiKeyManager } from '@/components/settings/api-key-manager';
@@ -9,9 +11,19 @@ import { ExportPeopleCard } from '@/components/settings/export-people-card';
 import { ExportVCardsCard } from '@/components/settings/export-vcards-card';
 import { GoogleCsvImportCard } from '@/components/settings/google-csv-import-card';
 import { PhoneSyncCard } from '@/components/settings/phone-sync-card';
+import { SignInCard } from '@/components/settings/sign-in-card';
 import { VCardImportCard } from '@/components/settings/vcard-import-card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ThemePicker } from '@/components/ui/theme-picker';
+
+const GET_IS_ADMIN = graphql(`
+  query GetIsAdmin {
+    user {
+      id
+      isAdmin
+    }
+  }
+`);
 
 /** The tabs of the settings page. */
 type SettingsTab = 'import-export' | 'api-keys' | 'app';
@@ -22,9 +34,10 @@ const TABS: { id: SettingsTab; label: string }[] = [
   { id: 'app', label: 'App Settings' },
 ];
 
-/** The settings page: imports and exports, API keys, and appearance, a tab each. */
+/** The settings page: imports and exports, API keys, and appearance, a tab each. The admin also sets sign-in up. */
 export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState<SettingsTab>('import-export');
+  const isAdmin = useQuery(GET_IS_ADMIN).data?.user?.isAdmin === true;
 
   const handleTabChange = (value: string): void => {
     const tab = TABS.find((known) => known.id === value);
@@ -71,6 +84,7 @@ export default function SettingsPage() {
                 contentSlot={<ThemePicker />}
               />
               <DefaultCountryCard />
+              {isAdmin ? <SignInCard /> : null}
             </View>
           </TabsContent>
         </Tabs>
