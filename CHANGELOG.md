@@ -1,3 +1,11 @@
+# [5.8.0](https://github.com/cubicecho/philotes/compare/v5.7.0...v5.8.0) (2026-10-18)
+
+
+### Features
+
+* **app:** offer the OIDC provider on the login page and pair it from settings ([4c91d6c](https://github.com/cubicecho/philotes/commit/4c91d6cea7c1715db5392b7a2e1ce1004b58ee34))
+* **server:** sign in through an OIDC provider, paired from a setup URL ([1cb0913](https://github.com/cubicecho/philotes/commit/1cb0913dc1330bd645738cb9b8117b575583de58))
+
 # [5.7.0](https://github.com/cubicecho/philotes/compare/v5.6.0...v5.7.0) (2026-10-08)
 
 
