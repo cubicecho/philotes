@@ -5,11 +5,14 @@ import { relations } from '@cubicecho/philotes-db/relations';
 import * as dbSchema from '@cubicecho/philotes-db/schema';
 import { PGlite } from '@electric-sql/pglite';
 import { pushSchema } from 'drizzle-kit/api-postgres';
+import { getTableName, is, sql, Table } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/pglite';
 import { type ExecutionResult, type GraphQLError, graphql } from 'graphql';
 import { expect } from 'vitest';
+import { type AuthHost, fixedAuthHost } from '../auth/auth-host.ts';
 import { type Auth, createAuth, type MagicLink } from '../auth/better-auth.ts';
 import { createRateLimiter, type RateLimiter } from '../auth/rate-limit.ts';
+import type { OidcConfig } from '../core/config.ts';
 import type { Context } from '../core/context.ts';
 import type { ErrorCode } from '../core/errors.ts';
 import { createSchema } from '../graphql/build-schema.ts';
@@ -41,6 +44,12 @@ export interface TestClientDeps {
    * @defaultValue `createTestAuth(db).auth`
    */
   auth?: Auth;
+  /**
+   * Hands out the auth instance per operation. Pass a real one to see pairing rebuild it.
+   *
+   * @defaultValue `fixedAuthHost(auth)`
+   */
+  authHost?: AuthHost;
   /**
    * The sign-in rate limiter.
    *
@@ -84,16 +93,41 @@ export async function createTestDb(): Promise<TestDb> {
   return db;
 }
 
+/** Every table, quoted, for one TRUNCATE. */
+const TABLE_LIST = Object.values<unknown>(dbSchema)
+  .flatMap((value) => (is(value, Table) ? [`"${getTableName(value)}"`] : []))
+  .join(', ');
+
+/**
+ * Empties every table, so the next test starts from the database `createTestDb` returned.
+ *
+ * @param db - A database from `createTestDb`.
+ */
+export async function resetTestDb(db: TestDb): Promise<void> {
+  await db.execute(sql.raw(`TRUNCATE TABLE ${TABLE_LIST} RESTART IDENTITY CASCADE`));
+}
+
+/**
+ * Shuts a test database down. An instance left open holds its whole Postgres in memory until the worker exits.
+ *
+ * @param db - A database from `createTestDb`.
+ */
+export async function closeTestDb(db: TestDb): Promise<void> {
+  await db.$client.close();
+}
+
 /**
  * Builds an auth instance that captures magic links where production would email them.
  *
  * @param db - The test database.
+ * @param [oidc] - An OIDC provider to sign in with. None by default, whatever the environment says.
  * @returns The auth instance, and the links it was asked to deliver, oldest first.
  */
-export function createTestAuth(db: TestDb): { auth: Auth; links: MagicLink[] } {
+export function createTestAuth(db: TestDb, oidc: OidcConfig | null = null): { auth: Auth; links: MagicLink[] } {
   const links: MagicLink[] = [];
   const auth = createAuth(db, {
     secret: TEST_SECRET,
+    oidc,
     sendMagicLink: async (link) => {
       links.push(link);
     },
@@ -171,17 +205,22 @@ export async function createContactInfo(
  */
 export function createClient(db: TestDb, userId: string | null, deps: TestClientDeps = {}): TestClient {
   const { schema } = createSchema(db);
-  const contextValue: Context = {
-    db,
-    auth: deps.auth ?? createTestAuth(db).auth,
-    limiter: deps.limiter ?? createRateLimiter(),
-    ip: deps.ip ?? TEST_IP,
-    userId,
-    headers: deps.headers ?? new Headers(),
-    avatarStore: deps.avatarStore ?? null,
+  const authHost = deps.authHost ?? fixedAuthHost(deps.auth ?? createTestAuth(db).auth);
+  const limiter = deps.limiter ?? createRateLimiter();
+  const run: TestClient['run'] = (source, variableValues = {}) => {
+    // Per run, as the handler does per request: a pairing may have rebuilt it since the last one.
+    const contextValue: Context = {
+      db,
+      auth: authHost.current(),
+      authHost,
+      limiter,
+      ip: deps.ip ?? TEST_IP,
+      userId,
+      headers: deps.headers ?? new Headers(),
+      avatarStore: deps.avatarStore ?? null,
+    };
+    return graphql({ schema, source, variableValues, contextValue });
   };
-  const run: TestClient['run'] = (source, variableValues = {}) =>
-    graphql({ schema, source, variableValues, contextValue });
 
   return {
     run,

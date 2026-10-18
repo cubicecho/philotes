@@ -1,6 +1,7 @@
 import type { Server } from 'node:http';
 import * as dbSchema from '@cubicecho/philotes-db/schema';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { fixedAuthHost } from '../../auth/auth-host.ts';
 import { HttpStatus } from '../../core/wire.ts';
 import { createApp } from '../../http/app.ts';
 import { createPerson, createTestAuth, createTestDb, createUser, portOf } from '../helpers.ts';
@@ -35,7 +36,7 @@ describe('/ical', () => {
     ({ key: ownerKey } = await auth.api.createApiKey({ body: { userId: ownerId, name: 'owner' } }));
     ({ key: strangerKey } = await auth.api.createApiKey({ body: { userId: strangerId, name: 'stranger' } }));
 
-    server = createApp({ db, auth }).listen(0, '127.0.0.1');
+    server = createApp({ db, authHost: fixedAuthHost(auth) }).listen(0, '127.0.0.1');
     await new Promise((resolve) => server.once('listening', resolve));
     baseUrl = `http://127.0.0.1:${portOf(server)}`;
   });

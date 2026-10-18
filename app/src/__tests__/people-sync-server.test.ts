@@ -11,6 +11,7 @@ import {
   createUser,
   portOf,
 } from '../../../server/src/__tests__/helpers.ts';
+import { fixedAuthHost } from '../../../server/src/auth/auth-host.ts';
 import { createApp } from '../../../server/src/http/app.ts';
 
 // The refresh against the real API: its queries are ones the server answers, at the page sizes the
@@ -62,7 +63,7 @@ describe('syncPeople against the server', () => {
     const db = await createTestDb();
     const userId = await createUser(db, 'sync@example.com');
     const { auth } = createTestAuth(db);
-    server = createApp({ db, auth }).listen(0, '127.0.0.1');
+    server = createApp({ db, authHost: fixedAuthHost(auth) }).listen(0, '127.0.0.1');
     await new Promise((resolve) => server.once('listening', resolve));
     const token = await createSessionToken(auth, userId);
     client = new ApolloClient({

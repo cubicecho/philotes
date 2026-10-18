@@ -7,6 +7,7 @@ export const ErrorCode = {
   BadUserInput: 'BAD_USER_INPUT',
   TooManyRequests: 'TOO_MANY_REQUESTS',
   Forbidden: 'FORBIDDEN',
+  Conflict: 'CONFLICT',
   QueryTooComplex: 'QUERY_TOO_COMPLEX',
 } as const;
 export type ErrorCode = (typeof ErrorCode)[keyof typeof ErrorCode];
@@ -43,6 +44,13 @@ export const notFound = withCode(ErrorCode.NotFound);
  * @returns The error, for the caller to throw.
  */
 export const forbidden = withCode(ErrorCode.Forbidden);
+/**
+ * The request is fine, but the instance is in a state that refuses it, such as pairing twice.
+ *
+ * @param message - Client-readable message.
+ * @returns The error, for the caller to throw.
+ */
+export const conflict = withCode(ErrorCode.Conflict);
 /**
  * The operation is too deep, too aliased or too costly.
  *

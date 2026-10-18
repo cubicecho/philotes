@@ -1,6 +1,14 @@
 // Runs before anything connects or signs a token, so a misconfigured instance fails with a sentence, not a stack trace.
 import { isPrivateHost } from '@cubicecho/philotes-db/ssl';
-import { allowsPublicLocalNet, appUrl, authSecret, isProduction, objectStorage, secureLocalNet } from './config.ts';
+import {
+  allowsPublicLocalNet,
+  appUrl,
+  authSecret,
+  isProduction,
+  OIDC_CLIENT_AUTH_METHODS,
+  objectStorage,
+  secureLocalNet,
+} from './config.ts';
 import { AUTH_DEFAULTS } from './defaults.ts';
 
 /** The secret .env.example ships with. */
@@ -52,4 +60,22 @@ if (secureLocalNet()) {
       `SECURE_LOCAL_NET is on but APP_URL (${appUrl()}) is not a private address. Turn it off, or set I_KNOW_SECURE_LOCAL_NET_IS_PUBLIC=true if nothing hostile can reach this port.`,
     );
   }
+}
+
+// Half an OIDC setup leaves the login page without its button and no clue why,
+// and a typo in the issuer would only show up at the first sign-in.
+const oidcIssuer = process.env.OIDC_ISSUER?.trim() ?? '';
+const oidcClientId = process.env.OIDC_CLIENT_ID?.trim() ?? '';
+const isHalfOidc = (oidcIssuer === '') !== (oidcClientId === '');
+if (isHalfOidc) {
+  fatal('OIDC_ISSUER and OIDC_CLIENT_ID go together: set both to sign in with an OIDC provider, or neither.');
+}
+const isIssuerUrl = URL.canParse(oidcIssuer);
+if (oidcIssuer !== '' && isIssuerUrl === false) {
+  fatal(`OIDC_ISSUER is not a URL: ${oidcIssuer}`);
+}
+const oidcClientAuth = process.env.OIDC_CLIENT_AUTH?.trim() ?? '';
+const isKnownClientAuth = (OIDC_CLIENT_AUTH_METHODS as readonly string[]).includes(oidcClientAuth);
+if (oidcClientAuth !== '' && isKnownClientAuth === false) {
+  fatal(`OIDC_CLIENT_AUTH must be one of ${OIDC_CLIENT_AUTH_METHODS.join(', ')}.`);
 }

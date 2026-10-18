@@ -5,8 +5,17 @@ import { fileURLToPath } from 'node:url';
 import { closeDatabase, db } from '@cubicecho/philotes-db';
 import { waitForDatabase } from '@cubicecho/philotes-db/wait';
 import { migrate } from 'drizzle-orm/postgres-js/migrator';
-import { createAuth } from './auth/better-auth.ts';
-import { appUrl, avatarDir, dbConnectTimeoutMs, objectStorage, port, secureLocalNet } from './core/config.ts';
+import { createAuthHost } from './auth/auth-host.ts';
+import {
+  appUrl,
+  avatarDir,
+  dbConnectTimeoutMs,
+  objectStorage,
+  oidcRedirectUri,
+  port,
+  secureLocalNet,
+  serverUrl,
+} from './core/config.ts';
 import { errorMessage } from './core/errors.ts';
 import { createApp } from './http/app.ts';
 import { stopOnSignals } from './http/shutdown.ts';
@@ -49,14 +58,25 @@ try {
 }
 console.log(storage === null ? `[avatars] kept in ${avatarDir()}` : `[avatars] kept in bucket "${storage.bucket}"`);
 
+// After migrate: the provider may be a pairing, which lives in the database.
+const authHost = await createAuthHost(db);
+const oidc = authHost.oidc();
+if (oidc !== null) {
+  // The redirect URI is the one thing the operator has to copy into the provider, exactly.
+  console.log(`[auth] sign-in with ${oidc.name} (${oidc.issuer}); redirect URI ${oidcRedirectUri()}`);
+}
+
 const app = createApp({
   db,
-  auth: createAuth(db),
+  authHost,
   avatarStore,
   staticDir: join(__dirname, '../../app/dist'),
 });
 
 const server = app.listen(port(), LISTEN_HOST, () => {
   console.log(`[server] ready at ${appUrl()}`);
+  if (serverUrl() !== appUrl()) {
+    console.log(`[server] browsers reach the API at ${serverUrl()}`);
+  }
 });
 stopOnSignals(server, { after: closeDatabase });

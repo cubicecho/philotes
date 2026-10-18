@@ -1,6 +1,6 @@
 import type { DB } from '@cubicecho/philotes-db';
 import express, { type NextFunction, type Request, type RequestHandler, type Response, Router } from 'express';
-import type { Auth } from '../auth/better-auth.ts';
+import type { AuthHost } from '../auth/auth-host.ts';
 import { CARDDAV_DEFAULTS } from '../core/defaults.ts';
 import { HttpStatus } from '../core/wire.ts';
 import type { AvatarStore } from '../persons/avatar-store.ts';
@@ -52,7 +52,7 @@ export interface CardDavDeps {
   /** Drizzle client. */
   db: DB;
   /** Verifies the API key a client signs in with. */
-  auth: Auth;
+  authHost: AuthHost;
   /** Where pictures are kept, or null to serve and take cards without them. */
   avatarStore: AvatarStore | null;
 }
@@ -464,11 +464,11 @@ function dispatch(handlers: Partial<Record<DavMethod, DavHandler>>): RequestHand
  * A client signs in with the user's email and an API key, finds the address book from the root, and
  * from then on asks what changed since the sync token it holds.
  *
- * @param deps - The database, the auth instance and the avatar store.
+ * @param deps - The database, the auth host and the avatar store.
  * @returns The router, to mount at {@link DavPath.Mount}.
  */
 export function createCardDavRouter(deps: CardDavDeps): Router {
-  const { db, auth, avatarStore } = deps;
+  const { db, authHost, avatarStore } = deps;
   const { book, card } = bookHandlers({ db, avatars: avatarStore });
   const xmlBody = express.text({ type: () => true, limit: CARDDAV_DEFAULTS.xmlBodyLimit });
   const cardBody = express.text({ type: () => true, limit: CARDDAV_DEFAULTS.cardBodyLimit });
@@ -484,7 +484,7 @@ export function createCardDavRouter(deps: CardDavDeps): Router {
     }
     next();
   });
-  router.use((req, res, next) => requireDavUser({ db, auth }, req, res, next));
+  router.use((req, res, next) => requireDavUser({ db, authHost }, req, res, next));
   // After the guard, so that nobody unknown has a body read. A card may carry a picture; a question may not.
   router.use((req: Request, res: Response, next: NextFunction) => {
     const parse = req.method === DavMethod.Put ? cardBody : xmlBody;

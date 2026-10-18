@@ -7,7 +7,8 @@ import { fromNodeHeaders } from 'better-auth/node';
 import { and, eq } from 'drizzle-orm';
 import { type NextFunction, type Request, type Response, Router } from 'express';
 import multer from 'multer';
-import { type Auth, sessionUserId } from '../auth/better-auth.ts';
+import type { AuthHost } from '../auth/auth-host.ts';
+import { sessionUserId } from '../auth/better-auth.ts';
 import { HttpStatus } from '../core/wire.ts';
 import type { AvatarStore } from './avatar-store.ts';
 import { touchPersons } from './revisions.ts';
@@ -53,8 +54,8 @@ type AvatarResponse = Response<unknown, AvatarLocals>;
 export interface AvatarRouterDeps {
   /** Drizzle client. */
   db: DB;
-  /** Reads the caller's session. */
-  auth: Auth;
+  /** Hands out the auth instance that reads the caller's session. */
+  authHost: AuthHost;
   /** Where the images are kept. */
   store: AvatarStore;
 }
@@ -62,14 +63,14 @@ export interface AvatarRouterDeps {
 /**
  * Lets a request through only when the caller is signed in.
  *
- * @param auth - The auth instance.
+ * @param authHost - Hands out the auth instance.
  * @param req - The request, carrying `Authorization: Bearer`.
  * @param res - The response; `res.locals.userId` receives the caller's id.
  * @param next - Continues to the handler.
  * @returns Nothing.
  */
-async function requireSession(auth: Auth, req: Request, res: Response, next: NextFunction): Promise<void> {
-  const userId = await sessionUserId(auth, fromNodeHeaders(req.headers));
+async function requireSession(authHost: AuthHost, req: Request, res: Response, next: NextFunction): Promise<void> {
+  const userId = await sessionUserId(authHost.current(), fromNodeHeaders(req.headers));
   if (userId === null) {
     res.status(HttpStatus.Unauthorized).json({ error: 'Unauthenticated' });
     return;
@@ -198,11 +199,11 @@ async function saveAvatarPath(db: DB, locals: AvatarLocals, avatarPath: string |
  * Each file gets a random name, so a name cannot be guessed from a person id. A name is not a
  * credential either: a picture is only served to the user whose person has it.
  *
- * @param deps - The database, the auth instance and the avatar store.
+ * @param deps - The database, the auth host and the avatar store.
  * @returns The router, to mount at `/avatars`.
  */
 export function createAvatarRouter(deps: AvatarRouterDeps): Router {
-  const { db, auth, store } = deps;
+  const { db, authHost, store } = deps;
   const guard = (req: Request, res: AvatarResponse, next: NextFunction) => requireOwnPerson(db, req, res, next);
 
   // Held in memory until the store takes it: the size limit keeps that to one small image a request.
@@ -226,7 +227,7 @@ export function createAvatarRouter(deps: AvatarRouterDeps): Router {
   };
 
   const router = Router();
-  router.use((req, res, next) => requireSession(auth, req, res, next));
+  router.use((req, res, next) => requireSession(authHost, req, res, next));
   router.get('/:name', (req, res) => sendAvatar(deps, req, res));
 
   router.post('/:personId', guard, parseUpload, async (req, res: AvatarResponse) => {

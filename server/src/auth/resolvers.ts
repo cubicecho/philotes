@@ -3,12 +3,14 @@ import { APIError } from 'better-auth/api';
 import { eq } from 'drizzle-orm';
 import { extendSchema, type GraphQLError, type GraphQLSchema, parse } from 'graphql';
 import { z } from 'zod';
-import { secureLocalNet } from '../core/config.ts';
+import { secureLocalNet, serverUrl } from '../core/config.ts';
 import type { Context } from '../core/context.ts';
 import { badInput, unauthenticated } from '../core/errors.ts';
 import { parseOrThrow } from '../core/validation.ts';
 import { HttpStatus } from '../core/wire.ts';
 import { objectType } from '../graphql/object-type.ts';
+import { SSO_START_PATH } from '../http/sso.ts';
+import { effectiveOidc } from '../sso/settings.ts';
 import { sendsMagicLinks, sessionUserId } from './better-auth.ts';
 
 /** The flows a caller can be throttled on. Each has its own budget per address and per account. */
@@ -17,11 +19,15 @@ const AuthFlow = {
   SignUp: 'signUp',
   RequestSignIn: 'requestSignIn',
   VerifyMagicLink: 'verifyMagicLink',
+  VerifyOneTimeToken: 'verifyOneTimeToken',
 } as const;
 type AuthFlow = (typeof AuthFlow)[keyof typeof AuthFlow];
 
 /** How an account made by a SECURE_LOCAL_NET sign-in is labelled in better-auth's hooks. */
 const LOCAL_NET_METHOD = 'secure-local-net';
+
+/** What a one-time token that cannot be spent is told: the sign-in has to be started again. */
+const BAD_SSO_TOKEN = 'Invalid or expired sign-in. Sign in again.';
 
 const AUTH_SDL = parse(`
   """Which sign-in methods this instance offers, so the sign-in page shows only those."""
@@ -31,6 +37,16 @@ const AUTH_SDL = parse(`
     """The instance can email sign-in links."""
     magicLink: Boolean!
     password: Boolean!
+    """The OIDC provider to sign in with (OIDC_ISSUER, or the paired one), or null when there is none."""
+    sso: SsoProvider
+  }
+
+  """An OpenID Connect provider the sign-in page offers."""
+  type SsoProvider {
+    """What the button calls it (OIDC_NAME, or the name in the setup URL)."""
+    name: String!
+    """Where the button sends the browser. Absolute: in development the server is not the app's origin."""
+    signInUrl: String!
   }
 
   type AuthSession {
@@ -56,6 +72,8 @@ const AUTH_SDL = parse(`
     signIn(email: String!, password: String!): AuthSession!
     requestSignIn(email: String!): SignInResult!
     verifyMagicLink(token: String!): AuthSession!
+    """The last leg of an OIDC sign-in: the one-time token the callback put on /auth/sso, for a session."""
+    verifyOneTimeToken(token: String!): AuthSession!
     signOut: Boolean!
   }
 `);
@@ -81,6 +99,7 @@ export async function loadUserNode(ctx: Context, userId: string) {
       image: users.image,
       defaultCountry: users.defaultCountry,
       personsRevision: users.personsRevision,
+      isAdmin: users.isAdmin,
       createdAt: users.createdAt,
       updatedAt: users.updatedAt,
     })
@@ -180,14 +199,18 @@ export function applyAuthExtension(schema: GraphQLSchema): GraphQLSchema {
    * @param _parent - Unused.
    * @param _args - Unused.
    * @param ctx - Request context.
-   * @returns `secureLocalNet` as configured, `magicLink` when the instance can email links, and `password`
-   * as true, always.
+   * @returns `secureLocalNet` as configured, `magicLink` when the instance can email links, `password`
+   * as true, always, and `sso` when there is a provider to sign in with.
    */
-  queries.authConfig.resolve = (_parent: unknown, _args: unknown, ctx: Context) => ({
-    secureLocalNet: secureLocalNet(),
-    magicLink: sendsMagicLinks(ctx.auth),
-    password: true,
-  });
+  queries.authConfig.resolve = async (_parent: unknown, _args: unknown, ctx: Context) => {
+    const { config: oidc } = await effectiveOidc(ctx.db);
+    return {
+      secureLocalNet: secureLocalNet(),
+      magicLink: sendsMagicLinks(ctx.auth),
+      password: true,
+      sso: oidc === null ? null : { name: oidc.name, signInUrl: `${serverUrl()}${SSO_START_PATH}` },
+    };
+  };
 
   /**
    * Resolves `Mutation.signUp`. Creates an account with a password and signs it in. Anyone may call it,
@@ -311,6 +334,30 @@ export function applyAuthExtension(schema: GraphQLSchema): GraphQLSchema {
       // Expired, used and unknown tokens answer the same.
       throw unauthenticated('Invalid or expired sign-in link.');
     }
+  };
+
+  /**
+   * Resolves `Mutation.verifyOneTimeToken`. Trades the token an OIDC callback put on `/auth/sso` for the
+   * session it opened. Anyone may call it, within the sign-in throttle.
+   *
+   * @param _parent - Unused.
+   * @param args.token - The token from the page's query.
+   * @param ctx - Request context.
+   * @returns A session token and the user.
+   * @throws TOO_MANY_REQUESTS when the caller's address is over its budget.
+   * @throws BAD_USER_INPUT when the token is spent, expired or unknown. Never UNAUTHENTICATED, which the
+   * app reads as an expired session.
+   */
+  mutations.verifyOneTimeToken.resolve = async (_parent: unknown, args: { token: string }, ctx: Context) => {
+    throttle(ctx, AuthFlow.VerifyOneTimeToken);
+    let result: Awaited<ReturnType<typeof ctx.auth.api.verifyOneTimeToken>>;
+    try {
+      result = await ctx.auth.api.verifyOneTimeToken({ body: { token: args.token }, headers: new Headers() });
+    } catch {
+      // Spent, expired and made-up tokens all mean the sign-in has to be started again.
+      throw badInput(BAD_SSO_TOKEN);
+    }
+    return { token: result.session.token, user: await signedInUser(ctx, result.user.id) };
   };
 
   /**

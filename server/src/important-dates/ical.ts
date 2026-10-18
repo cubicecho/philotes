@@ -3,7 +3,8 @@ import { importantDates, persons, Recurrence } from '@cubicecho/philotes-db/sche
 import { eq } from 'drizzle-orm';
 import type { Request, RequestHandler, Response } from 'express';
 import ical, { ICalEventRepeatingFreq } from 'ical-generator';
-import { API_KEY_PREFIX, type Auth } from '../auth/better-auth.ts';
+import type { AuthHost } from '../auth/auth-host.ts';
+import { API_KEY_PREFIX } from '../auth/better-auth.ts';
 import { HttpStatus } from '../core/wire.ts';
 
 /** How each recurrence is said in an iCal repeat rule. */
@@ -20,20 +21,20 @@ const UNNAMED_PERSON = 'Unknown';
 export interface IcalDeps {
   /** Drizzle client. */
   db: DB;
-  /** Verifies the API key. */
-  auth: Auth;
+  /** Hands out the auth instance that verifies the API key. */
+  authHost: AuthHost;
 }
 
 /**
  * Writes the caller's important dates as an iCalendar feed. The caller is identified by the API
  * key in `?key=`, because a calendar client cannot send a header.
  *
- * @param deps - The database and the auth instance.
+ * @param deps - The database and the auth host.
  * @param req - The request, with the API key in its query.
  * @param res - The response the feed is written to.
  * @returns Nothing.
  */
-async function sendCalendar({ db, auth }: IcalDeps, req: Request, res: Response): Promise<void> {
+async function sendCalendar({ db, authHost }: IcalDeps, req: Request, res: Response): Promise<void> {
   const { key } = req.query;
 
   const isApiKey = typeof key === 'string' && key.startsWith(API_KEY_PREFIX);
@@ -43,7 +44,7 @@ async function sendCalendar({ db, auth }: IcalDeps, req: Request, res: Response)
   }
 
   // Also records the use, which is what the settings page shows as "last used".
-  const { valid, key: verified } = await auth.api.verifyApiKey({ body: { key } });
+  const { valid, key: verified } = await authHost.current().api.verifyApiKey({ body: { key } });
   const isRefused = valid === false || verified === null;
   if (isRefused) {
     res.status(HttpStatus.Unauthorized).send('Invalid or expired API key');
@@ -102,7 +103,7 @@ async function sendCalendar({ db, auth }: IcalDeps, req: Request, res: Response)
 /**
  * Builds the `/ical` handler.
  *
- * @param deps - The database and the auth instance.
+ * @param deps - The database and the auth host.
  * @returns The handler.
  */
 export function createIcalHandler(deps: IcalDeps): RequestHandler {

@@ -5,6 +5,7 @@ export const HttpStatus = {
   NoContent: 204,
   MultiStatus: 207,
   MovedPermanently: 301,
+  Found: 302,
   BadRequest: 400,
   Unauthorized: 401,
   Forbidden: 403,
