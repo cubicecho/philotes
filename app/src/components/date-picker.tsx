@@ -1,16 +1,16 @@
-import { format as formatDateFns } from 'date-fns';
-import type { AriaAttributes, ComponentProps, ReactNode } from 'react';
-import { useRef, useState } from 'react';
-import { Platform, Text, View } from 'react-native';
-import { Button } from '@/components/ui/button';
-import { Calendar } from '@/components/ui/calendar';
+import { format as formatDateFns } from "date-fns";
+import type { AriaAttributes, ComponentProps, ReactNode } from "react";
+import { useRef, useState } from "react";
+import { Platform, Text, View } from "react-native";
+import { Button } from "@/components/ui/button";
+import { Calendar } from "@/components/ui/calendar";
 // `DateRange` comes from the registry's own calendar contract, not react-day-picker: the native
 // `Calendar` implements the same shape and cannot import from a web library.
-import type { DateRange } from '@/components/ui/calendar-base';
-import { Calendar as CalendarIcon, X } from '@/components/ui/icons';
-import { Input } from '@/components/ui/input';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { cn } from '@/lib/utils';
+import type { DateRange } from "@/components/ui/calendar-base";
+import { Calendar as CalendarIcon, X } from "@/components/ui/icons";
+import { Input } from "@/components/ui/input";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
 
 export type { DateRange };
 
@@ -35,14 +35,14 @@ export function combineDateAndTime(day: Date, timeSource: Date): Date {
 
 /** The same, from an `<input type="time">` value — `"14:30"`, or `"14:30:05"`. */
 export function setTime(day: Date, time: string): Date {
-  const [hours, minutes, seconds] = time.split(':').map(Number);
+  const [hours, minutes, seconds] = time.split(":").map(Number);
   const combined = new Date(day);
   combined.setHours(hours ?? 0, minutes ?? 0, seconds ?? 0, 0);
   return combined;
 }
 
 function timeValue(date: Date): string {
-  return formatDateFns(date, 'HH:mm');
+  return formatDateFns(date, "HH:mm");
 }
 
 /**
@@ -53,13 +53,13 @@ function timeValue(date: Date): string {
  * text-left font-normal`, and a fourth had it in React Native. The fixed `250px` is dropped —
  * width belongs to the layout the field is in, and `FormField` already gives it one.
  */
-const TRIGGER = 'w-full justify-between px-3 text-left font-normal';
+const TRIGGER = "w-full justify-between px-3 text-left font-normal";
 
 /**
  * The value's one line. `truncate` is the ellipsis on the web; on device it is `numberOfLines`,
  * which is what `line-clamp-1` becomes and what `truncate` does not.
  */
-const ONE_LINE = Platform.select({ web: 'truncate', default: 'line-clamp-1' });
+const ONE_LINE = Platform.select({ web: "truncate", default: "line-clamp-1" });
 
 /**
  * What a field shell needs to reach through the picker onto the trigger.
@@ -71,7 +71,7 @@ const ONE_LINE = Platform.select({ web: 'truncate', default: 'line-clamp-1' });
  */
 type PickerAria = Pick<
   AriaAttributes,
-  'aria-label' | 'aria-labelledby' | 'aria-describedby' | 'aria-invalid' | 'aria-required'
+  "aria-label" | "aria-labelledby" | "aria-describedby" | "aria-invalid" | "aria-required"
 > & { id?: string | undefined };
 
 type PickerTriggerProps = PickerAria & {
@@ -87,11 +87,11 @@ function PickerTrigger({
   className,
   children,
   id,
-  'aria-label': ariaLabel,
-  'aria-labelledby': ariaLabelledBy,
-  'aria-describedby': ariaDescribedBy,
-  'aria-invalid': ariaInvalid,
-  'aria-required': ariaRequired,
+  "aria-label": ariaLabel,
+  "aria-labelledby": ariaLabelledBy,
+  "aria-describedby": ariaDescribedBy,
+  "aria-invalid": ariaInvalid,
+  "aria-required": ariaRequired,
 }: PickerTriggerProps) {
   return (
     <PopoverTrigger asChild>
@@ -104,11 +104,11 @@ function PickerTrigger({
         aria-labelledby={ariaLabelledBy}
         // What react-native has no prop for, in the spelling the web reads — the same arrangement
         // as `DateTimeInput`'s trigger. A bound field's hint and error reach the trigger this way.
-        {...(Platform.OS === 'web'
+        {...(Platform.OS === "web"
           ? {
-              ...(ariaDescribedBy === undefined ? {} : { 'aria-describedby': ariaDescribedBy }),
-              ...(ariaInvalid === undefined ? {} : { 'aria-invalid': ariaInvalid }),
-              ...(ariaRequired === undefined ? {} : { 'aria-required': ariaRequired }),
+              ...(ariaDescribedBy === undefined ? {} : { "aria-describedby": ariaDescribedBy }),
+              ...(ariaInvalid === undefined ? {} : { "aria-invalid": ariaInvalid }),
+              ...(ariaRequired === undefined ? {} : { "aria-required": ariaRequired }),
             }
           : {})}
         className={cn(TRIGGER, className)}
@@ -117,9 +117,9 @@ function PickerTrigger({
           // placeholder's muted class has to be on the `Text` itself.
           <Text
             className={cn(
-              'min-w-0 flex-1 text-left text-sm font-normal',
+              "min-w-0 flex-1 text-left text-sm font-normal",
               ONE_LINE,
-              empty ? 'text-foreground/60' : 'text-foreground',
+              empty ? "text-foreground/60" : "text-foreground",
             )}
           >
             {children}
@@ -165,13 +165,13 @@ type DatePickerProps = PickerAria & {
   /** How the chosen date reads on the trigger. Defaults to `PPP`, or `PPP p` with a time. */
   format?: string | undefined;
   /** Which days cannot be chosen — a `DateMatcher`, so `{ before: new Date() }` works. */
-  disabledDates?: CalendarProps['disabled'] | undefined;
+  disabledDates?: CalendarProps["disabled"] | undefined;
   clearable?: boolean | undefined;
   disabled?: boolean | undefined;
   className?: string | undefined;
   contentClassName?: string | undefined;
   /** Anything else the calendar takes: `startMonth`, `numberOfMonths`, `weekStartsOn`. */
-  calendarProps?: Omit<CalendarProps, 'mode' | 'selected' | 'onSelect' | 'disabled'> | undefined;
+  calendarProps?: Omit<CalendarProps, "mode" | "selected" | "onSelect" | "disabled"> | undefined;
 };
 
 /**
@@ -188,7 +188,7 @@ export function DatePicker({
   value,
   onValueChange,
   showTime = false,
-  placeholder = 'Pick a date',
+  placeholder = "Pick a date",
   format,
   disabledDates,
   clearable = true,
@@ -199,14 +199,18 @@ export function DatePicker({
   ...aria
 }: DatePickerProps) {
   const [open, setOpen] = useState(false);
-  const pattern = format ?? (showTime ? 'PPP p' : 'PPP');
+  const pattern = format ?? (showTime ? "PPP p" : "PPP");
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PickerTrigger {...aria} empty={!value} disabled={disabled} className={className}>
         {value ? formatDateFns(value, pattern) : placeholder}
       </PickerTrigger>
-      <PopoverContent align="start" aria-label={placeholder} className={cn('w-auto p-0', contentClassName)}>
+      <PopoverContent
+        align="start"
+        aria-label={placeholder}
+        className={cn("w-auto p-0", contentClassName)}
+      >
         <Calendar
           // Opening on today with a value set in March means the value is not on screen — the
           // calendar takes its first month from `defaultMonth`, never from `selected`.
@@ -222,7 +226,9 @@ export function DatePicker({
             }
             // The clock survives the day changing — the whole reason this is not `new Date(day)`.
             onValueChange(value ? combineDateAndTime(day, value) : day);
-            if (!showTime) setOpen(false);
+            if (showTime === false) {
+              setOpen(false);
+            }
           }}
         />
         {showTime ? (
@@ -232,9 +238,11 @@ export function DatePicker({
               // A time with no date is not a value this control can hold, so it waits.
               disabled={!value}
               aria-label="Time"
-              value={value ? timeValue(value) : ''}
+              value={value ? timeValue(value) : ""}
               onChangeText={(text) => {
-                if (value && text) onValueChange(setTime(value, text));
+                if (value && text) {
+                  onValueChange(setTime(value, text));
+                }
               }}
               className="w-full"
             />
@@ -253,13 +261,25 @@ export function DatePicker({
   );
 }
 
-type DateRangePickerProps = Omit<DatePickerProps, 'value' | 'onValueChange' | 'showTime' | 'calendarProps'> & {
+type DateRangePickerProps = Omit<
+  DatePickerProps,
+  "value" | "onValueChange" | "showTime" | "calendarProps"
+> & {
   value?: DateRange | null | undefined;
   onValueChange: (value: DateRange | null) => void;
   /** Months side by side. Two, because a range usually crosses one. */
   numberOfMonths?: number | undefined;
-  calendarProps?: Omit<CalendarProps, 'mode' | 'selected' | 'onSelect' | 'disabled'> | undefined;
+  calendarProps?: Omit<CalendarProps, "mode" | "selected" | "onSelect" | "disabled"> | undefined;
 };
+
+/** The range as the trigger shows it: one date while only the start is chosen, nothing before that. */
+function rangeText(range: DateRange | null | undefined, pattern: string) {
+  if (!range?.from) {
+    return undefined;
+  }
+  const from = formatDateFns(range.from, pattern);
+  return range.to ? `${from} – ${formatDateFns(range.to, pattern)}` : from;
+}
 
 /**
  * A start and an end, behind a popover.
@@ -275,7 +295,7 @@ type DateRangePickerProps = Omit<DatePickerProps, 'value' | 'onValueChange' | 's
 export function DateRangePicker({
   value,
   onValueChange,
-  placeholder = 'Pick a date range',
+  placeholder = "Pick a date range",
   format,
   disabledDates,
   clearable = true,
@@ -294,23 +314,25 @@ export function DateRangePicker({
   // visit is the same interaction on both.
   const presses = useRef(0);
   const openPane = (next: boolean) => {
-    if (next) presses.current = 0;
+    if (next) {
+      presses.current = 0;
+    }
     setOpen(next);
   };
-  const pattern = format ?? 'PP';
+  const pattern = format ?? "PP";
 
-  const label = value?.from
-    ? value.to
-      ? `${formatDateFns(value.from, pattern)} – ${formatDateFns(value.to, pattern)}`
-      : formatDateFns(value.from, pattern)
-    : placeholder;
+  const label = rangeText(value, pattern) ?? placeholder;
 
   return (
     <Popover open={open} onOpenChange={openPane}>
       <PickerTrigger {...aria} empty={!value?.from} disabled={disabled} className={className}>
         {label}
       </PickerTrigger>
-      <PopoverContent align="start" aria-label={placeholder} className={cn('w-auto p-0', contentClassName)}>
+      <PopoverContent
+        align="start"
+        aria-label={placeholder}
+        className={cn("w-auto p-0", contentClassName)}
+      >
         <Calendar
           defaultMonth={value?.from}
           {...calendarProps}
@@ -321,7 +343,9 @@ export function DateRangePicker({
           onSelect={(range) => {
             presses.current += 1;
             onValueChange(range ?? null);
-            if (presses.current >= 2 && range?.from && range.to) setOpen(false);
+            if (presses.current >= 2 && range?.from && range.to) {
+              setOpen(false);
+            }
           }}
         />
         {clearable && value?.from ? (

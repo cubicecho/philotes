@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import type { ReactNode } from "react";
 
 export type DialogProps = {
   /**
@@ -35,12 +35,12 @@ export type DialogContentProps = DialogSectionProps & {
   onEscapeKeyDown?: ((event: Event) => void) | undefined;
   onInteractOutside?: ((event: Event) => void) | undefined;
   /** `undefined` passed explicitly is how "nothing describes this" is said to radix. */
-  'aria-describedby'?: string | undefined;
+  "aria-describedby"?: string | undefined;
   /**
    * `alertdialog` for a question that interrupts — "Discard your changes?" — which assistive
    * technology announces as urgent rather than as a place to work. Default `dialog`.
    */
-  role?: 'dialog' | 'alertdialog' | undefined;
+  role?: "dialog" | "alertdialog" | undefined;
 };
 
 /** Closes the dialog it is inside. `asChild` hands the press to a `Button` rather than wrapping it. */
@@ -68,3 +68,7 @@ export type DialogSectionProps = {
   className?: string | undefined;
   children?: ReactNode;
 };
+
+/** The dialog's card, on both platforms. */
+export const DIALOG_CONTENT_CLASS =
+  "w-full max-w-lg gap-4 rounded-lg border border-foreground/10 bg-background p-6 shadow-lg";

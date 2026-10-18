@@ -1,4 +1,4 @@
-import type { Ref } from 'react';
+import type { Ref } from "react";
 
 /**
  * What a caller may do to the box imperatively: put the caret back after a send. On the web the
@@ -23,15 +23,22 @@ export type TextareaKeyPressEvent = {
 /** A handler of that event, as a method so a narrower native handler is still accepted. */
 export type TextareaKeyPressHandler = {
   bivarianceHack(event: TextareaKeyPressEvent): void;
-}['bivarianceHack'];
+}["bivarianceHack"];
 
 /**
  * Whether a key sends. Enter alone: Shift+Enter is a new line, and an Enter that only accepts
  * an input method's suggestion is still someone part-way through a word.
  */
-export function isSubmitKey({ key, shiftKey, isComposing }: TextareaKeyPressEvent['nativeEvent']): boolean {
-  return key === 'Enter' && !shiftKey && !isComposing;
+export function isSubmitKey({
+  key,
+  shiftKey,
+  isComposing,
+}: TextareaKeyPressEvent["nativeEvent"]): boolean {
+  return key === "Enter" && shiftKey !== true && isComposing !== true;
 }
+
+/** Where the caret is, as offsets into the text. A caret with nothing selected has the two equal. */
+export type TextareaSelection = { start: number; end: number };
 
 export type TextareaProps = {
   value?: string | undefined;
@@ -46,6 +53,16 @@ export type TextareaProps = {
    * the way out.
    */
   onSubmitEditing?: (() => void) | undefined;
+  /**
+   * Holds the caret, as `TextInput`'s does: the way to put it after a name a completion has just
+   * inserted. Controlled, so keep it in step from `onSelectionChange` or it pins the caret.
+   */
+  selection?: TextareaSelection | undefined;
+  /**
+   * The caret moved, or the selection changed: by a key, a click, or the text changing under it.
+   * What an `@mention` menu reads to find the word the caret is in, wherever in the note that is.
+   */
+  onSelectionChange?: ((selection: TextareaSelection) => void) | undefined;
   /** Every key as it goes down, as on `Input`. */
   onKeyPress?: TextareaKeyPressHandler | undefined;
   /** Escape, after any `onKeyPress`. A soft keyboard has no such key. */
@@ -64,9 +81,15 @@ export type TextareaProps = {
   maxRows?: number | undefined;
   maxLength?: number | undefined;
   disabled?: boolean | undefined;
+  /** Takes focus when it mounts, as `Input`'s does: a reply box that opens ready to type in. */
+  autoFocus?: boolean | undefined;
   className?: string | undefined;
   /** Web only: ties the control to its `<label>`. */
   id?: string | undefined;
+  /** What says more about the field — its hint, its error — by id. Web only, as on `Input`. */
+  "aria-describedby"?: string | undefined;
+  /** The value was refused. Drawn as a red border on both halves; announced on the web. */
+  "aria-invalid"?: boolean | "true" | "false" | undefined;
   ref?: Ref<TextareaHandle> | undefined;
 };
 
@@ -96,12 +119,12 @@ export type GrowingBox = {
  */
 export function fitRows(box: GrowingBox, minRows: number, maxRows: number): void {
   const border = box.offsetHeight - box.clientHeight;
-  box.style.height = 'auto';
+  box.style.height = "auto";
   const text = box.scrollHeight;
   const max = rowsHeight(Math.max(minRows, maxRows));
   const height = Math.min(Math.max(text, rowsHeight(minRows)), max);
   box.style.height = `${height + border}px`;
-  box.style.overflowY = text > max ? 'auto' : 'hidden';
+  box.style.overflowY = text > max ? "auto" : "hidden";
 }
 
 /**
@@ -111,4 +134,4 @@ export function fitRows(box: GrowingBox, minRows: number, maxRows: number): void
  * `::placeholder` rule on web.
  */
 export const TEXTAREA_CLASS =
-  'border-foreground/15 bg-background text-foreground placeholder:text-foreground/60 focus:border-active min-h-[80px] w-full rounded-md border px-3 py-2 text-sm focus:outline-none';
+  "border-foreground/50 bg-background text-foreground placeholder:text-foreground/60 focus:border-active min-h-20 w-full rounded-md border px-3 py-2 text-sm focus:outline-none";

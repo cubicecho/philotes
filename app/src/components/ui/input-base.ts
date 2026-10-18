@@ -1,5 +1,5 @@
-import type { Ref } from 'react';
-import type { SlotNode } from '@/lib/utils';
+import type { Ref } from "react";
+import type { SlotNode } from "@/lib/utils";
 
 /**
  * Everything but `text`, `number`, `password` and the four keyboard types falls back to plain text
@@ -17,25 +17,25 @@ import type { SlotNode } from '@/lib/utils';
  * something on both platforms.
  */
 export type InputType =
-  | 'text'
-  | 'number'
-  | 'password'
-  | 'email'
-  | 'search'
-  | 'url'
-  | 'tel'
-  | 'time'
-  | 'date'
-  | 'datetime-local'
-  | 'color';
+  | "text"
+  | "number"
+  | "password"
+  | "email"
+  | "search"
+  | "url"
+  | "tel"
+  | "time"
+  | "date"
+  | "datetime-local"
+  | "color";
 
 /** The keyboard each type raises on native when the caller has not chosen one with `inputMode`. */
-export const NATIVE_INPUT_MODE: Partial<Record<InputType, NonNullable<InputProps['inputMode']>>> = {
-  number: 'numeric',
-  email: 'email',
-  search: 'search',
-  url: 'url',
-  tel: 'tel',
+export const NATIVE_INPUT_MODE: Partial<Record<InputType, NonNullable<InputProps["inputMode"]>>> = {
+  number: "numeric",
+  email: "email",
+  search: "search",
+  url: "url",
+  tel: "tel",
 };
 
 /**
@@ -68,7 +68,43 @@ export type InputKeyPressEvent = { nativeEvent: { key: string } };
  */
 export type InputKeyPressHandler = {
   bivarianceHack(event: InputKeyPressEvent): void;
-}['bivarianceHack'];
+}["bivarianceHack"];
+
+/**
+ * What a field holds, said to the browser's autofill, a password manager and the keyboard's
+ * suggestion strip. These are the names HTML's `autocomplete` and React Native's `autoComplete`
+ * share, so one value means the same thing on both halves. The web half takes every DOM token on
+ * top of them.
+ */
+export type InputAutoComplete =
+  | "off"
+  | "name"
+  | "given-name"
+  | "additional-name"
+  | "family-name"
+  | "honorific-prefix"
+  | "honorific-suffix"
+  | "nickname"
+  | "username"
+  | "email"
+  | "current-password"
+  | "new-password"
+  | "one-time-code"
+  | "organization"
+  | "organization-title"
+  | "street-address"
+  | "address-line1"
+  | "address-line2"
+  | "postal-code"
+  | "country"
+  | "tel"
+  | "url"
+  | "cc-name"
+  | "cc-number"
+  | "cc-exp"
+  | "cc-exp-month"
+  | "cc-exp-year"
+  | "cc-csc";
 
 export type InputProps = {
   value?: string | undefined;
@@ -97,22 +133,36 @@ export type InputProps = {
    * gets the DOM spinners and the browser's numeric parsing, `inputMode="decimal"`
    * is what gets a phone keypad, and a number field wants both.
    */
-  inputMode?: 'text' | 'decimal' | 'numeric' | 'tel' | 'search' | 'email' | 'url' | undefined;
+  inputMode?: "text" | "decimal" | "numeric" | "tel" | "search" | "email" | "url" | undefined;
   /**
    * What the keyboard capitalises by itself. `none` for what is typed as written: a URL, a model
    * id, a shell command. Left out, the platform decides, which on a phone is `sentences`.
    */
-  autoCapitalize?: 'none' | 'sentences' | 'words' | 'characters' | undefined;
+  autoCapitalize?: "none" | "sentences" | "words" | "characters" | undefined;
   /**
    * Whether the keyboard rewrites what was typed. Off for an identifier, which it would "correct"
    * into a word. On the web it also switches the spelling underline, unless `spellCheck` says
    * otherwise there.
    */
   autoCorrect?: boolean | undefined;
+  /**
+   * What the field holds, so a saved address, a password manager's entry or a texted code is
+   * offered for it: `email` on a sign-in, `one-time-code`, `street-address`. `type="email"` alone
+   * does not say it. `off` asks for no suggestions.
+   */
+  autoComplete?: InputAutoComplete | undefined;
   maxLength?: number | undefined;
   /** Web only; the native keyboard has no equivalent constraint. */
   min?: number | undefined;
   max?: number | undefined;
+  /** Web only, as `min` and `max` are: what the spinners move by, and what the browser checks. */
+  step?: number | "any" | undefined;
+  /**
+   * A number keyboard with a minus key. Neither the `decimal` nor the `numeric` keypad on iOS has
+   * one, and no `inputMode` asks for it, so on iOS this raises the numbers-and-punctuation keyboard
+   * instead. Elsewhere it changes nothing: Android's number keyboards and the web's box take a minus.
+   */
+  signed?: boolean | undefined;
   disabled?: boolean | undefined;
   /**
    * Shown and focusable, but not editable: the value is on its way somewhere. Unlike `disabled` it
@@ -129,19 +179,19 @@ export type InputProps = {
    * The accessible name, for an input no `<label>` points at — the time box beside
    * a date trigger. `TextInput` takes it on device, and react-native-web renders it.
    */
-  'aria-label'?: string | undefined;
+  "aria-label"?: string | undefined;
   /**
    * The accessible name by reference. The web honours a list of ids; Android reads one, and iOS
    * none, so a native caller that needs the name everywhere passes `aria-label` too.
    */
-  'aria-labelledby'?: string | undefined;
+  "aria-labelledby"?: string | undefined;
   /**
    * What says more about the field — its hint, its error — by id. Web only: React Native has no
    * description relation, so on device the error is read where it is drawn.
    */
-  'aria-describedby'?: string | undefined;
+  "aria-describedby"?: string | undefined;
   /** The value was refused: a validator's error, a save that failed. Web only, as above. */
-  'aria-invalid'?: boolean | 'true' | 'false' | undefined;
+  "aria-invalid"?: boolean | "true" | "false" | undefined;
   autoFocus?: boolean | undefined;
   /**
    * An icon drawn inside the field at its start — a `<Search />`, a `<Clock />` — with the text
@@ -156,8 +206,17 @@ export type InputProps = {
    */
   trailingSlot?: SlotNode | undefined;
   /**
+   * A fixed part of the value, drawn before it inside the field's border and not editable: the
+   * `https://host/webhooks/` an id is appended to. Muted, in the flow, so a prefix of any width fits
+   * (a `leadingSlot` is an icon-wide cell). On a narrow screen it gives way from its start, so the
+   * part next to the value stays. The web reads it with the field, as part of its description.
+   */
+  prefixText?: string | undefined;
+  /** A fixed part after the value, as `prefixText` is before it: `.example.com`, `minutes`. */
+  suffixText?: string | undefined;
+  /**
    * The class of the box that holds the field and its `leadingSlot` / `trailingSlot`, which only
-   * exists when one of them is passed. `className` stays on the field itself, as it is on every
+   * exists when one of them (or `prefixText` / `suffixText`) is passed. `className` stays on the field itself, as it is on every
    * input, so size the pair here: `wrapperClassName="w-64"`.
    */
   wrapperClassName?: string | undefined;
@@ -168,23 +227,47 @@ export type InputProps = {
  * The box a `leadingSlot` or `trailingSlot` is positioned in. Full width, as the field is on its
  * own.
  */
-export const INPUT_WRAPPER_CLASS = 'relative w-full min-w-0';
+export const INPUT_WRAPPER_CLASS = "relative w-full min-w-0";
 
 /**
  * Where `leadingSlot` sits: an icon-wide cell at the field's start, muted, never the press target.
  */
 export const INPUT_LEADING_CLASS =
-  'pointer-events-none absolute inset-y-0 left-0 flex w-9 flex-row items-center justify-center';
+  "pointer-events-none absolute inset-y-0 left-0 flex w-9 flex-row items-center justify-center";
 
 /** Where `trailingSlot` sits: the same cell at the far end, which does take a press. */
-export const INPUT_TRAILING_CLASS = 'absolute inset-y-0 right-0 flex w-9 flex-row items-center justify-center';
+export const INPUT_TRAILING_CLASS =
+  "absolute inset-y-0 right-0 flex w-9 flex-row items-center justify-center";
 
 /** The icon inside either slot, handed down through `IconClassContext`: on device nothing inherits. */
-export const INPUT_SLOT_ICON_CLASS = 'size-4 shrink-0 text-foreground/60';
+export const INPUT_SLOT_ICON_CLASS = "size-4 shrink-0 text-foreground/60";
 
 /** The text's padding past a slot, so it never runs under the icon. */
-export const INPUT_LEADING_PAD_CLASS = 'pl-9';
-export const INPUT_TRAILING_PAD_CLASS = 'pr-9';
+export const INPUT_LEADING_PAD_CLASS = "pl-9";
+/** The text's padding before a trailing slot, so it never runs under the icon. */
+export const INPUT_TRAILING_PAD_CLASS = "pr-9";
 
+/**
+ * The box when there is a `prefixText` or `suffixText`: it takes the field's border, so the line,
+ * the focus colour and the invalid colour go round the text as well as the value.
+ */
+export const INPUT_ADDON_BOX_CLASS =
+  "border-foreground/50 bg-background flex h-10 w-full min-w-0 flex-row items-center overflow-hidden rounded-md border";
+
+/**
+ * The field inside that box: the box draws its border, so it draws none. It takes the room, and
+ * keeps a few characters of it however long the fixed text is: that text gives way first.
+ */
+export const INPUT_ADDON_FIELD_CLASS =
+  "h-full min-w-24 flex-1 rounded-none border-0 bg-transparent focus:border-0";
+
+/** A `prefixText` or `suffixText`: muted, one line, never pressed. */
+export const INPUT_ADDON_TEXT_CLASS = "text-foreground/60 min-w-0 shrink text-sm";
+
+/** In the box, a slot is a cell in the row rather than placed over the field. */
+export const INPUT_ADDON_SLOT_CLASS =
+  "flex h-full w-9 shrink-0 flex-row items-center justify-center";
+
+/** The input's box: border, background, height and type. */
 export const INPUT_CLASS =
-  'border-foreground/15 bg-background text-foreground placeholder:text-foreground/60 focus:border-active flex h-10 w-full rounded-md border px-3 py-2 text-sm focus:outline-none';
+  "border-foreground/50 bg-background text-foreground placeholder:text-foreground/60 focus:border-active flex h-10 w-full rounded-md border px-3 py-2 text-sm focus:outline-none";

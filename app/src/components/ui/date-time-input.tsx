@@ -1,12 +1,12 @@
-import { format } from 'date-fns';
-import { useId, useState } from 'react';
-import { Platform, Text, View } from 'react-native';
-import { Button, buttonTextVariants } from '@/components/ui/button';
-import { Calendar } from '@/components/ui/calendar';
-import { Calendar as CalendarIcon, X } from '@/components/ui/icons';
-import { Input } from '@/components/ui/input';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { cn } from '@/lib/utils';
+import { format } from "date-fns";
+import { useId, useState } from "react";
+import { Platform, Text, View } from "react-native";
+import { Button, buttonTextVariants } from "@/components/ui/button";
+import { Calendar } from "@/components/ui/calendar";
+import { Calendar as CalendarIcon, X } from "@/components/ui/icons";
+import { Input } from "@/components/ui/input";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
 
 type DateTimeInputSharedProps = {
   /**
@@ -14,7 +14,7 @@ type DateTimeInputSharedProps = {
    * it: a picked day is committed at local midnight, which is what a due date or
    * a birthday is.
    */
-  mode?: 'datetime' | 'date' | undefined;
+  mode?: "datetime" | "date" | undefined;
   /** What the trigger reads while the value is `null`. Only reachable with `clearable`. */
   placeholder?: string | undefined;
   className?: string | undefined;
@@ -31,20 +31,20 @@ type DateTimeInputSharedProps = {
    * the time box is named after it too — `"Due, time"` — so two of these in one form are not
    * both "Time".
    */
-  'aria-label'?: string | undefined;
+  "aria-label"?: string | undefined;
   /**
    * The field's name by reference — the id of the `Label` above it. The trigger takes it followed
    * by a reference to its own date text, so it is named "Due September 15th, 2026". The time box
    * takes it followed by its own id, and its own `aria-label` of "time" is what that second
    * reference reads, so it is named "Due time".
    */
-  'aria-labelledby'?: string | undefined;
+  "aria-labelledby"?: string | undefined;
   /** Web only, on the trigger: native has no description relation. A bound field's hint and error. */
-  'aria-describedby'?: string | undefined;
+  "aria-describedby"?: string | undefined;
   /** Web only, on the trigger. */
-  'aria-invalid'?: boolean | 'true' | 'false' | undefined;
+  "aria-invalid"?: boolean | "true" | "false" | undefined;
   /** Web only, on the trigger. */
-  'aria-required'?: boolean | 'true' | 'false' | undefined;
+  "aria-required"?: boolean | "true" | "false" | undefined;
 };
 
 /**
@@ -68,24 +68,25 @@ export type DateTimeInputProps = DateTimeInputSharedProps &
       }
   );
 
+/** A date picked from a calendar with a time beside it, or a date alone with `mode="date"`. */
 export function DateTimeInput(props: DateTimeInputProps) {
   const {
-    mode = 'datetime',
-    placeholder = 'Pick a date',
+    mode = "datetime",
+    placeholder = "Pick a date",
     className,
     id,
-    'aria-label': ariaLabel,
-    'aria-labelledby': ariaLabelledBy,
-    'aria-describedby': ariaDescribedBy,
-    'aria-invalid': ariaInvalid,
-    'aria-required': ariaRequired,
+    "aria-label": ariaLabel,
+    "aria-labelledby": ariaLabelledBy,
+    "aria-describedby": ariaDescribedBy,
+    "aria-invalid": ariaInvalid,
+    "aria-required": ariaRequired,
   } = props;
   const value = props.value;
-  const withTime = mode === 'datetime';
+  const withTime = mode === "datetime";
   const [open, setOpen] = useState(false);
   const timeId = useId();
   const valueId = useId();
-  const valueText = value ? format(value, 'PPP') : placeholder;
+  const valueText = value ? format(value, "PPP") : placeholder;
 
   function commit(next: Date) {
     // Both branches take a `Date`; the union of their `onChange`s does not say so.
@@ -93,7 +94,9 @@ export function DateTimeInput(props: DateTimeInputProps) {
   }
 
   function handleDateSelect(picked: Date | undefined) {
-    if (!picked) return;
+    if (!picked) {
+      return;
+    }
     const next = new Date(picked);
     if (withTime && value) {
       // The calendar only knows a day, so the time is carried over rather than
@@ -110,24 +113,34 @@ export function DateTimeInput(props: DateTimeInputProps) {
 
   function handleTimeChange(text: string) {
     // A time with no date is not a value this control can hold, so it waits.
-    if (!value) return;
-    const parts = text.split(':').map(Number);
+    if (!value) {
+      return;
+    }
+    const parts = text.split(":").map(Number);
     const hh = parts[0];
     const mm = parts[1];
-    if (hh === undefined || mm === undefined) return;
-    if (Number.isNaN(hh) || Number.isNaN(mm)) return;
+    if (hh === undefined || mm === undefined) {
+      return;
+    }
+    if (Number.isNaN(hh) || Number.isNaN(mm)) {
+      return;
+    }
     const next = new Date(value);
     next.setHours(hh, mm, 0, 0);
     commit(next);
   }
 
   function handleClear() {
-    if (props.clearable) props.onChange(null);
+    if (props.clearable) {
+      props.onChange(null);
+    }
     setOpen(false);
   }
 
+  const ownTimeLabel = ariaLabel ? `${ariaLabel}, time` : "Time";
+
   return (
-    <View className={cn('flex-row items-center gap-2', className)}>
+    <View className={cn("flex-row items-center gap-2", className)}>
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>
           <Button
@@ -142,11 +155,11 @@ export function DateTimeInput(props: DateTimeInputProps) {
             // What react-native has no prop for, in the spelling the web reads — the same
             // arrangement as `ColorPicker`'s swatch row. A bound field's hint and error reach
             // the trigger this way.
-            {...(Platform.OS === 'web'
+            {...(Platform.OS === "web"
               ? {
-                  ...(ariaDescribedBy === undefined ? {} : { 'aria-describedby': ariaDescribedBy }),
-                  ...(ariaInvalid === undefined ? {} : { 'aria-invalid': ariaInvalid }),
-                  ...(ariaRequired === undefined ? {} : { 'aria-required': ariaRequired }),
+                  ...(ariaDescribedBy === undefined ? {} : { "aria-describedby": ariaDescribedBy }),
+                  ...(ariaInvalid === undefined ? {} : { "aria-invalid": ariaInvalid }),
+                  ...(ariaRequired === undefined ? {} : { "aria-required": ariaRequired }),
                 }
               : {})}
             className="flex-1 justify-start text-left font-normal"
@@ -157,7 +170,9 @@ export function DateTimeInput(props: DateTimeInputProps) {
               // the words themselves.
               <Text
                 nativeID={valueId}
-                className={value ? buttonTextVariants({ variant: 'outline' }) : 'text-sm text-foreground/60'}
+                className={
+                  value ? buttonTextVariants({ variant: "outline" }) : "text-sm text-foreground/60"
+                }
               >
                 {valueText}
               </Text>
@@ -165,7 +180,11 @@ export function DateTimeInput(props: DateTimeInputProps) {
           />
         </PopoverTrigger>
         <PopoverContent className="w-auto p-0" align="start">
-          <Calendar selected={value ?? undefined} onSelect={handleDateSelect} defaultMonth={value ?? undefined} />
+          <Calendar
+            selected={value ?? undefined}
+            onSelect={handleDateSelect}
+            defaultMonth={value ?? undefined}
+          />
           {/* In the popover, not an X inside the trigger: the trigger is a button,
               and a button inside a button is invalid HTML that no keyboard reaches.
               `DatePicker` puts its Clear in the same place. */}
@@ -190,12 +209,12 @@ export function DateTimeInput(props: DateTimeInputProps) {
           // box itself, whose own `aria-label` is what that second reference reads — so there is
           // no hidden text node to render. With no name given, it is "Time", as it always was.
           id={ariaLabelledBy ? timeId : undefined}
-          aria-label={ariaLabelledBy ? 'time' : ariaLabel ? `${ariaLabel}, time` : 'Time'}
+          aria-label={ariaLabelledBy ? "time" : ownTimeLabel}
           aria-labelledby={ariaLabelledBy ? `${ariaLabelledBy} ${timeId}` : undefined}
-          value={value ? format(value, 'HH:mm') : ''}
+          value={value ? format(value, "HH:mm") : ""}
           onChangeText={handleTimeChange}
           disabled={!value}
-          className="w-[120px]"
+          className="w-28"
         />
       ) : null}
     </View>

@@ -1,10 +1,10 @@
-import { useId, useState } from 'react';
-import { Platform, Pressable, Text, View } from 'react-native';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { readableTextColor } from '@/lib/readable-text-color';
-import { cn } from '@/lib/utils';
+import { useId, useState } from "react";
+import { Platform, Pressable, Text, View } from "react-native";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { readableTextColor } from "@/lib/readable-text-color";
+import { cn } from "@/lib/utils";
 
 /**
  * A palette wide enough to look chosen from rather than settled for.
@@ -14,22 +14,22 @@ import { cn } from '@/lib/utils';
  * and that is the common case.
  */
 export const COLOR_SWATCHES = [
-  '#ef4444',
-  '#f97316',
-  '#f59e0b',
-  '#eab308',
-  '#84cc16',
-  '#22c55e',
-  '#10b981',
-  '#14b8a6',
-  '#06b6d4',
-  '#0ea5e9',
-  '#3b82f6',
-  '#6366f1',
-  '#8b5cf6',
-  '#a855f7',
-  '#d946ef',
-  '#ec4899',
+  "#ef4444",
+  "#f97316",
+  "#f59e0b",
+  "#eab308",
+  "#84cc16",
+  "#22c55e",
+  "#10b981",
+  "#14b8a6",
+  "#06b6d4",
+  "#0ea5e9",
+  "#3b82f6",
+  "#6366f1",
+  "#8b5cf6",
+  "#a855f7",
+  "#d946ef",
+  "#ec4899",
 ] as const;
 
 const HEX = /^#(?:[0-9a-f]{3}|[0-9a-f]{6})$/i;
@@ -44,8 +44,10 @@ const HEX = /^#(?:[0-9a-f]{3}|[0-9a-f]{6})$/i;
  */
 export function normalizeHex(value: string): string {
   const trimmed = value.trim();
-  if (trimmed === '') return '';
-  return trimmed.startsWith('#') ? trimmed : `#${trimmed}`;
+  if (trimmed === "") {
+    return "";
+  }
+  return trimmed.startsWith("#") ? trimmed : `#${trimmed}`;
 }
 
 /**
@@ -58,14 +60,16 @@ export function isHexColor(value: string): boolean {
   return HEX.test(value);
 }
 
+const SHORTHAND_DIGITS = 3;
+
 /** `#f80` and `#FF8800` are one colour. Shorthand doubles each digit; it does not pad. */
 function expand(value: string): string {
-  const digits = value.replace('#', '').toLowerCase();
-  return digits.length === 3
+  const digits = value.replace("#", "").toLowerCase();
+  return digits.length === SHORTHAND_DIGITS
     ? digits
-        .split('')
+        .split("")
         .map((digit) => digit + digit)
-        .join('')
+        .join("")
     : digits;
 }
 
@@ -123,17 +127,18 @@ type ColorPickerProps = {
   /** The hex field's id — what a field's `<Label htmlFor>` points at. */
   id?: string | undefined;
   /** The swatch row's name. */
-  'aria-label'?: string | undefined;
+  "aria-label"?: string | undefined;
   /** The swatch row's name, by reference. */
-  'aria-labelledby'?: string | undefined;
+  "aria-labelledby"?: string | undefined;
   /** Web only, on the swatch row: native has no description relation. */
-  'aria-describedby'?: string | undefined;
+  "aria-describedby"?: string | undefined;
   /** Web only, on the swatch row. */
-  'aria-invalid'?: boolean | 'true' | 'false' | undefined;
+  "aria-invalid"?: boolean | "true" | "false" | undefined;
   /** Web only, on the swatch row. */
-  'aria-required'?: boolean | 'true' | 'false' | undefined;
+  "aria-required"?: boolean | "true" | "false" | undefined;
 };
 
+/** A row of swatches and a hex field for choosing a colour. */
 export function ColorPicker({
   value,
   onChange,
@@ -141,24 +146,24 @@ export function ColorPicker({
   onBlur,
   colors,
   swatches,
-  placeholder = '#rrggbb',
+  placeholder = "#rrggbb",
   hexLabel,
   swatchesLabel,
   clearable = false,
-  clearLabel = 'Clear',
+  clearLabel = "Clear",
   disabled = false,
   className,
   contentClassName,
   id,
-  'aria-label': ariaLabel,
-  'aria-labelledby': ariaLabelledBy,
-  'aria-describedby': ariaDescribedBy,
-  'aria-invalid': ariaInvalid,
-  'aria-required': ariaRequired,
+  "aria-label": ariaLabel,
+  "aria-labelledby": ariaLabelledBy,
+  "aria-describedby": ariaDescribedBy,
+  "aria-invalid": ariaInvalid,
+  "aria-required": ariaRequired,
 }: ColorPickerProps) {
   const fallbackId = useId();
   const inputId = id ?? fallbackId;
-  const current = value ?? '';
+  const current = value ?? "";
   const palette = colors ?? swatches ?? COLOR_SWATCHES;
   const groupLabel = ariaLabel ?? swatchesLabel;
   const emit = (color: string) => {
@@ -176,7 +181,9 @@ export function ColorPicker({
   if (seen !== current) {
     setSeen(current);
     const typed = normalizeHex(draft);
-    if (typed !== current && !sameColor(typed, current)) setDraft(current);
+    if (typed !== current && sameColor(typed, current) === false) {
+      setDraft(current);
+    }
   }
 
   const onChangeText = (text: string) => {
@@ -184,11 +191,13 @@ export function ColorPicker({
     const typed = normalizeHex(text);
     // Emptying the box is an answer — the same "no colour" Clear gives — and a whole colour is
     // one. Everything between is a draft, and stays in the box.
-    if ((typed === '' || isHexColor(typed)) && typed !== current) emit(typed);
+    if ((typed === "" || isHexColor(typed)) && typed !== current) {
+      emit(typed);
+    }
   };
 
   return (
-    <View className={cn('gap-3', className)}>
+    <View className={cn("gap-3", className)}>
       {/*
         The group the swatches are radios *of*. A `radio` with no `radiogroup` around it is an
         incomplete control to an assistive technology and an axe violation on web, and the role
@@ -199,15 +208,15 @@ export function ColorPicker({
         accessibilityLabel={groupLabel}
         accessibilityLabelledBy={ariaLabelledBy}
         // What react-native has no prop for, in the spelling the web reads.
-        {...(Platform.OS === 'web'
+        {...(Platform.OS === "web"
           ? {
-              ...(ariaDescribedBy === undefined ? {} : { 'aria-describedby': ariaDescribedBy }),
-              ...(ariaInvalid === undefined ? {} : { 'aria-invalid': ariaInvalid }),
-              ...(ariaRequired === undefined ? {} : { 'aria-required': ariaRequired }),
-              ...(disabled ? { 'aria-disabled': true } : {}),
+              ...(ariaDescribedBy === undefined ? {} : { "aria-describedby": ariaDescribedBy }),
+              ...(ariaInvalid === undefined ? {} : { "aria-invalid": ariaInvalid }),
+              ...(ariaRequired === undefined ? {} : { "aria-required": ariaRequired }),
+              ...(disabled ? { "aria-disabled": true } : {}),
             }
           : {})}
-        className={cn('flex-row flex-wrap gap-2', disabled && 'opacity-50', contentClassName)}
+        className={cn("flex-row flex-wrap gap-2", disabled && "opacity-50", contentClassName)}
       >
         {palette.map((color) => {
           const selected = sameColor(current, color);
@@ -223,11 +232,11 @@ export function ColorPicker({
               // The same fact in the spelling the web understands — react-native-web forwards an
               // allowlist of `aria-*` props and ignores `accessibilityState` entirely. A radio
               // says its state with `aria-checked`, not `aria-selected`.
-              {...(Platform.OS === 'web' ? ({ 'aria-checked': selected } as const) : {})}
+              {...(Platform.OS === "web" ? ({ "aria-checked": selected } as const) : {})}
               accessibilityLabel={color}
               className={cn(
-                'h-9 w-9 items-center justify-center rounded-full border-2',
-                selected ? 'border-foreground' : 'border-transparent',
+                "h-9 w-9 items-center justify-center rounded-full border-2",
+                selected ? "border-foreground" : "border-transparent",
               )}
               style={{ backgroundColor: color }}
             >
@@ -235,7 +244,10 @@ export function ColorPicker({
                 // The tick has to be legible on whatever the caller passed, and
                 // a caller's palette is not known here — a hardcoded white one
                 // disappears on `#eab308`.
-                <Text className="text-base leading-none" style={{ color: readableTextColor(color) ?? '#ffffff' }}>
+                <Text
+                  className="text-base leading-none"
+                  style={{ color: readableTextColor(color) ?? "#ffffff" }}
+                >
                   ✓
                 </Text>
               ) : null}
@@ -248,7 +260,7 @@ export function ColorPicker({
         because `Input` takes no `aria-label`; on native there is no label/control association to
         make, so nothing is drawn there.
       */}
-      {Platform.OS === 'web' && hexLabel ? (
+      {Platform.OS === "web" && hexLabel ? (
         <Label htmlFor={inputId} className="sr-only">
           {hexLabel}
         </Label>
@@ -274,7 +286,13 @@ export function ColorPicker({
           className="flex-1 font-mono"
         />
         {clearable && current ? (
-          <Button variant="outline" size="sm" disabled={disabled} onPress={() => emit('')} content={clearLabel} />
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={disabled}
+            onPress={() => emit("")}
+            content={clearLabel}
+          />
         ) : null}
       </View>
     </View>

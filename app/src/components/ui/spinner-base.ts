@@ -9,7 +9,7 @@ export type SpinnerProps = {
 };
 
 /** The glyph's size when the call site names none, shadcn's. */
-export const spinnerClass = 'size-4';
+export const spinnerClass = "size-4";
 
-/** One turn, in ms: Tailwind's `animate-spin`, which the web half uses. */
-export const SPIN_DURATION = 1000;
+/** One turn: Tailwind's `animate-spin`, which the web half uses. */
+export const SPIN_DURATION_MS = 1000;

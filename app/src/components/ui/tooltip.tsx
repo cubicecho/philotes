@@ -1,5 +1,13 @@
-import { cloneElement, createContext, isValidElement, type ReactElement, useContext, useEffect, useState } from 'react';
-import { Pressable, Text, View } from 'react-native';
+import {
+  cloneElement,
+  createContext,
+  isValidElement,
+  type ReactElement,
+  useContext,
+  useEffect,
+  useState,
+} from "react";
+import { Pressable, Text, View } from "react-native";
 import {
   TOOLTIP_CONTENT_CLASS,
   TOOLTIP_SIDE_CLASS,
@@ -8,8 +16,8 @@ import {
   type TooltipProps,
   type TooltipProviderProps,
   type TooltipTriggerProps,
-} from '@/components/ui/tooltip-base';
-import { cn } from '@/lib/utils';
+} from "@/components/ui/tooltip-base";
+import { cn } from "@/lib/utils";
 
 type TooltipState = { open: boolean; setOpen: (open: boolean) => void };
 
@@ -29,6 +37,7 @@ function TooltipProvider({ children }: TooltipProviderProps) {
   return children;
 }
 
+/** The root of a tooltip: it holds the open state. */
 function Tooltip({ children }: TooltipProps) {
   const [open, setOpen] = useState(false);
   return (
@@ -38,12 +47,18 @@ function Tooltip({ children }: TooltipProps) {
   );
 }
 
+/** The element the tooltip describes: hovered or focused on the web, long-pressed on device. */
 function TooltipTrigger({ asChild, className, children }: TooltipTriggerProps) {
   const { setOpen } = useContext(TooltipContext);
   const show = () => setOpen(true);
   if (asChild && isValidElement(children)) {
-    return cloneElement(children as ReactElement<{ onLongPress?: () => void }>, {
-      onLongPress: show,
+    // The child's own long press still runs: the tooltip is added to it, not swapped in for it.
+    const child = children as ReactElement<{ onLongPress?: (() => void) | undefined }>;
+    return cloneElement(child, {
+      onLongPress: () => {
+        child.props.onLongPress?.();
+        show();
+      },
     });
   }
   return (
@@ -56,19 +71,25 @@ function TooltipTrigger({ asChild, className, children }: TooltipTriggerProps) {
 /** How long the bubble stays up before dismissing itself. */
 const VISIBLE_MS = 2500;
 
-function TooltipContent({ side = 'top', className, children }: TooltipContentProps) {
+/** The tooltip's bubble and its text. */
+function TooltipContent({ side = "top", className, children }: TooltipContentProps) {
   const { open, setOpen } = useContext(TooltipContext);
 
   useEffect(() => {
-    if (!open) return;
+    if (open === false) {
+      return;
+    }
     const timer = setTimeout(() => setOpen(false), VISIBLE_MS);
     return () => clearTimeout(timer);
   }, [open, setOpen]);
 
-  if (!open) return null;
+  if (open === false) {
+    return null;
+  }
   return (
     <View
-      className={cn('absolute z-50', TOOLTIP_SIDE_CLASS[side], TOOLTIP_CONTENT_CLASS, className)}
+      role="tooltip"
+      className={cn("absolute z-50", TOOLTIP_SIDE_CLASS[side], TOOLTIP_CONTENT_CLASS, className)}
       pointerEvents="none"
     >
       <Text className={TOOLTIP_TEXT_CLASS}>{children}</Text>

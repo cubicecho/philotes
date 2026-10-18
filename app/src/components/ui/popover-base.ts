@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import type { ReactNode } from "react";
 
 export type PopoverProps = {
   /**
@@ -26,7 +26,7 @@ export type PopoverTriggerProps = {
 export type PopoverContentProps = {
   className?: string | undefined;
   /** Web only — the native sheet is centred and has nothing to align to. */
-  align?: 'start' | 'center' | 'end' | undefined;
+  align?: "start" | "center" | "end" | undefined;
   /**
    * Web only — the pane's name. Radix draws the web pane as `role="dialog"`, and a dialog with no
    * name is a failure every axe run reports. A name *on* the pane rather than an
@@ -34,7 +34,7 @@ export type PopoverContentProps = {
    * the moment what it points at is hidden or re-keyed. The native sheet is a `Modal`, which takes
    * no name, and a label on a plain `View` inside it is one axe flags on a generic element.
    */
-  'aria-label'?: string | undefined;
+  "aria-label"?: string | undefined;
   children?: ReactNode;
 };
 
@@ -60,3 +60,13 @@ export type PopoverSectionProps = {
   className?: string | undefined;
   children?: ReactNode;
 };
+
+/** The pane's card. */
+export const POPOVER_CONTENT_CLASS =
+  "w-72 rounded-md border border-foreground/10 bg-secondary p-4 shadow-md";
+/** The block holding the title and the description. */
+export const POPOVER_HEADER_CLASS = "gap-1";
+/** The pane's title. */
+export const POPOVER_TITLE_CLASS = "text-sm font-semibold text-foreground";
+/** The sentence under the title. */
+export const POPOVER_DESCRIPTION_CLASS = "text-sm text-foreground/60";

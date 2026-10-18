@@ -1,51 +1,59 @@
-import { cva, type VariantProps } from 'class-variance-authority';
-import { Slot } from 'radix-ui';
-import * as React from 'react';
-import { Platform, Pressable, Text, View } from 'react-native';
-import { IconClassContext } from '@/components/ui/icons-base';
-import { Spinner } from '@/components/ui/spinner';
-import { cn, type SlotNode } from '@/lib/utils';
+import { Slot } from "@radix-ui/react-slot";
+import { cva, type VariantProps } from "class-variance-authority";
+import * as React from "react";
+import { Platform, Pressable, Text, View } from "react-native";
+import { IconClassContext } from "@/components/ui/icons-base";
+import { Spinner } from "@/components/ui/spinner";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import type { TooltipSide } from "@/components/ui/tooltip-base";
+import { cn, type SlotNode } from "@/lib/utils";
 
+/** The button's container classes for each `variant` and `size`. */
 const buttonVariants = cva(
-  'inline-flex flex-row items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0',
+  "inline-flex flex-row items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-semibold transition-colors focus-visible:outline-none [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
   {
     variants: {
       variant: {
-        default: 'bg-neutral text-neutral-foreground hover:bg-neutral/90 focus-visible:bg-neutral/90',
-        destructive: 'bg-negative text-negative-foreground hover:bg-negative/90 focus-visible:bg-negative/90',
+        default:
+          "bg-neutral text-neutral-foreground hover:bg-neutral/90 focus-visible:bg-neutral/90",
+        destructive:
+          "bg-negative text-negative-foreground hover:bg-negative/90 focus-visible:bg-negative/90",
         /** A destructive action that is not the emphasis of its row. */
-        'destructive-outline':
-          'border border-negative/40 bg-transparent text-negative hover:bg-negative/10 focus-visible:bg-negative/10',
+        "destructive-outline":
+          "border border-negative/40 bg-transparent text-negative hover:bg-negative/10 focus-visible:bg-negative/10",
         /** The action that keeps the work: save, confirm, create. */
-        positive: 'bg-positive text-positive-foreground hover:bg-positive/90 focus-visible:bg-positive/90',
-        'positive-outline':
-          'border border-positive/40 bg-transparent text-positive hover:bg-positive/10 focus-visible:bg-positive/10',
+        positive:
+          "bg-positive text-positive-foreground hover:bg-positive/90 focus-visible:bg-positive/90",
+        "positive-outline":
+          "border border-positive/40 bg-transparent text-positive hover:bg-positive/10 focus-visible:bg-positive/10",
         /** The action that adds something: add, new, create. */
-        info: 'bg-info text-info-foreground hover:bg-info/90 focus-visible:bg-info/90',
-        'info-outline': 'border border-info/40 bg-transparent text-info hover:bg-info/10 focus-visible:bg-info/10',
-        outline: 'border border-foreground/15 bg-background text-foreground hover:bg-hover focus-visible:bg-hover',
-        secondary: 'bg-foreground/10 text-foreground hover:bg-hover focus-visible:bg-hover',
+        info: "bg-info text-info-foreground hover:bg-info/90 focus-visible:bg-info/90",
+        "info-outline":
+          "border border-info/40 bg-transparent text-info hover:bg-info/10 focus-visible:bg-info/10",
+        outline:
+          "border border-foreground/50 bg-background text-foreground hover:bg-hover focus-visible:bg-hover",
+        secondary: "bg-foreground/10 text-foreground hover:bg-hover focus-visible:bg-hover",
         ghost:
-          'text-foreground/60 hover:bg-hover hover:text-foreground focus-visible:bg-hover focus-visible:text-foreground',
-        link: 'text-info underline-offset-4 hover:underline focus-visible:underline',
+          "text-foreground/60 hover:bg-hover hover:text-foreground focus-visible:bg-hover focus-visible:text-foreground",
+        link: "text-info underline-offset-4 hover:underline focus-visible:underline",
       },
       size: {
-        default: 'h-10 px-4 py-2',
+        default: "h-10 px-4 py-2",
         /** Small enough to sit inline in a list row without setting its height. */
-        xs: 'h-7 rounded-lg px-3',
-        sm: 'h-9 rounded-md px-3',
-        lg: 'h-11 rounded-md px-8',
-        icon: 'h-10 w-10',
+        xs: "h-7 rounded-lg px-3",
+        sm: "h-9 rounded-md px-3",
+        lg: "h-11 rounded-md px-8",
+        icon: "h-10 w-10",
         // shadcn's icon ladder, on this file's own heights: each square is the height of the
         // text size it is named after, so an icon button sits flush in a row of text buttons.
-        'icon-xs': 'h-7 w-7 rounded-lg [&_svg]:size-3.5',
-        'icon-sm': 'h-9 w-9',
-        'icon-lg': 'h-11 w-11',
+        "icon-xs": "h-7 w-7 rounded-lg [&_svg]:size-3.5",
+        "icon-sm": "h-9 w-9",
+        "icon-lg": "h-11 w-11",
       },
     },
     defaultVariants: {
-      variant: 'default',
-      size: 'default',
+      variant: "default",
+      size: "default",
     },
   },
 );
@@ -58,40 +66,41 @@ const buttonVariants = cva(
  * native reads this one, because a `<Text>` inherits nothing from the `View`
  * above it.
  */
-const buttonTextVariants = cva('font-medium', {
+const buttonTextVariants = cva("font-semibold", {
   variants: {
     size: {
-      default: 'text-sm',
-      xs: 'text-xs',
-      sm: 'text-sm',
-      lg: 'text-sm',
-      icon: 'text-sm',
-      'icon-xs': 'text-xs',
-      'icon-sm': 'text-sm',
-      'icon-lg': 'text-sm',
+      default: "text-sm",
+      xs: "text-xs",
+      sm: "text-sm",
+      lg: "text-sm",
+      icon: "text-sm",
+      "icon-xs": "text-xs",
+      "icon-sm": "text-sm",
+      "icon-lg": "text-sm",
     },
     variant: {
-      default: 'text-neutral-foreground',
-      destructive: 'text-negative-foreground',
-      'destructive-outline': 'text-negative',
-      positive: 'text-positive-foreground',
-      'positive-outline': 'text-positive',
-      info: 'text-info-foreground',
-      'info-outline': 'text-info',
-      outline: 'text-foreground',
-      secondary: 'text-foreground',
-      ghost: 'text-foreground/60',
-      link: 'text-info underline',
+      default: "text-neutral-foreground",
+      destructive: "text-negative-foreground",
+      "destructive-outline": "text-negative",
+      positive: "text-positive-foreground",
+      "positive-outline": "text-positive",
+      info: "text-info-foreground",
+      "info-outline": "text-info",
+      outline: "text-foreground",
+      secondary: "text-foreground",
+      ghost: "text-foreground/60",
+      link: "text-info underline",
     },
   },
-  defaultVariants: { variant: 'default', size: 'default' },
+  defaultVariants: { variant: "default", size: "default" },
 });
 
-export type ButtonProps = Omit<
+/** The button itself, before the name rule and the tooltip are added to it. */
+type ButtonBodyProps = Omit<
   React.ComponentProps<typeof Pressable>,
   // `content` is also an HTML attribute (RDFa's), a string, which the compiled half would
   // otherwise intersect with the label's type.
-  'children' | 'className' | 'content'
+  "children" | "className" | "content"
 > &
   VariantProps<typeof buttonVariants> & {
     // Re-declared rather than inherited: nativewind types it as
@@ -103,10 +112,7 @@ export type ButtonProps = Omit<
      * a select's trigger passes the chosen value's own `<Text>`.
      */
     content?: React.ReactNode;
-    /**
-     * Before the label, or alone in an `icon*` size — where the button needs an `aria-label`,
-     * which `ActionButton` makes a required prop.
-     */
+    /** Before the label, or alone in an `icon*` size, where `aria-label` is required. */
     iconSlot?: SlotNode;
     /** The far end, after the label: a trigger's chevron, a count. */
     trailingSlot?: SlotNode;
@@ -129,6 +135,60 @@ export type ButtonProps = Omit<
     loadingLabel?: string | undefined;
   };
 
+type ButtonSize = NonNullable<VariantProps<typeof buttonVariants>["size"]>;
+
+/** The sizes that draw an icon and no label. */
+type IconSize = Extract<ButtonSize, `icon${string}`>;
+
+/**
+ * The accessible name, which an `icon*` size cannot go without.
+ *
+ * An icon alone is announced as "button". A `title` is a hover hint and not a name, so the type
+ * asks for `aria-label`, because a type is checked and a review is not.
+ */
+type IconButtonName = { size: IconSize; "aria-label": string };
+
+/** A button with a label is named by it, and may be given another name. */
+type TextButtonName = {
+  size?: Exclude<ButtonSize, IconSize> | null | undefined;
+  "aria-label"?: string | undefined;
+};
+
+type ButtonHint = {
+  /**
+   * Why it is unavailable, or what it will do: the tooltip, and read after the name whether or
+   * not the tooltip is open. On device only a string is read; a node is shown and not read.
+   *
+   * With a `hint`, `disabled` keeps the button's focus, hover and tooltip and refuses the press,
+   * since a truly disabled button could not be asked why.
+   */
+  hint?: React.ReactNode | undefined;
+  /**
+   * Off, the button keeps its `hint` as its description and drops the tooltip. A tooltip is
+   * only ever drawn for a `hint`.
+   *
+   * @defaultValue true
+   */
+  tooltip?: boolean | undefined;
+  /** Which edge of the button the tooltip sits on. */
+  side?: TooltipSide | undefined;
+  /**
+   * More ids to describe the button with, kept ahead of the hint's own. Web only: a device
+   * describes a control with its accessibility hint, which is what `hint` becomes there.
+   */
+  "aria-describedby"?: string | undefined;
+};
+
+type ButtonSharedProps = Omit<ButtonBodyProps, "size" | "aria-label"> & ButtonHint;
+
+export type ButtonProps = ButtonSharedProps & (IconButtonName | TextButtonName);
+
+/** `Omit` over each arm of a union, where the plain one would merge the arms into one. */
+type OmitEach<Props, Key extends PropertyKey> = Props extends unknown ? Omit<Props, Key> : never;
+
+/** {@link ButtonProps} less some keys, with an `icon*` size still tied to its `aria-label`. */
+export type ButtonPropsWithout<Key extends PropertyKey> = OmitEach<ButtonProps, Key>;
+
 /**
  * The `onClick` a radix trigger merges onto its child through `Slot` — `<PopoverTrigger asChild>`
  * over a `Button`. Not a prop anyone passes here; it arrives at run time, so it is typed only as far
@@ -148,9 +208,11 @@ type MergedClick = { onClick?: ((event: unknown) => void) | undefined };
  */
 function pressThenClick<Press extends ((event: never) => void) | null | undefined>(
   onPress: Press,
-  onClick: MergedClick['onClick'],
+  onClick: MergedClick["onClick"],
 ): Press {
-  if (!onClick) return onPress;
+  if (!onClick) {
+    return onPress;
+  }
   const both = (event: never) => {
     onPress?.(event);
     onClick(event);
@@ -158,7 +220,8 @@ function pressThenClick<Press extends ((event: never) => void) | null | undefine
   return both as Press;
 }
 
-const Button = React.forwardRef<React.ElementRef<typeof Pressable>, ButtonProps>(
+/** The pressable itself: `Button` without its tooltip and its `hint`. */
+const ButtonBody = React.forwardRef<React.ElementRef<typeof Pressable>, ButtonBodyProps>(
   (
     {
       className,
@@ -182,7 +245,7 @@ const Button = React.forwardRef<React.ElementRef<typeof Pressable>, ButtonProps>
       buttonVariants({ variant, size, className }),
       // `disabled:` has no pseudo-class to hang off a Pressable on either
       // platform, so the disabled look is applied directly.
-      disabled && 'opacity-50',
+      disabled && "opacity-50",
     );
 
     // Labels and icons inside a button take the variant's text colour. On web they
@@ -201,8 +264,12 @@ const Button = React.forwardRef<React.ElementRef<typeof Pressable>, ButtonProps>
       iconSlot
     );
     const labelled =
-      typeof label === 'string' || typeof label === 'number' ? <Text className={labelClass}>{label}</Text> : label;
-    const busy = loading ? { 'aria-busy': true } : {};
+      typeof label === "string" || typeof label === "number" ? (
+        <Text className={labelClass}>{label}</Text>
+      ) : (
+        label
+      );
+    const busy = loading ? { "aria-busy": true } : {};
 
     const button = (
       <Pressable
@@ -226,38 +293,175 @@ const Button = React.forwardRef<React.ElementRef<typeof Pressable>, ButtonProps>
         </IconClassContext.Provider>
       </Pressable>
     );
-    if (!linkSlot) return button;
-
-    if (Platform.OS !== 'web') {
-      // On device the link wraps the button: expo-router's takes its child with `asChild`.
-      return React.cloneElement(linkSlot as React.ReactElement<{ asChild?: boolean }>, { asChild: true }, button);
+    if (!linkSlot) {
+      return button;
     }
+
+    if (Platform.OS !== "web") {
+      // On device the link wraps the button: expo-router's takes its child with `asChild`.
+      return React.cloneElement(
+        linkSlot as React.ReactElement<{ asChild?: boolean }>,
+        { asChild: true },
+        button,
+      );
+    }
+
+    // A DOM element takes the press as a click; a router's link is a component and takes `onPress`.
+    // Handed `onPress`, a bare `<a>` drops it. Compiled, both arms are `onClick`, which is right there.
+    const isDomLink = typeof linkSlot.type === "string";
 
     return (
       // The provider goes *outside* the `Slot`, and the caller's element is the Slot's
       // one child. Inside, the provider was the child: `Slot` merged the classes and
       // the press onto it, it dropped them, and the caller's `<a>` rendered unstyled (#156).
       <IconClassContext.Provider value={labelClass}>
-        {/* `Slot.Root` is declared over `HTMLAttributes<HTMLElement>` because radix ships
+        {/* `Slot` is declared over `HTMLAttributes<HTMLElement>` because radix ships
             for the DOM, but it renders nothing itself — it clones its child with these
             props merged in. The element that receives them is the caller's, so the DOM
             typing describes neither side, and the cast is the honest way to say so. */}
-        <Slot.Root
+        <Slot
           className={styling}
           {...({
             ...props,
             ...busy,
-            onPress,
+            ...(isDomLink ? { onClick: onPress } : { onPress }),
             disabled,
           } as unknown as React.HTMLAttributes<HTMLElement>)}
           ref={ref as unknown as React.Ref<HTMLElement>}
         >
           {React.cloneElement(linkSlot, undefined, leading, labelled, trailingSlot)}
-        </Slot.Root>
+        </Slot>
       </IconClassContext.Provider>
     );
   },
 );
-Button.displayName = 'Button';
+ButtonBody.displayName = "ButtonBody";
+
+/** Hands `node` to a ref of either kind. */
+function assignRef<Node>(ref: React.ForwardedRef<Node>, node: Node | null) {
+  if (typeof ref === "function") {
+    ref(node);
+    return;
+  }
+  if (ref) {
+    ref.current = node;
+  }
+}
+
+type ButtonRef = React.RefAttributes<React.ElementRef<typeof Pressable>>;
+
+/**
+ * `Button`'s two signatures: the one a call is checked against, then the one
+ * `ComponentProps<typeof Button>` reads, which is always the last.
+ *
+ * The second is the props without the `icon*` sizes. Read as the union, Storybook's `StoryObj`
+ * intersects the two arms into `never`; a wrapper that takes an `icon*` size uses
+ * {@link ButtonProps}.
+ */
+type ButtonComponent = {
+  (props: ButtonProps & ButtonRef): React.ReactNode;
+  (props: ButtonSharedProps & TextButtonName & ButtonRef): React.ReactNode;
+  displayName?: string | undefined;
+};
+
+/**
+ * A button made of `iconSlot`, `content` and `trailingSlot`, with a `loading` state and a `hint`
+ * that is its tooltip and can still be read while it is disabled.
+ */
+const Button: ButtonComponent = React.forwardRef<React.ElementRef<typeof Pressable>, ButtonProps>(
+  (
+    {
+      hint,
+      tooltip = true,
+      side = "top",
+      disabled,
+      className,
+      onPress,
+      "aria-describedby": ariaDescribedBy,
+      ...props
+    },
+    ref,
+  ) => {
+    const hintId = React.useId();
+    const hasHint = Boolean(hint);
+    // Only with a hint: with nothing to read, a disabled button is better off out of the tab order.
+    const refuses = hasHint && Boolean(disabled);
+
+    const node = React.useRef<React.ElementRef<typeof Pressable> | null>(null);
+    const setNode = React.useCallback(
+      (next: React.ElementRef<typeof Pressable> | null) => {
+        node.current = next;
+        assignRef(ref, next);
+      },
+      [ref],
+    );
+    // Under Expo web react-native-web's `Pressable` writes its own `aria-disabled` over the one it
+    // is handed, so the refusal was not announced there. It is put on the element instead.
+    React.useEffect(() => {
+      if (Platform.OS !== "web") {
+        return;
+      }
+      if (refuses === false) {
+        return;
+      }
+      const element = node.current as unknown as Element | null;
+      element?.setAttribute("aria-disabled", "true");
+      return () => element?.removeAttribute("aria-disabled");
+    }, [refuses]);
+
+    // Only pointed at when there is a hint: with none the tooltip repeats the name, and describing
+    // the button with its own name has it read as "Delete workspace, Delete workspace".
+    const describedBy = hasHint
+      ? [ariaDescribedBy, hintId].filter(Boolean).join(" ")
+      : ariaDescribedBy;
+
+    const button = (
+      <ButtonBody
+        {...(Platform.OS === "web"
+          ? { "aria-describedby": describedBy }
+          : { accessibilityHint: typeof hint === "string" ? hint : undefined })}
+        {...props}
+        ref={setNode}
+        // Not `disabled`: on the web the attribute is what removes the hover and the tab stop, and
+        // on device the prop is what swallows the long press, and with them the explanation.
+        disabled={refuses ? false : disabled}
+        {...(refuses ? { "aria-disabled": true } : {})}
+        // `opacity-50` is what `disabled` would have drawn.
+        className={cn(refuses && "opacity-50", className)}
+        onPress={refuses ? (event) => event.preventDefault() : onPress}
+      />
+    );
+
+    // Outside the button: `aria-label` already overrides its content for the name. Web only,
+    // where `aria-describedby` is how it is read; the device has the accessibility hint.
+    const description =
+      Platform.OS === "web" && hasHint ? (
+        <Text nativeID={hintId} className="sr-only text-foreground">
+          {hint}
+        </Text>
+      ) : null;
+
+    // `tooltip={false}` drops the tooltip, not the explanation: the description stays.
+    if (tooltip === false || hasHint === false) {
+      return (
+        <>
+          {button}
+          {description}
+        </>
+      );
+    }
+
+    return (
+      <>
+        <Tooltip>
+          <TooltipTrigger asChild>{button}</TooltipTrigger>
+          <TooltipContent side={side}>{hint}</TooltipContent>
+        </Tooltip>
+        {description}
+      </>
+    );
+  },
+);
+Button.displayName = "Button";
 
 export { Button, buttonTextVariants, buttonVariants };

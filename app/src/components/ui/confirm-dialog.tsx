@@ -1,7 +1,7 @@
-import type { ReactNode } from 'react';
-import { useId, useState } from 'react';
-import { Text, View } from 'react-native';
-import { Button } from '@/components/ui/button';
+import type { ReactNode } from "react";
+import { useId, useState } from "react";
+import { Text, View } from "react-native";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -9,9 +9,9 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 type ConfirmDialogProps = {
   open: boolean;
@@ -58,8 +58,8 @@ export function ConfirmDialog({
   onOpenChange,
   title,
   description,
-  confirmLabel = 'Confirm',
-  cancelLabel = 'Cancel',
+  confirmLabel = "Confirm",
+  cancelLabel = "Cancel",
   requireText,
   requireTextLabel,
   onConfirm,
@@ -70,13 +70,13 @@ export function ConfirmDialog({
         role="alertdialog"
         showCloseButton={false}
         onInteractOutside={holdOpen}
-        className="sm:max-w-[360px]"
+        className="sm:max-w-sm"
       >
         {/* Keyed by the text, so a prompt raised over an open one for something else starts
             empty too. Closing unmounts the body on both platforms, which is what empties the
             box between openings. */}
         <ConfirmDialogBody
-          key={requireText ?? ''}
+          key={requireText ?? ""}
           title={title}
           description={description}
           confirmLabel={confirmLabel}
@@ -121,7 +121,7 @@ function ConfirmDialogBody({
   onCancel,
   onConfirm,
 }: ConfirmDialogBodyProps) {
-  const [typed, setTyped] = useState('');
+  const [typed, setTyped] = useState("");
   const inputId = useId();
   const labelId = useId();
   const locked = requireText !== undefined && typed !== requireText;
@@ -149,7 +149,9 @@ function ConfirmDialogBody({
             value={typed}
             onChangeText={setTyped}
             onSubmitEditing={() => {
-              if (!locked) onConfirm();
+              if (locked === false) {
+                onConfirm();
+              }
             }}
             autoFocus
           />
@@ -157,7 +159,12 @@ function ConfirmDialogBody({
       ) : null}
       <DialogFooter>
         <Button variant="outline" onPress={onCancel} content={cancelLabel} />
-        <Button variant="destructive" disabled={locked} onPress={onConfirm} content={confirmLabel} />
+        <Button
+          variant="destructive"
+          disabled={locked}
+          onPress={onConfirm}
+          content={confirmLabel}
+        />
       </DialogFooter>
     </>
   );

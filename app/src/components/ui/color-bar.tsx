@@ -1,6 +1,6 @@
-import { View } from 'react-native';
-import { hexToAccent } from '@/lib/color';
-import { cn } from '@/lib/utils';
+import { View } from "react-native";
+import { hexToAccent } from "@/lib/color";
+import { cn } from "@/lib/utils";
 
 type ColorBarProps = {
   /** Nullable so callers can pass an optional field; renders nothing without it. */
@@ -22,12 +22,16 @@ type ColorBarProps = {
  * the bar follows the rounded corners.
  */
 export function ColorBar({ color, label, className }: ColorBarProps) {
-  if (!color) return null;
+  if (!color) {
+    return null;
+  }
   return (
     <View
-      className={cn('absolute inset-y-0 left-0 w-2.5', className)}
+      className={cn("absolute inset-y-0 left-0 w-2.5", className)}
       style={{ backgroundColor: hexToAccent(color) }}
-      {...(label ? ({ role: 'img', 'aria-label': label } as const) : ({ 'aria-hidden': true } as const))}
+      {...(label
+        ? ({ role: "img", "aria-label": label } as const)
+        : ({ "aria-hidden": true } as const))}
     />
   );
 }

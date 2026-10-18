@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef } from "react";
 
 /** The props a search box adds to the input it is. The rest are `Input`'s, on each half. */
 export type SearchInputOwnProps = {
@@ -30,7 +30,7 @@ export type SearchInputOwnProps = {
  * Hides the ✕ WebKit and Blink draw in a `type="search"` box, so the one clear button is the named
  * one. The web half's alone: react-native-web's reset already hides it, and a device has none.
  */
-export const SEARCH_INPUT_CLASS = '[&::-webkit-search-cancel-button]:appearance-none';
+export const SEARCH_INPUT_CLASS = "[&::-webkit-search-cancel-button]:appearance-none";
 
 /** Long enough that a word is typed in one go, short enough that the answer does not feel late. */
 export const SEARCH_DEBOUNCE_MS = 250;
@@ -58,14 +58,18 @@ export function useSettledText(
   };
   const later = (text: string) => {
     clearTimeout(timer.current);
-    if (onSettledText === undefined) return;
+    if (onSettledText === undefined) {
+      return;
+    }
     timer.current = setTimeout(() => handler.current?.(text), debounce);
   };
   return { later, now };
 }
 
-export const SEARCH_LABEL = 'Search';
-export const SEARCH_CLEAR_LABEL = 'Clear search';
+/** The search box's accessible name unless it is given one. */
+export const SEARCH_LABEL = "Search";
+/** The accessible name of the button that clears the search box. */
+export const SEARCH_CLEAR_LABEL = "Clear search";
 
 /**
  * The name to put in `aria-label`, or none. `label` is a default only where nothing else names the
@@ -83,7 +87,11 @@ export function searchInputName({
   ariaLabelledBy: string | undefined;
   id: string | undefined;
 }): string | undefined {
-  if (ariaLabel !== undefined) return ariaLabel;
-  if (label !== undefined) return label;
+  if (ariaLabel !== undefined) {
+    return ariaLabel;
+  }
+  if (label !== undefined) {
+    return label;
+  }
   return ariaLabelledBy || id ? undefined : SEARCH_LABEL;
 }

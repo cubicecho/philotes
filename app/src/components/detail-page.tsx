@@ -1,6 +1,6 @@
-import { Text } from 'react-native';
-import { Page } from '@/components/page';
-import type { SlotNode } from '@/lib/utils';
+import { Text } from "react-native";
+import { Page } from "@/components/page";
+import type { SlotNode } from "@/lib/utils";
 
 type DetailPageProps<T> = {
   /** The loaded entity, or null/undefined while loading or when missing. */
@@ -13,7 +13,17 @@ type DetailPageProps<T> = {
   contentSlot: (entity: T) => SlotNode;
 };
 
-export function DetailPage<T>({ entity, loading, notFoundLabel, className, contentSlot }: DetailPageProps<T>) {
+/**
+ * A `Page` that shows loading or not-found until the entity is there, then hands it to
+ * `contentSlot`.
+ */
+export function DetailPage<T>({
+  entity,
+  loading,
+  notFoundLabel,
+  className,
+  contentSlot,
+}: DetailPageProps<T>) {
   return (
     <Page
       {...(className ? { className } : {})}
@@ -21,7 +31,7 @@ export function DetailPage<T>({ entity, loading, notFoundLabel, className, conte
         entity ? (
           contentSlot(entity)
         ) : (
-          <Text className="text-foreground/60">{loading ? 'Loading…' : notFoundLabel}</Text>
+          <Text className="text-foreground/60">{loading ? "Loading…" : notFoundLabel}</Text>
         )
       }
     />

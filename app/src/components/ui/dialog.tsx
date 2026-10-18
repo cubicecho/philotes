@@ -7,21 +7,22 @@ import {
   useContext,
   useRef,
   useState,
-} from 'react';
-import { Modal, Pressable, Text, View } from 'react-native';
-import { Button } from '@/components/ui/button';
-import type {
-  DialogCloseProps,
-  DialogContentProps,
-  DialogFooterProps,
-  DialogOverlayProps,
-  DialogPortalProps,
-  DialogProps,
-  DialogSectionProps,
-  DialogTriggerProps,
-} from '@/components/ui/dialog-base';
-import { X } from '@/components/ui/icons';
-import { cn } from '@/lib/utils';
+} from "react";
+import { Modal, Pressable, Text, View } from "react-native";
+import { Button } from "@/components/ui/button";
+import {
+  DIALOG_CONTENT_CLASS,
+  type DialogCloseProps,
+  type DialogContentProps,
+  type DialogFooterProps,
+  type DialogOverlayProps,
+  type DialogPortalProps,
+  type DialogProps,
+  type DialogSectionProps,
+  type DialogTriggerProps,
+} from "@/components/ui/dialog-base";
+import { X } from "@/components/ui/icons";
+import { cn } from "@/lib/utils";
 
 /** The open side of the same problem, read by `DialogTrigger`. */
 const DialogOpenContext = createContext<(open: boolean) => void>(() => {});
@@ -43,13 +44,16 @@ const DialogEscapeContext = createContext<{ current: ((event: Event) => void) | 
  */
 const DialogCloseContext = createContext<() => void>(() => {});
 
+/** The root of a dialog: it holds the open state. */
 function Dialog({ open, onOpenChange, defaultOpen = false, children }: DialogProps) {
   // Uncontrolled state kept unconditionally — hooks cannot be conditional — and read only when
   // the caller passed no `open`, the same arrangement as `popover.tsx`.
   const [uncontrolled, setUncontrolled] = useState(defaultOpen);
   const isOpen = open ?? uncontrolled;
   const setOpen = (next: boolean) => {
-    if (open === undefined) setUncontrolled(next);
+    if (open === undefined) {
+      setUncontrolled(next);
+    }
     onOpenChange?.(next);
   };
   const escapeRef = useRef<((event: Event) => void) | undefined>(undefined);
@@ -60,16 +64,20 @@ function Dialog({ open, onOpenChange, defaultOpen = false, children }: DialogPro
   // appear. This is why `DialogTrigger` must be a direct child of `Dialog`.
   const parts = Children.toArray(children);
   const triggers = parts.filter((c) => isValidElement(c) && c.type === DialogTrigger);
-  const rest = parts.filter((c) => !(isValidElement(c) && c.type === DialogTrigger));
+  const rest = parts.filter((c) => (isValidElement(c) && c.type === DialogTrigger) === false);
 
   // Android's back button is native's Escape: the one way the dialog closes that the
   // caller did not ask for. `preventDefault` keeps it open, exactly as it does on web.
   const requestClose = () => {
     const handler = escapeRef.current;
-    if (!handler) return setOpen(false);
-    const event = new Event('keydown', { cancelable: true });
+    if (!handler) {
+      return setOpen(false);
+    }
+    const event = new Event("keydown", { cancelable: true });
     handler(event);
-    if (!event.defaultPrevented) setOpen(false);
+    if (event.defaultPrevented === false) {
+      setOpen(false);
+    }
   };
 
   return (
@@ -77,11 +85,25 @@ function Dialog({ open, onOpenChange, defaultOpen = false, children }: DialogPro
       {triggers}
       <DialogEscapeContext.Provider value={escapeRef}>
         <Modal visible={isOpen} transparent animationType="fade" onRequestClose={requestClose}>
-          <DialogCloseContext.Provider value={() => setOpen(false)}>{rest}</DialogCloseContext.Provider>
+          <DialogCloseContext.Provider value={() => setOpen(false)}>
+            {rest}
+          </DialogCloseContext.Provider>
         </Modal>
       </DialogEscapeContext.Provider>
     </DialogOpenContext.Provider>
   );
+}
+
+type Pressed = ReactElement<{ onPress?: (() => void) | undefined }>;
+
+/** The child with `action` added to its own press rather than swapped in for it. */
+function addPress(child: Pressed, action: () => void) {
+  return cloneElement(child, {
+    onPress: () => {
+      child.props.onPress?.();
+      action();
+    },
+  });
 }
 
 /**
@@ -89,13 +111,13 @@ function Dialog({ open, onOpenChange, defaultOpen = false, children }: DialogPro
  *
  * On web this is radix's, which also wires `aria-haspopup` and returns focus. Here
  * it is the press that flips `Dialog`'s open flag — its own state, or the caller's
- * through `onOpenChange` — so the native trigger is the child's `onPress`, cloned.
+ * through `onOpenChange` — so the native trigger is added to the child's `onPress`, cloned.
  */
 function DialogTrigger({ asChild, children }: DialogTriggerProps) {
   const open = useContext(DialogOpenContext);
   const show = () => open(true);
   if (asChild && isValidElement(children)) {
-    return cloneElement(children as ReactElement<{ onPress?: () => void }>, { onPress: show });
+    return addPress(children as Pressed, show);
   }
   return (
     <Pressable onPress={show} role="button">
@@ -111,7 +133,7 @@ function DialogTrigger({ asChild, children }: DialogTriggerProps) {
 function DialogClose({ asChild, className, children }: DialogCloseProps) {
   const close = useContext(DialogCloseContext);
   if (asChild && isValidElement(children)) {
-    return cloneElement(children as ReactElement<{ onPress?: () => void }>, { onPress: close });
+    return addPress(children as Pressed, close);
   }
   return (
     // The `role` is hand-written because a `<button>` has no native counterpart.
@@ -132,9 +154,10 @@ function DialogPortal({ children }: DialogPortalProps) {
  * draws is the one that does.
  */
 function DialogOverlay({ className }: DialogOverlayProps) {
-  return <View pointerEvents="none" className={cn('absolute inset-0 bg-overlay/60', className)} />;
+  return <View pointerEvents="none" className={cn("absolute inset-0 bg-overlay/60", className)} />;
 }
 
+/** The dialog's card. */
 function DialogContent({
   className,
   showCloseButton = true,
@@ -150,31 +173,44 @@ function DialogContent({
   // The backdrop press is native's "interact outside". `preventDefault` on the
   // synthetic event is what a caller uses to keep the dialog open, matching radix.
   const interactOutside = () => {
-    if (!onInteractOutside) return close();
-    const event = new Event('pointerdown', { cancelable: true });
+    if (!onInteractOutside) {
+      return close();
+    }
+    const event = new Event("pointerdown", { cancelable: true });
     onInteractOutside(event);
-    if (!event.defaultPrevented) close();
+    if (event.defaultPrevented === false) {
+      close();
+    }
   };
   return (
     <View className="flex-1 items-center justify-center bg-overlay/60 p-6">
       {/* The backdrop is a sibling laid out underneath rather than a parent of
           the card, because `Pressable` has no `stopPropagation` — nesting the
           card inside it would make every press on the card close the dialog. */}
-      <Pressable className="absolute inset-0" onPress={interactOutside} role="button" aria-label="Close" />
+      <Pressable
+        className="absolute inset-0"
+        onPress={interactOutside}
+        role="button"
+        aria-label="Close"
+      />
       <View
-        {...(role === undefined ? {} : { role })}
-        className={cn('w-full max-w-lg gap-4 rounded-lg border border-foreground/10 bg-background p-6', className)}
+        // `dialog` unless the caller says `alertdialog`, as radix's content is.
+        role={role ?? "dialog"}
+        aria-modal
+        className={cn(DIALOG_CONTENT_CLASS, className)}
       >
         {children}
         {showCloseButton ? (
           <Pressable
-            className="absolute right-4 top-4 opacity-70"
+            className="absolute right-4 top-4"
             onPress={close}
+            // The icon is 16 points; this brings the target up to the 44 a finger needs.
+            hitSlop={14}
             // The `role` is hand-written because a `<button>` has no native counterpart.
             role="button"
             aria-label="Close"
           >
-            <X className="h-4 w-4" />
+            <X className="h-4 w-4 text-foreground/60" />
           </Pressable>
         ) : null}
       </View>
@@ -185,13 +221,15 @@ function DialogContent({
 // `space-y-*` and `space-x-*` are child-combinator utilities nativewind does
 // not implement; `gap` is the cross-platform equivalent and behaves the same
 // for these two rows.
+/** The block holding the title and the description. */
 function DialogHeader({ className, children }: DialogSectionProps) {
-  return <View className={cn('gap-1.5', className)}>{children}</View>;
+  return <View className={cn("gap-1.5", className)}>{children}</View>;
 }
 
+/** The row of buttons at the bottom of the dialog. */
 function DialogFooter({ className, showCloseButton = false, children }: DialogFooterProps) {
   return (
-    <View className={cn('flex-row justify-end gap-2', className)}>
+    <View className={cn("flex-row justify-end gap-2", className)}>
       {children}
       {showCloseButton ? (
         <DialogClose asChild>
@@ -202,21 +240,23 @@ function DialogFooter({ className, showCloseButton = false, children }: DialogFo
   );
 }
 
+/** The dialog's title, and its accessible name. */
 function DialogTitle({ className, children }: DialogSectionProps) {
   return (
     <Text
       // The `role` is hand-written because an `<h2>` has no native counterpart.
       role="heading"
       aria-level={2}
-      className={cn('text-lg font-semibold leading-none tracking-tight text-foreground', className)}
+      className={cn("text-lg font-semibold leading-none tracking-tight text-foreground", className)}
     >
       {children}
     </Text>
   );
 }
 
+/** The sentence under the title, read as the dialog's description. */
 function DialogDescription({ className, children }: DialogSectionProps) {
-  return <Text className={cn('text-sm text-foreground/60', className)}>{children}</Text>;
+  return <Text className={cn("text-sm text-foreground/60", className)}>{children}</Text>;
 }
 
 export {

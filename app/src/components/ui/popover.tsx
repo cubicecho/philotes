@@ -1,5 +1,12 @@
-import { cloneElement, createContext, isValidElement, type ReactElement, useContext, useState } from 'react';
-import { Modal, Pressable, Text, View } from 'react-native';
+import {
+  cloneElement,
+  createContext,
+  isValidElement,
+  type ReactElement,
+  useContext,
+  useState,
+} from "react";
+import { Modal, Pressable, Text, View } from "react-native";
 import type {
   PopoverAnchorProps,
   PopoverCloseProps,
@@ -7,8 +14,14 @@ import type {
   PopoverProps,
   PopoverSectionProps,
   PopoverTriggerProps,
-} from '@/components/ui/popover-base';
-import { cn } from '@/lib/utils';
+} from "@/components/ui/popover-base";
+import {
+  POPOVER_CONTENT_CLASS,
+  POPOVER_DESCRIPTION_CLASS,
+  POPOVER_HEADER_CLASS,
+  POPOVER_TITLE_CLASS,
+} from "@/components/ui/popover-base";
+import { cn } from "@/lib/utils";
 
 type PopoverState = { open: boolean; setOpen: (open: boolean) => void };
 
@@ -17,18 +30,24 @@ const PopoverContext = createContext<PopoverState>({
   setOpen: () => {},
 });
 
+/** The root of a popover: it holds the open state. */
 function Popover({ open, onOpenChange, defaultOpen = false, children }: PopoverProps) {
   // Uncontrolled state kept unconditionally — hooks cannot be conditional — and
   // read only when the caller passed no `open`.
   const [uncontrolled, setUncontrolled] = useState(defaultOpen);
   const isOpen = open ?? uncontrolled;
   const setOpen = (next: boolean) => {
-    if (open === undefined) setUncontrolled(next);
+    if (open === undefined) {
+      setUncontrolled(next);
+    }
     onOpenChange?.(next);
   };
-  return <PopoverContext.Provider value={{ open: isOpen, setOpen }}>{children}</PopoverContext.Provider>;
+  return (
+    <PopoverContext.Provider value={{ open: isOpen, setOpen }}>{children}</PopoverContext.Provider>
+  );
 }
 
+/** The element that opens the popover. */
 function PopoverTrigger({ asChild, children }: PopoverTriggerProps) {
   const { setOpen } = useContext(PopoverContext);
   if (asChild && isValidElement(children)) {
@@ -44,20 +63,25 @@ function PopoverTrigger({ asChild, children }: PopoverTriggerProps) {
   );
 }
 
+/** The popover's card. */
 function PopoverContent({ className, children }: PopoverContentProps) {
   const { open, setOpen } = useContext(PopoverContext);
   return (
     <Modal visible={open} transparent animationType="fade" onRequestClose={() => setOpen(false)}>
       <View className="flex-1 items-center justify-center bg-overlay/60 p-6">
-        <Pressable className="absolute inset-0" onPress={() => setOpen(false)} role="button" aria-label="Close" />
-        <View className={cn('w-72 rounded-md border border-foreground/10 bg-secondary p-4', className)}>
-          {children}
-        </View>
+        <Pressable
+          className="absolute inset-0"
+          onPress={() => setOpen(false)}
+          role="button"
+          aria-label="Close"
+        />
+        <View className={cn(POPOVER_CONTENT_CLASS, className)}>{children}</View>
       </View>
     </Modal>
   );
 }
 
+/** An element that closes the popover when pressed. */
 function PopoverClose({ asChild, className, children }: PopoverCloseProps) {
   const { setOpen } = useContext(PopoverContext);
   if (asChild && isValidElement(children)) {
@@ -78,16 +102,19 @@ function PopoverAnchor({ children }: PopoverAnchorProps) {
   return <>{children}</>;
 }
 
+/** The block holding the popover's title and description. */
 function PopoverHeader({ className, children }: PopoverSectionProps) {
-  return <View className={cn('gap-1', className)}>{children}</View>;
+  return <View className={cn(POPOVER_HEADER_CLASS, className)}>{children}</View>;
 }
 
+/** The popover's title. */
 function PopoverTitle({ className, children }: PopoverSectionProps) {
-  return <Text className={cn('text-sm font-medium text-foreground', className)}>{children}</Text>;
+  return <Text className={cn(POPOVER_TITLE_CLASS, className)}>{children}</Text>;
 }
 
+/** The muted line under the popover's title. */
 function PopoverDescription({ className, children }: PopoverSectionProps) {
-  return <Text className={cn('text-sm text-foreground/60', className)}>{children}</Text>;
+  return <Text className={cn(POPOVER_DESCRIPTION_CLASS, className)}>{children}</Text>;
 }
 
 export {

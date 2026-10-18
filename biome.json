@@ -58,6 +58,11 @@
         "app/src/lib/color.ts",
         "app/src/lib/cubeui-theme.ts",
         "app/src/lib/readable-text-color.ts",
+        "app/src/lib/error-message.ts",
+        "app/src/lib/form-binding.ts",
+        "app/src/lib/number-draft.ts",
+        "app/src/lib/select-options.ts",
+        "app/src/lib/web-as.d.ts",
         "app/cubeui-tokens.css",
         "app/public/index.html"
       ],

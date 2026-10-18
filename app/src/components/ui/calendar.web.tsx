@@ -1,8 +1,8 @@
-import type { CSSProperties } from 'react';
-import { DayPicker, getDefaultClassNames, type PropsBase } from 'react-day-picker';
-import type { CalendarProps } from '@/components/ui/calendar-base';
-import { cn } from '@/lib/utils';
-import 'react-day-picker/style.css';
+import type { CSSProperties } from "react";
+import { DayPicker, getDefaultClassNames, type PropsBase } from "react-day-picker";
+import type { CalendarProps } from "@/components/ui/calendar-base";
+import { cn } from "@/lib/utils";
+import "react-day-picker/style.css";
 
 /**
  * react-day-picker's colour variables, pointed at the theme tokens. Its stylesheet ships them as
@@ -16,15 +16,15 @@ import 'react-day-picker/style.css';
  * `cubeui-tokens.css`, which define the same `--active`, `--neutral` and `--hover`.
  */
 const THEME = {
-  '--rdp-accent-color': 'var(--active)',
-  '--rdp-accent-background-color': 'var(--hover)',
-  '--rdp-today-color': 'var(--neutral)',
-  '--rdp-range_middle-background-color': 'var(--hover)',
-  '--rdp-range_middle-color': 'var(--foreground)',
-  '--rdp-range_start-color': 'var(--active-foreground)',
-  '--rdp-range_start-date-background-color': 'var(--active)',
-  '--rdp-range_end-color': 'var(--active-foreground)',
-  '--rdp-range_end-date-background-color': 'var(--active)',
+  "--rdp-accent-color": "var(--active)",
+  "--rdp-accent-background-color": "var(--hover)",
+  "--rdp-today-color": "var(--neutral)",
+  "--rdp-range_middle-background-color": "var(--hover)",
+  "--rdp-range_middle-color": "var(--foreground)",
+  "--rdp-range_start-color": "var(--active-foreground)",
+  "--rdp-range_start-date-background-color": "var(--active)",
+  "--rdp-range_end-color": "var(--active-foreground)",
+  "--rdp-range_end-date-background-color": "var(--active)",
 } as CSSProperties;
 
 /**
@@ -34,26 +34,27 @@ const THEME = {
  */
 const DAY_BUTTON_CLASS = cn(
   getDefaultClassNames().day_button,
-  'focus-visible:outline-none',
-  '[:not(.rdp-range_start,.rdp-range_end)>&]:hover:bg-hover!',
-  '[:not(.rdp-range_start,.rdp-range_end)>&]:focus-visible:bg-hover!',
+  "focus-visible:outline-none",
+  "[:not(.rdp-range_start,.rdp-range_end)>&]:hover:bg-hover!",
+  "[:not(.rdp-range_start,.rdp-range_end)>&]:focus-visible:bg-hover!",
 );
 
 /** What `DayPicker` takes beyond the shared contract, passed through as it is. */
 type DayPickerExtras = Omit<
   PropsBase,
-  | 'disabled'
-  | 'defaultMonth'
-  | 'numberOfMonths'
-  | 'startMonth'
-  | 'weekStartsOn'
-  | 'className'
-  | 'mode'
-  | 'selected'
-  | 'onSelect'
-  | 'required'
+  | "disabled"
+  | "defaultMonth"
+  | "numberOfMonths"
+  | "startMonth"
+  | "weekStartsOn"
+  | "className"
+  | "mode"
+  | "selected"
+  | "onSelect"
+  | "required"
 >;
 
+/** A month grid for picking one day or a range of days. */
 export function Calendar(props: CalendarProps & DayPickerExtras) {
   const {
     mode: _mode,
@@ -79,13 +80,13 @@ export function Calendar(props: CalendarProps & DayPickerExtras) {
     ...(numberOfMonths === undefined ? {} : { numberOfMonths }),
     ...(startMonth === undefined ? {} : { startMonth }),
     ...(weekStartsOn === undefined ? {} : { weekStartsOn }),
-    className: cn('p-3', className),
+    className: cn("p-3", className),
     classNames: { day_button: DAY_BUTTON_CLASS, ...extras.classNames },
     // The caller's style last, so a call site can still override any of them.
     style: { ...THEME, ...style },
   };
 
-  if (props.mode === 'range') {
+  if (props.mode === "range") {
     return (
       <DayPicker
         mode="range"

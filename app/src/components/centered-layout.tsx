@@ -1,8 +1,8 @@
-import { Platform, ScrollView, View } from 'react-native';
-import { CardLayout, type CardLayoutProps } from '@/components/card-layout';
-import { cn, type SlotNode } from '@/lib/utils';
+import { Platform, ScrollView, View } from "react-native";
+import { CardLayout, type CardLayoutProps } from "@/components/card-layout";
+import { cn, type SlotNode } from "@/lib/utils";
 
-export type CenteredLayoutProps = Omit<CardLayoutProps, 'className'> & {
+export type CenteredLayoutProps = Omit<CardLayoutProps, "className"> & {
   /** The body of the card: the form, the message. */
   contentSlot?: SlotNode | undefined;
   /**
@@ -19,10 +19,10 @@ export type CenteredLayoutProps = Omit<CardLayoutProps, 'className'> & {
 };
 
 /** The box both roots centre in, and the padding that keeps the card off the screen's edge. */
-const CENTRE = 'items-center justify-center p-4';
+const CENTRE = "items-center justify-center p-4";
 
 /** The card's width: all of a phone, a sign-in card's width anywhere wider. */
-const CARD = 'w-full max-w-sm';
+const CARD = "w-full max-w-sm";
 
 /**
  * A single card, centred both ways on a page of its own.
@@ -34,9 +34,13 @@ const CARD = 'w-full max-w-sm';
 export function CenteredLayout({ className, cardClassName, ...card }: CenteredLayoutProps) {
   const body = <CardLayout {...card} className={cn(CARD, cardClassName)} />;
 
-  if (Platform.OS === 'web') {
+  if (Platform.OS === "web") {
     return (
-      <View role="main" testID="centered-layout" className={cn('min-h-svh w-full', CENTRE, className)}>
+      <View
+        role="main"
+        testID="centered-layout"
+        className={cn("min-h-svh w-full", CENTRE, className)}
+      >
         {body}
       </View>
     );
@@ -47,7 +51,7 @@ export function CenteredLayout({ className, cardClassName, ...card }: CenteredLa
       role="main"
       testID="centered-layout"
       className="flex-1"
-      contentContainerClassName={cn('grow', CENTRE, className)}
+      contentContainerClassName={cn("grow", CENTRE, className)}
       keyboardShouldPersistTaps="handled"
       automaticallyAdjustKeyboardInsets
     >

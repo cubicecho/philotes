@@ -1,7 +1,7 @@
-import { useCallback, useRef, useState } from 'react';
-import { buttonVariants } from '@/components/ui/button';
-import { Search, X } from '@/components/ui/icons';
-import { Input, type InputHandle, type InputProps } from '@/components/ui/input';
+import { useCallback, useRef, useState } from "react";
+import { buttonVariants } from "@/components/ui/button";
+import { Search, X } from "@/components/ui/icons";
+import { Input, type InputHandle, type InputProps } from "@/components/ui/input";
 import {
   SEARCH_CLEAR_LABEL,
   SEARCH_DEBOUNCE_MS,
@@ -9,11 +9,13 @@ import {
   type SearchInputOwnProps,
   searchInputName,
   useSettledText,
-} from '@/components/ui/search-input-base';
-import { cn } from '@/lib/utils';
+} from "@/components/ui/search-input-base";
+import { cn } from "@/lib/utils";
 
-export type SearchInputProps = Omit<InputProps, 'type' | 'leadingSlot' | 'trailingSlot'> & SearchInputOwnProps;
+export type SearchInputProps = Omit<InputProps, "type" | "leadingSlot" | "trailingSlot"> &
+  SearchInputOwnProps;
 
+/** A search box with a leading icon and a button that clears it. */
 export function SearchInput({
   label,
   clearLabel = SEARCH_CLEAR_LABEL,
@@ -27,22 +29,25 @@ export function SearchInput({
   disabled,
   id,
   className,
-  'aria-label': ariaLabel,
-  'aria-labelledby': ariaLabelledBy,
+  "aria-label": ariaLabel,
+  "aria-labelledby": ariaLabelledBy,
   ref,
   ...props
 }: SearchInputProps) {
   const element = useRef<HTMLInputElement | null>(null);
-  const [typed, setTyped] = useState(String(defaultValue ?? '') !== '');
-  const filled = value === undefined ? typed : String(value) !== '';
+  const [typed, setTyped] = useState(String(defaultValue ?? "") !== "");
+  const filled = value === undefined ? typed : String(value) !== "";
 
   // The ref `Input` hands back is the `<input>` on the web; the caller's ref gets it too.
   const attach = useCallback(
     (node: InputHandle | null) => {
       element.current = node as HTMLInputElement | null;
       // The node is both: an `HTMLInputElement` has `focus` and `select`.
-      if (typeof ref === 'function') (ref as (node: InputHandle | null) => void)(node);
-      else if (ref) (ref as { current: InputHandle | null }).current = node;
+      if (typeof ref === "function") {
+        (ref as (node: InputHandle | null) => void)(node);
+      } else if (ref) {
+        (ref as { current: InputHandle | null }).current = node;
+      }
     },
     [ref],
   );
@@ -53,19 +58,21 @@ export function SearchInput({
   // from the browser once it has a handler, and a form that submits on it has to keep the key.
   const submit = onSettledText
     ? () => {
-        settled.now(element.current?.value ?? '');
+        settled.now(element.current?.value ?? "");
         onSubmitEditing?.();
       }
     : onSubmitEditing;
 
   const clear = () => {
     const box = element.current;
-    if (!box) return;
+    if (!box) {
+      return;
+    }
     // The prototype's setter, not `box.value = ""`: React tracks the last value it saw on the
     // element, and a plain assignment updates that too, so the `input` event would read as no
     // change and `onChange` would never fire.
-    Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set?.call(box, '');
-    box.dispatchEvent(new Event('input', { bubbles: true }));
+    Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")?.set?.call(box, "");
+    box.dispatchEvent(new Event("input", { bubbles: true }));
     box.focus();
   };
 
@@ -77,11 +84,14 @@ export function SearchInput({
       value={value}
       defaultValue={defaultValue}
       onChangeText={(text) => {
-        setTyped(text !== '');
+        setTyped(text !== "");
         onChangeText?.(text);
         // An emptied box is not someone part-way through a word, so there is nothing to wait for.
-        if (text === '') settled.now(text);
-        else settled.later(text);
+        if (text === "") {
+          settled.now(text);
+        } else {
+          settled.later(text);
+        }
       }}
       onSubmitEditing={submit}
       disabled={disabled}
@@ -91,13 +101,13 @@ export function SearchInput({
       className={cn(SEARCH_INPUT_CLASS, className)}
       leadingSlot={<Search />}
       trailingSlot={
-        clearable && filled && !disabled ? (
+        clearable && filled && disabled !== true ? (
           <button
             type="button"
             data-slot="search-input-clear"
             aria-label={clearLabel}
             onClick={clear}
-            className={buttonVariants({ variant: 'secondary', size: 'icon-xs' })}
+            className={buttonVariants({ variant: "secondary", size: "icon-xs" })}
           >
             <X />
           </button>

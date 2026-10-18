@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import type { ReactNode } from "react";
 
 export type LabelProps = {
   /**
@@ -22,4 +22,4 @@ export type LabelProps = {
  * native, where a disabled control does not dim its label.
  */
 export const LABEL_CLASS =
-  'text-foreground text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70';
+  "text-foreground text-sm font-semibold leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70";

@@ -1,9 +1,9 @@
-import type { ButtonProps } from '@/components/ui/button';
-import type { SlotNode } from '@/lib/utils';
+import type { ButtonProps } from "@/components/ui/button";
+import type { SlotNode } from "@/lib/utils";
 
 /**
  * One picked file. Plain data rather than the DOM's `File`, which native does
- * not have: a string and a `Uint8Array` exist on both platforms.
+ * not have: a string, a `Uint8Array` and a `Blob` exist on both platforms.
  */
 export type PickedFile = {
   name: string;
@@ -14,10 +14,23 @@ export type PickedFile = {
   path: string;
   /** The MIME type, when the platform knows it; `""` when it does not. */
   type: string;
-  /** The file decoded as text. `""` when `read` is `"bytes"`, which decodes nothing. */
+  /**
+   * How many bytes the file is on disk. Known without reading it, so it is there
+   * whatever `read` is — which is what lets "too large" be said before the read.
+   */
+  size: number;
+  /** The file decoded as text. `""` unless `read` is `"text"`: the other two decode nothing. */
   text: string;
   /** The file as it is on disk. Only there when `read` is `"bytes"`. */
   bytes?: Uint8Array;
+  /**
+   * A handle on the file, unread. Only there when `read` is `"none"`. In a
+   * browser it is the `File` the input gave — a `Blob` the browser streams from
+   * disk, so `XMLHttpRequest.send(blob)` or `fetch(url, { body: blob })` uploads
+   * a file of any size without holding it; on device it is what
+   * `fetch(uri).blob()` gives.
+   */
+  blob?: Blob;
 };
 
 type FilePickerCommonProps = {
@@ -36,11 +49,14 @@ type FilePickerCommonProps = {
   /**
    * What to read from each file. `text` (the default) decodes it, which is right
    * for JSON or Markdown and corrupts a `.zip` or an image. `bytes` hands back
-   * the file undecoded as `bytes`, and leaves `text` empty.
+   * the file undecoded as `bytes`, and leaves `text` empty. `none` reads nothing
+   * at all and hands back a `blob` to read or upload later — for a file too big
+   * to hold in memory, or one to refuse by its `size` first.
    *
-   * `onPick` only ever carries text and a name, so take `bytes` with `onPickMany`.
+   * `onPick` only ever carries text and a name, so take `bytes` or `none` with
+   * `onPickMany`.
    */
-  read?: 'text' | 'bytes' | undefined;
+  read?: "text" | "bytes" | "none" | undefined;
   /**
    * Pick a folder and everything under it instead of files: the dialog chooses
    * a folder, a dropped folder is walked, and each file reports where it sat as
@@ -95,7 +111,7 @@ export type FilePickerProps = FilePickerCommonProps &
  */
 export type FilePickerButtonProps = FilePickerCommonProps &
   FilePickerCallbacks &
-  Pick<ButtonProps, 'variant' | 'size'> & {
+  Pick<ButtonProps, "variant" | "size"> & {
     /**
      * Drawn before the label, or alone at an `icon*` size, where `label` is only
      * the accessible name. Pass a bare `<Upload />`; the button sizes and
@@ -115,16 +131,32 @@ export type FilePickerButtonProps = FilePickerCommonProps &
  * and a type rather than a `File`, which native does not have.
  */
 export function acceptsFile(accept: string | undefined, file: { name: string; type: string }) {
-  const tokens = (accept ?? '')
-    .split(',')
+  const tokens = (accept ?? "")
+    .split(",")
     .map((token) => token.trim().toLowerCase())
     .filter(Boolean);
-  if (tokens.length === 0) return true;
+  if (tokens.length === 0) {
+    return true;
+  }
   const name = file.name.toLowerCase();
   const type = file.type.toLowerCase();
   return tokens.some((token) => {
-    if (token.startsWith('.')) return name.endsWith(token);
-    if (token.endsWith('/*')) return type.startsWith(token.slice(0, -1));
+    if (token.startsWith(".")) {
+      return name.endsWith(token);
+    }
+    if (token.endsWith("/*")) {
+      return type.startsWith(token.slice(0, -1));
+    }
     return type === token;
   });
 }
+
+/** The drop zone's box. The web half swaps its edge for `border-active` while a file is dragged over it. */
+export const FILE_PICKER_ZONE_CLASS =
+  "w-full flex-col items-center gap-2 rounded-lg border-2 border-dashed border-foreground/50 px-6 py-12";
+/** The upload icon in the drop zone. */
+export const FILE_PICKER_ICON_CLASS = "h-8 w-8 text-foreground/60";
+/** The drop zone's label. */
+export const FILE_PICKER_TITLE_CLASS = "text-center text-sm font-semibold text-foreground";
+/** The line under the label. */
+export const FILE_PICKER_HINT_CLASS = "text-center text-xs text-foreground/60";

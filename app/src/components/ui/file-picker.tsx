@@ -1,22 +1,37 @@
-import { Text, View } from 'react-native';
-import { Button } from '@/components/ui/button';
-import type { FilePickerButtonProps, FilePickerProps } from '@/components/ui/file-picker-base';
-import { Upload } from '@/components/ui/icons';
+import { Text, View } from "react-native";
+import { Button } from "@/components/ui/button";
+import {
+  FILE_PICKER_HINT_CLASS,
+  FILE_PICKER_ICON_CLASS,
+  FILE_PICKER_TITLE_CLASS,
+  FILE_PICKER_ZONE_CLASS,
+  type FilePickerButtonProps,
+  type FilePickerProps,
+} from "@/components/ui/file-picker-base";
+import { Upload } from "@/components/ui/icons";
 
-const UNAVAILABLE = 'Picking a file is only available on the web app.';
+const UNAVAILABLE = "Picking a file is only available on the web app.";
 
+/** The device's stand-in for the drop zone: it says picking a file is only available on the web. */
 export function FilePicker({ label }: FilePickerProps) {
   return (
-    <View className="w-full flex-col items-center gap-2 rounded-xl border-2 border-dashed border-foreground/15 px-6 py-12">
-      <Upload className="h-8 w-8 text-foreground/60" />
-      <Text className="text-center text-sm font-medium text-foreground">{label}</Text>
-      <Text className="text-center text-xs text-foreground/60">{UNAVAILABLE}</Text>
+    <View className={FILE_PICKER_ZONE_CLASS}>
+      <Upload className={FILE_PICKER_ICON_CLASS} />
+      <Text className={FILE_PICKER_TITLE_CLASS}>{label}</Text>
+      <Text className={FILE_PICKER_HINT_CLASS}>{UNAVAILABLE}</Text>
     </View>
   );
 }
 
-export function FilePickerButton({ label, iconSlot = <Upload />, variant, size, className }: FilePickerButtonProps) {
-  const iconOnly = typeof size === 'string' && size.startsWith('icon');
+/** The device's stand-in for the picker button: drawn and named, and disabled. */
+export function FilePickerButton({
+  label,
+  iconSlot = <Upload />,
+  variant,
+  size,
+  className,
+}: FilePickerButtonProps) {
+  const iconOnly = typeof size === "string" && size.startsWith("icon");
   return (
     <Button
       variant={variant}
@@ -24,7 +39,7 @@ export function FilePickerButton({ label, iconSlot = <Upload />, variant, size, 
       className={className}
       disabled
       aria-label={label}
-      accessibilityHint={UNAVAILABLE}
+      hint={UNAVAILABLE}
       iconSlot={iconSlot}
       content={iconOnly ? null : label}
     />

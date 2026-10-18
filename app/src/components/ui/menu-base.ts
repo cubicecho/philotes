@@ -1,5 +1,5 @@
-import type { ReactElement, ReactNode } from 'react';
-import type { SlotNode } from '@/lib/utils';
+import type { ReactElement, ReactNode } from "react";
+import type { SlotNode } from "@/lib/utils";
 
 export type MenuProps = {
   /** Both optional, together, as on `Popover`: pass neither and the menu keeps its own state. */
@@ -21,12 +21,12 @@ export type MenuTriggerProps = {
 export type MenuContentProps = {
   className?: string | undefined;
   /** Web only — the native sheet is centred and has nothing to align to. */
-  align?: 'start' | 'center' | 'end' | undefined;
+  align?: "start" | "center" | "end" | undefined;
   /**
    * The menu's name. On web radix names it after its trigger already; on native there is no
    * `aria-labelledby` to point at the trigger, so a trigger with no text (a ⋯ button) wants this.
    */
-  'aria-label'?: string | undefined;
+  "aria-label"?: string | undefined;
   children?: ReactNode;
 };
 
@@ -70,18 +70,23 @@ export type MenuSeparatorProps = {
   className?: string | undefined;
 };
 
-export const MENU_CONTENT_CLASS = 'min-w-[8rem] p-1';
-export const MENU_ITEM_CLASS = 'w-full flex-row items-center gap-2 rounded-sm px-2 py-1.5';
-export const MENU_ITEM_TEXT_CLASS = 'flex-1 text-sm';
-export const MENU_TRAILING_CLASS = 'ml-auto text-xs text-foreground/60';
-export const MENU_SEPARATOR_CLASS = '-mx-1 my-1 h-px bg-foreground/10';
+/** The menu's box: its minimum width and padding. */
+export const MENU_CONTENT_CLASS = "min-w-32 p-1";
+/** One menu row's layout. */
+export const MENU_ITEM_CLASS = "w-full flex-row items-center gap-2 rounded-sm px-2 py-1.5";
+/** The type of a menu row's label. */
+export const MENU_ITEM_TEXT_CLASS = "flex-1 text-sm";
+/** What sits at the far end of a menu row, such as a shortcut. */
+export const MENU_TRAILING_CLASS = "ml-auto text-xs tracking-widest text-foreground/60";
+/** The rule between groups of menu rows. */
+export const MENU_SEPARATOR_CLASS = "-mx-1 my-1 h-px bg-foreground/10";
 
 /**
  * The toggle rows take `MenuItem`'s row — `iconSlot`, `label`, `trailing`, `disabled` — and not its
  * `destructive` or `onSelect`: a row that is on or off is a setting, not an action, and what it
  * reports is its new state.
  */
-type MenuToggleRowProps = Omit<MenuItemProps, 'destructive' | 'onSelect'>;
+type MenuToggleRowProps = Omit<MenuItemProps, "destructive" | "onSelect">;
 
 export type MenuCheckboxItemProps = MenuToggleRowProps & {
   checked: boolean;
@@ -98,7 +103,7 @@ export type MenuRadioGroupProps = {
   /** Runs with the chosen row's `value`. The menu closes afterwards, as radix's does. */
   onValueChange?: ((value: string) => void) | undefined;
   /** What the group chooses — worth passing when the menu holds more than one group. */
-  'aria-label'?: string | undefined;
+  "aria-label"?: string | undefined;
   children?: ReactNode;
 };
 
@@ -112,9 +117,9 @@ export type MenuRadioItemProps = MenuToggleRowProps & {
  * `IconClassContext` does on native. Shared so the toggle rows are `MenuItem`'s row, not a copy.
  */
 export const MENU_ITEM_WEB_CLASS =
-  'relative flex cursor-default select-none outline-none data-[disabled]:pointer-events-none data-[disabled]:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0';
+  "relative flex cursor-default select-none outline-none data-[disabled]:pointer-events-none data-[disabled]:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0";
 /**
  * The slot the ✓ sits in, at the row's far edge. It is kept when the row is off, so a column of
  * labels and trailing nodes lines up whichever rows are on.
  */
-export const MENU_INDICATOR_CLASS = 'size-4 shrink-0 items-center justify-center';
+export const MENU_INDICATOR_CLASS = "size-4 shrink-0 items-center justify-center";
