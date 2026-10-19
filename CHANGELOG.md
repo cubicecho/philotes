@@ -1,3 +1,11 @@
+# [5.10.0](https://github.com/cubicecho/philotes/compare/v5.9.0...v5.10.0) (2026-10-19)
+
+
+### Features
+
+* **app:** log the phone's calls and texts as interactions ([ddb091c](https://github.com/cubicecho/philotes/commit/ddb091ce7d4820cbb094e2cc00cad76d0c8ca408)), closes [#35](https://github.com/cubicecho/philotes/issues/35)
+* **server:** log calls and texts a phone read as interactions ([77d484e](https://github.com/cubicecho/philotes/commit/77d484e9eb9c65a2164fc3ea459a59996a18ea40)), closes [#35](https://github.com/cubicecho/philotes/issues/35)
+
 # [5.9.0](https://github.com/cubicecho/philotes/compare/v5.8.0...v5.9.0) (2026-10-19)
 
 
