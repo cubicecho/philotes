@@ -1,0 +1,4 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+  <!-- To read the sync columns DAVx5 writes on the raw contacts of the Philotes address book. -->
+  <uses-permission android:name="android.permission.READ_CONTACTS" />
+</manifest>

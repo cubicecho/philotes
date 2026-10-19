@@ -144,7 +144,8 @@ single-point edit.
 
 The app chrome, rendered once by `app/app/(app)/_layout.tsx` — not by
 individual routes. A cubeui `SidebarLayout`: a rail of the app's places from
-`md` up, and a bar of the same places over the page on a phone. The route
+`md` up. On a phone, a bar over the page holds the brand and the actions, and
+the same places run along the bottom (`barPosition="bottom"`). The route
 renders into its `role="main"` view, which does not scroll — which is why every
 route is a `PageLayout`.
 
