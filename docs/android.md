@@ -100,7 +100,10 @@ server ends every session, so a server a phone relies on wants
   the status bar or the navigation bar. cubeui's shells measure no insets
   themselves; that is left to the app.
 - **Navigation.** Under `md` the app shell (`components/layouts/app-shell.tsx`)
-  swaps the rail for cubeui's bar across the top, with the same places.
+  swaps the rail for cubeui's bars: the brand, Add person and Sign out across
+  the top, and the same places as the rail along the bottom
+  (`barPosition="bottom"`). The root layout's `SafeAreaView` keeps the bottom
+  bar above the navigation bar.
 - **The people list** is a virtualised `SectionList` in a `PageLayout` whose
   body does not scroll, so a few thousand people cost what a screenful does.
   Pulling it down loads the list again.
@@ -129,8 +132,6 @@ drifted, and CI fails on it; `npx expo install --fix` puts them back.
   have not been tried on a device. Photos are not kept: a picture the image
   cache does not hold shows as initials.
 - The exports in Settings (`DownloadButton`) have not been tried on a device.
-- The bar on a phone is at the top. A bar along the bottom needs cubeui to
-  offer one.
 - A build that carries its own JavaScript (EAS `preview` or `production`)
   needs `npm run codegen` to run on the builder first, since the generated
   GraphQL types are not in the repository. No such profile exists yet.
