@@ -1,3 +1,11 @@
+# [5.11.0](https://github.com/cubicecho/philotes/compare/v5.10.0...v5.11.0) (2026-10-19)
+
+
+### Features
+
+* **app:** sync people into the phone's contacts under a Philotes account ([6cfe683](https://github.com/cubicecho/philotes/commit/6cfe68327567ece1a54334296718c6dd7e2c57e1)), closes [#37](https://github.com/cubicecho/philotes/issues/37)
+* **server:** serve and save contact cards for the Android sync adapter ([36d87d5](https://github.com/cubicecho/philotes/commit/36d87d5cd01b5fd59ba56b0d9f3f9d31c6748865)), closes [#37](https://github.com/cubicecho/philotes/issues/37)
+
 # [5.10.0](https://github.com/cubicecho/philotes/compare/v5.9.0...v5.10.0) (2026-10-19)
 
 
