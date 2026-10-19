@@ -6,6 +6,7 @@ import { DialogLayout } from '@/components/dialog-layout';
 import { Alert } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { FieldRow, Form } from '@/components/ui/form';
+import type { PersonPrefill } from '@/lib/contact-intent';
 import { ContactFrequency } from '@/lib/vocabulary';
 
 /** How often to stay in touch, as options; the empty value is no cadence. */
@@ -59,6 +60,7 @@ const personSchema = z.object({
   department: z.string(),
   about: z.string(),
   email: z.union([z.literal(''), z.string().trim().email('Please enter a valid email address.')]),
+  phone: z.string(),
   contactFrequency: z.string(),
   howWeMet: z.string(),
   firstMetDate: z.date().nullable(),
@@ -113,11 +115,16 @@ export interface PersonFormPerson extends Record<TextField, string | null> {
   firstMetDate?: string | null;
 }
 
-/** What the form submits: the person, the address typed for a new one, and the ids of the labels chosen for them. */
+/**
+ * What the form submits: the person, the address and number typed for a new one, and the ids of the labels chosen
+ * for them.
+ */
 export interface PersonFormValue {
   person: PersonFormPerson;
   /** A new person's email address, to keep as a contact detail; `null` when none was typed, and on an edit. */
   email: string | null;
+  /** A new person's phone number, kept the same way; `null` when none was typed, and on an edit. */
+  phone: string | null;
   labelIds: string[];
 }
 
@@ -139,6 +146,8 @@ interface PersonFormDialogProps {
   availableLabels: Label_ListFragment[];
   /** The person being edited; left out, the form adds one and clears itself after each save. */
   initialValues?: PersonFormInitialValues;
+  /** What a new person starts with, such as the number another app asked to add. Ignored on an edit. */
+  prefill?: PersonPrefill;
   submitLabel?: string;
   /**
    * Saves the person and closes the dialog. A rejection's message is shown under the fields and the form stays as
@@ -155,23 +164,26 @@ export function PersonFormDialog({
   description,
   availableLabels,
   initialValues,
+  prefill: givenPrefill,
   submitLabel,
   onSubmit,
 }: PersonFormDialogProps) {
   const [formError, setFormError] = useState<string | null>(null);
+  const prefill = initialValues === undefined ? givenPrefill : undefined;
 
   const defaultValues: PersonFormFields = {
     namePrefix: initialValues?.namePrefix ?? '',
-    firstName: initialValues?.firstName ?? '',
+    firstName: initialValues?.firstName ?? prefill?.firstName ?? '',
     middleName: initialValues?.middleName ?? '',
-    lastName: initialValues?.lastName ?? '',
+    lastName: initialValues?.lastName ?? prefill?.lastName ?? '',
     nameSuffix: initialValues?.nameSuffix ?? '',
     nickname: initialValues?.nickname ?? '',
-    organization: initialValues?.organization ?? '',
-    jobTitle: initialValues?.jobTitle ?? '',
+    organization: initialValues?.organization ?? prefill?.organization ?? '',
+    jobTitle: initialValues?.jobTitle ?? prefill?.jobTitle ?? '',
     department: initialValues?.department ?? '',
-    about: initialValues?.about ?? '',
-    email: '',
+    about: initialValues?.about ?? prefill?.about ?? '',
+    email: prefill?.email ?? '',
+    phone: prefill?.phone ?? '',
     contactFrequency: initialValues?.contactFrequency || NO_FREQUENCY,
     howWeMet: initialValues?.howWeMet ?? '',
     firstMetDate: parseDay(initialValues?.firstMetDate),
@@ -212,6 +224,7 @@ export function PersonFormDialog({
             firstMetDate: value.firstMetDate ? formatDay(value.firstMetDate) : null,
           },
           email: value.email.trim() || null,
+          phone: value.phone.trim() || null,
           labelIds: value.labelIds,
         });
         if (!initialValues) {
@@ -278,11 +291,20 @@ export function PersonFormDialog({
               }
             />
             <form.AppField name="department">{(field) => <field.InputField label="Department" />}</form.AppField>
-            {/* A stored person's addresses are edited with their other contact details, on their page. */}
+            {/* A stored person's addresses and numbers are edited with their other contact details, on their page. */}
             {isEdit ? null : (
-              <form.AppField name="email">
-                {(field) => <field.InputField label="Email (optional)" type="email" autoCapitalize="none" />}
-              </form.AppField>
+              <FieldRow
+                contentSlot={
+                  <>
+                    <form.AppField name="email">
+                      {(field) => <field.InputField label="Email (optional)" type="email" autoCapitalize="none" />}
+                    </form.AppField>
+                    <form.AppField name="phone">
+                      {(field) => <field.InputField label="Phone (optional)" type="tel" />}
+                    </form.AppField>
+                  </>
+                }
+              />
             )}
             <form.AppField name="contactFrequency">
               {(field) => <field.SelectField label="Contact Frequency" options={FREQUENCY_SELECT_OPTIONS} />}

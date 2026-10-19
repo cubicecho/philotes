@@ -11,12 +11,14 @@ import { ExportPeopleCard } from '@/components/settings/export-people-card';
 import { ExportVCardsCard } from '@/components/settings/export-vcards-card';
 import { GoogleCsvImportCard } from '@/components/settings/google-csv-import-card';
 import { MailboxCard } from '@/components/settings/mailbox-card';
+import { PhoneContactsCard } from '@/components/settings/phone-contacts-card';
 import { PhoneLogCard } from '@/components/settings/phone-log-card';
 import { PhoneSyncCard } from '@/components/settings/phone-sync-card';
 import { SignInCard } from '@/components/settings/sign-in-card';
 import { VCardImportCard } from '@/components/settings/vcard-import-card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ThemePicker } from '@/components/ui/theme-picker';
+import { isPhoneContactsSupported } from '@/lib/phone-contacts';
 import { CAN_READ_PHONE_LOG } from '@/lib/phone-scan';
 
 const GET_IS_ADMIN = graphql(`
@@ -74,6 +76,7 @@ export default function SettingsPage() {
           </TabsContent>
           <TabsContent value="api-keys">
             <View className="gap-6">
+              {isPhoneContactsSupported() ? <PhoneContactsCard /> : null}
               <PhoneSyncCard />
               <ApiKeyManager />
             </View>

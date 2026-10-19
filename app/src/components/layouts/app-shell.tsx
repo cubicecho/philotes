@@ -9,8 +9,10 @@ import { SidebarLayout } from '@/components/split-layout';
 import { Button } from '@/components/ui/button';
 import { Settings, Tag } from '@/components/ui/icons';
 import { forgetAvatarImages } from '@/hooks/use-avatar-image';
+import { usePhoneContactsSync } from '@/hooks/use-phone-contacts-sync';
 import { forgetCachedData } from '@/lib/apollo';
 import { clearToken } from '@/lib/auth';
+import { stopPhoneContactsSync } from '@/lib/phone-contacts';
 import type { SlotNode } from '@/lib/utils';
 
 const SIGN_OUT = graphql(`
@@ -29,19 +31,25 @@ const PLACES = [
 ] as const;
 
 /**
- * The persistent shell: a rail of the app's places from `md` up, and a bar of
- * the same places over the page on a phone.
+ * The persistent shell: a rail of the app's places from `md` up. On a phone
+ * the brand and the actions sit in a bar over the page, and the places in a
+ * bar along the bottom, where the thumb is.
  */
 export function AppShell({ contentSlot }: { contentSlot: SlotNode }) {
   const pathname = usePathname() ?? '';
   const router = useRouter();
 
   const [endSession] = useMutation(SIGN_OUT);
+  usePhoneContactsSync();
 
   /** Ends the session on the server, then forgets it and everything fetched with it. */
   async function signOut() {
     // A server that can't be reached must not keep the user signed in on this device.
     await endSession().catch(() => null);
+    // The phone's contacts are this user's people: they leave with the session.
+    await stopPhoneContactsSync().catch((error: unknown) => {
+      console.error('Could not remove the phone’s contacts account', error);
+    });
     clearToken();
     forgetAvatarImages();
     await forgetCachedData();
@@ -105,6 +113,7 @@ export function AppShell({ contentSlot }: { contentSlot: SlotNode }) {
       }
       brandSlot={<Text className="font-semibold text-foreground text-lg tracking-tight">Philotes</Text>}
       navLabel="Main"
+      barPosition="bottom"
       navSlot={PLACES.map(({ href, label, Icon, isActive }) => (
         <Link key={href} href={href} asChild>
           <BarNavItem label={label} iconSlot={<Icon />} active={isActive(pathname)} />

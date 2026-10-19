@@ -4,6 +4,7 @@ import { GraphQLObjectType, GraphQLSchema } from 'graphql';
 import { GraphQLDateTime } from 'graphql-scalars';
 import { applyApiKeysExtension } from '../api-keys/resolvers.ts';
 import { applyAuthExtension } from '../auth/resolvers.ts';
+import { applyContactCardsExtension } from '../contact-cards/resolvers.ts';
 import { applyImportContactsExtension } from '../contact-import/resolvers.ts';
 import { OPERATION_LIMIT_DEFAULTS } from '../core/defaults.ts';
 import { gratitudeWriteHooks } from '../gratitudes/hooks.ts';
@@ -49,6 +50,7 @@ const EXTENSIONS: Array<(schema: GraphQLSchema) => GraphQLSchema> = [
   applyImportContactsExtension,
   // After the contact import, whose result type it returns.
   applyVCardExtension,
+  applyContactCardsExtension,
   applyMergeLabelsExtension,
   applyDuplicatesExtension,
   applyApiKeysExtension,
