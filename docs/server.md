@@ -26,7 +26,7 @@ subject needs, under the same file names everywhere:
 
 The folders are `persons`, `notes`, `gratitudes`, `interactions`, `tasks`,
 `important-dates`, `labels`, `relationships`, `contact-import`, `vcard`,
-`carddav`, `api-keys`, `users`, `auth` and `sso`. `persons` has a second extension file, `duplicates.ts`, for
+`carddav`, `contact-cards`, `api-keys`, `users`, `auth` and `sso`. `persons` has a second extension file, `duplicates.ts`, for
 `potentialDuplicates` and `mergePersons`, and `normalized-values.ts`, which
 fills a contact info's `normalizedValue` on every write. `users` holds the
 caller's settings (`setDefaultCountry`). Three more hold what no domain owns:
@@ -191,6 +191,21 @@ unchanged, so a phone's own fields survive a round trip.
 
 Notes, interactions, tasks, gratitudes, relationships, how you met and the
 contact frequency are Philotes' own and never leave in a card.
+
+**Contact cards over GraphQL.** `contact-cards/` serves the same `Card` to the
+Android sync adapter (see [`android.md`](android.md#the-phones-own-contacts)) as
+GraphQL types rather than vCard text. `contactCards(since, after, limit)` pages
+the caller's cards by person id, only those changed after `since` when it is
+given, and is priced like a generated list. `saveContactCard(input)` saves a
+contact in `SaveMode.Replace` inside one transaction, with the person's row
+locked, and only when their revision still equals `ifRevision` (required with
+`personId`; a null `personId` makes a new person). Otherwise it writes nothing
+and answers `CONFLICT` with the server's card, or none when the person is gone,
+which is also what someone else's id gets. A phone holds no labels, picture or
+unmapped vCard lines, so the save keeps the person's own and passes
+`avatars: null`. A delete from the phone needs nothing new: the generated
+`deletePersons(where: { id: { eq }, revision: { eq } })` deletes only a person
+who has not changed.
 
 **A date without a year** is read from `--MMDD`, from `X-APPLE-OMIT-YEAR`, or
 from the year 1604 that Apple writes, and is written the Apple way, which
