@@ -111,6 +111,57 @@ server ends every session, so a server a phone relies on wants
   The web half is cubeui's `FilePickerButton`, whose native half is a stub by
   design.
 
+## Logging calls and texts
+
+Settings → App Settings → **Log Calls and Texts** turns on reading the call
+log and the texts, each on its own. Both are off until the user turns them
+on, and turning one on asks Android for its permission (`READ_CALL_LOG` or
+`READ_SMS`). The card says what is read: the other number, the time, which
+way it went and how long a call lasted. A text's body is never read.
+
+- **The native module** is `app/modules/phone-log`, a local Expo module that
+  autolinking finds by its folder. `PhoneLogModule.kt` reads `CallLog.Calls`
+  and `Telephony.Sms` through the `ContentResolver`, with projections that
+  name only `_ID`, the number, the date, the type and (for calls) the
+  duration. `index.ts` is its typed wrapper; the module is optional, so a
+  browser, or a build made before it was added, sees `isPhoneLogAvailable()`
+  false and shows no card.
+- **What becomes an interaction** is decided in `app/src/lib/phone-log.ts`,
+  a plain module with tests: incoming, outgoing and missed calls (declined and
+  voicemail count as missed), received and sent texts. Blocked calls, withheld
+  numbers, drafts and unsent texts are left out. An event's `externalId` is
+  its row's `_ID` and time, since Android reuses an `_ID` once the log is
+  cleared.
+- **The scan** (`phone-scan.ts`) reads each source that is on from its
+  cursor, a page at a time (`PHONE_LOG_DEFAULTS`), and sends each page
+  through `logInteractions`. The server matches numbers to people and drops
+  the rest; see [`server.md`](./server.md#logged-interactions). Each source's
+  cursor is the time it has read up to, kept in the device store and moved
+  after each page the server took. The first scan of a source reads
+  `firstScanDays` back.
+- **When it runs:** whenever the signed-in app opens or comes back to the
+  front (`usePhoneLogScan`), and from a periodic background task
+  (`phone-scan-task.ts`, `expo-background-task` on Android's WorkManager).
+  The task is registered while any source is on, asks for every
+  `backgroundIntervalMinutes`, and Android decides when it actually runs (no
+  more often than every 15 minutes). The two never read at once.
+- Re-reading is harmless. Every page starts at the last row of the one before,
+  a source turned off and on carries on from its cursor, and the server
+  ignores an event it already has.
+
+### Google Play and these permissions
+
+`READ_CALL_LOG` and `READ_SMS` are in Google Play's
+[restricted permission groups](https://support.google.com/googleplay/android-developer/answer/10208820):
+an app on Play may hold them only when it is the user's default phone or SMS
+handler, or falls under one of a short list of exceptions, and it must
+declare why in the Play Console. A contacts or CRM app is not on that list.
+A development or sideloaded build, which is how Philotes ships today, is not
+reviewed and may use them freely. **A store release would have to drop the
+call and text logging, or become the default dialer or SMS app.** The
+permissions are declared in `app.json` (`android.permissions`) and nowhere
+else, so a store build can remove them there.
+
 ## Keeping Expo packages in step
 
 Every `expo-*` package, and the React Native libraries Expo pins, have one
@@ -129,6 +180,10 @@ drifted, and CI fails on it; `npx expo install --fix` puts them back.
   have not been tried on a device. Photos are not kept: a picture the image
   cache does not hold shows as initials.
 - The exports in Settings (`DownloadButton`) have not been tried on a device.
+- Logging calls and texts has not been compiled or run: the Kotlin module was
+  written without an Android SDK. It needs a new development build, then a
+  call and a text on the device, and a second scan that logs nothing new.
+  MMS (group texts and pictures) is not read.
 - The bar on a phone is at the top. A bar along the bottom needs cubeui to
   offer one.
 - A build that carries its own JavaScript (EAS `preview` or `production`)
