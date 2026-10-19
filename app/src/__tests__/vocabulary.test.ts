@@ -6,6 +6,7 @@ import {
   InteractionDirection,
   InteractionSentiment,
   InteractionSource,
+  MailboxStatus,
   Recurrence,
 } from '../lib/vocabulary';
 
@@ -17,6 +18,7 @@ describe('the app vocabularies', () => {
     ['ContactFrequency', ContactFrequency, stored.ContactFrequency],
     ['InteractionSource', InteractionSource, stored.InteractionSource],
     ['InteractionDirection', InteractionDirection, stored.InteractionDirection],
+    ['MailboxStatus', MailboxStatus, stored.MailboxStatus],
   ])('%s matches what the database stores', (_name, inApp, inDatabase) => {
     expect(inApp).toEqual(inDatabase);
   });

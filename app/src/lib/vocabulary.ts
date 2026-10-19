@@ -41,6 +41,14 @@ export const InteractionDirection = {
 } as const;
 export type InteractionDirection = (typeof InteractionDirection)[keyof typeof InteractionDirection];
 
+/** Where a connected mailbox's polling stands. */
+export const MailboxStatus = {
+  Active: 'active',
+  Failing: 'failing',
+  NeedsReconnect: 'needs-reconnect',
+} as const;
+export type MailboxStatus = (typeof MailboxStatus)[keyof typeof MailboxStatus];
+
 /** How often a user means to be in touch with a person. */
 export const ContactFrequency = {
   Weekly: 'weekly',
