@@ -213,6 +213,7 @@ Then open [http://localhost:3000](http://localhost:3000).
 | `S3_BUCKET` | `philotes-avatars` | The bucket. Created at boot when missing; it stays private |
 | `S3_REGION` | `us-east-1` | Region sent to the store. MinIO accepts any |
 | `S3_FORCE_PATH_STYLE` | `true` | Bucket in the URL path (MinIO) rather than the host name |
+| `MAIL_CREDENTIAL_KEYS` | none | Keys that seal a connected mailbox's app password: `<id>:<base64 of 32 bytes>`, comma-separated, the sealing key first. Unset, mailboxes cannot be connected. See [`docs/email-interactions.md`](docs/email-interactions.md) |
 | `DB_CONNECT_TIMEOUT_MS` | `60000` | How long boot waits for Postgres |
 | `TRUST_PROXY` | `false` | Proxy hops that may set `X-Forwarded-For` |
 
