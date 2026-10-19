@@ -1,4 +1,3 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
-  <!-- To read the sync columns DAVx5 writes on the raw contacts of the Philotes address book. -->
-  <uses-permission android:name="android.permission.READ_CONTACTS" />
-</manifest>
+<!-- The services, the activity and the permissions are added to the app's manifest by the config plugin
+     (app.plugin.js), with the XML they point at, which names the app's own icon and label. -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android" />

@@ -7,8 +7,8 @@ type ContactsEvents = {
   onContactIntent: (intent: ContactIntent) => void;
 };
 
-/** `app/modules/philotes-contacts`, the Kotlin module. Uncompiled here; see `docs/android.md`. */
-declare class PhilotesContactsModule extends NativeModule<ContactsEvents> {
+/** `app/modules/contact-intents`, the Kotlin module. Uncompiled here; see `docs/android.md`. */
+declare class ContactIntentsModule extends NativeModule<ContactsEvents> {
   takeLaunchIntent(): ContactIntent | null;
   requestReadPermission(): Promise<{ granted: boolean }>;
   findRawContact(uri: string, accountTypes: readonly string[]): Promise<RawContactSync | null>;
@@ -16,7 +16,7 @@ declare class PhilotesContactsModule extends NativeModule<ContactsEvents> {
 }
 
 /** The module, or `null` on the web and in a development build made before it was added. */
-const native = requireOptionalNativeModule<PhilotesContactsModule>('PhilotesContacts');
+const native = requireOptionalNativeModule<ContactIntentsModule>('ContactIntents');
 
 /** Whether this build can read contact intents and the phone's contacts. */
 export const hasContactsModule = native !== null;

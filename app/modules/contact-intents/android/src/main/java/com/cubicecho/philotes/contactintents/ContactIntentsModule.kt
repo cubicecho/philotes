@@ -1,4 +1,4 @@
-package com.cubicecho.philotes.contacts
+package com.cubicecho.philotes.contactintents
 
 import android.Manifest
 import android.app.Activity
@@ -22,7 +22,7 @@ import expo.modules.kotlin.modules.ModuleDefinition
  * neither, which is why this module exists. It is small on purpose: the JavaScript side decides
  * what an intent means and which account types count.
  */
-class PhilotesContactsModule : Module() {
+class ContactIntentsModule : Module() {
   /** The launch intent already handed to JavaScript, so a remount does not act on it twice. */
   private var takenIntent: Intent? = null
 
@@ -30,7 +30,7 @@ class PhilotesContactsModule : Module() {
     get() = (appContext.reactContext ?: throw Exceptions.ReactContextLost()).contentResolver
 
   override fun definition() = ModuleDefinition {
-    Name("PhilotesContacts")
+    Name("ContactIntents")
 
     Events(INTENT_EVENT)
 

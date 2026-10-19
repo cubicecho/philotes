@@ -7,9 +7,14 @@ group = 'com.cubicecho.philotes'
 version = '0.1.0'
 
 android {
-  namespace "com.cubicecho.philotes.contacts"
+  namespace "expo.modules.philotescontacts"
   defaultConfig {
     versionCode 1
     versionName '0.1.0'
   }
+}
+
+dependencies {
+  // ContactRowsTest: the mapping is plain Kotlin, so it runs on the JVM with JUnit alone.
+  testImplementation 'junit:junit:4.13.2'
 }

@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- How the contacts app shows and edits the Philotes account's contacts.
+
+     EditSchema: without it the contacts app treats an account with its own contacts.xml as read-only.
+     It lists what the mapping in ContactRows.kt reads back; the format is AOSP's ExternalAccountType
+     (the name kind's supports* attributes must all be true).
+
+     ContactsDataKind: Philotes' own rows, drawn on the contact card. The profile row is
+     "Open in Philotes", which OpenInPhilotesActivity answers; the detail row is a social profile or
+     another detail Android has no kind for, shown read-only. -->
+<ContactsAccountType xmlns:android="http://schemas.android.com/apk/res/android">
+    <EditSchema>
+        <DataKind kind="name" maxOccurs="1"
+            supportsDisplayName="true" supportsPrefix="true" supportsMiddleName="true" supportsSuffix="true"
+            supportsPhoneticFamilyName="true" supportsPhoneticMiddleName="true" supportsPhoneticGivenName="true" />
+        <DataKind kind="photo" maxOccurs="1" />
+        <DataKind kind="phone">
+            <Type type="mobile" />
+            <Type type="home" />
+            <Type type="work" />
+            <Type type="fax_work" />
+            <Type type="fax_home" />
+            <Type type="other_fax" />
+            <Type type="other" />
+            <Type type="custom" />
+        </DataKind>
+        <DataKind kind="email">
+            <Type type="home" />
+            <Type type="work" />
+            <Type type="mobile" />
+            <Type type="other" />
+            <Type type="custom" />
+        </DataKind>
+        <DataKind kind="nickname" maxOccurs="1" />
+        <DataKind kind="im">
+            <Type type="custom" />
+        </DataKind>
+        <DataKind kind="postal">
+            <Type type="home" />
+            <Type type="work" />
+            <Type type="other" />
+            <Type type="custom" />
+        </DataKind>
+        <DataKind kind="organization" maxOccurs="1" />
+        <DataKind kind="website" />
+        <DataKind kind="note" maxOccurs="1" />
+        <DataKind kind="event" dateWithTime="false">
+            <Type type="birthday" maxOccurs="1" yearOptional="true" />
+            <Type type="anniversary" yearOptional="true" />
+            <Type type="custom" yearOptional="true" />
+        </DataKind>
+    </EditSchema>
+
+    <ContactsDataKind
+        android:mimeType="vnd.android.cursor.item/vnd.com.cubicecho.philotes.profile"
+        android:icon="@mipmap/ic_launcher"
+        android:summaryColumn="data2"
+        android:detailColumn="data3" />
+
+    <ContactsDataKind
+        android:mimeType="vnd.android.cursor.item/vnd.com.cubicecho.philotes.detail"
+        android:icon="@mipmap/ic_launcher"
+        android:summaryColumn="data2"
+        android:detailColumn="data1" />
+</ContactsAccountType>

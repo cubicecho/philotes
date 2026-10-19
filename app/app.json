@@ -110,6 +110,7 @@
         }
       ],
       "expo-sqlite",
+      "./modules/philotes-contacts/app.plugin.js",
       "expo-background-task"
     ],
     "owner": "cubicecho",
