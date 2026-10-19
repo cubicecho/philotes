@@ -10,6 +10,7 @@ import {
   appUrl,
   avatarDir,
   dbConnectTimeoutMs,
+  mailCredentialKeys,
   objectStorage,
   oidcRedirectUri,
   port,
@@ -19,6 +20,10 @@ import {
 import { errorMessage } from './core/errors.ts';
 import { createApp } from './http/app.ts';
 import { stopOnSignals } from './http/shutdown.ts';
+import { parseKeyring, resealCredentials } from './mail/credential.ts';
+import { createImapConnector } from './mail/imap-reader.ts';
+import { createMailPoller } from './mail/poller.ts';
+import type { MailService } from './mail/reader.ts';
 import { createDiskAvatarStore } from './persons/avatar-store.ts';
 import { createS3AvatarStore } from './persons/avatar-store-s3.ts';
 
@@ -66,10 +71,24 @@ if (oidc !== null) {
   console.log(`[auth] sign-in with ${oidc.name} (${oidc.issuer}); redirect URI ${oidcRedirectUri()}`);
 }
 
+// Preflight has already refused a malformed key, so this is a keyring or null.
+const keyring = parseKeyring(mailCredentialKeys());
+const mail: MailService | undefined = keyring === null ? undefined : { keyring, connect: createImapConnector() };
+const poller = mail === undefined ? null : createMailPoller({ db, mail });
+if (keyring === null) {
+  console.log('[mail] MAIL_CREDENTIAL_KEYS is not set: mailboxes cannot be connected');
+} else {
+  const resealed = await resealCredentials(db, keyring);
+  if (resealed > 0) {
+    console.log(`[mail] re-sealed ${resealed} credentials under key ${keyring.current.id}`);
+  }
+}
+
 const app = createApp({
   db,
   authHost,
   avatarStore,
+  mail,
   staticDir: join(__dirname, '../../app/dist'),
 });
 
@@ -78,5 +97,13 @@ const server = app.listen(port(), LISTEN_HOST, () => {
   if (serverUrl() !== appUrl()) {
     console.log(`[server] browsers reach the API at ${serverUrl()}`);
   }
+  poller?.start();
 });
-stopOnSignals(server, { after: closeDatabase });
+stopOnSignals(server, {
+  // Stops taking mailboxes at once; the poll in flight is aborted and has finished before the pool closes.
+  before: () => poller?.stop(),
+  after: async () => {
+    await poller?.stop();
+    await closeDatabase();
+  },
+});

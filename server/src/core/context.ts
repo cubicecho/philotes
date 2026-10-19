@@ -2,6 +2,7 @@ import type { DB } from '@cubicecho/philotes-db';
 import type { AuthHost } from '../auth/auth-host.ts';
 import type { Auth } from '../auth/better-auth.ts';
 import type { RateLimiter } from '../auth/rate-limit.ts';
+import type { MailService } from '../mail/reader.ts';
 import type { AvatarStore } from '../persons/avatar-store.ts';
 
 /** `Context.ip` when Express gave no address, as when a test calls the schema directly. */
@@ -25,4 +26,6 @@ export interface Context {
   headers: Headers;
   /** Where avatar images are kept, or null on a server that keeps none. A contact card's picture goes here. */
   avatarStore: AvatarStore | null;
+  /** How mailboxes are reached and their passwords sealed, or null on a server with no MAIL_CREDENTIAL_KEYS. */
+  mail: MailService | null;
 }

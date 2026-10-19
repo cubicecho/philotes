@@ -6,6 +6,7 @@ import { sessionUserId } from '../auth/better-auth.ts';
 import type { RateLimiter } from '../auth/rate-limit.ts';
 import { isProduction } from '../core/config.ts';
 import { type Context, UNKNOWN_IP } from '../core/context.ts';
+import type { MailService } from '../mail/reader.ts';
 import type { AvatarStore } from '../persons/avatar-store.ts';
 import { createSchema } from './build-schema.ts';
 import { graphqlLogger } from './logger.ts';
@@ -19,6 +20,8 @@ interface GraphQLHandlerDeps {
   limiter: RateLimiter;
   /** Where avatar images are kept. Left out, resolvers leave pictures alone. */
   avatarStore?: AvatarStore;
+  /** Mailbox access. Left out, connecting a mailbox is refused. */
+  mail?: MailService;
 }
 
 /** What Express hands Yoga alongside the fetch request. */
@@ -29,10 +32,10 @@ interface ServerContext {
 /**
  * Builds the Yoga handler for /graphql.
  *
- * @param deps - The database, the auth host, the sign-in rate limiter and the avatar store.
+ * @param deps - The database, the auth host, the sign-in rate limiter, the avatar store and mailbox access.
  * @returns The Yoga instance, callable as Express middleware.
  */
-export function createGraphQLHandler({ db, authHost, limiter, avatarStore }: GraphQLHandlerDeps) {
+export function createGraphQLHandler({ db, authHost, limiter, avatarStore, mail }: GraphQLHandlerDeps) {
   const { schema } = createSchema(db);
   return createYoga<ServerContext, Context>({
     schema,
@@ -54,6 +57,7 @@ export function createGraphQLHandler({ db, authHost, limiter, avatarStore }: Gra
         userId: await sessionUserId(auth, request.headers),
         headers: request.headers,
         avatarStore: avatarStore ?? null,
+        mail: mail ?? null,
       };
     },
   });

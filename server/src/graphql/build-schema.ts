@@ -14,6 +14,7 @@ import { interactionWriteHooks } from '../interactions/hooks.ts';
 import { applyLogInteractionsExtension } from '../interactions/resolvers.ts';
 import { labelWriteHooks } from '../labels/hooks.ts';
 import { applyMergeLabelsExtension } from '../labels/resolvers.ts';
+import { applyMailExtension } from '../mail/resolvers.ts';
 import { noteWriteHooks } from '../notes/hooks.ts';
 import { applyDuplicatesExtension } from '../persons/duplicates.ts';
 import { personWriteHooks } from '../persons/hooks.ts';
@@ -56,6 +57,7 @@ const EXTENSIONS: Array<(schema: GraphQLSchema) => GraphQLSchema> = [
   applyUserSettingsExtension,
   applySsoExtension,
   applyLogInteractionsExtension,
+  applyMailExtension,
 ];
 
 /**

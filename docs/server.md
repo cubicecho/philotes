@@ -28,7 +28,9 @@ The folders are `persons`, `notes`, `gratitudes`, `interactions`, `tasks`,
 `important-dates`, `labels`, `relationships`, `contact-import`, `vcard`,
 `carddav`, `contact-cards`, `api-keys`, `users`, `auth` and `sso`. `persons` has a second extension file, `duplicates.ts`, for
 `potentialDuplicates` and `mergePersons`, and `normalized-values.ts`, which
-fills a contact info's `normalizedValue` on every write. `interactions` has
+fills a contact info's `normalizedValue` on every write. `mail` reads a
+connected mailbox's headers into email interactions (see
+[`email-interactions.md`](email-interactions.md)). `interactions` has
 `log.ts`, which logs events read from a phone or a mailbox (see
 [Logged interactions](#logged-interactions)). `users` holds the
 caller's settings (`setDefaultCountry`). Three more hold what no domain owns:
@@ -265,6 +267,27 @@ door to it.
 - The mutation takes at most `INTERACTION_DEFAULTS.maxLoggedPerCall` events, and
   only the phone's sources. The answer counts what was `logged`, what was
   `alreadyLogged` and what was `unmatched`.
+
+## Mail
+
+A user may connect one mailbox over IMAP (`mail/`). The design, and why it
+is shaped this way, is [`email-interactions.md`](email-interactions.md). In
+the code:
+
+| File | Holds |
+| --- | --- |
+| `mail/credential.ts` | `MAIL_CREDENTIAL_KEYS` as a keyring; sealing and opening an app password (AES-256-GCM); re-sealing at boot after a rotation |
+| `mail/reader.ts` | The interface the poller reads a mailbox through: folders, UIDs and headers that carry who and when, and nothing else |
+| `mail/imap-reader.ts` | That interface over `imapflow`: implicit TLS, read-only folders, a fetch of the envelope and received time only |
+| `mail/poll.ts` | One poll of one mailbox: the inbox as incoming, the `\Sent` folder as outgoing, each from its cursor, a page at a time through `logInteractions` |
+| `mail/poller.ts` | The loop: due mailboxes each tick, backoff on failure, a refused login stops a mailbox, stopped by `stopOnSignals` |
+| `mail/resolvers.ts` | `mailbox`, `mailSyncAvailable`, `connectMailbox` (checks the login first) and `disconnectMailbox` |
+
+`mailboxes` is a server table: excluded from the generated schema, since it
+holds the sealed credential. Its resolvers scope it to the caller themselves.
+Without `MAIL_CREDENTIAL_KEYS`, `ctx.mail` is null, the poller does not start,
+and `connectMailbox` says why. Tests hand the server a fake connector
+(`__tests__/mail/fake-mailbox.ts`) through `createClient(db, userId, { mail })`.
 
 ## Operation Limits
 

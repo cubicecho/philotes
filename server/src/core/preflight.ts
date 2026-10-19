@@ -1,15 +1,18 @@
 // Runs before anything connects or signs a token, so a misconfigured instance fails with a sentence, not a stack trace.
 import { isPrivateHost } from '@cubicecho/philotes-db/ssl';
+import { parseKeyring } from '../mail/credential.ts';
 import {
   allowsPublicLocalNet,
   appUrl,
   authSecret,
   isProduction,
+  mailCredentialKeys,
   OIDC_CLIENT_AUTH_METHODS,
   objectStorage,
   secureLocalNet,
 } from './config.ts';
 import { AUTH_DEFAULTS } from './defaults.ts';
+import { errorMessage } from './errors.ts';
 
 /** The secret .env.example ships with. */
 const PLACEHOLDER_SECRET = 'change-me-to-a-long-random-string';
@@ -49,6 +52,12 @@ if (storage !== null) {
       'S3_ENDPOINT is set, so S3_ACCESS_KEY_ID and S3_SECRET_ACCESS_KEY are required. Unset S3_ENDPOINT to keep avatars on disk.',
     );
   }
+}
+
+try {
+  parseKeyring(mailCredentialKeys());
+} catch (error: unknown) {
+  fatal(errorMessage(error));
 }
 
 if (secureLocalNet()) {

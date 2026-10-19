@@ -10,6 +10,7 @@ import { HTTP_DEFAULTS } from '../core/defaults.ts';
 import { HttpStatus } from '../core/wire.ts';
 import { createGraphQLHandler } from '../graphql/handler.ts';
 import { createIcalHandler } from '../important-dates/ical.ts';
+import type { MailService } from '../mail/reader.ts';
 import type { AvatarStore } from '../persons/avatar-store.ts';
 import { createAvatarRouter } from '../persons/avatars.ts';
 import { checkHealth } from './health.ts';
@@ -35,6 +36,8 @@ export interface AppDeps {
    * the address book serves cards without pictures.
    */
   avatarStore?: AvatarStore;
+  /** Mailbox access: the credential keys and the IMAP connector. Left out, connecting a mailbox is refused. */
+  mail?: MailService;
   /** The built app's directory. Left out in tests. */
   staticDir?: string;
 }
@@ -45,7 +48,14 @@ export interface AppDeps {
  * @param deps - What the app talks to.
  * @returns The app, not listening.
  */
-export function createApp({ db, authHost, limiter = createRateLimiter(), avatarStore, staticDir }: AppDeps): Express {
+export function createApp({
+  db,
+  authHost,
+  limiter = createRateLimiter(),
+  avatarStore,
+  mail,
+  staticDir,
+}: AppDeps): Express {
   const app = express();
   // Which proxy hops may set X-Forwarded-For, and so what `req.ip` is.
   app.set('trust proxy', trustProxy());
@@ -55,7 +65,7 @@ export function createApp({ db, authHost, limiter = createRateLimiter(), avatarS
   app.use(DavPath.Mount, createCardDavRouter({ db, authHost, avatarStore: avatarStore ?? null }));
   // The app is same-origin in production. The list only adds the dev app's origin.
   app.use(cors({ origin: allowedOrigins() }));
-  const graphql = createGraphQLHandler({ db, authHost, limiter, avatarStore });
+  const graphql = createGraphQLHandler({ db, authHost, limiter, avatarStore, mail });
 
   // Yoga reads a body Express already parsed, so this is where the size cap goes. Over it: 413.
   app.use(graphql.graphqlEndpoint, express.json({ limit: HTTP_DEFAULTS.bodyLimit }));

@@ -79,6 +79,7 @@ Nineteen tables, plus `api_keys`:
 | `tasks` | `models/tasks.ts` | `user_id` |
 | `api_keys` | `api-keys.ts` | `user_id` |
 | `oidc_settings` | `models/oidc-settings.ts` | none: the instance's |
+| `mailboxes` | `models/mailboxes.ts` | `user_id`, scoped by hand: not in the API |
 
 `interactions.source` says where an interaction came from (`manual`, the
 default, or `call-log`, `sms`, `email`), and `external_id` what that source
@@ -86,6 +87,12 @@ knows the event by. A unique index on `(user_id, source, external_id,
 person_id)` keeps a logged event from being written twice for a person; a
 typed-in row's `external_id` is null, so it never collides. `direction` and
 `duration_seconds` are null when nobody said.
+
+`mailboxes` is a user's connected mailbox, one at most. Its `credential` is the
+app password sealed under a key from the environment, so, like
+`oidc_settings`, it is excluded from the GraphQL schema and reached only
+through hand-written resolvers. `cursors` holds, per folder, its UIDVALIDITY
+and the highest UID logged. See [`email-interactions.md`](email-interactions.md).
 
 `oidc_settings` is the OIDC provider the instance was paired with: one row or
 none (a check constraint pins its `id`), written only by the server. It holds a

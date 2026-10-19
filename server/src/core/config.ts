@@ -289,3 +289,11 @@ export function oidcConfig(): OidcConfig | null {
 export function oidcRedirectUri(): string {
   return `${serverUrl()}/api/auth/callback/${OIDC_PROVIDER_ID}`;
 }
+
+/**
+ * The keys a mailbox's app password is sealed with: `<id>:<base64 key>`, comma-separated, the sealing key
+ * first. Unset, the server reads no mail.
+ *
+ * @returns `MAIL_CREDENTIAL_KEYS`, or undefined.
+ */
+export const mailCredentialKeys = (): string | undefined => process.env.MAIL_CREDENTIAL_KEYS;

@@ -58,6 +58,9 @@ for a caller:
   `logInteractions(entries)` logs calls and texts a phone read, matched to
   people on their numbers' `normalizedValue`; sending an entry again logs
   nothing new. See [`server.md`](server.md#logged-interactions).
+- A mailbox is connected with `connectMailbox(input)` and read back with
+  `mailbox`, which never includes the password; `mailSyncAvailable` says
+  whether the server can read mail at all.
 - An important date with `hasYear: false` carries the year 1604 in `date`. The
   client sends that year and does not show it.
 - A person's email addresses are `contactInfos` of type `email`; there is no

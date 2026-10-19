@@ -10,6 +10,7 @@ import { ExportCalendarCard } from '@/components/settings/export-calendar-card';
 import { ExportPeopleCard } from '@/components/settings/export-people-card';
 import { ExportVCardsCard } from '@/components/settings/export-vcards-card';
 import { GoogleCsvImportCard } from '@/components/settings/google-csv-import-card';
+import { MailboxCard } from '@/components/settings/mailbox-card';
 import { PhoneContactsCard } from '@/components/settings/phone-contacts-card';
 import { PhoneLogCard } from '@/components/settings/phone-log-card';
 import { PhoneSyncCard } from '@/components/settings/phone-sync-card';
@@ -90,6 +91,7 @@ export default function SettingsPage() {
               />
               <DefaultCountryCard />
               {CAN_READ_PHONE_LOG ? <PhoneLogCard /> : null}
+              <MailboxCard />
               {isAdmin ? <SignInCard /> : null}
             </View>
           </TabsContent>

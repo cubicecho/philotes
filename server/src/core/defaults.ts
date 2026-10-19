@@ -309,3 +309,50 @@ export interface RelationshipSettings {
 export const RELATIONSHIP_DEFAULTS: Readonly<RelationshipSettings> = Object.freeze({
   maxTypeLength: 100,
 });
+
+/** Reading a connected mailbox's headers into email interactions. */
+export interface MailSettings {
+  /** How often the poller looks for mailboxes that are due, in seconds. */
+  tickSeconds: number;
+  /** Most mailboxes one tick polls. The rest wait for the next. */
+  maxMailboxesPerTick: number;
+  /** How long after a poll that worked the next one is due, in minutes. */
+  pollIntervalMinutes: number;
+  /** How far back the first poll of a folder reads, in days. */
+  firstPollDays: number;
+  /** Messages whose headers are fetched and logged at a time. */
+  pageSize: number;
+  /** Most pages one poll reads per folder. A large mailbox catches up over several polls. */
+  maxPagesPerPoll: number;
+  /** The wait after a first failed poll, in minutes. Each failure in a row doubles it. */
+  retryBaseMinutes: number;
+  /** The longest wait between failed polls, in minutes. */
+  retryMaxMinutes: number;
+  /** How long connecting, the server's greeting and each command may take, in seconds. */
+  connectTimeoutSeconds: number;
+  /** The port a mailbox is connected on when none is given: IMAP over implicit TLS. */
+  defaultPort: number;
+  /** Longest host name, in characters. */
+  maxHostLength: number;
+  /** Longest login or address, in characters. */
+  maxUsernameLength: number;
+  /** Longest app password, in characters. */
+  maxPasswordLength: number;
+}
+
+/** The mail settings as shipped. */
+export const MAIL_DEFAULTS: Readonly<MailSettings> = Object.freeze({
+  tickSeconds: 60,
+  maxMailboxesPerTick: 20,
+  pollIntervalMinutes: 15,
+  firstPollDays: 30,
+  pageSize: 100,
+  maxPagesPerPoll: 10,
+  retryBaseMinutes: 1,
+  retryMaxMinutes: 360,
+  connectTimeoutSeconds: 30,
+  defaultPort: 993,
+  maxHostLength: 253,
+  maxUsernameLength: 320,
+  maxPasswordLength: 1024,
+});
