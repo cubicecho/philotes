@@ -14,6 +14,7 @@
         "monochromeImage": "./assets/adaptive-icon-monochrome.png",
         "backgroundColor": "#1a1a1a"
       },
+      "permissions": ["android.permission.READ_CALL_LOG", "android.permission.READ_SMS"],
       "blockedPermissions": ["android.permission.CAMERA", "android.permission.RECORD_AUDIO"],
       "intentFilters": [
         {
@@ -108,7 +109,8 @@
           "microphonePermission": false
         }
       ],
-      "expo-sqlite"
+      "expo-sqlite",
+      "expo-background-task"
     ],
     "owner": "cubicecho",
     "extra": {

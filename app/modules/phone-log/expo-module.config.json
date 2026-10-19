@@ -1,0 +1,6 @@
+{
+  "platforms": ["android"],
+  "android": {
+    "modules": ["com.cubicecho.philotes.phonelog.PhoneLogModule"]
+  }
+}

@@ -10,11 +10,13 @@ import { ExportCalendarCard } from '@/components/settings/export-calendar-card';
 import { ExportPeopleCard } from '@/components/settings/export-people-card';
 import { ExportVCardsCard } from '@/components/settings/export-vcards-card';
 import { GoogleCsvImportCard } from '@/components/settings/google-csv-import-card';
+import { PhoneLogCard } from '@/components/settings/phone-log-card';
 import { PhoneSyncCard } from '@/components/settings/phone-sync-card';
 import { SignInCard } from '@/components/settings/sign-in-card';
 import { VCardImportCard } from '@/components/settings/vcard-import-card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ThemePicker } from '@/components/ui/theme-picker';
+import { CAN_READ_PHONE_LOG } from '@/lib/phone-scan';
 
 const GET_IS_ADMIN = graphql(`
   query GetIsAdmin {
@@ -84,6 +86,7 @@ export default function SettingsPage() {
                 contentSlot={<ThemePicker />}
               />
               <DefaultCountryCard />
+              {CAN_READ_PHONE_LOG ? <PhoneLogCard /> : null}
               {isAdmin ? <SignInCard /> : null}
             </View>
           </TabsContent>

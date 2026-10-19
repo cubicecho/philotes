@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { View } from 'react-native';
 import { AppShell } from '@/components/layouts/app-shell';
 import { useContactIntents } from '@/hooks/use-contact-intents';
+import { usePhoneLogScan } from '@/hooks/use-phone-log-scan';
 import { isAuthenticated } from '@/lib/auth';
 
 /** Acts on the contact intents another app sends: only once someone is signed in, so it is its own part. */
@@ -20,6 +21,8 @@ export default function AppLayout() {
   useEffect(() => {
     setSignedIn(isAuthenticated());
   }, []);
+  // Reads the call log and texts the user turned on, each time the signed-in app is opened.
+  usePhoneLogScan();
 
   if (signedIn === null) {
     return <View className="flex-1 bg-background" />;

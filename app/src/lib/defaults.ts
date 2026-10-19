@@ -220,3 +220,22 @@ export const NETWORK_GRAPH_DEFAULTS: Readonly<NetworkGraphSettings> = Object.fre
   tooltipOffsetX: 16,
   tooltipOffsetY: 8,
 });
+
+/** Reading the phone's call log and texts into interactions. */
+export interface PhoneLogSettings {
+  /** Rows read from the phone and sent to the server at a time. Must stay under the server's `maxLoggedPerCall`. */
+  pageSize: number;
+  /** Most pages one scan reads, so a background run ends in time. The next scan carries on from there. */
+  maxPagesPerScan: number;
+  /** How far back the first scan of a source reads, in days. */
+  firstScanDays: number;
+  /** How often the background scan asks to run, in minutes. Android runs it no more often than every 15. */
+  backgroundIntervalMinutes: number;
+}
+
+export const PHONE_LOG_DEFAULTS: Readonly<PhoneLogSettings> = Object.freeze({
+  pageSize: 200,
+  maxPagesPerScan: 25,
+  firstScanDays: 90,
+  backgroundIntervalMinutes: 60,
+});

@@ -63,7 +63,9 @@ const databaseOwned = (): undefined => undefined;
  * Columns the server owns: removed from inputs and stamped on insert. `userId` comes from the request,
  * so ownership is never caller-stated. A person's `uid` is the id a phone knows the contact by, and
  * their display and sort names are generated from the name columns. A contact detail's
- * `normalizedValue` is derived from its value by the `after` hook in `persons/hooks.ts`.
+ * `normalizedValue` is derived from its value by the `after` hook in `persons/hooks.ts`. An
+ * interaction's `source` and `externalId` say where a logged one came from, so only `logInteractions`
+ * writes them; one typed in is `manual` with no external id.
  */
 export const contextValues: NonNullable<BuildSchemaConfig['contextValues']> = {
   ...Object.fromEntries(USER_OWNED_TABLES.map((name) => [name, { userId: requireAuth }])),
@@ -75,6 +77,7 @@ export const contextValues: NonNullable<BuildSchemaConfig['contextValues']> = {
     revision: databaseOwned,
   },
   contactInfos: { userId: requireAuth, normalizedValue: () => UNNORMALIZED_VALUE },
+  interactions: { userId: requireAuth, source: databaseOwned, externalId: databaseOwned },
 };
 
 /** better-auth's tables: sessions, credentials, one-time tokens and API key hashes. */
