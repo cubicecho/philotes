@@ -11,6 +11,7 @@ import { gratitudeWriteHooks } from '../gratitudes/hooks.ts';
 import { importantDateWriteHooks } from '../important-dates/hooks.ts';
 import { applyUpcomingDatesExtension } from '../important-dates/resolvers.ts';
 import { interactionWriteHooks } from '../interactions/hooks.ts';
+import { applyLogInteractionsExtension } from '../interactions/resolvers.ts';
 import { labelWriteHooks } from '../labels/hooks.ts';
 import { applyMergeLabelsExtension } from '../labels/resolvers.ts';
 import { noteWriteHooks } from '../notes/hooks.ts';
@@ -54,6 +55,7 @@ const EXTENSIONS: Array<(schema: GraphQLSchema) => GraphQLSchema> = [
   applyApiKeysExtension,
   applyUserSettingsExtension,
   applySsoExtension,
+  applyLogInteractionsExtension,
 ];
 
 /**

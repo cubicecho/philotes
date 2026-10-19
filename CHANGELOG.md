@@ -1,3 +1,20 @@
+# [5.9.0](https://github.com/cubicecho/philotes/compare/v5.8.0...v5.9.0) (2026-10-19)
+
+
+### Features
+
+* **app:** answer Android's open, edit, add and pick contact intents ([7d3c316](https://github.com/cubicecho/philotes/commit/7d3c316ff8c4682a0f04ac467ca2be4feeccd357)), closes [#34](https://github.com/cubicecho/philotes/issues/34)
+* **app:** put the phone's places along the bottom ([c44459e](https://github.com/cubicecho/philotes/commit/c44459eed40b727d326cd7f80eef1677c848d8d5)), closes [#32](https://github.com/cubicecho/philotes/issues/32) [#32](https://github.com/cubicecho/philotes/issues/32)
+* **app:** read contact intents and the UID DAVx5 stores on a contact ([5e81528](https://github.com/cubicecho/philotes/commit/5e815283562146dd96db748ae35f7b02f12f214a)), closes [#34](https://github.com/cubicecho/philotes/issues/34) [#34](https://github.com/cubicecho/philotes/issues/34)
+
+# [5.8.0](https://github.com/cubicecho/philotes/compare/v5.7.0...v5.8.0) (2026-10-18)
+
+
+### Features
+
+* **app:** offer the OIDC provider on the login page and pair it from settings ([4c91d6c](https://github.com/cubicecho/philotes/commit/4c91d6cea7c1715db5392b7a2e1ce1004b58ee34))
+* **server:** sign in through an OIDC provider, paired from a setup URL ([1cb0913](https://github.com/cubicecho/philotes/commit/1cb0913dc1330bd645738cb9b8117b575583de58))
+
 # [5.7.0](https://github.com/cubicecho/philotes/compare/v5.6.0...v5.7.0) (2026-10-08)
 
 

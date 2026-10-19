@@ -28,7 +28,9 @@ The folders are `persons`, `notes`, `gratitudes`, `interactions`, `tasks`,
 `important-dates`, `labels`, `relationships`, `contact-import`, `vcard`,
 `carddav`, `contact-cards`, `api-keys`, `users`, `auth` and `sso`. `persons` has a second extension file, `duplicates.ts`, for
 `potentialDuplicates` and `mergePersons`, and `normalized-values.ts`, which
-fills a contact info's `normalizedValue` on every write. `users` holds the
+fills a contact info's `normalizedValue` on every write. `interactions` has
+`log.ts`, which logs events read from a phone or a mailbox (see
+[Logged interactions](#logged-interactions)). `users` holds the
 caller's settings (`setDefaultCountry`). Three more hold what no domain owns:
 
 | Folder | Holds |
@@ -231,6 +233,38 @@ so one bad card does not lose the rest. It finds the person a card belongs to
 by `UID`, then by its first email address, then by its first phone number
 together with the same name; anyone else is new. `exportVCards` returns every
 person as one file, without pictures, which would not fit in a GraphQL answer.
+
+## Logged interactions
+
+An interaction is typed in (`source: manual`) or logged from something read: a
+phone's call log (`call-log`) or texts (`sms`), or a mailbox (`email`).
+`logInteractions(db, userId, events)` in `interactions/log.ts` does the
+logging for every source, and the `logInteractions` mutation is the phone's
+door to it.
+
+- **Matching is on the server.** Each event carries the other party's number
+  or address as the source wrote it. The server normalizes it the way it
+  normalizes a contact detail (`normalizeContactValue`, with the user's
+  default country) and looks it up in `contact_infos.normalized_value`, among
+  details of the source's kind: a number only matches a phone number. The
+  normalization, the default country and the current contact details all live
+  here, so the phone does not need a copy of any of them, and a background
+  scan does not need the people list loaded.
+- **An event that matches nobody is dropped.** Its number is in the request
+  and nowhere else: not stored, not logged.
+- **One interaction per event and person.** A number two people share (a
+  household's landline) logs against both, and an email logs against each
+  person it was with. The unique key is `(user_id, source, external_id,
+  person_id)`; the insert is `ON CONFLICT DO NOTHING` on it, so a rescan, or
+  an event sent twice in one call, writes nothing more. Typed-in interactions
+  have a null `external_id`, which the key never counts as a repeat.
+- `source` and `externalId` are server-owned columns (`contextValues` in
+  `tenancy.ts`): the generated `createInteraction` writes `manual` and null,
+  and no update can change either. `direction` and `durationSeconds` are
+  ordinary columns, checked by `interactionInput`.
+- The mutation takes at most `INTERACTION_DEFAULTS.maxLoggedPerCall` events, and
+  only the phone's sources. The answer counts what was `logged`, what was
+  `alreadyLogged` and what was `unmatched`.
 
 ## Operation Limits
 

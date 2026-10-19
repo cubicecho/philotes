@@ -8,6 +8,8 @@ import { RouteError } from '@/components/route-error';
 import { Button } from '@/components/ui/button';
 import { PaletteProvider, useThemePreference } from '@/components/ui/theme-preference';
 import { client, RESTORES_CACHE, restoreCachedData } from '@/lib/apollo';
+// Imported for what it does at import: it defines the background scan, which Android may start the bundle for alone.
+import '@/lib/phone-scan-task';
 import '../global.css';
 
 /** Fills the screen. A style, because the safe area view is not one of the views a class name reaches. */

@@ -33,6 +33,7 @@ This split matters: putting a component under `app/app/` turns it into a route.
 app/
 ├── app/                        # Expo Router — file-based routes
 │   ├── _layout.tsx             # Theme, ApolloProvider, <Stack>, ErrorBoundary; imports global.css
+│   ├── +native-intent.tsx      # Rewrites an Android contact URI to /contacts/open (docs/android.md)
 │   ├── login.tsx               # /login
 │   ├── auth/verify.tsx         # /auth/verify (sign-in link landing)
 │   ├── auth/sso.tsx            # /auth/sso (OIDC sign-in landing: swaps its one-time token)
@@ -40,6 +41,7 @@ app/
 │       ├── _layout.tsx         # Redirects to /login; renders the AppShell
 │       ├── index.tsx           # /
 │       ├── network.tsx         # /network
+│       ├── contacts/           # Where Android contact intents land: open.tsx, pick.tsx (docs/android.md)
 │       ├── labels/index.tsx    # /labels
 │       ├── settings/index.tsx  # /settings
 │       └── persons/

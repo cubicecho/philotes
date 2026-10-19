@@ -100,7 +100,10 @@ server ends every session, so a server a phone relies on wants
   the status bar or the navigation bar. cubeui's shells measure no insets
   themselves; that is left to the app.
 - **Navigation.** Under `md` the app shell (`components/layouts/app-shell.tsx`)
-  swaps the rail for cubeui's bar across the top, with the same places.
+  swaps the rail for cubeui's bars: the brand, Add person and Sign out across
+  the top, and the same places as the rail along the bottom
+  (`barPosition="bottom"`). The root layout's `SafeAreaView` keeps the bottom
+  bar above the navigation bar.
 - **The people list** is a virtualised `SectionList` in a `PageLayout` whose
   body does not scroll, so a few thousand people cost what a screenful does.
   Pulling it down loads the list again.
@@ -181,6 +184,145 @@ without a library, rather than vCard and DAV XML, and it knows each person's id.
 `app/modules/philotes-contacts/__tests__/` holds the plugin's manifest changes,
 and keeps the Kotlin's vocabulary words, account type and row MIME type in step
 with the server's and the XML's by reading the source.
+## Logging calls and texts
+
+Settings → App Settings → **Log Calls and Texts** turns on reading the call
+log and the texts, each on its own. Both are off until the user turns them
+on, and turning one on asks Android for its permission (`READ_CALL_LOG` or
+`READ_SMS`). The card says what is read: the other number, the time, which
+way it went and how long a call lasted. A text's body is never read.
+
+- **The native module** is `app/modules/phone-log`, a local Expo module that
+  autolinking finds by its folder. `PhoneLogModule.kt` reads `CallLog.Calls`
+  and `Telephony.Sms` through the `ContentResolver`, with projections that
+  name only `_ID`, the number, the date, the type and (for calls) the
+  duration. `index.ts` is its typed wrapper; the module is optional, so a
+  browser, or a build made before it was added, sees `isPhoneLogAvailable()`
+  false and shows no card.
+- **What becomes an interaction** is decided in `app/src/lib/phone-log.ts`,
+  a plain module with tests: incoming, outgoing and missed calls (declined and
+  voicemail count as missed), received and sent texts. Blocked calls, withheld
+  numbers, drafts and unsent texts are left out. An event's `externalId` is
+  its row's `_ID` and time, since Android reuses an `_ID` once the log is
+  cleared.
+- **The scan** (`phone-scan.ts`) reads each source that is on from its
+  cursor, a page at a time (`PHONE_LOG_DEFAULTS`), and sends each page
+  through `logInteractions`. The server matches numbers to people and drops
+  the rest; see [`server.md`](./server.md#logged-interactions). Each source's
+  cursor is the time it has read up to, kept in the device store and moved
+  after each page the server took. The first scan of a source reads
+  `firstScanDays` back.
+- **When it runs:** whenever the signed-in app opens or comes back to the
+  front (`usePhoneLogScan`), and from a periodic background task
+  (`phone-scan-task.ts`, `expo-background-task` on Android's WorkManager).
+  The task is registered while any source is on, asks for every
+  `backgroundIntervalMinutes`, and Android decides when it actually runs (no
+  more often than every 15 minutes). The two never read at once.
+- Re-reading is harmless. Every page starts at the last row of the one before,
+  a source turned off and on carries on from its cursor, and the server
+  ignores an event it already has.
+
+### Google Play and these permissions
+
+`READ_CALL_LOG` and `READ_SMS` are in Google Play's
+[restricted permission groups](https://support.google.com/googleplay/android-developer/answer/10208820):
+an app on Play may hold them only when it is the user's default phone or SMS
+handler, or falls under one of a short list of exceptions, and it must
+declare why in the Play Console. A contacts or CRM app is not on that list.
+A development or sideloaded build, which is how Philotes ships today, is not
+reviewed and may use them freely. **A store release would have to drop the
+call and text logging, or become the default dialer or SMS app.** The
+permissions are declared in `app.json` (`android.permissions`) and nowhere
+else, so a store build can remove them there.
+## Standing in for the contacts app
+
+Android has no "default contacts app" role. Other apps reach a contacts app
+through intents, so Philotes declares the intent filters a contacts app has
+(`android.intentFilters` in `app/app.json`) and appears in the system's
+chooser beside the built-in app. The phone's people are still the ones DAVx5
+syncs from the CardDAV address book ([`carddav.md`](./carddav.md)).
+
+### How DAVx5 marks a contact (the spike)
+
+DAVx5 keeps each CardDAV address book as an Android account of type
+`at.bitfire.davdroid.address_book` (`account_type_address_book` in DAVx5's
+`core/src/main/res/values/strings.xml`). Each card is one raw contact of that
+account, and DAVx5's sync library writes its sync columns
+(`synctools/…/storage/contacts/AddressContract.kt`, `RawContactColumns`):
+
+| Column | Holds |
+| --- | --- |
+| `RawContacts.SOURCE_ID` | The card's file name on the server: for Philotes `<uid>.vcf`, URL-encoded |
+| `RawContacts.SYNC1` | The vCard `UID` |
+| `RawContacts.SYNC2` | The card's ETag |
+| `RawContacts.SYNC3` | A hash of the contact's data (a workaround for Android 7) |
+| `RawContacts.SYNC4` | DAVx5's own flags for local changes |
+
+The older `vcard4android` library, which `synctools` replaced, used the same
+`SOURCE_ID` / `SYNC1` / `SYNC2` mapping, so contacts synced by older DAVx5
+versions read the same way. Philotes names a card after the person's `uid` and
+puts the same value in its `UID`, so `SYNC1` is the person's `uid`, and
+`SOURCE_ID` without `.vcf` is a fallback for it.
+
+**expo-contacts cannot read any of this.** It works on aggregate contacts by
+`ContactsContract.Contacts._ID` and offers no raw contacts on Android, no sync
+columns, no account type, and no way to resolve a `content://` lookup URI. It
+also cannot read the intent that opened the app. React Native's `Linking` gives
+the router only the data URI of a `VIEW` intent, never the action of an edit,
+insert or pick, and never the extras. So the phase needed a small Expo module.
+
+### What is built
+
+- **`app/modules/contact-intents`**, a local Expo module (Kotlin, Android
+  only, autolinked from `modules/`; native name `ContactIntents`). It is
+  separate from `philotes-contacts`, the phone contacts account above. It hands JavaScript the launch intent
+  once (`takeLaunchIntent`), sends later ones as an `onContactIntent` event,
+  asks for `READ_CONTACTS` (declared in the module's manifest), reads `SYNC1`
+  and `SOURCE_ID` of the raw contact behind a contact URI (`findRawContact`),
+  and answers a pick (`finishPick`). The JavaScript side
+  (`app/src/lib/contacts-native.ts`) takes it with
+  `requireOptionalNativeModule`, so the web and a development build made
+  before the module was added go on without it.
+- **What an intent means** is decided in `app/src/lib/contact-intent.ts`,
+  which is pure and tested:
+
+  | Intent | Lands on |
+  | --- | --- |
+  | `VIEW` a contact ("Open contact") | `/contacts/open?uri=…`, then the person's page |
+  | `EDIT` a contact | the same, then the person's page with their edit form open (`?edit=1`) |
+  | `INSERT`, `INSERT_OR_EDIT` ("Add to contacts", "Create contact") | `/persons?new=1&…`: the new person form, filled from the `ContactsContract.Intents.Insert` extras (name, phone, email, company, job title, notes) |
+  | `PICK` a contact | `/contacts/pick`: choose a person, and the app that asked gets their phone contact |
+
+- A `VIEW` arrives through `Linking`, and `app/app/+native-intent.tsx`
+  rewrites its `content://com.android.contacts/…` URI to `/contacts/open`.
+  The rest come from the module, read by `useContactIntents` in the signed-in
+  layout.
+- `/contacts/open` asks for the contacts permission, reads the raw contact's
+  UID, looks the person up by `uid`, and replaces itself with their page. A
+  contact that is not in the Philotes address book, or not synced yet, says so.
+- `INSERT_OR_EDIT` asks to add a number to someone, new or existing. Philotes
+  always starts a new person; adding the number to an existing one is done on
+  their page.
+- The VIEW filter names the `content` scheme as well as the MIME types. The
+  development client's config plugin adds its `exp+philotes` scheme to every
+  plain VIEW filter, and a filter with only that scheme would no longer match a
+  `content://` URI.
+
+### Not verified, and known risks
+
+- **The module is uncompiled.** No Android SDK was at hand when it was
+  written, so it has not been built, and nothing here has run on a device. The
+  next EAS development build is its first compile.
+- **Pick may be cancelled at once.** The main activity is `singleTask`, and
+  Android has cancelled `startActivityForResult` into a `singleTask` activity
+  in other apps' tasks. If a pick comes back empty, the fix is a small
+  activity of its own for `PICK`, which needs a config plugin.
+- **Signed out, the intent is dropped.** The signed-in layout redirects to
+  `/login` and the intent is not kept for after.
+- **The development client** opens its launcher on a cold start that is not
+  one of its own links; an intent may land only once a bundle is loaded.
+- The account type is DAVx5's from F-Droid and Google Play. A rebranded build,
+  such as Managed DAVx5, may use another; add it to `PHILOTES_ACCOUNT_TYPES`.
 
 ## Keeping Expo packages in step
 
@@ -207,8 +349,10 @@ drifted, and CI fails on it; `npx expo install --fix` puts them back.
   in a contacts app. Whether the stock and Google contacts apps offer editing
   for the account (`EditSchema` in `philotes_contacts.xml`), and draw "Open in
   Philotes" in the dialer, needs a device.
-- The bar on a phone is at the top. A bar along the bottom needs cubeui to
-  offer one.
+- Logging calls and texts has not been compiled or run: the Kotlin module was
+  written without an Android SDK. It needs a new development build, then a
+  call and a text on the device, and a second scan that logs nothing new.
+  MMS (group texts and pictures) is not read.
 - A build that carries its own JavaScript (EAS `preview` or `production`)
   needs `npm run codegen` to run on the builder first, since the generated
   GraphQL types are not in the repository. No such profile exists yet.

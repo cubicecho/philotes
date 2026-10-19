@@ -24,6 +24,23 @@ export const InteractionSentiment = {
 } as const;
 export type InteractionSentiment = (typeof InteractionSentiment)[keyof typeof InteractionSentiment];
 
+/** Where an interaction came from: typed in, or read from the phone's call log, its texts or a mailbox. */
+export const InteractionSource = {
+  Manual: 'manual',
+  CallLog: 'call-log',
+  Sms: 'sms',
+  Email: 'email',
+} as const;
+export type InteractionSource = (typeof InteractionSource)[keyof typeof InteractionSource];
+
+/** Which way an interaction went. A missed call is a call that came in and was not answered. */
+export const InteractionDirection = {
+  Incoming: 'incoming',
+  Outgoing: 'outgoing',
+  Missed: 'missed',
+} as const;
+export type InteractionDirection = (typeof InteractionDirection)[keyof typeof InteractionDirection];
+
 /** How often a user means to be in touch with a person. */
 export const ContactFrequency = {
   Weekly: 'weekly',

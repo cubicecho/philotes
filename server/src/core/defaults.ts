@@ -231,15 +231,24 @@ export const GRATITUDE_DEFAULTS: Readonly<GratitudeSettings> = Object.freeze({
   maxBodyLength: 2_000,
 });
 
-/** Limits on what an interaction may hold. */
+/** Limits on what an interaction may hold, and on logging them from a phone or a mailbox. */
 export interface InteractionSettings {
   /** Longest note, in characters. */
   maxNoteLength: number;
+  /** Most events one `logInteractions` call may carry. A phone sends its log in pages of this or fewer. */
+  maxLoggedPerCall: number;
+  /** Longest id a source may know an event by, in characters. An email's Message-ID is the long one. */
+  maxExternalIdLength: number;
+  /** Longest call, in seconds, that is taken as one. A day: anything longer is a phone's mistake. */
+  maxDurationSeconds: number;
 }
 
 /** The interaction limits as shipped. */
 export const INTERACTION_DEFAULTS: Readonly<InteractionSettings> = Object.freeze({
   maxNoteLength: 10_000,
+  maxLoggedPerCall: 500,
+  maxExternalIdLength: 998,
+  maxDurationSeconds: 86_400,
 });
 
 /** Limits on what a task may hold. */

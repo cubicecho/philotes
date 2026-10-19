@@ -53,6 +53,11 @@ for a caller:
   telephone number on it, not on `value`. `setDefaultCountry(country)` changes
   the country and renormalises the caller's numbers; `user { defaultCountry }`
   reads it.
+- An interaction's `source` (`manual`, `call-log`, `sms`, `email`) and
+  `externalId` are the server's: every `createInteraction` is `manual`.
+  `logInteractions(entries)` logs calls and texts a phone read, matched to
+  people on their numbers' `normalizedValue`; sending an entry again logs
+  nothing new. See [`server.md`](server.md#logged-interactions).
 - An important date with `hasYear: false` carries the year 1604 in `date`. The
   client sends that year and does not show it.
 - A person's email addresses are `contactInfos` of type `email`; there is no

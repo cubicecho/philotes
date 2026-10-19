@@ -80,6 +80,13 @@ Nineteen tables, plus `api_keys`:
 | `api_keys` | `api-keys.ts` | `user_id` |
 | `oidc_settings` | `models/oidc-settings.ts` | none: the instance's |
 
+`interactions.source` says where an interaction came from (`manual`, the
+default, or `call-log`, `sms`, `email`), and `external_id` what that source
+knows the event by. A unique index on `(user_id, source, external_id,
+person_id)` keeps a logged event from being written twice for a person; a
+typed-in row's `external_id` is null, so it never collides. `direction` and
+`duration_seconds` are null when nobody said.
+
 `oidc_settings` is the OIDC provider the instance was paired with: one row or
 none (a check constraint pins its `id`), written only by the server. It holds a
 client secret and a registration access token, so it is excluded from the
@@ -284,7 +291,7 @@ export type Recurrence = (typeof Recurrence)[keyof typeof Recurrence];
 `ContactType` and `AddressType` back Postgres enums (`pgEnum('contact_type',
 ContactType)`). `MilestoneType`, `ContactKind` and `ImportantDateKind` are
 `text` columns with an `enum` list, which is what makes them enums in GraphQL. `Recurrence`, `InteractionChannel`,
-`InteractionSentiment` and `ContactFrequency` are plain `text` columns: the
+`InteractionSentiment`, `InteractionSource`, `InteractionDirection` and `ContactFrequency` are plain `text` columns: the
 server's input schemas check a write against the vocabulary, and a row written
 before that check may hold another value. Code compares against a member
 (`Recurrence.Yearly`), never the bare string.
