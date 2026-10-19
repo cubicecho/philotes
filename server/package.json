@@ -29,6 +29,7 @@
     "graphql-yoga": "^5.24.2",
     "ical-generator": "^10.2.0",
     "ical.js": "^2.2.1",
+    "imapflow": "2.2.5",
     "multer": "^2.1.1",
     "nodemailer": "^8.0.11",
     "zod": "^4.6.5"

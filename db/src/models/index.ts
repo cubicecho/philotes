@@ -6,6 +6,7 @@ export * from './gratitudes.ts';
 export * from './important-dates.ts';
 export * from './interactions.ts';
 export * from './labels.ts';
+export * from './mailboxes.ts';
 export * from './notes.ts';
 export * from './oidc-settings.ts';
 export * from './person-labels.ts';

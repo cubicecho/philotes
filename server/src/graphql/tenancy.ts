@@ -83,8 +83,11 @@ export const contextValues: NonNullable<BuildSchemaConfig['contextValues']> = {
 /** better-auth's tables: sessions, credentials, one-time tokens and API key hashes. */
 export const AUTH_TABLES = ['sessions', 'accounts', 'verifications', 'apikeys'] as const;
 
-/** Tables only the server reads: the OIDC pairing holds a client secret and a registration token. */
-export const SERVER_TABLES = ['oidcSettings'] as const;
+/**
+ * Tables only the server reads: the OIDC pairing holds a client secret and a registration token, and a
+ * mailbox its sealed app password. A mailbox is a user's, so its hand-written resolvers scope it themselves.
+ */
+export const SERVER_TABLES = ['oidcSettings', 'mailboxes'] as const;
 
 /** Auth and server tables never cross the API: not readable, not filterable, not reachable as a relation. */
 export const exclude: NonNullable<BuildSchemaConfig['exclude']> = {

@@ -16,6 +16,7 @@ import type { OidcConfig } from '../core/config.ts';
 import type { Context } from '../core/context.ts';
 import type { ErrorCode } from '../core/errors.ts';
 import { createSchema } from '../graphql/build-schema.ts';
+import type { MailService } from '../mail/reader.ts';
 import type { AvatarStore } from '../persons/avatar-store.ts';
 
 /**
@@ -68,6 +69,12 @@ export interface TestClientDeps {
    * @defaultValue no headers
    */
   headers?: Headers;
+  /**
+   * Mailbox access: the credential keys and a connector a test controls.
+   *
+   * @defaultValue `null`: connecting a mailbox is refused, as on a server with no keys.
+   */
+  mail?: MailService;
 }
 
 /** What a test drives the schema through, as one user. */
@@ -218,6 +225,7 @@ export function createClient(db: TestDb, userId: string | null, deps: TestClient
       userId,
       headers: deps.headers ?? new Headers(),
       avatarStore: deps.avatarStore ?? null,
+      mail: deps.mail ?? null,
     };
     return graphql({ schema, source, variableValues, contextValue });
   };
