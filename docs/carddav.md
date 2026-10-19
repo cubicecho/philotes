@@ -5,6 +5,12 @@ contacts app syncs in both directions. On Android that app is
 [DAVx⁵](https://www.davx5.com/), which writes the people into the phone's own
 contacts, so the dialer, caller ID and messaging see them.
 
+The Android app can also do this itself, with a Philotes account and a sync
+adapter of its own that speaks GraphQL rather than CardDAV (see
+[`android.md`](android.md#the-phones-own-contacts)). The address book stays
+for DAVx⁵ and for any other CardDAV client. Use one or the other on a phone,
+not both: each writes its own copy of every person into the contacts.
+
 The code is `server/src/carddav/`, mounted at `/dav` by `http/app.ts`. It is
 plain Express, not GraphQL. Cards are read and written by `vcard/` (see
 [`server.md`](server.md#vcard)), and what changed since a client last looked

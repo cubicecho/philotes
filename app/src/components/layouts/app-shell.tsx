@@ -9,8 +9,10 @@ import { SidebarLayout } from '@/components/split-layout';
 import { Button } from '@/components/ui/button';
 import { Settings, Tag } from '@/components/ui/icons';
 import { forgetAvatarImages } from '@/hooks/use-avatar-image';
+import { usePhoneContactsSync } from '@/hooks/use-phone-contacts-sync';
 import { forgetCachedData } from '@/lib/apollo';
 import { clearToken } from '@/lib/auth';
+import { stopPhoneContactsSync } from '@/lib/phone-contacts';
 import type { SlotNode } from '@/lib/utils';
 
 const SIGN_OUT = graphql(`
@@ -37,11 +39,16 @@ export function AppShell({ contentSlot }: { contentSlot: SlotNode }) {
   const router = useRouter();
 
   const [endSession] = useMutation(SIGN_OUT);
+  usePhoneContactsSync();
 
   /** Ends the session on the server, then forgets it and everything fetched with it. */
   async function signOut() {
     // A server that can't be reached must not keep the user signed in on this device.
     await endSession().catch(() => null);
+    // The phone's contacts are this user's people: they leave with the session.
+    await stopPhoneContactsSync().catch((error: unknown) => {
+      console.error('Could not remove the phone’s contacts account', error);
+    });
     clearToken();
     forgetAvatarImages();
     await forgetCachedData();

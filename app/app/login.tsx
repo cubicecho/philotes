@@ -15,6 +15,7 @@ import { Spinner } from '@/components/ui/spinner';
 import { apiUrl, normalizeServerUrl } from '@/lib/api-url';
 import { forgetCachedData } from '@/lib/apollo';
 import { clearToken, setToken } from '@/lib/auth';
+import { stopPhoneContactsSync } from '@/lib/phone-contacts';
 import { CAN_CHOOSE_SERVER, hasServerAddress, saveServerAddress } from '@/lib/server-address';
 
 const AUTH_CONFIG = graphql(`
@@ -195,7 +196,10 @@ function ServerAddressForm({ onSaved }: { onSaved: () => void }) {
       if (url === null) {
         return;
       }
-      // A session and a cache belong to the server they came from.
+      // A session, a cache and the phone's contacts belong to the server they came from.
+      await stopPhoneContactsSync().catch((error: unknown) => {
+        console.error('Could not remove the phone’s contacts account', error);
+      });
       clearToken();
       await forgetCachedData();
       saveServerAddress(url);

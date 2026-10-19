@@ -46,7 +46,8 @@
           "microphonePermission": false
         }
       ],
-      "expo-sqlite"
+      "expo-sqlite",
+      "./modules/philotes-contacts/app.plugin.js"
     ],
     "owner": "cubicecho",
     "extra": {

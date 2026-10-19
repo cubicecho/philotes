@@ -78,7 +78,7 @@
       "linter": { "rules": { "correctness": { "useHookAtTopLevel": "off" } } }
     },
     {
-      "includes": ["app/babel.config.js", "app/metro.config.js"],
+      "includes": ["app/babel.config.js", "app/metro.config.js", "app/modules/*/app.plugin.js"],
       "linter": { "rules": { "style": { "noCommonJs": "off" } } }
     }
   ]
