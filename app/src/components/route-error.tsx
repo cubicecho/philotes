@@ -1,8 +1,8 @@
-import type { ReactNode } from 'react';
-import { Platform, Text, View } from 'react-native';
-import { Button } from '@/components/ui/button';
-import { CircleAlert } from '@/components/ui/icons';
-import type { SlotNode } from '@/lib/utils';
+import type { ReactNode } from "react";
+import { Platform, Text, View } from "react-native";
+import { Button } from "@/components/ui/button";
+import { CircleAlert } from "@/components/ui/icons";
+import type { SlotNode } from "@/lib/utils";
 
 type RouteErrorProps = {
   error: unknown;
@@ -33,32 +33,37 @@ type RouteErrorProps = {
 function friendlyMessage(error: unknown): string {
   if (error instanceof Error) {
     if (
-      error.message.includes('Failed to fetch') ||
-      error.message.includes('NetworkError') ||
-      error.message.includes('network')
+      error.message.includes("Failed to fetch") ||
+      error.message.includes("NetworkError") ||
+      error.message.includes("network")
     ) {
-      return 'Could not reach the server. Check your connection and try again.';
+      return "Could not reach the server. Check your connection and try again.";
     }
-    if (error.message.includes('Not authenticated')) {
-      return 'Your session has expired. Please sign in again.';
+    if (error.message.includes("Not authenticated")) {
+      return "Your session has expired. Please sign in again.";
     }
     return error.message;
   }
-  return 'An unexpected error occurred.';
+  return "An unexpected error occurred.";
 }
 
 /** What `details={true}` shows: the message as thrown, for whoever files the bug. */
 function rawMessage(error: unknown): string | undefined {
-  if (error instanceof Error) return error.message || undefined;
-  if (typeof error === 'string') return error || undefined;
+  if (error instanceof Error) {
+    return error.message || undefined;
+  }
+  if (typeof error === "string") {
+    return error || undefined;
+  }
   return undefined;
 }
 
+/** The whole-screen message shown when the tree below a route has thrown. */
 export function RouteError({
   error,
   reset,
   describe = friendlyMessage,
-  title = 'Something went wrong',
+  title = "Something went wrong",
   details,
   actionsSlot,
 }: RouteErrorProps) {
@@ -68,7 +73,11 @@ export function RouteError({
   const shown = detail === summary ? undefined : detail;
 
   return (
-    <View role="alert" testID="route-error" className="flex-1 items-center justify-center gap-4 px-8 py-20">
+    <View
+      role="alert"
+      testID="route-error"
+      className="flex-1 items-center justify-center gap-4 px-8 py-20"
+    >
       <View className="rounded-full bg-negative/10 p-4">
         <CircleAlert className="h-7 w-7 text-negative" />
       </View>
@@ -79,10 +88,13 @@ export function RouteError({
         <Text className="mt-1 text-center text-sm text-foreground/60">{summary}</Text>
       </View>
       {shown ? (
-        <View testID="route-error-details" className="w-full max-w-md rounded-md border border-foreground/10 px-3 py-2">
-          {typeof shown === 'string' ? (
+        <View
+          testID="route-error-details"
+          className="w-full max-w-md rounded-md border border-foreground/10 px-3 py-2"
+        >
+          {typeof shown === "string" ? (
             <Text
-              {...(Platform.OS === 'web' ? {} : { selectable: true })}
+              {...(Platform.OS === "web" ? {} : { selectable: true })}
               className="font-mono text-xs text-foreground/60"
             >
               {shown}

@@ -1,8 +1,8 @@
-import type { ReactNode } from 'react';
-import { Platform, Text, View } from 'react-native';
-import { Card } from '@/components/ui/card';
-import { IconClassContext } from '@/components/ui/icons-base';
-import { cn, type SlotNode } from '@/lib/utils';
+import type { ReactNode } from "react";
+import { Platform, Text, View } from "react-native";
+import { Card } from "@/components/ui/card";
+import { IconClassContext } from "@/components/ui/icons-base";
+import { cn, type SlotNode } from "@/lib/utils";
 
 type StatTileProps = {
   /** What the figure is called: "Turns", "Daily average". Drawn above it, muted. */
@@ -40,17 +40,20 @@ type StatTileProps = {
 };
 
 /** The icon's box: sized from outside on the web, and by `IconClassContext` on device. */
-const ICON_BOX = cn('shrink-0', Platform.select({ web: '[&_svg]:size-4 [&_svg]:shrink-0', default: undefined }));
+const ICON_BOX = cn(
+  "shrink-0",
+  Platform.select({ web: "[&_svg]:size-4 [&_svg]:shrink-0", default: undefined }),
+);
 
 /** A bar standing in for the figure — `Skeleton`'s look, on both platforms, at one line of it. */
-const BAR = cn('h-8 w-20 rounded-md bg-hover', Platform.OS === 'web' && 'animate-pulse');
+const BAR = cn("h-8 w-20 rounded-md bg-foreground/10", Platform.OS === "web" && "animate-pulse");
 
 /**
  * What a pressable tile adds on the web: a compiled `Pressable` is a `<button>`, which centres its
  * text and draws no focus ring of its own. None of it is a class the device can read.
  */
 const PRESSABLE = Platform.select({
-  web: 'text-left transition-colors hover:bg-hover focus-visible:bg-hover focus-visible:outline-none',
+  web: "text-left transition-colors hover:bg-hover focus-visible:bg-hover focus-visible:outline-none",
   default: undefined,
 });
 
@@ -58,8 +61,11 @@ const PRESSABLE = Platform.select({
  * A wrapper around a caller's node, not layout of its own: a block box on the web, where a compiled
  * view would otherwise be a flex column and lay a dot and a name out as two rows.
  */
-const SLOT = Platform.select({ web: 'block', default: undefined });
+const SLOT = Platform.select({ web: "block", default: undefined });
 
+/**
+ * One number on a card: a label, the figure and a hint, pressable as a filter when given `onPress`.
+ */
 export function StatTile({
   label,
   value,
@@ -74,50 +80,54 @@ export function StatTile({
   const toggle = onPress !== undefined && selected !== undefined;
   // The pressed state in each platform's spelling. react-native-web forwards `aria-*` and drops
   // `accessibilityState`; the device reads `accessibilityState` and has no `aria-pressed`.
-  const pressed = toggle
-    ? Platform.OS === 'web'
-      ? { 'aria-pressed': selected }
-      : { accessibilityState: { selected } }
-    : {};
+  const pressedState =
+    Platform.OS === "web" ? { "aria-pressed": selected } : { accessibilityState: { selected } };
+  const pressed = toggle ? pressedState : {};
 
   // The label, hint and icon. A selected tile keeps its card fill and is marked by its border
   // alone, so this ink is the same whether or not it is chosen.
-  const ink = 'text-foreground/60';
+  const ink = "text-foreground/60";
   const classes = cn(
-    'min-w-0 gap-1 p-4',
+    "min-w-0 gap-1 p-4",
     onPress !== undefined && PRESSABLE,
-    toggle && selected && 'border-active',
+    toggle && selected && "border-active",
     className,
   );
+
+  const figure =
+    typeof value === "string" || typeof value === "number" ? (
+      <Text
+        testID="stat-tile-value"
+        className={cn("font-semibold text-2xl text-foreground tabular-nums", valueClassName)}
+      >
+        {value}
+      </Text>
+    ) : (
+      <View testID="stat-tile-value" className={cn(SLOT, "min-w-0", valueClassName)}>
+        {value}
+      </View>
+    );
 
   const body = (
     <>
       <View testID="stat-tile-label-row" className="min-w-0 flex-row items-center gap-2">
         {iconSlot ? (
           <View testID="stat-tile-icon" aria-hidden className={cn(ICON_BOX, ink)}>
-            <IconClassContext.Provider value={cn('size-4 shrink-0', ink)}>{iconSlot}</IconClassContext.Provider>
+            <IconClassContext.Provider value={cn("size-4 shrink-0", ink)}>
+              {iconSlot}
+            </IconClassContext.Provider>
           </View>
         ) : null}
-        <Text testID="stat-tile-label" className={cn('min-w-0 flex-1 truncate font-medium text-sm', ink)}>
+        <Text
+          testID="stat-tile-label"
+          className={cn("min-w-0 flex-1 truncate font-semibold text-sm", ink)}
+        >
           {label}
         </Text>
       </View>
-      {loading ? (
-        <View testID="stat-tile-skeleton" aria-hidden className={BAR} />
-      ) : typeof value === 'string' || typeof value === 'number' ? (
-        <Text
-          testID="stat-tile-value"
-          className={cn('font-semibold text-2xl text-foreground tabular-nums', valueClassName)}
-        >
-          {value}
-        </Text>
-      ) : (
-        <View testID="stat-tile-value" className={cn(SLOT, 'min-w-0', valueClassName)}>
-          {value}
-        </View>
-      )}
+      {loading ? <View testID="stat-tile-skeleton" aria-hidden className={BAR} /> : figure}
       {hint ? (
-        <Text testID="stat-tile-hint" className={cn('text-xs', ink)}>
+        <Text testID="stat-tile-hint" className={cn("text-xs", ink)}>
           {hint}
         </Text>
       ) : null}
@@ -127,7 +137,13 @@ export function StatTile({
   // `Card` is the one that turns into a `Pressable` when it is handed `onPress`, and stays a view
   // when it is handed `undefined` — so a tile nobody can press is not a button.
   return (
-    <Card testID="stat-tile" onPress={onPress} aria-busy={loading || undefined} className={classes} {...pressed}>
+    <Card
+      testID="stat-tile"
+      onPress={onPress}
+      aria-busy={loading || undefined}
+      className={classes}
+      {...pressed}
+    >
       {body}
     </Card>
   );

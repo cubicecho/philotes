@@ -89,6 +89,7 @@
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 }
 
+
 :root {
   --radius: 0.625rem;
   --background: #ffffff;
@@ -124,7 +125,7 @@
   --destructive: #e7000b;
   --destructive-foreground: #ffffff;
   --border: rgba(10, 10, 10, 0.1);
-  --input: rgba(10, 10, 10, 0.15);
+  --input: rgba(10, 10, 10, 0.5);
   --ring: #2d6d7e;
   --sidebar: #fafafa;
   --sidebar-foreground: #0a0a0a;
@@ -194,7 +195,7 @@
     --destructive: #ff6467;
     --destructive-foreground: #0a0a0a;
     --border: rgba(250, 250, 250, 0.1);
-    --input: rgba(250, 250, 250, 0.15);
+    --input: rgba(250, 250, 250, 0.5);
     --ring: #69a2b3;
     --sidebar: #262626;
     --sidebar-foreground: #fafafa;
@@ -260,7 +261,7 @@
   --destructive: #ff6467;
   --destructive-foreground: #0a0a0a;
   --border: rgba(250, 250, 250, 0.1);
-  --input: rgba(250, 250, 250, 0.15);
+  --input: rgba(250, 250, 250, 0.5);
   --ring: #69a2b3;
   --sidebar: #262626;
   --sidebar-foreground: #fafafa;
@@ -306,7 +307,7 @@
   --destructive: #e7000b;
   --destructive-foreground: #ffffff;
   --border: rgba(10, 10, 10, 0.1);
-  --input: rgba(10, 10, 10, 0.15);
+  --input: rgba(10, 10, 10, 0.5);
   --ring: #2d6d7e;
   --sidebar: #fafafa;
   --sidebar-foreground: #0a0a0a;
@@ -358,7 +359,7 @@
   --destructive: #ff6188;
   --destructive-foreground: #272822;
   --border: rgba(248, 248, 242, 0.1);
-  --input: rgba(248, 248, 242, 0.15);
+  --input: rgba(248, 248, 242, 0.5);
   --ring: #ae81ff;
   --sidebar: #2d2e27;
   --sidebar-foreground: #f8f8f2;
@@ -368,6 +369,41 @@
   --sidebar-accent-foreground: #f8f8f2;
   --sidebar-border: rgba(248, 248, 242, 0.1);
   --sidebar-ring: #ae81ff;
+}
+
+/*
+ * Scrollbars in the palette (#282), for Expo web: a thin thumb of the foreground at 30%, on no
+ * track, in place of the browser's wide grey bar. One colour rule beside each block above that
+ * sets `--foreground`, in the same order and at the same specificity, so the thumb follows the
+ * system, the picker and the palette exactly as the text does. The width is unlayered and
+ * specificity zero like the resets at the top, so a `[scrollbar-width:none]` utility and
+ * react-native-web's own hidden-indicator class both still win. Native never sees any of it: a
+ * `ScrollView`'s indicator is the platform's, and the compiler drops every one of these selectors.
+ */
+* {
+  scrollbar-width: thin;
+}
+
+:where(html) {
+  scrollbar-color: rgba(10, 10, 10, 0.3) transparent;
+}
+
+@media (prefers-color-scheme: dark) {
+  :where(html) {
+    scrollbar-color: rgba(250, 250, 250, 0.3) transparent;
+  }
+}
+
+:is(html.dark) {
+  scrollbar-color: rgba(250, 250, 250, 0.3) transparent;
+}
+
+:is(html.light) {
+  scrollbar-color: rgba(10, 10, 10, 0.3) transparent;
+}
+
+:is(html[data-palette="monokai"]) {
+  scrollbar-color: rgba(248, 248, 242, 0.3) transparent;
 }
 
 @theme inline {

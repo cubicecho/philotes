@@ -1,18 +1,18 @@
-import { cva, type VariantProps } from 'class-variance-authority';
-import type * as React from 'react';
-import { Platform, Text, View } from 'react-native';
-import { Label } from '@/components/ui/label';
-import { cn } from '@/lib/utils';
+import { cva, type VariantProps } from "class-variance-authority";
+import type * as React from "react";
+import { Platform, Text, View } from "react-native";
+import { Label } from "@/components/ui/label";
+import { cn } from "@/lib/utils";
 
 // `className` is re-declared rather than inherited — see `card.tsx`: nativewind types it as
 // `className?: string`, which under `exactOptionalPropertyTypes` rejects `cond ? "x" : undefined`.
 //
 // `id` rides in both: `ui/form.tsx` wires `aria-describedby` from the control to the description
 // and the error, so both need to carry one. React Native takes `id` as a cross-platform prop.
-type ViewProps = Omit<React.ComponentProps<typeof View>, 'className'> & {
+type ViewProps = Omit<React.ComponentProps<typeof View>, "className"> & {
   className?: string | undefined;
 };
-type TextProps = Omit<React.ComponentProps<typeof Text>, 'className'> & {
+type TextProps = Omit<React.ComponentProps<typeof Text>, "className"> & {
   className?: string | undefined;
 };
 
@@ -26,7 +26,7 @@ function FieldSet({ className, ...props }: ViewProps) {
       webAs="fieldset"
       role="group"
       testID="field-set"
-      className={cn('w-full flex-col gap-6', className)}
+      className={cn("w-full flex-col gap-6", className)}
       {...props}
     />
   );
@@ -38,14 +38,18 @@ function FieldSet({ className, ...props }: ViewProps) {
  */
 function FieldLegend({
   className,
-  variant = 'legend',
+  variant = "legend",
   ...props
-}: TextProps & { variant?: 'legend' | 'label' | undefined }) {
+}: TextProps & { variant?: "legend" | "label" | undefined }) {
   return (
     <Text
       webAs="legend"
       testID="field-legend"
-      className={cn('mb-3 font-medium text-foreground', variant === 'legend' ? 'text-base' : 'text-sm', className)}
+      className={cn(
+        "mb-3 font-semibold text-foreground",
+        variant === "legend" ? "text-base" : "text-sm",
+        className,
+      )}
       {...props}
     />
   );
@@ -60,8 +64,8 @@ function FieldGroup({ className, ...props }: ViewProps) {
     <View
       testID="field-group"
       className={cn(
-        'w-full flex-col gap-4',
-        Platform.select({ web: '@container/field-group', default: undefined }),
+        "w-full flex-col gap-4",
+        Platform.select({ web: "@container/field-group", default: undefined }),
         className,
       )}
       {...props}
@@ -69,37 +73,55 @@ function FieldGroup({ className, ...props }: ViewProps) {
   );
 }
 
-const fieldVariants = cva('w-full gap-2', {
+const fieldVariants = cva("w-full gap-2", {
   variants: {
     orientation: {
-      vertical: 'flex-col',
-      horizontal: 'flex-row items-center',
+      vertical: "flex-col",
+      horizontal: "flex-row items-center",
       // Side by side once the enclosing `FieldGroup` is wide enough, stacked below that. A phone
       // is never that wide, and has no container queries to ask with, so it stacks.
       responsive: Platform.select({
-        web: 'flex-col @md/field-group:flex-row @md/field-group:items-center',
-        default: 'flex-col',
+        web: "flex-col @md/field-group:flex-row @md/field-group:items-center",
+        default: "flex-col",
       }),
     },
   },
-  defaultVariants: { orientation: 'vertical' },
+  defaultVariants: { orientation: "vertical" },
 });
 
-function Field({ className, orientation = 'vertical', ...props }: ViewProps & VariantProps<typeof fieldVariants>) {
+/** One field's column: its label, control, description and error. */
+function Field({
+  className,
+  orientation = "vertical",
+  ...props
+}: ViewProps & VariantProps<typeof fieldVariants>) {
   return (
     // The `role` is hand-written because a `<fieldset>` has no native counterpart.
-    <View role="group" testID="field" className={cn(fieldVariants({ orientation }), className)} {...props} />
+    <View
+      role="group"
+      testID="field"
+      className={cn(fieldVariants({ orientation }), className)}
+      {...props}
+    />
   );
 }
 
+/** The label that names the field's control. */
 function FieldLabel({ className, ...props }: React.ComponentProps<typeof Label>) {
   // `data-slot` rather than `testID`: `Label`'s shared contract has no `testID`, the native half
   // ignores an attribute it does not know, and the web half spreads it over its own `label`.
   return <Label data-slot="field-label" className={className} {...props} />;
 }
 
+/** The muted help text for the field. */
 function FieldDescription({ className, ...props }: TextProps) {
-  return <Text testID="field-description" className={cn('text-foreground/60 text-sm', className)} {...props} />;
+  return (
+    <Text
+      testID="field-description"
+      className={cn("text-foreground/60 text-sm", className)}
+      {...props}
+    />
+  );
 }
 
 /**
@@ -119,11 +141,11 @@ function FieldError({
   errors,
   ...props
 }: TextProps & { errors?: readonly FieldErrorEntry[] | undefined }) {
-  const classes = cn('text-negative text-sm font-medium', className);
+  const classes = cn("text-negative text-sm font-semibold", className);
   const messages = [
     ...new Set(
       (errors ?? [])
-        .map((error) => (typeof error === 'string' ? error : error?.message))
+        .map((error) => (typeof error === "string" ? error : error?.message))
         .filter((message): message is string => Boolean(message)),
     ),
   ];
@@ -135,7 +157,9 @@ function FieldError({
       </Text>
     );
   }
-  if (messages.length === 0) return null;
+  if (messages.length === 0) {
+    return null;
+  }
   return (
     <View role="alert" testID="field-error" id={props.id} className="gap-1">
       <View role="list" className="gap-1">
@@ -156,7 +180,13 @@ function FieldError({
  * under the label and not under the checkbox.
  */
 function FieldContent({ className, ...props }: ViewProps) {
-  return <View testID="field-content" className={cn('min-w-0 flex-1 flex-col gap-1.5', className)} {...props} />;
+  return (
+    <View
+      testID="field-content"
+      className={cn("min-w-0 flex-1 flex-col gap-1.5", className)}
+      {...props}
+    />
+  );
 }
 
 /**
@@ -167,7 +197,13 @@ function FieldContent({ className, ...props }: ViewProps) {
  */
 function FieldTitle({ className, ...props }: TextProps) {
   // `field-label`, as shadcn's does: it is the label of its group, and styled as one.
-  return <Text testID="field-label" className={cn('text-foreground text-sm font-medium', className)} {...props} />;
+  return (
+    <Text
+      testID="field-label"
+      className={cn("text-foreground text-sm font-semibold", className)}
+      {...props}
+    />
+  );
 }
 
 /**
@@ -175,7 +211,11 @@ function FieldTitle({ className, ...props }: TextProps) {
  */
 function FieldSeparator({ className, children, ...props }: ViewProps) {
   return (
-    <View testID="field-separator" className={cn('relative h-5 w-full justify-center', className)} {...props}>
+    <View
+      testID="field-separator"
+      className={cn("relative h-5 w-full justify-center", className)}
+      {...props}
+    >
       <View className="absolute inset-x-0 top-1/2 h-px bg-foreground/10" />
       {children ? (
         <View testID="field-separator-content" className="items-center">

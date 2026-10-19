@@ -2,12 +2,11 @@ import { useMutation } from '@apollo/client';
 import { useState } from 'react';
 import { graphql } from '@/__generated__/gql';
 import type { CreateLabelInput, Label_ListFragment } from '@/__generated__/graphql';
-import { LabelForm } from '@/components/domain/label/form';
+import { LabelFormDialog } from '@/components/domain/label/form';
 import { LabelList } from '@/components/domain/label/list';
 import { LabelMergeDialog } from '@/components/domain/label/merge-dialog';
 import { PageLayout } from '@/components/page-layout';
 import { QueryState } from '@/components/query-state';
-import { FormDialog } from '@/components/ui/form-dialog';
 import { invalidateQueryFields } from '@/lib/invalidate';
 import { useAllRows } from '@/lib/use-all-rows';
 
@@ -139,16 +138,17 @@ export default function LabelsPage() {
 
   return (
     <>
-      <FormDialog
+      <LabelFormDialog
         open={createDialogOpen}
         onOpenChange={setCreateDialogOpen}
         title="New Label"
         description="Add a new label to your CRM."
-      >
-        <LabelForm onSubmit={handleCreate} onCancel={() => setCreateDialogOpen(false)} />
-      </FormDialog>
+        onSubmit={handleCreate}
+      />
 
-      <FormDialog
+      {/* Keyed so each edit starts from the label it opened on. */}
+      <LabelFormDialog
+        key={editingLabel?.id}
         open={editingLabel !== null}
         onOpenChange={(open) => {
           const isClosing = open === false;
@@ -158,17 +158,10 @@ export default function LabelsPage() {
         }}
         title="Edit Label"
         description="Rename or recolor this label."
-      >
-        {editingLabel && (
-          <LabelForm
-            key={editingLabel.id}
-            initialValues={{ label: editingLabel.label, color: editingLabel.color }}
-            onSubmit={handleEdit}
-            onCancel={() => setEditingLabel(null)}
-            submitLabel="Save"
-          />
-        )}
-      </FormDialog>
+        initialValues={editingLabel ? { label: editingLabel.label, color: editingLabel.color } : undefined}
+        onSubmit={handleEdit}
+        submitLabel="Save"
+      />
 
       <LabelMergeDialog
         label={mergingLabel}

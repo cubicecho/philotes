@@ -144,7 +144,7 @@ function SsoSettings() {
         </View>
         {setup.source === SsoSource.Paired ? (
           <ConfirmButton
-            label={`Disconnect ${name}`}
+            aria-label={`Disconnect ${name}`}
             content="Disconnect"
             variant="destructive-outline"
             loading={loading}

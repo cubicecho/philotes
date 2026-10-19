@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { ScrollView, Text, View } from 'react-native';
-import { ActionButton } from '@/components/action-button';
 import { BookUser, MapPin, UserRoundPlus } from '@/components/app-icons';
 import { AddressList } from '@/components/domain/address/list';
 import { ContactInfoList } from '@/components/domain/contact-info/list';
@@ -9,6 +8,7 @@ import { PersonIntroductions, type PersonWithLabels } from '@/components/domain/
 import { PersonRelationships } from '@/components/domain/person/relationships';
 import { SectionAdd } from '@/components/domain/person/section-add';
 import { Section } from '@/components/section';
+import { Button } from '@/components/ui/button';
 
 export interface PersonContactColumnProps {
   /** The person the page is about. */
@@ -91,14 +91,12 @@ export function PersonContactColumn({ person, allPersons, allPersonsWithLabels, 
         title="Relationships"
         actionSlot={
           // Stays focusable when there is nobody left to link, so the reason can be read.
-          <ActionButton
-            label="Add"
+          <Button
             content="Add"
             size="xs"
             variant="ghost"
             iconSlot={<UserRoundPlus />}
             disabled={allPersonsLinked}
-            tooltip={allPersonsLinked}
             hint={allPersonsLinked ? 'Everyone is already linked' : undefined}
             onPress={() => setShowAddRelationship(true)}
           />

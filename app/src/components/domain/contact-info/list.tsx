@@ -7,11 +7,13 @@ import { ContactInfosKindEnum, ContactTypeEnum } from '@/__generated__/graphql';
 import { useAppForm } from '@/components/app-form';
 import { Globe, Mail, MessageSquare, Phone, Printer, Share2 } from '@/components/app-icons';
 import { ConfirmButton } from '@/components/confirm-button';
+import { DialogLayout } from '@/components/dialog-layout';
 import { ListItem } from '@/components/list-item';
 import { EmptyState } from '@/components/page';
+import { Alert } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Form } from '@/components/ui/form';
-import { FormDialog, FormDialogFooter } from '@/components/ui/form-dialog';
 import { Ellipsis, Trash2 } from '@/components/ui/icons';
 
 export const CONTACT_INFO_LIST_FRAGMENT = graphql(`
@@ -252,7 +254,7 @@ function ContactInfoRow({ id, type, kind, value, label, isPrimary, onDelete }: C
         <ConfirmButton
           variant="ghost"
           size="icon-sm"
-          label="Delete contact info"
+          aria-label="Delete contact info"
           title="Delete this contact info?"
           description={`${typeLabel} ${value} is removed from this person.`}
           onConfirm={handleDelete}
@@ -309,7 +311,7 @@ function AddContactInfoDialog({ personId, open, onOpenChange, onAdded }: AddCont
           },
         });
       } catch {
-        // Stay open with what was typed; the footer shows the mutation's error.
+        // Stay open with what was typed; the dialog shows the mutation's error.
         return;
       }
       onOpenChange(false);
@@ -327,41 +329,53 @@ function AddContactInfoDialog({ personId, open, onOpenChange, onAdded }: AddCont
   }, [open, form, reset]);
 
   return (
-    <FormDialog open={open} onOpenChange={onOpenChange} title="Add Contact Info">
-      <form.AppForm>
-        <Form className="gap-4">
-          <form.AppField
-            name="type"
-            // An email typed so far is not a phone number: a new type starts the value over.
-            listeners={{ onChange: () => form.setFieldValue('value', '') }}
-          >
-            {(field) => <field.SelectField label="Type" options={CONTACT_TYPE_OPTIONS} />}
-          </form.AppField>
-          <form.Subscribe selector={(state) => state.values.type}>
-            {(type) => (
-              <form.AppField
-                name="value"
-                validators={{ onChange: ({ value }) => (value.trim() ? undefined : 'A value is required.') }}
-              >
-                {(field) => <field.InputField label="Value" required placeholder={CONTACT_TYPE_PLACEHOLDERS[type]} />}
-              </form.AppField>
-            )}
-          </form.Subscribe>
-          <form.AppField name="kind">
-            {(field) => <field.SelectField label="Kind" options={CONTACT_KIND_OPTIONS} />}
-          </form.AppField>
-          <form.AppField name="label">
-            {(field) => (
-              <field.InputField label="Label" description="Optional" placeholder="e.g. Assistant, Front desk" />
-            )}
-          </form.AppField>
-          <form.AppField name="isPrimary">{(field) => <field.CheckboxField label="Mark as primary" />}</form.AppField>
-          <FormDialogFooter onCancel={() => onOpenChange(false)} error={error?.message ?? null}>
+    <DialogLayout
+      open={open}
+      onOpenChange={onOpenChange}
+      title="Add Contact Info"
+      hasUnsavedChanges={() => form.state.isDefaultValue === false}
+      contentSlot={
+        <form.AppForm>
+          <Form className="gap-4">
+            <form.AppField
+              name="type"
+              // An email typed so far is not a phone number: a new type starts the value over.
+              listeners={{ onChange: () => form.setFieldValue('value', '') }}
+            >
+              {(field) => <field.SelectField label="Type" options={CONTACT_TYPE_OPTIONS} />}
+            </form.AppField>
+            <form.Subscribe selector={(state) => state.values.type}>
+              {(type) => (
+                <form.AppField
+                  name="value"
+                  validators={{ onChange: ({ value }) => (value.trim() ? undefined : 'A value is required.') }}
+                >
+                  {(field) => <field.InputField label="Value" required placeholder={CONTACT_TYPE_PLACEHOLDERS[type]} />}
+                </form.AppField>
+              )}
+            </form.Subscribe>
+            <form.AppField name="kind">
+              {(field) => <field.SelectField label="Kind" options={CONTACT_KIND_OPTIONS} />}
+            </form.AppField>
+            <form.AppField name="label">
+              {(field) => (
+                <field.InputField label="Label" description="Optional" placeholder="e.g. Assistant, Front desk" />
+              )}
+            </form.AppField>
+            <form.AppField name="isPrimary">{(field) => <field.CheckboxField label="Mark as primary" />}</form.AppField>
+            {error ? <Alert variant="destructive" title={error.message} /> : null}
+          </Form>
+        </form.AppForm>
+      }
+      footerActionsSlot={(close) => (
+        <>
+          <Button variant="outline" onPress={close} content="Cancel" />
+          <form.AppForm>
             <form.SubmitButton createLabel="Add Contact Info" savingLabel="Saving..." />
-          </FormDialogFooter>
-        </Form>
-      </form.AppForm>
-    </FormDialog>
+          </form.AppForm>
+        </>
+      )}
+    />
   );
 }
 

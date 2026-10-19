@@ -1,22 +1,22 @@
-import { View } from 'react-native';
-import { Monitor, Moon, Sun } from '@/components/ui/icons';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { usePalettePreference, useThemePreference } from '@/components/ui/theme-preference';
+import { View } from "react-native";
+import { Monitor, Moon, Sun } from "@/components/ui/icons";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { usePalettePreference, useThemePreference } from "@/components/ui/theme-preference";
 import {
   DARK_ONLY_PALETTES,
   isPalettePreference,
   isThemePreference,
   type PalettePreference,
   type ThemePreference,
-} from '@/components/ui/theme-preference-base';
-import { cn } from '@/lib/utils';
+} from "@/components/ui/theme-preference-base";
+import { cn } from "@/lib/utils";
 
 type ThemePickerProps = {
   /**
    * `card` (the default): three tiles, icon over caption, for a settings page. `compact`: one
-   * full-width row of icon-only segments, the caption as the name and (on the web) the tooltip.
+   * row of icon-only segments, the caption as the name and (on the web) the tooltip.
    */
-  variant?: 'card' | 'compact' | undefined;
+  variant?: "card" | "compact" | undefined;
   /** The checked choice, for a controlled picker. Left out, the picker is bound to the hook. */
   value?: ThemePreference | undefined;
   /** Told of every choice — the only way a controlled picker changes; a bound one also stores it. */
@@ -25,9 +25,9 @@ type ThemePickerProps = {
   id?: string | undefined;
   className?: string | undefined;
   /** The group's name. Defaults to "Theme"; pass `aria-labelledby` instead when a heading names it. */
-  'aria-label'?: string | undefined;
-  'aria-labelledby'?: string | undefined;
-  'aria-describedby'?: string | undefined;
+  "aria-label"?: string | undefined;
+  "aria-labelledby"?: string | undefined;
+  "aria-describedby"?: string | undefined;
   /** Offer a palette as well, under the theme: these, in this order. Left out, no palette choice. */
   palettes?: readonly PalettePreference[] | undefined;
   /** The checked palette, for a controlled picker. Left out, the palette is bound to its hook. */
@@ -37,18 +37,18 @@ type ThemePickerProps = {
 };
 
 const PALETTE_OPTIONS: Record<PalettePreference, { label: string; description: string }> = {
-  default: { label: 'Default', description: "cubeui's own colours" },
-  monokai: { label: 'Monokai', description: 'The editor theme. Dark only' },
+  default: { label: "Default", description: "cubeui's own colours" },
+  monokai: { label: "Monokai", description: "The editor theme. Dark only" },
 };
 
 const OPTIONS = [
-  { value: 'light', label: 'Light', hint: 'Always light', Icon: Sun },
-  { value: 'dark', label: 'Dark', hint: 'Always dark', Icon: Moon },
-  { value: 'system', label: 'System', hint: 'Follow the device', Icon: Monitor },
+  { value: "light", label: "Light", hint: "Always light", Icon: Sun },
+  { value: "dark", label: "Dark", hint: "Always dark", Icon: Moon },
+  { value: "system", label: "System", hint: "Follow the device", Icon: Monitor },
 ] as const;
 
 function ThemeOptions({
-  variant = 'card',
+  variant = "card",
   palettes: _palettes,
   palette: _palette,
   onPaletteChange: _onPaletteChange,
@@ -57,22 +57,24 @@ function ThemeOptions({
   disabled,
   id,
   className,
-  'aria-label': ariaLabel,
-  'aria-labelledby': ariaLabelledBy,
-  'aria-describedby': ariaDescribedBy,
+  "aria-label": ariaLabel,
+  "aria-labelledby": ariaLabelledBy,
+  "aria-describedby": ariaDescribedBy,
 }: ThemePickerProps) {
-  const compact = variant === 'compact';
+  const compact = variant === "compact";
   return (
     <RadioGroup
-      variant={compact ? 'segmented' : 'card'}
+      variant={compact ? "segmented" : "card"}
       value={value}
       onValueChange={(next) => {
-        if (isThemePreference(next)) onValueChange?.(next);
+        if (isThemePreference(next)) {
+          onValueChange?.(next);
+        }
       }}
       disabled={disabled}
       id={id}
       className={className}
-      aria-label={ariaLabelledBy ? undefined : (ariaLabel ?? 'Theme')}
+      aria-label={ariaLabelledBy ? undefined : (ariaLabel ?? "Theme")}
       aria-labelledby={ariaLabelledBy}
       aria-describedby={ariaDescribedBy}
     >
@@ -87,9 +89,9 @@ function ThemeOptions({
               <Icon
                 aria-hidden
                 className={cn(
-                  'h-4 w-4',
+                  "h-4 w-4",
                   // Named, because a native icon has no `currentColor` to inherit from the segment.
-                  value === option ? 'text-active-foreground' : 'text-foreground/60',
+                  value === option ? "text-active-foreground" : "text-foreground/60",
                 )}
               />
             }
@@ -132,20 +134,22 @@ function PaletteSection({
   palettes,
   palette,
   onPaletteChange,
-  variant = 'card',
+  variant = "card",
   className,
   ...props
 }: PaletteSectionProps) {
-  const compact = variant === 'compact';
+  const compact = variant === "compact";
   const darkOnly = palette !== undefined && DARK_ONLY_PALETTES.includes(palette);
   return (
-    <View className={cn('gap-3', className)}>
+    <View className={cn("gap-3", className)}>
       <ThemeChoice {...props} variant={variant} disabled={props.disabled || darkOnly} />
       <RadioGroup
-        variant={compact ? 'segmented' : 'card'}
+        variant={compact ? "segmented" : "card"}
         value={palette}
         onValueChange={(next) => {
-          if (isPalettePreference(next)) onPaletteChange?.(next);
+          if (isPalettePreference(next)) {
+            onPaletteChange?.(next);
+          }
         }}
         disabled={props.disabled}
         aria-label="Palette"
@@ -178,9 +182,12 @@ function BoundPaletteSection({ onPaletteChange, ...props }: PaletteSectionProps)
   );
 }
 
+/** The choice of Light, Dark or System, and optionally of palette. */
 function ThemePicker(props: ThemePickerProps) {
   const { palettes } = props;
-  if (!palettes) return <ThemeChoice {...props} />;
+  if (!palettes) {
+    return <ThemeChoice {...props} />;
+  }
   return props.palette === undefined ? (
     <BoundPaletteSection {...props} palettes={palettes} />
   ) : (

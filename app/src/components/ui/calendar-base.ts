@@ -38,12 +38,12 @@ type CalendarSharedProps = {
  */
 export type CalendarProps =
   | (CalendarSharedProps & {
-      mode?: 'single' | undefined;
+      mode?: "single" | undefined;
       selected?: Date | undefined;
       onSelect: (date: Date | undefined) => void;
     })
   | (CalendarSharedProps & {
-      mode: 'range';
+      mode: "range";
       selected?: DateRange | undefined;
       onSelect: (range: DateRange | undefined) => void;
     });

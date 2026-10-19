@@ -10,12 +10,11 @@ import {
   type PersonDetail,
   type PersonStub,
 } from '@/components/domain/person/detail-queries';
-import { ImportantDateForm, type ImportantDateFormValue } from '@/components/domain/person/important-date-form';
+import { ImportantDateDialog, type ImportantDateFormValue } from '@/components/domain/person/important-date-form';
 import { ImportantDateRow } from '@/components/domain/person/important-date-row';
 import { SectionAdd } from '@/components/domain/person/section-add';
 import { EmptyState } from '@/components/page';
 import { Section } from '@/components/section';
-import { FormDialog } from '@/components/ui/form-dialog';
 import { localIsoDate } from '@/lib/local-date';
 import { personName } from '@/lib/person-name';
 
@@ -99,14 +98,13 @@ export function ImportantDatesSection({ person, allLabels, allPersons, onChanged
         }
       />
 
-      <FormDialog
+      <ImportantDateDialog
         open={dialogOpen}
         onOpenChange={setDialogOpen}
         title="Add Important Date"
         description={`Record a memorable date for ${personName(person)}.`}
-      >
-        <ImportantDateForm onSubmit={handleCreate} onCancel={() => setDialogOpen(false)} />
-      </FormDialog>
+        onSubmit={handleCreate}
+      />
     </>
   );
 }

@@ -31,17 +31,16 @@ ones this app leans on:
 
 | Component | File | Notes |
 | --- | --- | --- |
-| `Button` | `ui/button.tsx` | `content`, `iconSlot`, `variant`, `size`, `loading`, `onPress` |
-| `ActionButton` | `action-button.tsx` | Icon-only button; `label` is its accessible name |
+| `Button` | `ui/button.tsx` | `content`, `iconSlot`, `variant`, `size`, `loading`, `onPress`; an `icon*` size needs `aria-label`, and `hint` is the tooltip |
 | `ConfirmButton`, `ConfirmDialog` | `confirm-button.tsx`, `ui/confirm-dialog.tsx` | Destructive-action confirmation |
-| `FormDialog`, `FormDialogFooter` | `ui/form-dialog.tsx` | Modal — every form goes in one |
+| `DialogLayout` | `dialog-layout.tsx` | Modal — every form goes in one, with `hasUnsavedChanges` |
 | `createAppForm`, `Form` | `ui/form.tsx` | TanStack Form integration; the app's one hook is `@/components/app-form` |
 | `PageLayout` | `page-layout.tsx` | Every route: pinned title block over a scrolling body |
 | `Section` | `section.tsx` | Heading, `actionSlot`, `contentSlot`; `surface="card"` for a card |
 | `ListItem` | `list-item.tsx` | A row: `leadingSlot`, `title`, `description`, `actionSlot` |
 | `QueryState`, `QueryError` | `query-state.tsx` | Loading / error / empty for a query |
 | `EmptyState` | `page.tsx` | "Nothing here yet" |
-| `MultiSelect` | `multi-select.tsx` | Multi-select over the caller's labels |
+| `Combobox`, `ComboboxField` | `combobox.tsx`, `ui/combobox-field.tsx` | One of a long list, or several with `multiple`; `field.ComboboxField` in a form |
 | `Badge` | `ui/badge.tsx` | Pill; `backgroundColor`/`textColor` for user-chosen colours |
 | `SidebarLayout`, `Sidebar`, `SidebarNavItem`, `BarNavItem` | `split-layout.tsx`, `sidebar.tsx` | What `AppShell` is built from |
 | `ThemePicker` | `ui/theme-picker.tsx` | Light / dark / system |
@@ -190,7 +189,7 @@ etc.) is a `Section` with its add trigger in `actionSlot`:
   (route component), not the list component.
 - The list component receives `createOpen: boolean` and
   `onCreateOpenChange: (open: boolean) => void` as props and renders the
-  `FormDialog` internally — keeping the dialog co-located with the form it
+  `DialogLayout` internally — keeping the dialog co-located with the form it
   opens.
 - If all items are already added (e.g. everyone is already linked), disable the
   trigger and say why in the section.
@@ -206,7 +205,7 @@ relative to the section title across all list sections.
    kebab-case, as is every file in it.
 2. Add `form.tsx` — a Zod schema and `useAppForm` from
    `@/components/app-form`. Render it
-   inside a `FormDialog`; see [`frontend.md`](./frontend.md#form-presentation-rule).
+   inside a `DialogLayout`; see [`frontend.md`](./frontend.md#form-presentation-rule).
 3. Add `list.tsx` — `ListItem` rows taking typed props.
 4. Define the GraphQL operations in the route that uses it, under
    `app/app/(app)/<entity>/index.tsx`.

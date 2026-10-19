@@ -1,10 +1,10 @@
-import type { ReactNode } from 'react';
-import { Text } from 'react-native';
-import { cn } from '@/lib/utils';
+import type { ReactNode } from "react";
+import { Text } from "react-native";
+import { cn } from "@/lib/utils";
 
 type SectionHeadingProps = {
   /** `overline` is the smaller uppercase label; `default` is a plain section label. */
-  variant?: 'default' | 'overline' | undefined;
+  variant?: "default" | "overline" | undefined;
   /**
    * The heading rank, when the label heads a section. `role="heading"` + `aria-level` on both
    * platforms: VoiceOver and TalkBack navigate by it on device, and on the web it is the same
@@ -19,19 +19,26 @@ type SectionHeadingProps = {
   children: ReactNode;
 };
 
-// A small muted heading above a section of content.
-export function SectionHeading({ variant = 'default', level, className, children }: SectionHeadingProps) {
+/** A small muted heading above a section of content. */
+export function SectionHeading({
+  variant = "default",
+  level,
+  className,
+  children,
+}: SectionHeadingProps) {
   const classes = cn(
-    'font-semibold text-foreground/60',
-    variant === 'overline' ? 'text-xs uppercase tracking-wide' : 'text-sm',
+    "font-semibold text-foreground/60",
+    variant === "overline" ? "text-xs uppercase tracking-wide" : "text-sm",
     className,
   );
 
   // Two elements written out rather than one with a conditional role: a `role="heading"` with no
   // rank is not a heading the web can express, and the compiler refuses it for exactly that.
-  if (level === undefined) return <Text className={classes}>{children}</Text>;
+  if (level === undefined) {
+    return <Text className={classes}>{children}</Text>;
+  }
   return (
-    // biome-ignore lint/a11y/useSemanticElements: React Native has no heading element; role="heading" is the cross-platform form
+    // web: biome-ignore lint/a11y/useSemanticElements: React Native has no heading element; role="heading" is the cross-platform form
     <Text role="heading" aria-level={level} className={classes}>
       {children}
     </Text>

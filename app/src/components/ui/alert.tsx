@@ -1,10 +1,11 @@
-import { Children, createContext, isValidElement, type ReactNode, useContext } from 'react';
-import { Text, View } from 'react-native';
-import { CircleAlert, Info, TriangleAlert } from '@/components/ui/icons';
-import { IconClassContext } from '@/components/ui/icons-base';
-import { cn, type SlotNode } from '@/lib/utils';
+import { Children, createContext, isValidElement, type ReactNode, useContext } from "react";
+import { Text, View } from "react-native";
+import { CircleAlert, Info, TriangleAlert } from "@/components/ui/icons";
+import { IconClassContext } from "@/components/ui/icons-base";
+import { cn, type SlotNode } from "@/lib/utils";
 
-export type AlertVariant = 'default' | 'info' | 'warning' | 'destructive';
+/** The kinds of callout, which pick its tint, icon and role. */
+export type AlertVariant = "default" | "info" | "warning" | "destructive";
 
 export type AlertProps = {
   /**
@@ -37,30 +38,30 @@ export type AlertTitleProps = { className?: string | undefined; children?: React
 export type AlertDescriptionProps = { className?: string | undefined; children?: ReactNode };
 
 /** The variant, for the two parts to take their ink from. */
-const AlertVariantContext = createContext<AlertVariant>('default');
+const AlertVariantContext = createContext<AlertVariant>("default");
 
 /** The box: the tint and the border that names its colour, per variant. */
 const ALERT_SURFACE = {
-  default: 'border border-foreground/10 bg-secondary',
-  info: 'border border-info/40 bg-info/10',
-  warning: 'border border-warning/40 bg-warning/10',
-  destructive: 'border border-negative/40 bg-negative/10',
+  default: "border border-foreground/10 bg-secondary",
+  info: "border border-info/40 bg-info/10",
+  warning: "border border-warning/40 bg-warning/10",
+  destructive: "border border-negative/40 bg-negative/10",
 } satisfies Record<AlertVariant, string>;
 
 /** The icon's colour, and the only place the variant's hue reaches something drawn. */
 const ALERT_ICON_INK = {
-  default: 'text-foreground',
-  info: 'text-info',
-  warning: 'text-warning',
-  destructive: 'text-negative',
+  default: "text-foreground",
+  info: "text-info",
+  warning: "text-warning",
+  destructive: "text-negative",
 } satisfies Record<AlertVariant, string>;
 
 /** The line under the title. Muted only on the card, where muted is still 4.5:1. */
 const ALERT_DESCRIPTION_INK = {
-  default: 'text-foreground/60',
-  info: 'text-foreground',
-  warning: 'text-foreground',
-  destructive: 'text-foreground',
+  default: "text-foreground/60",
+  info: "text-foreground",
+  warning: "text-foreground",
+  destructive: "text-foreground",
 } satisfies Record<AlertVariant, string>;
 
 /**
@@ -68,28 +69,58 @@ const ALERT_DESCRIPTION_INK = {
  * blue and nothing else, so the same alert can say "new" or "tip" without an ⓘ arguing with it.
  */
 function defaultIcon(variant: AlertVariant): ReactNode {
-  if (variant === 'info') return null;
-  if (variant === 'destructive') return <CircleAlert />;
-  if (variant === 'warning') return <TriangleAlert />;
+  if (variant === "info") {
+    return null;
+  }
+  if (variant === "destructive") {
+    return <CircleAlert />;
+  }
+  if (variant === "warning") {
+    return <TriangleAlert />;
+  }
   return <Info />;
 }
 
 /** shadcn's `AlertTitle`: the title, for the compound form. */
 export function AlertTitle({ className, children }: AlertTitleProps) {
   return (
-    <Text testID="alert-title" className={cn('font-medium text-foreground text-sm', className)}>
+    <Text testID="alert-title" className={cn("font-semibold text-foreground text-sm", className)}>
       {children}
     </Text>
   );
 }
 
-/** shadcn's `AlertDescription`: the line under the title, in the variant's ink. */
+/**
+ * Whether a description is a run of text: a string, or text with a link or an emphasis inside it.
+ * Anything with no loose text is a block, such as a list or a paragraph or two, and is not one.
+ */
+function isInlineText(children: ReactNode): boolean {
+  return Children.toArray(children).some(
+    (child) => typeof child === "string" || typeof child === "number",
+  );
+}
+
+/**
+ * shadcn's `AlertDescription`: the line under the title, in the variant's ink.
+ *
+ * Text is a text element, as it was. Elements with no loose text around them (a `<ul>` of reasons,
+ * a couple of `<p>`s) go in a box instead, because a list inside a `<span>` is invalid HTML (#358).
+ * On the web the box hands the ink down; on device each `Text` inside takes its own.
+ */
 export function AlertDescription({ className, children }: AlertDescriptionProps) {
   const variant = useContext(AlertVariantContext);
+  const classes = cn("text-sm", ALERT_DESCRIPTION_INK[variant], className);
+  if (isInlineText(children)) {
+    return (
+      <Text testID="alert-description" className={classes}>
+        {children}
+      </Text>
+    );
+  }
   return (
-    <Text testID="alert-description" className={cn('text-sm', ALERT_DESCRIPTION_INK[variant], className)}>
+    <View testID="alert-description" className={cn("gap-1", classes)}>
       {children}
-    </Text>
+    </View>
   );
 }
 
@@ -98,8 +129,9 @@ function isTextPart(child: ReactNode): boolean {
   return isValidElement(child) && (child.type === AlertTitle || child.type === AlertDescription);
 }
 
+/** A callout: a tinted box with an icon, a title, a description and an optional action. */
 export function Alert({
-  variant = 'default',
+  variant = "default",
   iconSlot,
   title,
   description,
@@ -109,23 +141,24 @@ export function Alert({
 }: AlertProps) {
   // A bare string is the description, wrapped so native never puts text straight into a `View`.
   const parts = Children.toArray(children).map((child) =>
-    typeof child === 'string' || typeof child === 'number' ? (
+    typeof child === "string" || typeof child === "number" ? (
       <AlertDescription key={String(child)}>{child}</AlertDescription>
     ) : (
       child
     ),
   );
   const textParts = parts.filter(isTextPart);
-  const iconParts = parts.filter((child) => !isTextPart(child));
-  const glyph = iconSlot !== undefined ? iconSlot : parts.length > 0 ? null : defaultIcon(variant);
+  const iconParts = parts.filter((child) => isTextPart(child) === false);
+  const ownIcon = parts.length > 0 ? null : defaultIcon(variant);
+  const glyph = iconSlot !== undefined ? iconSlot : ownIcon;
   const ink = ALERT_ICON_INK[variant];
 
   return (
     <View
       testID="alert"
-      role={variant === 'destructive' ? 'alert' : 'status'}
+      role={variant === "destructive" ? "alert" : "status"}
       className={cn(
-        'w-full min-w-0 flex-row items-start gap-3 rounded-lg px-4 py-3',
+        "w-full min-w-0 flex-row items-start gap-3 rounded-lg px-4 py-3",
         ALERT_SURFACE[variant],
         className,
       )}
@@ -134,9 +167,12 @@ export function Alert({
         <View
           testID="alert-icon"
           aria-hidden
-          className={cn('mt-0.5 shrink-0 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0', ink)}
+          className={cn(
+            "mt-0.5 shrink-0 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
+            ink,
+          )}
         >
-          <IconClassContext.Provider value={cn('size-4 shrink-0', ink)}>
+          <IconClassContext.Provider value={cn("size-4 shrink-0", ink)}>
             {glyph}
             {iconParts}
           </IconClassContext.Provider>

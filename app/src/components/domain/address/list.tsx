@@ -7,12 +7,14 @@ import { AddressTypeEnum } from '@/__generated__/graphql';
 import { useAppForm } from '@/components/app-form';
 import { MapPin } from '@/components/app-icons';
 import { ConfirmButton } from '@/components/confirm-button';
+import { DialogLayout } from '@/components/dialog-layout';
 import { ListItem } from '@/components/list-item';
 import { EmptyState } from '@/components/page';
+import { Alert } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { CopyButton } from '@/components/ui/copy-button';
 import { FieldRow, Form } from '@/components/ui/form';
-import { FormDialog, FormDialogFooter } from '@/components/ui/form-dialog';
 import { Trash2 } from '@/components/ui/icons';
 
 export const ADDRESS_LIST_FRAGMENT = graphql(`
@@ -155,7 +157,7 @@ function AddressRow({ address, onDelete }: AddressRowProps) {
           <ConfirmButton
             variant="ghost"
             size="icon-sm"
-            label="Delete address"
+            aria-label="Delete address"
             title="Delete this address?"
             description={`${address.line1} is removed from this person.`}
             onConfirm={handleDelete}
@@ -229,7 +231,7 @@ function AddAddressDialog({ personId, open, onOpenChange, onAdded }: AddAddressD
           },
         });
       } catch {
-        // Stay open with what was typed; the footer shows the mutation's error.
+        // Stay open with what was typed; the dialog shows the mutation's error.
         return;
       }
       onOpenChange(false);
@@ -247,45 +249,63 @@ function AddAddressDialog({ personId, open, onOpenChange, onAdded }: AddAddressD
   }, [open, form, reset]);
 
   return (
-    <FormDialog open={open} onOpenChange={onOpenChange} title="Add Address">
-      <form.AppForm>
-        <Form className="gap-4">
-          <form.AppField name="type">
-            {(field) => <field.SelectField label="Type" options={TYPE_OPTIONS} />}
-          </form.AppField>
-          <form.AppField name="label">
-            {(field) => <field.InputField label="Label" description="Optional" placeholder="e.g. Parents' house" />}
-          </form.AppField>
-          <form.AppField
-            name="line1"
-            validators={{ onChange: ({ value }) => (value.trim() ? undefined : 'Address line 1 is required.') }}
-          >
-            {(field) => <field.InputField label="Address Line 1" required autoFocus placeholder="123 Main St" />}
-          </form.AppField>
-          <form.AppField name="line2">
-            {(field) => <field.InputField label="Address Line 2" description="Optional" placeholder="Apt 4B" />}
-          </form.AppField>
-          <FieldRow>
-            <form.AppField name="city">{(field) => <field.InputField label="City" placeholder="City" />}</form.AppField>
-            <form.AppField name="state">
-              {(field) => <field.InputField label="State" placeholder="State" />}
+    <DialogLayout
+      open={open}
+      onOpenChange={onOpenChange}
+      title="Add Address"
+      hasUnsavedChanges={() => form.state.isDefaultValue === false}
+      contentSlot={
+        <form.AppForm>
+          <Form className="gap-4">
+            <form.AppField name="type">
+              {(field) => <field.SelectField label="Type" options={TYPE_OPTIONS} />}
             </form.AppField>
-            <form.AppField name="postalCode">
-              {(field) => <field.InputField label="Postal Code" placeholder="12345" />}
+            <form.AppField name="label">
+              {(field) => <field.InputField label="Label" description="Optional" placeholder="e.g. Parents' house" />}
             </form.AppField>
-          </FieldRow>
-          <form.AppField name="country">
-            {(field) => <field.InputField label="Country" placeholder="US" />}
-          </form.AppField>
-          <form.AppField name="isPrimary">
-            {(field) => <field.CheckboxField label="Set as primary address" />}
-          </form.AppField>
-          <FormDialogFooter onCancel={() => onOpenChange(false)} error={error?.message ?? null}>
+            <form.AppField
+              name="line1"
+              validators={{ onChange: ({ value }) => (value.trim() ? undefined : 'Address line 1 is required.') }}
+            >
+              {(field) => <field.InputField label="Address Line 1" required autoFocus placeholder="123 Main St" />}
+            </form.AppField>
+            <form.AppField name="line2">
+              {(field) => <field.InputField label="Address Line 2" description="Optional" placeholder="Apt 4B" />}
+            </form.AppField>
+            <FieldRow
+              contentSlot={
+                <>
+                  <form.AppField name="city">
+                    {(field) => <field.InputField label="City" placeholder="City" />}
+                  </form.AppField>
+                  <form.AppField name="state">
+                    {(field) => <field.InputField label="State" placeholder="State" />}
+                  </form.AppField>
+                  <form.AppField name="postalCode">
+                    {(field) => <field.InputField label="Postal Code" placeholder="12345" />}
+                  </form.AppField>
+                </>
+              }
+            />
+            <form.AppField name="country">
+              {(field) => <field.InputField label="Country" placeholder="US" />}
+            </form.AppField>
+            <form.AppField name="isPrimary">
+              {(field) => <field.CheckboxField label="Set as primary address" />}
+            </form.AppField>
+            {error ? <Alert variant="destructive" title={error.message} /> : null}
+          </Form>
+        </form.AppForm>
+      }
+      footerActionsSlot={(close) => (
+        <>
+          <Button variant="outline" onPress={close} content="Cancel" />
+          <form.AppForm>
             <form.SubmitButton createLabel="Add Address" />
-          </FormDialogFooter>
-        </Form>
-      </form.AppForm>
-    </FormDialog>
+          </form.AppForm>
+        </>
+      )}
+    />
   );
 }
 

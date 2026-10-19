@@ -1,8 +1,5 @@
-import type { ComponentProps } from 'react';
-import { useCallback, useEffect, useRef, useState } from 'react';
-import type { Button } from '@/components/ui/button';
-
-type ButtonProps = ComponentProps<typeof Button>;
+import { useCallback, useEffect, useRef, useState } from "react";
+import type { ButtonProps } from "@/components/ui/button";
 
 export type CopyButtonProps = {
   /** The text that goes on the clipboard. */
@@ -10,13 +7,14 @@ export type CopyButtonProps = {
   /**
    * The accessible name before the press: say what is copied when the screen has more than one
    * thing that could be — "Copy endpoint URL". The default is `Copy`. For the moment after a
-   * press the name is `Copied`, whatever this says.
+   * press the name is `Copied`, whatever this says. Inside a `CodeBlock` with a `title`, the
+   * default is "Copy {title}".
    */
   label?: string | undefined;
   /** The button's variant. The default is `outline`. */
-  variant?: ButtonProps['variant'] | undefined;
+  variant?: ButtonProps["variant"] | undefined;
   /** The button's size. The default is `icon-sm`, which sits flush in a row of small text. */
-  size?: ButtonProps['size'] | undefined;
+  size?: ButtonProps["size"] | undefined;
   /** Called once the text is on the clipboard — a toast, an analytics event. */
   onCopied?: (() => void) | undefined;
   /**
@@ -25,6 +23,16 @@ export type CopyButtonProps = {
    * the caller says so, since a shell holds no toasts.
    */
   onError?: ((error: unknown) => void) | undefined;
+  /**
+   * Off: a press copies nothing and calls neither `onCopied` nor `onError`. Say why with `hint`,
+   * as on `Button` — "Give the webhook an id first".
+   */
+  disabled?: boolean | undefined;
+  /**
+   * The button's tooltip, as on `Button`. With `disabled` it keeps the button focusable and
+   * hoverable (`aria-disabled`), so the reason it is off can still be read.
+   */
+  hint?: ButtonProps["hint"] | undefined;
   /** The button's class: its position, say `absolute top-2 right-2` over a snippet. */
   className?: string | undefined;
 };
@@ -42,7 +50,7 @@ export const COPIED_MS = 1500;
  */
 export function useCopy(
   write: (text: string) => Promise<void>,
-  { value, onCopied, onError }: Pick<CopyButtonProps, 'value' | 'onCopied' | 'onError'>,
+  { value, onCopied, onError }: Pick<CopyButtonProps, "value" | "onCopied" | "onError">,
 ) {
   const [copied, setCopied] = useState(false);
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
@@ -66,7 +74,9 @@ export function useCopy(
     onCopied?.();
     // The write is async, so the button can be gone by the time it lands, and a timer started
     // then would outlive the cleanup above.
-    if (!mounted.current) return;
+    if (mounted.current === false) {
+      return;
+    }
     setCopied(true);
     clearTimeout(timer.current);
     timer.current = setTimeout(() => setCopied(false), COPIED_MS);

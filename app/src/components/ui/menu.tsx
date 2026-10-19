@@ -9,10 +9,10 @@ import {
   useEffect,
   useRef,
   useState,
-} from 'react';
-import { AccessibilityInfo, Platform, Pressable, type Role, Text, View } from 'react-native';
-import { Check } from '@/components/ui/icons';
-import { IconClassContext } from '@/components/ui/icons-base';
+} from "react";
+import { AccessibilityInfo, Platform, Pressable, type Role, Text, View } from "react-native";
+import { Check } from "@/components/ui/icons";
+import { IconClassContext } from "@/components/ui/icons-base";
 import {
   MENU_CONTENT_CLASS,
   MENU_INDICATOR_CLASS,
@@ -28,9 +28,9 @@ import {
   type MenuRadioItemProps,
   type MenuSeparatorProps,
   type MenuTriggerProps,
-} from '@/components/ui/menu-base';
-import { Popover, PopoverContent } from '@/components/ui/popover';
-import { cn } from '@/lib/utils';
+} from "@/components/ui/menu-base";
+import { Popover, PopoverContent } from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
 
 type MenuState = {
   open: boolean;
@@ -49,21 +49,26 @@ const MenuContext = createContext<MenuState>({
 
 /** Put focus back on the trigger, in whichever sense of focus the platform has. */
 function returnFocus(node: View | null) {
-  if (!node) return;
-  if (Platform.OS === 'web') {
-    (node as unknown as { focus?: () => void }).focus?.();
+  if (!node) {
+    return;
+  }
+  if (Platform.OS === "web") {
+    node.focus();
   } else {
-    AccessibilityInfo.sendAccessibilityEvent(node, 'focus');
+    AccessibilityInfo.sendAccessibilityEvent(node, "focus");
   }
 }
 
+/** The root of a menu of actions: it holds the open state. */
 function Menu({ open, onOpenChange, defaultOpen = false, children }: MenuProps) {
   // Uncontrolled state kept unconditionally and read only when the caller passed no `open`, the
   // same arrangement as `popover.tsx`.
   const [uncontrolled, setUncontrolled] = useState(defaultOpen);
   const isOpen = open ?? uncontrolled;
   const setOpen = (next: boolean) => {
-    if (open === undefined) setUncontrolled(next);
+    if (open === undefined) {
+      setUncontrolled(next);
+    }
     onOpenChange?.(next);
   };
 
@@ -73,8 +78,10 @@ function Menu({ open, onOpenChange, defaultOpen = false, children }: MenuProps) 
   useEffect(() => {
     // On the close edge only, however it closed: a row, the backdrop or the back button. A
     // `focusesElsewhere` row has already moved focus to where it belongs, so leave it there.
-    if (wasOpen.current && !isOpen) {
-      if (!skipReturnRef.current) returnFocus(triggerRef.current);
+    if (wasOpen.current && isOpen === false) {
+      if (skipReturnRef.current === false) {
+        returnFocus(triggerRef.current);
+      }
       skipReturnRef.current = false;
     }
     wasOpen.current = isOpen;
@@ -89,6 +96,7 @@ function Menu({ open, onOpenChange, defaultOpen = false, children }: MenuProps) 
   );
 }
 
+/** The element that opens the menu. */
 function MenuTrigger({ asChild, children }: MenuTriggerProps) {
   const { open, setOpen, triggerRef } = useContext(MenuContext);
   if (asChild && isValidElement(children)) {
@@ -98,15 +106,18 @@ function MenuTrigger({ asChild, children }: MenuTriggerProps) {
       children as ReactElement<{
         onPress?: () => void;
         ref?: Ref<View>;
-        'aria-expanded'?: boolean;
+        "aria-expanded"?: boolean;
       }>,
       {
         onPress: () => setOpen(true),
-        'aria-expanded': open,
+        "aria-expanded": open,
         ref: (node: View | null) => {
           triggerRef.current = node;
-          if (typeof own === 'function') own(node);
-          else if (own) own.current = node;
+          if (typeof own === "function") {
+            own(node);
+          } else if (own) {
+            own.current = node;
+          }
         },
       },
     );
@@ -119,9 +130,10 @@ function MenuTrigger({ asChild, children }: MenuTriggerProps) {
   );
 }
 
-function MenuContent({ className, 'aria-label': ariaLabel, children }: MenuContentProps) {
+/** The menu's list of rows. */
+function MenuContent({ className, "aria-label": ariaLabel, children }: MenuContentProps) {
   return (
-    <PopoverContent className={cn(MENU_CONTENT_CLASS, 'w-64', className)}>
+    <PopoverContent className={cn(MENU_CONTENT_CLASS, "w-64", className)}>
       <View role="menu" aria-label={ariaLabel}>
         {children}
       </View>
@@ -129,6 +141,7 @@ function MenuContent({ className, 'aria-label': ariaLabel, children }: MenuConte
   );
 }
 
+/** One action in the menu, which closes it when chosen. */
 function MenuItem({
   iconSlot,
   label,
@@ -141,7 +154,7 @@ function MenuItem({
   linkSlot,
 }: MenuItemProps) {
   const { setOpen, skipReturnRef } = useContext(MenuContext);
-  const ink = destructive ? 'text-negative' : 'text-foreground';
+  const ink = destructive ? "text-negative" : "text-foreground";
   const row = (
     <Pressable
       role="menuitem"
@@ -154,36 +167,44 @@ function MenuItem({
       }}
       className={cn(
         MENU_ITEM_CLASS,
-        destructive ? 'active:bg-negative/10' : 'active:bg-hover',
-        disabled && 'opacity-50',
+        destructive ? "active:bg-negative/10" : "active:bg-hover",
+        disabled && "opacity-50",
         className,
       )}
     >
       {/* Colour does not inherit on native, so the row's ink reaches the icon through the
           context and the label through its own class. */}
-      <IconClassContext.Provider value={cn('size-4 shrink-0', ink)}>
+      <IconClassContext.Provider value={cn("size-4 shrink-0", ink)}>
         {iconSlot}
         <Text numberOfLines={1} className={cn(MENU_ITEM_TEXT_CLASS, ink)}>
           {label}
         </Text>
-        {typeof trailing === 'string' ? <Text className={MENU_TRAILING_CLASS}>{trailing}</Text> : trailing}
+        {typeof trailing === "string" ? (
+          <Text className={MENU_TRAILING_CLASS}>{trailing}</Text>
+        ) : (
+          trailing
+        )}
       </IconClassContext.Provider>
     </Pressable>
   );
   // `href` alone is only the web's: there is no URL to open on device, and the app's router is
   // what navigates. Its link takes the row the way it takes a `Button` — `asChild`, which hands
   // the row its press handler beside the row's own `onSelect`. A disabled row is not handed over.
-  return linkSlot && !disabled
+  return linkSlot && disabled === false
     ? cloneElement(linkSlot as ReactElement<{ asChild?: boolean }>, { asChild: true }, row)
     : row;
 }
 
+/** A rule between groups of rows. */
 function MenuSeparator({ className }: MenuSeparatorProps) {
   return <View role="separator" className={cn(MENU_SEPARATOR_CLASS, className)} />;
 }
 
-type ToggleRowProps = Pick<MenuCheckboxItemProps, 'iconSlot' | 'label' | 'trailing' | 'disabled' | 'className'> & {
-  kind: 'checkbox' | 'radio';
+type ToggleRowProps = Pick<
+  MenuCheckboxItemProps,
+  "iconSlot" | "label" | "trailing" | "disabled" | "className"
+> & {
+  kind: "checkbox" | "radio";
   checked: boolean;
   onPress: () => void;
 };
@@ -194,17 +215,28 @@ type ToggleRowProps = Pick<MenuCheckboxItemProps, 'iconSlot' | 'label' | 'traili
  * on device an unknown role is dropped, and the row would lose the one word that makes
  * `aria-checked` read as "checked", so there it is the plain `checkbox` / `radio`.
  */
-function toggleRole(kind: ToggleRowProps['kind']): Role {
-  if (Platform.OS !== 'web') return kind;
-  return (kind === 'checkbox' ? 'menuitemcheckbox' : 'menuitemradio') as Role;
+function toggleRole(kind: ToggleRowProps["kind"]): Role {
+  if (Platform.OS !== "web") {
+    return kind;
+  }
+  return (kind === "checkbox" ? "menuitemcheckbox" : "menuitemradio") as Role;
 }
 
 /**
  * `MenuItem`'s row with a ✓ slot at the far edge, and `aria-checked` for the state. What it does
  * when pressed — toggle and stay open, or choose and close — is the caller's.
  */
-function ToggleRow({ kind, checked, onPress, iconSlot, label, trailing, disabled = false, className }: ToggleRowProps) {
-  const ink = 'text-foreground';
+function ToggleRow({
+  kind,
+  checked,
+  onPress,
+  iconSlot,
+  label,
+  trailing,
+  disabled = false,
+  className,
+}: ToggleRowProps) {
+  const ink = "text-foreground";
   return (
     <Pressable
       role={toggleRole(kind)}
@@ -212,14 +244,18 @@ function ToggleRow({ kind, checked, onPress, iconSlot, label, trailing, disabled
       disabled={disabled}
       aria-disabled={disabled}
       onPress={onPress}
-      className={cn(MENU_ITEM_CLASS, 'active:bg-hover', disabled && 'opacity-50', className)}
+      className={cn(MENU_ITEM_CLASS, "active:bg-hover", disabled && "opacity-50", className)}
     >
-      <IconClassContext.Provider value={cn('size-4 shrink-0', ink)}>
+      <IconClassContext.Provider value={cn("size-4 shrink-0", ink)}>
         {iconSlot}
         <Text numberOfLines={1} className={cn(MENU_ITEM_TEXT_CLASS, ink)}>
           {label}
         </Text>
-        {typeof trailing === 'string' ? <Text className={MENU_TRAILING_CLASS}>{trailing}</Text> : trailing}
+        {typeof trailing === "string" ? (
+          <Text className={MENU_TRAILING_CLASS}>{trailing}</Text>
+        ) : (
+          trailing
+        )}
         <View className={MENU_INDICATOR_CLASS}>{checked ? <Check /> : null}</View>
       </IconClassContext.Provider>
     </Pressable>
@@ -228,14 +264,27 @@ function ToggleRow({ kind, checked, onPress, iconSlot, label, trailing, disabled
 
 /** Pressed, it reports its new state and leaves the menu open, so a list is toggled in one go. */
 function MenuCheckboxItem({ checked, onCheckedChange, ...row }: MenuCheckboxItemProps) {
-  return <ToggleRow {...row} kind="checkbox" checked={checked} onPress={() => onCheckedChange?.(!checked)} />;
+  return (
+    <ToggleRow
+      {...row}
+      kind="checkbox"
+      checked={checked}
+      onPress={() => onCheckedChange?.(!checked)}
+    />
+  );
 }
 
-type RadioGroupState = Pick<MenuRadioGroupProps, 'value' | 'onValueChange'>;
+type RadioGroupState = Pick<MenuRadioGroupProps, "value" | "onValueChange">;
 
 const RadioGroupContext = createContext<RadioGroupState | null>(null);
 
-function MenuRadioGroup({ value, onValueChange, 'aria-label': ariaLabel, children }: MenuRadioGroupProps) {
+/** A set of `MenuRadioItem`s of which one is chosen. */
+function MenuRadioGroup({
+  value,
+  onValueChange,
+  "aria-label": ariaLabel,
+  children,
+}: MenuRadioGroupProps) {
   return (
     <RadioGroupContext.Provider value={{ value, onValueChange }}>
       <View role="group" aria-label={ariaLabel}>
@@ -262,4 +311,13 @@ function MenuRadioItem({ value, ...row }: MenuRadioItemProps) {
   );
 }
 
-export { Menu, MenuCheckboxItem, MenuContent, MenuItem, MenuRadioGroup, MenuRadioItem, MenuSeparator, MenuTrigger };
+export {
+  Menu,
+  MenuCheckboxItem,
+  MenuContent,
+  MenuItem,
+  MenuRadioGroup,
+  MenuRadioItem,
+  MenuSeparator,
+  MenuTrigger,
+};

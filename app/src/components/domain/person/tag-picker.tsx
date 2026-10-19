@@ -1,11 +1,10 @@
 import { useState } from 'react';
 import { View } from 'react-native';
 import { LabelChip } from '@/components/domain/label/label-chip';
-import { MultiSelect } from '@/components/multi-select';
 import { EmptyState } from '@/components/page';
 import { Button } from '@/components/ui/button';
-import { type FieldProps, FieldWrapper, useFieldContext } from '@/components/ui/form';
 import { Tag } from '@/components/ui/icons';
+import type { SelectOption } from '@/lib/select-options';
 
 /** A label used as a tag on a note, an interaction or an important date. */
 export interface TagOption {
@@ -100,28 +99,19 @@ export function RowTags({ tags, allTags, onAttach, onDetach, onChanged }: RowTag
   );
 }
 
-/** A form's tag picker, bound to a `string[]` of label ids. Render inside `form.AppField`. */
-export function TagsField({ allTags, ...fieldProps }: Omit<FieldProps, 'label'> & { allTags: TagOption[] }) {
-  const field = useFieldContext<string[]>();
-
-  return (
-    <FieldWrapper
-      label="Tags"
-      asGroup
-      {...fieldProps}
-      controlSlot={
-        <MultiSelect
-          options={allTags.map((t) => ({ value: t.id, label: t.label, color: t.color }))}
-          value={field.state.value}
-          onValueChange={(next) => {
-            field.handleChange(next);
-            field.handleBlur();
-          }}
-          placeholder="Add tags..."
-          searchLabel="Search tags"
-          popoverLabel="Tags"
-        />
-      }
-    />
-  );
+/**
+ * What a form's tag picker is given: spread onto `field.ComboboxField multiple` inside the `form.AppField` that holds
+ * the `string[]` of label ids.
+ *
+ * @param allTags - Every tag the user has.
+ * @returns The field's label, options and copy.
+ */
+export function tagsFieldProps(allTags: TagOption[]) {
+  return {
+    label: 'Tags',
+    options: allTags.map((t): SelectOption => ({ value: t.id, label: t.label, color: t.color })),
+    placeholder: 'Add tags...',
+    searchLabel: 'Search tags',
+    popoverLabel: 'Tags',
+  };
 }

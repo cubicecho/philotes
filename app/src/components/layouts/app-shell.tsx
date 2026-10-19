@@ -2,7 +2,6 @@ import { useMutation } from '@apollo/client';
 import { Link, usePathname, useRouter } from 'expo-router';
 import { Text, View } from 'react-native';
 import { graphql } from '@/__generated__/gql';
-import { ActionButton } from '@/components/action-button';
 import { House, LogOut, Share2, UserRoundPlus, Users } from '@/components/app-icons';
 import { OfflineBanner } from '@/components/layouts/offline-banner';
 import { BarNavItem, Sidebar, SidebarNavItem, SidebarSection } from '@/components/sidebar';
@@ -114,9 +113,9 @@ export function AppShell({ contentSlot }: { contentSlot: SlotNode }) {
       actionSlot={
         <>
           <Link href="/persons?new=1" asChild>
-            <ActionButton label="Add person" iconSlot={<UserRoundPlus />} />
+            <Button aria-label="Add person" iconSlot={<UserRoundPlus />} />
           </Link>
-          <ActionButton label="Sign out" iconSlot={<LogOut />} onPress={signOut} />
+          <Button aria-label="Sign out" iconSlot={<LogOut />} onPress={signOut} />
         </>
       }
       // `role="main"` is what react-native-web turns into a <main>. It does not

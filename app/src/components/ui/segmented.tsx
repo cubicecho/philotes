@@ -1,8 +1,8 @@
-import type { ReactNode } from 'react';
-import * as React from 'react';
-import { Platform, Pressable, Text, View } from 'react-native';
-import { IconClassContext } from '@/components/ui/icons-base';
-import { cn, type SlotNode } from '@/lib/utils';
+import type { ReactNode } from "react";
+import * as React from "react";
+import { Platform, Pressable, Text, View } from "react-native";
+import { IconClassContext } from "@/components/ui/icons-base";
+import { cn, type SlotNode } from "@/lib/utils";
 
 /**
  * The container class, for a pill the caller renders itself.
@@ -12,8 +12,10 @@ import { cn, type SlotNode } from '@/lib/utils';
  */
 export function segmentedItemClass(active: boolean, className?: string) {
   return cn(
-    'rounded-md px-3 py-1.5 text-sm font-medium transition-colors',
-    active ? 'bg-active text-active-foreground' : 'text-foreground/60 hover:bg-hover hover:text-foreground',
+    "rounded-md px-3 py-1.5 text-sm font-semibold transition-colors",
+    active
+      ? "bg-active text-active-foreground"
+      : "text-foreground/60 hover:bg-hover hover:text-foreground",
     className,
   );
 }
@@ -25,7 +27,11 @@ export function segmentedItemClass(active: boolean, className?: string) {
  * `Text` and text-in-text does inherit.
  */
 export function segmentedTextClass(active: boolean, className?: string) {
-  return cn('text-sm font-medium', active ? 'text-active-foreground' : 'text-foreground/60', className);
+  return cn(
+    "text-sm font-semibold",
+    active ? "text-active-foreground" : "text-foreground/60",
+    className,
+  );
 }
 
 /**
@@ -34,11 +40,11 @@ export function segmentedTextClass(active: boolean, className?: string) {
  * text has when it is not hidden.
  */
 const LABEL_HIDE_BELOW = {
-  always: 'hidden',
-  sm: Platform.select({ web: 'hidden sm:inline', default: 'hidden sm:flex' }),
-  md: Platform.select({ web: 'hidden md:inline', default: 'hidden md:flex' }),
-  lg: Platform.select({ web: 'hidden lg:inline', default: 'hidden lg:flex' }),
-  xl: Platform.select({ web: 'hidden xl:inline', default: 'hidden xl:flex' }),
+  always: "hidden",
+  sm: Platform.select({ web: "hidden sm:inline", default: "hidden sm:flex" }),
+  md: Platform.select({ web: "hidden md:inline", default: "hidden md:flex" }),
+  lg: Platform.select({ web: "hidden lg:inline", default: "hidden lg:flex" }),
+  xl: Platform.select({ web: "hidden xl:inline", default: "hidden xl:flex" }),
 } as const;
 
 /**
@@ -46,9 +52,9 @@ const LABEL_HIDE_BELOW = {
  * `Button`'s does; device's from the `IconClassContext` the pill publishes.
  */
 const WITH_ICON = cn(
-  'flex-row items-center gap-1.5',
+  "flex-row items-center gap-1.5",
   Platform.select({
-    web: '[&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0',
+    web: "[&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
     default: undefined,
   }),
 );
@@ -73,21 +79,26 @@ const SegmentedGroupContext = React.createContext<SegmentedGroupContextValue | n
  * page with nothing round them, for a toolbar or a nav bar.
  */
 const SEGMENTED_GROUP_VARIANTS = {
-  framed: 'h-10 rounded-md border border-foreground/15 bg-background p-1',
-  plain: '',
+  framed: "h-10 rounded-md border border-foreground/50 bg-background p-1",
+  plain: "",
 } as const;
 
-export type SegmentedGroupProps = Omit<
+export type SegmentedGroupProps<TValue extends string = string> = Omit<
   React.ComponentProps<typeof View>,
-  'children' | 'className' | 'style' | 'role'
+  "children" | "className" | "style" | "role" | "ref"
 > & {
   /**
    * The current pill's `value`. With it, a `SegmentedButton value="week"` works
    * out whether it is current, so no pill needs `active={x === value}`.
    */
-  value?: string | undefined;
-  /** Called with a pill's `value` when it is pressed. */
-  onValueChange?: ((value: string) => void) | undefined;
+  value?: TValue | undefined;
+  /**
+   * Called with a pill's `value` when it is pressed. Typed as the group's
+   * `value` is, so a group over a closed set hands back a member of the set
+   * and the caller neither looks it up again nor asserts it.
+   */
+  onValueChange?: ((value: TValue) => void) | undefined;
+  ref?: React.Ref<React.ElementRef<typeof View>> | undefined;
   /** `framed` (the default) draws the input-height box; `plain` draws the row alone. */
   variant?: keyof typeof SEGMENTED_GROUP_VARIANTS | undefined;
   /**
@@ -101,9 +112,9 @@ export type SegmentedGroupProps = Omit<
    * The group's name, read on entering it: "Scale view, group". Give one
    * whenever no visible heading names the choice.
    */
-  'aria-label'?: string | undefined;
+  "aria-label"?: string | undefined;
   /** The id of a visible heading that names the group, in place of `aria-label`. */
-  'aria-labelledby'?: string | undefined;
+  "aria-labelledby"?: string | undefined;
   className?: string | undefined;
   children: ReactNode;
 };
@@ -119,38 +130,58 @@ export type SegmentedGroupProps = Omit<
  *
  * Holds no value of its own. `value` and `onValueChange` are the caller's, and
  * both are optional: a row of pills that each pass `active` still works inside it.
+ *
+ * Generic over the value, `string` unless the caller's `value` says otherwise, so
+ * a group over `"week" | "month"` calls `onValueChange` with that union.
  */
-const SegmentedGroup = React.forwardRef<React.ElementRef<typeof View>, SegmentedGroupProps>(
-  ({ value, onValueChange, variant = 'framed', labelHideBelow, className, children, ...props }, ref) => {
-    const framed = variant === 'framed';
-    const context = React.useMemo(
-      () => ({ value, onValueChange, framed, labelHideBelow }),
-      [value, onValueChange, framed, labelHideBelow],
-    );
-    return (
-      <SegmentedGroupContext.Provider value={context}>
-        <View
-          ref={ref}
-          role="group"
-          className={cn(
-            'flex-row items-center gap-1 self-start',
-            // A flex container is block-level on the web and would stretch the
-            // frame across the page; on device `self-start` already hugs it.
-            Platform.select({ web: 'w-fit', default: undefined }),
-            SEGMENTED_GROUP_VARIANTS[variant],
-            className,
-          )}
-          {...props}
-        >
-          {children}
-        </View>
-      </SegmentedGroupContext.Provider>
-    );
-  },
-);
-SegmentedGroup.displayName = 'SegmentedGroup';
+function SegmentedGroup<TValue extends string = string>({
+  value,
+  onValueChange,
+  variant = "framed",
+  labelHideBelow,
+  className,
+  children,
+  ref,
+  ...props
+}: SegmentedGroupProps<TValue>) {
+  const framed = variant === "framed";
+  const context = React.useMemo<SegmentedGroupContextValue>(
+    () => ({
+      value,
+      // The one place `TValue` is taken on trust. A pill only compares its own
+      // `value` and hands it back, so the context carries `string`; what makes
+      // that string a `TValue` is that the caller wrote the pills from the set.
+      onValueChange: onValueChange as ((value: string) => void) | undefined,
+      framed,
+      labelHideBelow,
+    }),
+    [value, onValueChange, framed, labelHideBelow],
+  );
+  return (
+    <SegmentedGroupContext.Provider value={context}>
+      <View
+        ref={ref}
+        role="group"
+        className={cn(
+          "flex-row items-center gap-1 self-start",
+          // A flex container is block-level on the web and would stretch the
+          // frame across the page; on device `self-start` already hugs it.
+          Platform.select({ web: "w-fit", default: undefined }),
+          SEGMENTED_GROUP_VARIANTS[variant],
+          className,
+        )}
+        {...props}
+      >
+        {children}
+      </View>
+    </SegmentedGroupContext.Provider>
+  );
+}
 
-export type SegmentedButtonProps = Omit<React.ComponentProps<typeof Pressable>, 'children' | 'className' | 'style'> & {
+export type SegmentedButtonProps = Omit<
+  React.ComponentProps<typeof Pressable>,
+  "children" | "className" | "style"
+> & {
   /**
    * Whether this is the current pill. Wins over a group's `value` when both are
    * given, so a call site written before `SegmentedGroup` keeps working.
@@ -195,9 +226,10 @@ const SegmentedButton = React.forwardRef<React.ElementRef<typeof Pressable>, Seg
   ({ active, value, iconSlot, className, children, onPress, ...props }, ref) => {
     const group = React.useContext(SegmentedGroupContext);
     const current = active ?? (group !== null && value !== undefined && group.value === value);
-    const ink = current ? 'text-active-foreground' : 'text-foreground/60';
+    const ink = current ? "text-active-foreground" : "text-foreground/60";
     // Only a pill with an icon has something left to draw once its label is gone.
     const labelHideBelow = iconSlot ? group?.labelHideBelow : undefined;
+    const iconOnlyHeight = group?.framed ? "min-h-7" : "min-h-8";
     return (
       <Pressable
         ref={ref}
@@ -213,20 +245,22 @@ const SegmentedButton = React.forwardRef<React.ElementRef<typeof Pressable>, Seg
         // `aria-pressed` rather than `aria-selected` because this is a `button`, and `aria-selected`
         // is only defined on `option`, `tab`, `row`, `gridcell` and `treeitem`; on a button it is
         // markup axe rejects. React Native has no `aria-pressed`, hence the platform guard.
-        {...(Platform.OS === 'web' ? ({ 'aria-pressed': current } as const) : {})}
+        {...(Platform.OS === "web" ? ({ "aria-pressed": current } as const) : {})}
         // A label that is not drawn is not read either, on either platform, so
         // the pill is named by the same string. Before `props`, so a caller's own
         // `aria-label` still wins.
-        {...(labelHideBelow && typeof children === 'string' ? { 'aria-label': children } : {})}
+        {...(labelHideBelow && typeof children === "string" ? { "aria-label": children } : {})}
         onPress={(event) => {
-          if (group && value !== undefined) group.onValueChange?.(value);
+          if (group && value !== undefined) {
+            group.onValueChange?.(value);
+          }
           onPress?.(event);
         }}
         className={cn(
           // Inside the frame a pill is 4px shorter, so it fits the input-height
           // box instead of spilling past its padding.
-          group?.framed ? 'rounded-md px-3 py-1' : 'rounded-md px-3 py-1.5',
-          current ? 'bg-active' : 'hover:bg-hover',
+          group?.framed ? "rounded-md px-3 py-1" : "rounded-md px-3 py-1.5",
+          current ? "bg-active" : "hover:bg-hover",
           // The label colour on the container too, which native ignores and web
           // reads: an element child passes through untouched below, so on web its
           // colour can only come from inheriting it here.
@@ -235,17 +269,24 @@ const SegmentedButton = React.forwardRef<React.ElementRef<typeof Pressable>, Seg
           // The label's line is what gives a pill its height, and an icon is
           // shorter than it: with the label hidden the pill would shrink, so it
           // is held at the height a labelled pill beside it has.
-          iconSlot ? (group?.framed ? 'min-h-7' : 'min-h-8') : undefined,
+          iconSlot ? iconOnlyHeight : undefined,
           className,
         )}
         {...props}
       >
         {/* Colour does not inherit on device, so the icon is handed the label's. */}
         {iconSlot ? (
-          <IconClassContext.Provider value={cn('size-4 shrink-0', ink)}>{iconSlot}</IconClassContext.Provider>
+          <IconClassContext.Provider value={cn("size-4 shrink-0", ink)}>
+            {iconSlot}
+          </IconClassContext.Provider>
         ) : null}
-        {typeof children === 'string' ? (
-          <Text className={segmentedTextClass(current, labelHideBelow ? LABEL_HIDE_BELOW[labelHideBelow] : undefined)}>
+        {typeof children === "string" ? (
+          <Text
+            className={segmentedTextClass(
+              current,
+              labelHideBelow ? LABEL_HIDE_BELOW[labelHideBelow] : undefined,
+            )}
+          >
             {children}
           </Text>
         ) : (
@@ -255,6 +296,6 @@ const SegmentedButton = React.forwardRef<React.ElementRef<typeof Pressable>, Seg
     );
   },
 );
-SegmentedButton.displayName = 'SegmentedButton';
+SegmentedButton.displayName = "SegmentedButton";
 
 export { SegmentedButton, SegmentedGroup };

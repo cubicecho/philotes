@@ -1,9 +1,13 @@
-import type { ReactNode } from 'react';
-import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
-import type { ViewStyle } from 'react-native';
-import { Platform, Pressable, Text, View } from 'react-native';
+import type { ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
+import type { ViewStyle } from "react-native";
+import { Platform, Pressable, Text, View } from "react-native";
+import { CircleAlert, CircleCheck, Info, TriangleAlert, X } from "@/components/ui/icons";
+import { IconClassContext } from "@/components/ui/icons-base";
+import { cn } from "@/lib/utils";
 
-export type ToastTone = 'error' | 'warning' | 'positive' | 'info';
+/** What kind of message a toast is, which picks its colour and how long it stays. */
+export type ToastTone = "error" | "warning" | "positive" | "info";
 
 type Toast = { id: number; message: string; tone: ToastTone };
 
@@ -20,18 +24,17 @@ const DURATION_MS: Record<ToastTone, number> = {
   info: 3000,
 };
 
-const TONE_CLASS: Record<ToastTone, string> = {
-  error: 'bg-negative',
-  warning: 'bg-warning',
-  positive: 'bg-positive',
-  info: 'bg-info',
-};
-
-const TONE_TEXT_CLASS: Record<ToastTone, string> = {
-  error: 'text-negative-foreground',
-  warning: 'text-warning-foreground',
-  positive: 'text-positive-foreground',
-  info: 'text-info-foreground',
+/**
+ * The tone's glyph and its ink: the only place the tone's hue reaches the toast. The box is a
+ * raised surface and the words are the foreground, so a toast does not read as a filled button —
+ * which a block of `bg-negative` with white text beside an ✕ was — and the tone is said by a shape
+ * as well as a colour.
+ */
+const TONE_ICON: Record<ToastTone, { glyph: ReactNode; ink: string }> = {
+  error: { glyph: <CircleAlert />, ink: "text-negative" },
+  warning: { glyph: <TriangleAlert />, ink: "text-warning" },
+  positive: { glyph: <CircleCheck />, ink: "text-positive" },
+  info: { glyph: <Info />, ink: "text-info" },
 };
 
 /**
@@ -42,16 +45,25 @@ const TONE_TEXT_CLASS: Record<ToastTone, string> = {
  * router's full-screen container.
  */
 const VIEWPORT_STYLE = Platform.select({
-  web: { position: 'fixed', right: 16, bottom: 16, zIndex: 50 },
+  // A set width, not the message's: "Saved." in a box its own size is a button-shaped pill.
+  web: {
+    position: "fixed",
+    right: 16,
+    bottom: 16,
+    width: 384,
+    maxWidth: "calc(100vw - 32px)",
+    zIndex: 50,
+  },
   default: {
-    position: 'absolute',
+    position: "absolute",
     left: 16,
     right: 16,
     bottom: 32,
     zIndex: 50,
   },
-}) as unknown as ViewStyle;
+}) as ViewStyle;
 
+/** Holds the toasts and draws them over the app. Put it once, near the root. */
 export function ToastProvider({ children }: { children: ReactNode }) {
   const [toasts, setToasts] = useState<Toast[]>([]);
   const nextId = useRef(0);
@@ -67,7 +79,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const show = useCallback<ShowToast>(
-    (message, tone = 'error') => {
+    (message, tone = "error") => {
       const id = nextId.current++;
       setToasts((prev) => [...prev, { id, message, tone }]);
       timers.current.set(
@@ -83,7 +95,9 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const pending = timers.current;
     return () => {
-      for (const timer of pending.values()) clearTimeout(timer);
+      for (const timer of pending.values()) {
+        clearTimeout(timer);
+      }
       pending.clear();
     };
   }, []);
@@ -101,23 +115,35 @@ export function ToastProvider({ children }: { children: ReactNode }) {
            * was true on device, where the role told the screen reader it was looking at a
            * message and not at something to activate.
            */}
-          {toasts.map((toast) => (
-            <View
-              key={toast.id}
-              accessibilityRole="alert"
-              className={`max-w-sm flex-row items-start gap-3 rounded-lg px-4 py-3 shadow-lg ${TONE_CLASS[toast.tone]}`}
-            >
-              <Text className={`flex-1 text-sm ${TONE_TEXT_CLASS[toast.tone]}`}>{toast.message}</Text>
-              <Pressable
-                onPress={() => dismiss(toast.id)}
-                accessibilityRole="button"
-                accessibilityLabel="Dismiss"
-                className="shrink-0"
+          {toasts.map((toast) => {
+            const { glyph, ink } = TONE_ICON[toast.tone];
+            return (
+              <View
+                key={toast.id}
+                accessibilityRole="alert"
+                className="w-full flex-row items-start gap-3 rounded-lg border border-foreground/10 bg-secondary px-4 py-3 shadow-lg"
               >
-                <Text className={`text-sm font-medium ${TONE_TEXT_CLASS[toast.tone]}`}>×</Text>
-              </Pressable>
-            </View>
-          ))}
+                <View aria-hidden className={cn("mt-0.5 shrink-0", ink)}>
+                  <IconClassContext.Provider value={cn("size-4 shrink-0", ink)}>
+                    {glyph}
+                  </IconClassContext.Provider>
+                </View>
+                <Text className="flex-1 text-sm text-foreground">{toast.message}</Text>
+                <Pressable
+                  onPress={() => dismiss(toast.id)}
+                  accessibilityRole="button"
+                  accessibilityLabel="Dismiss"
+                  // The ink is on the press target too, not only in the context: the glyph draws in
+                  // `currentColor`, and a `<button>` resets that to the UA's black.
+                  className="-m-1 shrink-0 rounded-md p-1 text-foreground/60"
+                >
+                  <IconClassContext.Provider value="size-4 text-foreground/60">
+                    <X />
+                  </IconClassContext.Provider>
+                </Pressable>
+              </View>
+            );
+          })}
         </View>
       )}
     </ToastContext.Provider>
@@ -131,7 +157,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
 export function useToast(): ShowToast {
   const show = useContext(ToastContext);
   if (!show) {
-    throw new Error('useToast must be used inside <ToastProvider>');
+    throw new Error("useToast must be used inside <ToastProvider>");
   }
   return show;
 }

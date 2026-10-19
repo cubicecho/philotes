@@ -4,12 +4,14 @@ import { View } from 'react-native';
 import { graphql } from '@/__generated__/gql';
 import { useAppForm } from '@/components/app-form';
 import { ConfirmButton } from '@/components/confirm-button';
+import { DialogLayout } from '@/components/dialog-layout';
 import { ListItem } from '@/components/list-item';
 import { EmptyState } from '@/components/page';
 import { SectionHeading } from '@/components/section-heading';
+import { Alert } from '@/components/ui/alert';
+import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Form } from '@/components/ui/form';
-import { FormDialog, FormDialogFooter } from '@/components/ui/form-dialog';
 import { Trash2 } from '@/components/ui/icons';
 
 export const TASK_LIST = graphql(`
@@ -158,7 +160,7 @@ function TaskRow({ task, onDelete, onUpdate }: TaskRowProps) {
         <ConfirmButton
           variant="ghost"
           size="icon-sm"
-          label="Delete task"
+          aria-label="Delete task"
           iconSlot={<Trash2 />}
           title="Delete this task?"
           description={`"${task.title}" is removed whether or not it is done. It cannot be brought back.`}
@@ -169,12 +171,13 @@ function TaskRow({ task, onDelete, onUpdate }: TaskRowProps) {
   );
 }
 
-interface AddTaskFormProps {
+interface AddTaskDialogProps {
   /** The person the task is added to. */
   personId: string;
-  /** Called after the task is saved. */
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  /** Called after the task is saved; the caller closes the dialog. */
   onAdded: () => void;
-  onCancel: () => void;
 }
 
 /** The add-task form's values. */
@@ -185,8 +188,8 @@ interface AddTaskFields {
   dueAt: Date | null;
 }
 
-/** The add-task fields and their footer. It draws no dialog of its own: render it inside a `FormDialog`. */
-function AddTaskForm({ personId, onAdded, onCancel }: AddTaskFormProps) {
+/** The dialog that adds one task to a person. */
+function AddTaskDialog({ personId, open, onOpenChange, onAdded }: AddTaskDialogProps) {
   const [formError, setFormError] = useState<string | null>(null);
   const [createTask] = useMutation(CREATE_TASK);
 
@@ -218,19 +221,43 @@ function AddTaskForm({ personId, onAdded, onCancel }: AddTaskFormProps) {
     },
   });
 
+  // Closing throws the draft away (the dialog has already asked), so the next open starts afresh.
+  const handleOpenChange = (next: boolean) => {
+    const isClosing = next === false;
+    if (isClosing) {
+      form.reset();
+      setFormError(null);
+    }
+    onOpenChange(next);
+  };
+
   return (
-    <form.AppForm>
-      <Form className="gap-4">
-        <form.AppField name="title">{(field) => <field.InputField label="Title" />}</form.AppField>
-        <form.AppField name="notes">{(field) => <field.InputField label="Notes" />}</form.AppField>
-        <form.AppField name="dueAt">
-          {(field) => <field.DateTimeField label="Due Date" mode="datetime" clearable />}
-        </form.AppField>
-        <FormDialogFooter onCancel={onCancel} error={formError}>
-          <form.SubmitButton createLabel="Add Task" savingLabel="Adding..." />
-        </FormDialogFooter>
-      </Form>
-    </form.AppForm>
+    <DialogLayout
+      open={open}
+      onOpenChange={handleOpenChange}
+      title="Add Task"
+      hasUnsavedChanges={() => form.state.isDefaultValue === false}
+      contentSlot={
+        <form.AppForm>
+          <Form className="gap-4">
+            <form.AppField name="title">{(field) => <field.InputField label="Title" />}</form.AppField>
+            <form.AppField name="notes">{(field) => <field.InputField label="Notes" />}</form.AppField>
+            <form.AppField name="dueAt">
+              {(field) => <field.DateTimeField label="Due Date" mode="datetime" clearable />}
+            </form.AppField>
+            {formError ? <Alert variant="destructive" title={formError} /> : null}
+          </Form>
+        </form.AppForm>
+      }
+      footerActionsSlot={(close) => (
+        <>
+          <Button variant="outline" onPress={close} content="Cancel" />
+          <form.AppForm>
+            <form.SubmitButton createLabel="Add Task" savingLabel="Adding..." />
+          </form.AppForm>
+        </>
+      )}
+    />
   );
 }
 
@@ -278,16 +305,15 @@ export function TaskList({
         </View>
       )}
 
-      <FormDialog open={addDialogOpen} onOpenChange={setAddDialogOpen} title="Add Task">
-        <AddTaskForm
-          personId={personId}
-          onAdded={() => {
-            setAddDialogOpen(false);
-            onAdd();
-          }}
-          onCancel={() => setAddDialogOpen(false)}
-        />
-      </FormDialog>
+      <AddTaskDialog
+        personId={personId}
+        open={addDialogOpen}
+        onOpenChange={setAddDialogOpen}
+        onAdded={() => {
+          setAddDialogOpen(false);
+          onAdd();
+        }}
+      />
     </View>
   );
 }

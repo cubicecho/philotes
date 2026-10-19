@@ -1,8 +1,11 @@
-import type { ReactNode } from 'react';
+import type { ReactNode } from "react";
 
-import { HeaderContentFooter, type HeaderContentFooterProps } from '@/components/header-content-footer';
-import { PageHeader, type PageHeaderLevel } from '@/components/page-header';
-import { cn, type SlotNode } from '@/lib/utils';
+import {
+  HeaderContentFooter,
+  type HeaderContentFooterProps,
+} from "@/components/header-content-footer";
+import { PageHeader, type PageHeaderLevel } from "@/components/page-header";
+import { cn, type SlotNode } from "@/lib/utils";
 
 export type PageLayoutProps = {
   /** The page. The only slot that scrolls, unless `scroll` is off. */
@@ -34,7 +37,7 @@ export type PageLayoutProps = {
    * The column the header and body share. `page` for a list or a board, `prose` for settings, a
    * detail page or a form, `full` for a pane that is already inside someone else's column.
    */
-  width?: HeaderContentFooterProps['width'];
+  width?: HeaderContentFooterProps["width"];
   /**
    * Whether the body scrolls. On unless the page fills the height and scrolls its own parts: a
    * chat's message list over a pinned composer, a framed app, tab panels that each keep their
@@ -42,36 +45,28 @@ export type PageLayoutProps = {
    */
   scroll?: boolean | undefined;
   /** The scrolling body, for a caller that has to reach it — restoring a scroll position. */
-  contentRef?: HeaderContentFooterProps['contentRef'];
+  contentRef?: HeaderContentFooterProps["contentRef"];
   /** A handle that moves the body: `scrollToEnd()`, the same on both halves. */
-  scrollRef?: HeaderContentFooterProps['scrollRef'];
+  scrollRef?: HeaderContentFooterProps["scrollRef"];
   /** Called as the body scrolls, with where it now is. Never called while `scroll` is off. */
-  onScroll?: HeaderContentFooterProps['onScroll'];
+  onScroll?: HeaderContentFooterProps["onScroll"];
   className?: string | undefined;
   headerClassName?: string | undefined;
+  /**
+   * Merged after the body's own `gap-4 py-4`, so `py-0` or `gap-6` replaces just that half. The
+   * body's `px-4` comes with `width` and is not here.
+   */
   contentClassName?: string | undefined;
   footerClassName?: string | undefined;
 };
 
 /**
- * A whole page: its title block pinned above a body that scrolls under it.
+ * A whole page: its title block pinned above a body that scrolls under it. This is
+ * `HeaderContentFooter` filling its parent, with a `PageHeader` in its header slot.
  *
- * This is `HeaderContentFooter`, filling its parent, with a `PageHeader` in its header slot, and
- * it exists because that is the sentence two apps here wrote out for themselves rather than the
- * component they reached for. `kanban_server/web/components/app-shell.tsx:282` and
- * `task_server/web/components/app-shell.tsx:46` are the same forty lines twice — the same
- * `title`, `description`, `actions`, the same `min-h-0 flex-1 overflow-y-auto`, the same
- * centred column — and having written it twice they disagree on the only prop that varies:
- * `wide` means `max-w-5xl` in one and `max-w-none` in the other, over a `max-w-3xl` default that
- * neither of them named. Across these projects there are 51 capped page columns in 10 widths.
- *
- * So the contribution is not the composition, which is four lines. It is that `width` is a word
- * — `page`, `prose`, `full` — instead of a number the next page picks again.
- *
- * **What it does not do.** It does not own the sidebar, the theme toggle or the route: those
- * belong to an app shell, and shadcn ships `sidebar` for the drawing. It does not scroll the
- * header away with the rows — that is the whole point of the chassis under it. And it takes no
- * `children`; the page is `contentSlot`, like every other slot in this set.
+ * What it adds is that `width` is a word (`page`, `prose`, `full`) instead of a number each page
+ * picks again. It does not own the sidebar, the theme toggle or the route, which belong to an app
+ * shell.
  */
 export function PageLayout({
   contentSlot,
@@ -84,7 +79,7 @@ export function PageLayout({
   loading = false,
   level = 1,
   footerSlot,
-  width = 'page',
+  width = "page",
   scroll = true,
   contentRef,
   scrollRef,
@@ -102,8 +97,10 @@ export function PageLayout({
       contentRef={contentRef}
       scrollRef={scrollRef}
       onScroll={onScroll}
-      className={cn('h-full', className)}
-      contentClassName={contentClassName}
+      className={cn("h-full", className)}
+      // Room under the header's rule and between the blocks a page stacks; a page that wants
+      // its rows flush says so with `py-0` or `gap-0`, merged after.
+      contentClassName={cn("gap-4 py-4", contentClassName)}
       footerClassName={footerClassName}
       headerSlot={
         <PageHeader

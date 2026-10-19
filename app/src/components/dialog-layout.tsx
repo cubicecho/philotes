@@ -1,8 +1,8 @@
-import type { ReactNode } from 'react';
-import { useState } from 'react';
-import { Platform, View } from 'react-native';
-import { HeaderContentFooter } from '@/components/header-content-footer';
-import { Button } from '@/components/ui/button';
+import type { ReactNode } from "react";
+import { useState } from "react";
+import { Platform, View } from "react-native";
+import { HeaderContentFooter } from "@/components/header-content-footer";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -11,16 +11,16 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from '@/components/ui/dialog';
-import { cn, type SlotNode } from '@/lib/utils';
+} from "@/components/ui/dialog";
+import { cn, type SlotNode } from "@/lib/utils";
 
 /** How wide the dialog wants to be, past the phone width every size shares. */
 const SIZES = {
-  sm: 'sm:max-w-sm',
-  md: 'sm:max-w-lg',
-  lg: 'sm:max-w-2xl',
-  xl: 'sm:max-w-4xl',
-  full: Platform.select({ web: 'sm:max-w-[calc(100vw-4rem)]', default: 'sm:max-w-full' }),
+  sm: "sm:max-w-sm",
+  md: "sm:max-w-lg",
+  lg: "sm:max-w-2xl",
+  xl: "sm:max-w-4xl",
+  full: Platform.select({ web: "sm:max-w-[calc(100vw-4rem)]", default: "sm:max-w-full" }),
 } as const;
 
 /**
@@ -30,8 +30,8 @@ const SIZES = {
  * own, restated for the styles that ship without one; on device the `Modal` is the screen.
  */
 const COLUMN = Platform.select({
-  web: 'flex max-h-[calc(100dvh-2rem)] flex-col overflow-hidden',
-  default: 'max-h-full overflow-hidden',
+  web: "flex max-h-[calc(100dvh-2rem)] flex-col overflow-hidden",
+  default: "max-h-full overflow-hidden",
 });
 
 /**
@@ -39,19 +39,19 @@ const COLUMN = Platform.select({
  * height; Yoga's `flex: 1` starts from nothing, so on device it starts from its content and
  * shrinks under the cap instead.
  */
-const CHASSIS = Platform.select({ web: 'min-h-0 flex-1 gap-4', default: 'min-h-0 shrink gap-4' });
+const CHASSIS = Platform.select({ web: "min-h-0 flex-1 gap-4", default: "min-h-0 shrink gap-4" });
 
 /** Off the screen and still read. `sr-only` is a clip, which the device does not have. */
 const SR_ONLY = Platform.select({
-  web: 'sr-only',
-  default: 'absolute -m-px h-px w-px overflow-hidden',
+  web: "sr-only",
+  default: "absolute -m-px h-px w-px overflow-hidden",
 });
 
 /**
  * The `footerActionsSlot` row: shrinks to the footer and wraps, right-aligned, rather than running
  * its buttons past the dialog's edge on a narrow screen — the same row `CardLayout` draws.
  */
-const ACTIONS = 'min-w-0 shrink flex-row flex-wrap items-center justify-end gap-2';
+const ACTIONS = "min-w-0 shrink flex-row flex-wrap items-center justify-end gap-2";
 
 export type DialogLayoutProps = {
   /** The body. It is the only part that scrolls. */
@@ -141,28 +141,12 @@ export type DialogLayoutProps = {
 };
 
 /**
- * A dialog with its slots already placed, and a body that scrolls under a header that does not.
+ * A dialog with its slots already placed, and a body that scrolls under a header and above a
+ * footer that do not. The scrolling shape is {@link HeaderContentFooter}'s, composed here.
  *
- * The scroll is the reason this exists rather than a snippet. Every hand-written dialog in these
- * apps caps itself with `max-h-[85vh] overflow-y-auto` on the content, which scrolls the *whole*
- * dialog: on a long form the title leaves the screen first and the save button is somewhere past
- * the end of the fields.
- *
- * That shape — chrome that stays, a middle that moves, floors that let it — is
- * {@link HeaderContentFooter}, so the dialog composes it rather than owning a second copy. What
- * is left here is the part that is about dialogs: the primitive's own header and footer, the
- * title an assistive technology needs, and the two classes that turn `DialogContent` into a
- * column that can be divided.
- *
- * **`hasUnsavedChanges` is a prop and not a hook, and that is the whole point.** Seven dialogs in
- * kanban_server closed through a `useDiscardGuard`; six called it and the seventh wired
- * `onOpenChange` straight into its `onClose` and quietly lost what had been typed. A hook is a
- * thing a caller can forget. A shell is not, because a caller cannot see it.
- *
- * **Padding stays with the primitive.** `DialogContent` carries it (`p-6` in new-york, `p-4` in
- * others) and so do the footers that bleed to its edge with a negative margin. A shell that set
- * its own would be a shell that only fits one style, so this one overrides `display` and
- * `overflow` and nothing else.
+ * `hasUnsavedChanges` is a prop and not a hook, because a hook is a thing a caller can forget to
+ * wire into closing. Padding stays with `DialogContent`, which differs between shadcn styles, so
+ * this overrides only `display` and `overflow`.
  */
 export function DialogLayout({
   contentSlot,
@@ -172,15 +156,15 @@ export function DialogLayout({
   triggerSlot,
   open,
   onOpenChange,
-  size = 'md',
+  size = "md",
   footerSlot,
   footerActionsSlot,
   dismissible = true,
   hasUnsavedChanges = false,
-  discardTitle = 'Discard your changes?',
-  discardDescription = 'What you have typed here will not be saved.',
-  discardLabel = 'Discard',
-  keepLabel = 'Keep editing',
+  discardTitle = "Discard your changes?",
+  discardDescription = "What you have typed here will not be saved.",
+  discardLabel = "Discard",
+  keepLabel = "Keep editing",
   showCloseButton = true,
   className,
   headerClassName,
@@ -196,7 +180,9 @@ export function DialogLayout({
   const isOpen = open ?? selfOpen;
 
   const setOpenState = (next: boolean) => {
-    if (open === undefined) setSelfOpen(next);
+    if (open === undefined) {
+      setSelfOpen(next);
+    }
     onOpenChange?.(next);
   };
 
@@ -206,8 +192,9 @@ export function DialogLayout({
     // Evaluated here and nowhere else, which is the whole of what the function form buys: it runs
     // on the paths that can close and never during a render, so a caller can read a store or ask
     // a child without subscribing to either.
-    const unsaved = typeof hasUnsavedChanges === 'function' ? hasUnsavedChanges() : hasUnsavedChanges;
-    if (!next && unsaved) {
+    const unsaved =
+      typeof hasUnsavedChanges === "function" ? hasUnsavedChanges() : hasUnsavedChanges;
+    if (next === false && unsaved) {
       setAskingToDiscard(true);
       return;
     }
@@ -223,7 +210,10 @@ export function DialogLayout({
 
   // The same close Escape, the overlay and the close button go through, handed to the footer so
   // a Cancel there is guarded by the thing that guards them.
-  const actions = typeof footerActionsSlot === 'function' ? footerActionsSlot(closeFromFooter) : footerActionsSlot;
+  const actions =
+    typeof footerActionsSlot === "function"
+      ? footerActionsSlot(closeFromFooter)
+      : footerActionsSlot;
 
   // Asked of what the footer actually rendered: a function that returns nothing should leave the
   // dialog with no footer, not with an empty one taking up a row.
@@ -235,7 +225,12 @@ export function DialogLayout({
 
   const discardQuestion = (
     <Dialog open={askingToDiscard} onOpenChange={setAskingToDiscard}>
-      <DialogContent role="alertdialog" showCloseButton={false} onInteractOutside={holdOpen} className="sm:max-w-lg">
+      <DialogContent
+        role="alertdialog"
+        showCloseButton={false}
+        onInteractOutside={holdOpen}
+        className="sm:max-w-lg"
+      >
         <DialogHeader>
           <DialogTitle>{discardTitle}</DialogTitle>
           <DialogDescription>{discardDescription}</DialogDescription>
@@ -261,7 +256,7 @@ export function DialogLayout({
           // Radix warns when nothing describes the content. Without a description that is the
           // intent, and an explicit `undefined` is how it is said — spread only in that case,
           // because the prop is applied after the primitive's own and would unlink a real one.
-          {...(description ? {} : { 'aria-describedby': undefined })}
+          {...(description ? {} : { "aria-describedby": undefined })}
           className={cn(COLUMN, SIZES[size], className)}
         >
           <HeaderContentFooter
@@ -271,7 +266,7 @@ export function DialogLayout({
               <DialogHeader
                 // The close button is positioned against the dialog, not the header, so a long
                 // title runs under it without this.
-                className={cn(showCloseButton && 'pr-6', headerClassName)}
+                className={cn(showCloseButton && "pr-6", headerClassName)}
               >
                 <DialogTitle className={cn(hideTitle && SR_ONLY)}>{title}</DialogTitle>
                 {description ? <DialogDescription>{description}</DialogDescription> : null}
@@ -279,11 +274,16 @@ export function DialogLayout({
             }
             // Four pixels of room either side, given back as padding: a focus ring is drawn
             // outside the element that owns it, and a scroll container clips at its edge.
-            contentClassName={cn('-mx-1 px-1', contentClassName)}
+            contentClassName={cn("-mx-1 px-1", contentClassName)}
             contentSlot={contentSlot}
             footerSlot={
               hasFooter ? (
-                <DialogFooter className={cn(footerSlot && footerActionsSlot && 'sm:justify-between', footerClassName)}>
+                <DialogFooter
+                  className={cn(
+                    footerSlot && footerActionsSlot && "sm:justify-between",
+                    footerClassName,
+                  )}
+                >
                   {footerSlot}
                   {actions ? <View className={ACTIONS}>{actions}</View> : null}
                 </DialogFooter>
@@ -293,14 +293,14 @@ export function DialogLayout({
 
           {/* On device the question is a `Modal` presented over this one, and iOS presents a
               second modal only from inside the first. */}
-          {Platform.OS === 'web' ? null : discardQuestion}
+          {Platform.OS === "web" ? null : discardQuestion}
         </DialogContent>
       </Dialog>
 
       {/* On the web, a sibling of the dialog rather than a child of it: two modals nested in the
           DOM fight over the focus trap, and the question has to be able to take focus from the
           form it is about. */}
-      {Platform.OS === 'web' ? discardQuestion : null}
+      {Platform.OS === "web" ? discardQuestion : null}
     </>
   );
 }

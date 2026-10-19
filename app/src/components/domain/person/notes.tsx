@@ -3,16 +3,16 @@ import { Link } from 'expo-router';
 import { useState } from 'react';
 import { Text, View } from 'react-native';
 import { graphql } from '@/__generated__/gql';
-import { ActionButton } from '@/components/action-button';
 import { useAppForm } from '@/components/app-form';
 import { ConfirmButton } from '@/components/confirm-button';
+import { DialogLayout } from '@/components/dialog-layout';
 import { MentionTextareaField } from '@/components/domain/person/note-mentions';
 import { ATTACH_NOTE_TAG, DETACH_NOTE_TAG } from '@/components/domain/person/tag-mutations';
-import { RowTags, type TagOption, TagsField } from '@/components/domain/person/tag-picker';
+import { RowTags, type TagOption, tagsFieldProps } from '@/components/domain/person/tag-picker';
 import { EmptyState } from '@/components/page';
+import { Alert } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Form } from '@/components/ui/form';
-import { FormDialog, FormDialogFooter } from '@/components/ui/form-dialog';
 import { Pencil, Trash2 } from '@/components/ui/icons';
 import { type MentionablePerson, parseMentionedPersonIds } from '@/lib/mentions';
 import { personName } from '@/lib/person-name';
@@ -101,7 +101,11 @@ interface NoteFormValues {
   labelIds: string[];
 }
 
-interface NoteFormProps {
+interface NoteFormDialogProps {
+  open: boolean;
+  /** Called when the dialog asks to close, and with `false` once the note is saved. */
+  onOpenChange: (open: boolean) => void;
+  title: string;
   initialBody?: string;
   /** Offered as a tag picker when given; an existing note's tags are managed on its row instead. */
   allTags?: TagOption[];
@@ -109,24 +113,28 @@ interface NoteFormProps {
   allPersons: MentionablePerson[];
   placeholder: string;
   submitLabel: string;
-  /** Saves the note. A rejection's message is shown in the footer and the form stays as typed. */
+  /**
+   * Saves the note. On success the form resets and the dialog closes; a rejection's message is shown under the
+   * fields and the form stays as typed.
+   */
   onSubmit: (values: NoteFormValues) => Promise<void>;
-  onCancel: () => void;
 }
 
 /**
- * The note body with its `@` mentions, an optional tag picker, and the footer. Submit is disabled while the body is
- * blank.
+ * The dialog that adds or edits a note: the body with its `@` mentions and an optional tag picker. Submit is disabled
+ * while the body is blank.
  */
-function NoteForm({
+function NoteFormDialog({
+  open,
+  onOpenChange,
+  title,
   initialBody = '',
   allTags = [],
   allPersons,
   placeholder,
   submitLabel,
   onSubmit,
-  onCancel,
-}: NoteFormProps) {
+}: NoteFormDialogProps) {
   const [formError, setFormError] = useState<string | null>(null);
   const defaultValues: { body: string; labelIds: string[] } = { body: initialBody, labelIds: [] };
 
@@ -144,27 +152,59 @@ function NoteForm({
           mentionedPersonIds: parseMentionedPersonIds(value.body, allPersons),
           labelIds: value.labelIds,
         });
-        form.reset();
       } catch (err: unknown) {
         setFormError(err instanceof Error ? err.message : 'An unexpected error occurred.');
+        return;
       }
+      form.reset();
+      onOpenChange(false);
     },
   });
 
+  // The dialog stays mounted while shut, so whatever way it closes, the next opening starts afresh.
+  const handleOpenChange = (next: boolean) => {
+    const isClosing = next === false;
+    if (isClosing) {
+      form.reset();
+      setFormError(null);
+    }
+    onOpenChange(next);
+  };
+
   return (
-    <form.AppForm>
-      <Form className="gap-4">
-        <form.AppField name="body">
-          {() => <MentionTextareaField label="Note" allPersons={allPersons} rows={4} placeholder={placeholder} />}
-        </form.AppField>
-        {allTags.length > 0 && <form.AppField name="labelIds">{() => <TagsField allTags={allTags} />}</form.AppField>}
-        <FormDialogFooter onCancel={onCancel} error={formError}>
-          <form.Subscribe selector={(state) => state.values.body}>
-            {(body) => <form.SubmitButton createLabel={submitLabel} savingLabel="Saving..." disabled={!body.trim()} />}
-          </form.Subscribe>
-        </FormDialogFooter>
-      </Form>
-    </form.AppForm>
+    <DialogLayout
+      open={open}
+      onOpenChange={handleOpenChange}
+      title={title}
+      hasUnsavedChanges={() => form.state.isDefaultValue === false}
+      contentSlot={
+        <form.AppForm>
+          <Form className="gap-4">
+            <form.AppField name="body">
+              {() => <MentionTextareaField label="Note" allPersons={allPersons} rows={4} placeholder={placeholder} />}
+            </form.AppField>
+            {allTags.length > 0 && (
+              <form.AppField name="labelIds">
+                {(field) => <field.ComboboxField multiple {...tagsFieldProps(allTags)} />}
+              </form.AppField>
+            )}
+            {formError ? <Alert variant="destructive" title={formError} /> : null}
+          </Form>
+        </form.AppForm>
+      }
+      footerActionsSlot={(close) => (
+        <>
+          <Button variant="outline" onPress={close} content="Cancel" />
+          <form.AppForm>
+            <form.Subscribe selector={(state) => state.values.body}>
+              {(body) => (
+                <form.SubmitButton createLabel={submitLabel} savingLabel="Saving..." disabled={body.trim() === ''} />
+              )}
+            </form.Subscribe>
+          </form.AppForm>
+        </>
+      )}
+    />
   );
 }
 
@@ -197,7 +237,6 @@ function NoteRow({ note, allTags, allPersons, onChanged }: NoteRowProps) {
         variables: { noteId: note.id, mentionedPersonId },
       });
     }
-    setEditOpen(false);
     onChanged();
   };
 
@@ -212,15 +251,15 @@ function NoteRow({ note, allTags, allPersons, onChanged }: NoteRowProps) {
         <View className="flex-row items-start justify-between gap-3">
           <Text className="min-w-0 flex-1 text-sm text-foreground">{note.body}</Text>
           <View className="shrink-0 flex-row gap-1">
-            <ActionButton
-              label="Edit note"
+            <Button
+              aria-label="Edit note"
               variant="ghost"
               size="icon-xs"
               iconSlot={<Pencil />}
               onPress={() => setEditOpen(true)}
             />
             <ConfirmButton
-              label="Delete note"
+              aria-label="Delete note"
               variant="ghost"
               size="icon-xs"
               iconSlot={<Trash2 />}
@@ -252,16 +291,16 @@ function NoteRow({ note, allTags, allPersons, onChanged }: NoteRowProps) {
         )}
       </View>
 
-      <FormDialog open={editOpen} onOpenChange={setEditOpen} title="Edit Note">
-        <NoteForm
-          initialBody={note.body}
-          allPersons={allPersons}
-          placeholder="Write your note..."
-          submitLabel="Save"
-          onSubmit={handleEdit}
-          onCancel={() => setEditOpen(false)}
-        />
-      </FormDialog>
+      <NoteFormDialog
+        open={editOpen}
+        onOpenChange={setEditOpen}
+        title="Edit Note"
+        initialBody={note.body}
+        allPersons={allPersons}
+        placeholder="Write your note..."
+        submitLabel="Save"
+        onSubmit={handleEdit}
+      />
     </>
   );
 }
@@ -291,7 +330,6 @@ export function PersonNotes({
         await createNoteMention({ variables: { noteId, mentionedPersonId } });
       }
     }
-    onCreateOpenChange(false);
     onChanged();
   };
 
@@ -303,16 +341,16 @@ export function PersonNotes({
         <NoteRow key={note.id} note={note} allTags={allTags} allPersons={allPersons} onChanged={onChanged} />
       ))}
 
-      <FormDialog open={createOpen} onOpenChange={onCreateOpenChange} title="Add Note">
-        <NoteForm
-          allTags={allTags}
-          allPersons={allPersons}
-          placeholder="Write your note... Type @ to mention someone"
-          submitLabel="Add Note"
-          onSubmit={handleCreate}
-          onCancel={() => onCreateOpenChange(false)}
-        />
-      </FormDialog>
+      <NoteFormDialog
+        open={createOpen}
+        onOpenChange={onCreateOpenChange}
+        title="Add Note"
+        allTags={allTags}
+        allPersons={allPersons}
+        placeholder="Write your note... Type @ to mention someone"
+        submitLabel="Add Note"
+        onSubmit={handleCreate}
+      />
     </View>
   );
 }

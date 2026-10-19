@@ -1,9 +1,9 @@
-import { View } from 'react-native';
-import { cn } from '@/lib/utils';
+import { View } from "react-native";
+import { cn } from "@/lib/utils";
 
 const SIZES = {
-  sm: 'h-2.5 w-2.5',
-  md: 'h-3 w-3',
+  sm: "h-2.5 w-2.5",
+  md: "h-3 w-3",
 } as const;
 
 type ColorDotProps = {
@@ -22,12 +22,14 @@ type ColorDotProps = {
  * decoration and is hidden from assistive tech rather than announced as an
  * unnamed image.
  */
-export function ColorDot({ color, size = 'md', className, label }: ColorDotProps) {
+export function ColorDot({ color, size = "md", className, label }: ColorDotProps) {
   return (
     <View
-      className={cn('shrink-0 rounded-full', SIZES[size], className)}
+      className={cn("shrink-0 rounded-full", SIZES[size], className)}
       style={{ backgroundColor: color }}
-      {...(label ? ({ role: 'img', 'aria-label': label } as const) : ({ 'aria-hidden': true } as const))}
+      {...(label
+        ? ({ role: "img", "aria-label": label } as const)
+        : ({ "aria-hidden": true } as const))}
     />
   );
 }

@@ -261,8 +261,9 @@ Do not edit a vendored file to fix or restyle it — change it in
 - **Shells take no children.** Content goes in `*Slot` props (`contentSlot`,
   `actionSlot`, `iconSlot`), which take elements, never a bare string. Word
   props — `title`, `description`, `label`, `content` — take strings.
-- **`Button` is `content` + `iconSlot`**; an icon-only button is an
-  `ActionButton` with a required `label`.
+- **`Button` is `content` + `iconSlot`**; an icon-only button is a `Button`
+  in an `icon*` size, which will not type-check without an `aria-label`. Only a
+  `hint` draws a tooltip.
 - **Every screen is a `PageLayout`.** The shell's main area does not scroll; a
   `PageLayout`'s body scrolls under its pinned header.
 - **Loading, error and empty are `QueryState`**, not three hand-written
@@ -270,8 +271,12 @@ Do not edit a vendored file to fix or restyle it — change it in
 
 ## Form Presentation Rule
 
-**All forms are presented inside a dialog** — a `FormDialog` from
-`@/components/ui/form-dialog`. Never render a form inline on a page, and never
+**All forms are presented inside a dialog** — a `DialogLayout` from
+`@/components/dialog-layout`, with the form as its `contentSlot`, Cancel and
+`form.SubmitButton` in `footerActionsSlot`, and
+`hasUnsavedChanges={() => form.state.isDefaultValue === false}` so closing asks
+before throwing typed work away. A server error is an `Alert` under the fields.
+Never render a form inline on a page, and never
 make a value editable in place: editing opens the dialog. This keeps the UI
 consistent and avoids layout shift. Confirmations are a `ConfirmDialog` or a
 `ConfirmButton`.

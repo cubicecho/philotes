@@ -3,11 +3,10 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { graphql } from '@/__generated__/gql';
 import { OrderDirection, type PersonFilters, type PersonRowFragment } from '@/__generated__/graphql';
-import { PersonForm, type PersonFormValue } from '@/components/domain/person/form';
+import { PersonFormDialog, type PersonFormValue } from '@/components/domain/person/form';
 import { PersonList, type PersonRowData } from '@/components/domain/person/list';
 import { PageLayout } from '@/components/page-layout';
 import { QueryState } from '@/components/query-state';
-import { FormDialog } from '@/components/ui/form-dialog';
 import { usePeople } from '@/hooks/use-people';
 import { useQueryStringState } from '@/hooks/use-query-string-state';
 import { useIsOffline } from '@/lib/connection';
@@ -265,19 +264,14 @@ export default function PersonsPage() {
   return (
     <>
       {/* Above the load guard, so /persons?new=1 opens the form while the list is still arriving. */}
-      <FormDialog
+      <PersonFormDialog
         open={dialogOpen}
         onOpenChange={setDialogOpen}
         title="New Person"
         description="Add a new person to your CRM."
-        className="sm:max-w-xl"
-      >
-        <PersonForm
-          availableLabels={labelsData?.labels ?? []}
-          onSubmit={handleSubmit}
-          onCancel={() => setDialogOpen(false)}
-        />
-      </FormDialog>
+        availableLabels={labelsData?.labels ?? []}
+        onSubmit={handleSubmit}
+      />
 
       {showsQueryState ? (
         <PageLayout

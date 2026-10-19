@@ -1,60 +1,61 @@
-import type { LucideIcon, LucideProps } from 'lucide-react-native';
-import ArrowDownWideNarrowSource from 'lucide-react-native/icons/arrow-down-wide-narrow';
-import ArrowLeftSource from 'lucide-react-native/icons/arrow-left';
-import ArrowRightSource from 'lucide-react-native/icons/arrow-right';
-import CalendarSource from 'lucide-react-native/icons/calendar';
-import CheckSource from 'lucide-react-native/icons/check';
-import ChevronDownSource from 'lucide-react-native/icons/chevron-down';
-import ChevronLeftSource from 'lucide-react-native/icons/chevron-left';
-import ChevronRightSource from 'lucide-react-native/icons/chevron-right';
-import ChevronUpSource from 'lucide-react-native/icons/chevron-up';
-import ChevronsUpDownSource from 'lucide-react-native/icons/chevrons-up-down';
-import CircleAlertSource from 'lucide-react-native/icons/circle-alert';
-import CircleCheckSource from 'lucide-react-native/icons/circle-check';
-import ClockSource from 'lucide-react-native/icons/clock';
-import CopySource from 'lucide-react-native/icons/copy';
-import DownloadSource from 'lucide-react-native/icons/download';
-import EllipsisSource from 'lucide-react-native/icons/ellipsis';
-import EyeSource from 'lucide-react-native/icons/eye';
-import EyeOffSource from 'lucide-react-native/icons/eye-off';
-import FileSource from 'lucide-react-native/icons/file';
-import FilePenSource from 'lucide-react-native/icons/file-pen';
-import FileTextSource from 'lucide-react-native/icons/file-text';
-import FolderSource from 'lucide-react-native/icons/folder';
-import FolderPenSource from 'lucide-react-native/icons/folder-pen';
-import InfoSource from 'lucide-react-native/icons/info';
-import KeyRoundSource from 'lucide-react-native/icons/key-round';
-import LibrarySource from 'lucide-react-native/icons/library';
-import LoaderCircleSource from 'lucide-react-native/icons/loader-circle';
-import LockSource from 'lucide-react-native/icons/lock';
-import MonitorSource from 'lucide-react-native/icons/monitor';
-import MoonSource from 'lucide-react-native/icons/moon';
-import PauseSource from 'lucide-react-native/icons/pause';
-import PencilSource from 'lucide-react-native/icons/pencil';
-import PlaySource from 'lucide-react-native/icons/play';
-import PlugSource from 'lucide-react-native/icons/plug';
-import PlusSource from 'lucide-react-native/icons/plus';
-import RefreshCwSource from 'lucide-react-native/icons/refresh-cw';
-import SearchSource from 'lucide-react-native/icons/search';
-import SettingsSource from 'lucide-react-native/icons/settings';
-import SquareSource from 'lucide-react-native/icons/square';
-import SunSource from 'lucide-react-native/icons/sun';
-import TagSource from 'lucide-react-native/icons/tag';
+import type { LucideIcon, LucideProps } from "lucide-react-native";
+import ArrowDownWideNarrowSource from "lucide-react-native/icons/arrow-down-wide-narrow";
+import ArrowLeftSource from "lucide-react-native/icons/arrow-left";
+import ArrowRightSource from "lucide-react-native/icons/arrow-right";
+import CalendarSource from "lucide-react-native/icons/calendar";
+import CheckSource from "lucide-react-native/icons/check";
+import ChevronDownSource from "lucide-react-native/icons/chevron-down";
+import ChevronLeftSource from "lucide-react-native/icons/chevron-left";
+import ChevronRightSource from "lucide-react-native/icons/chevron-right";
+import ChevronUpSource from "lucide-react-native/icons/chevron-up";
+import ChevronsUpDownSource from "lucide-react-native/icons/chevrons-up-down";
+import CircleAlertSource from "lucide-react-native/icons/circle-alert";
+import CircleCheckSource from "lucide-react-native/icons/circle-check";
+import CircleQuestionMarkSource from "lucide-react-native/icons/circle-question-mark";
+import ClockSource from "lucide-react-native/icons/clock";
+import CopySource from "lucide-react-native/icons/copy";
+import DownloadSource from "lucide-react-native/icons/download";
+import EllipsisSource from "lucide-react-native/icons/ellipsis";
+import EyeSource from "lucide-react-native/icons/eye";
+import EyeOffSource from "lucide-react-native/icons/eye-off";
+import FileSource from "lucide-react-native/icons/file";
+import FilePenSource from "lucide-react-native/icons/file-pen";
+import FileTextSource from "lucide-react-native/icons/file-text";
+import FolderSource from "lucide-react-native/icons/folder";
+import FolderPenSource from "lucide-react-native/icons/folder-pen";
+import InfoSource from "lucide-react-native/icons/info";
+import KeyRoundSource from "lucide-react-native/icons/key-round";
+import LibrarySource from "lucide-react-native/icons/library";
+import LoaderCircleSource from "lucide-react-native/icons/loader-circle";
+import LockSource from "lucide-react-native/icons/lock";
+import MonitorSource from "lucide-react-native/icons/monitor";
+import MoonSource from "lucide-react-native/icons/moon";
+import PauseSource from "lucide-react-native/icons/pause";
+import PencilSource from "lucide-react-native/icons/pencil";
+import PlaySource from "lucide-react-native/icons/play";
+import PlugSource from "lucide-react-native/icons/plug";
+import PlusSource from "lucide-react-native/icons/plus";
+import RefreshCwSource from "lucide-react-native/icons/refresh-cw";
+import SearchSource from "lucide-react-native/icons/search";
+import SettingsSource from "lucide-react-native/icons/settings";
+import SquareSource from "lucide-react-native/icons/square";
+import SunSource from "lucide-react-native/icons/sun";
+import TagSource from "lucide-react-native/icons/tag";
 // lucide 1.41 renamed `trash-2` to `trash` and ships no file for the old name. `Trash2` stays the
 // export, so no caller changes.
-import Trash2Source from 'lucide-react-native/icons/trash';
-import TriangleAlertSource from 'lucide-react-native/icons/triangle-alert';
-import Undo2Source from 'lucide-react-native/icons/undo-2';
-import UploadSource from 'lucide-react-native/icons/upload';
-import UserRoundSource from 'lucide-react-native/icons/user-round';
-import XSource from 'lucide-react-native/icons/x';
-import { styled } from 'nativewind';
-import { useContext } from 'react';
-import { IconClassContext } from '@/components/ui/icons-base';
-import { cn } from '@/lib/utils';
+import Trash2Source from "lucide-react-native/icons/trash";
+import TriangleAlertSource from "lucide-react-native/icons/triangle-alert";
+import Undo2Source from "lucide-react-native/icons/undo-2";
+import UploadSource from "lucide-react-native/icons/upload";
+import UserRoundSource from "lucide-react-native/icons/user-round";
+import XSource from "lucide-react-native/icons/x";
+import { styled } from "nativewind";
+import { useContext } from "react";
+import { IconClassContext } from "@/components/ui/icons-base";
+import { cn } from "@/lib/utils";
 
 /** What a wrapped icon takes: lucide's props, with `className` doing the styling. */
-export type IconProps = Omit<LucideProps, 'className'> & {
+export type IconProps = Omit<LucideProps, "className"> & {
   className?: string | undefined;
 };
 
@@ -78,14 +79,14 @@ export type IconProps = Omit<LucideProps, 'className'> & {
 export function icon(Source: LucideIcon) {
   const Styled = styled(Source, {
     className: {
-      target: 'style',
+      target: "style",
       nativeStyleMapping: { width: true, height: true, color: true },
     },
   });
 
   return function Icon({ className, ...props }: IconProps) {
     const inherited = useContext(IconClassContext);
-    return <Styled className={cn('text-foreground', inherited, className)} {...props} />;
+    return <Styled className={cn("text-foreground", inherited, className)} {...props} />;
   };
 }
 
@@ -101,6 +102,7 @@ export const ChevronUp = icon(ChevronUpSource);
 export const ChevronsUpDown = icon(ChevronsUpDownSource);
 export const CircleAlert = icon(CircleAlertSource);
 export const CircleCheck = icon(CircleCheckSource);
+export const CircleQuestionMark = icon(CircleQuestionMarkSource);
 export const Clock = icon(ClockSource);
 export const Copy = icon(CopySource);
 export const Download = icon(DownloadSource);

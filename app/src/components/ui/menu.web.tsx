@@ -1,8 +1,8 @@
-import { DropdownMenu as MenuPrimitive } from 'radix-ui';
-import type * as React from 'react';
-import { cloneElement, createContext, type RefObject, useContext, useRef, useState } from 'react';
-import { flushSync } from 'react-dom';
-import { Check } from '@/components/ui/icons';
+import { DropdownMenu as MenuPrimitive } from "radix-ui";
+import type * as React from "react";
+import { cloneElement, createContext, type RefObject, useContext, useRef, useState } from "react";
+import { flushSync } from "react-dom";
+import { Check } from "@/components/ui/icons";
 import {
   MENU_CONTENT_CLASS,
   MENU_INDICATOR_CLASS,
@@ -19,8 +19,8 @@ import {
   type MenuRadioItemProps,
   type MenuSeparatorProps,
   type MenuTriggerProps,
-} from '@/components/ui/menu-base';
-import { cn } from '@/lib/utils';
+} from "@/components/ui/menu-base";
+import { cn } from "@/lib/utils";
 
 /** The shared contract, widened to what the radix part underneath accepts. */
 type Wide<Base, Radix> = Base & Omit<Radix, keyof Base>;
@@ -40,6 +40,7 @@ const MenuContext = createContext<MenuState>({
   skipReturnRef: { current: false },
 });
 
+/** The root of a menu of actions: it holds the open state. */
 function Menu({
   open,
   onOpenChange,
@@ -52,7 +53,9 @@ function Menu({
   const [uncontrolled, setUncontrolled] = useState(defaultOpen);
   const isOpen = open ?? uncontrolled;
   const setOpen = (next: boolean) => {
-    if (open === undefined) setUncontrolled(next);
+    if (open === undefined) {
+      setUncontrolled(next);
+    }
     onOpenChange?.(next);
   };
   const skipReturnRef = useRef(false);
@@ -63,6 +66,7 @@ function Menu({
   );
 }
 
+/** The element that opens the menu. */
 function MenuTrigger({
   asChild,
   ...props
@@ -70,9 +74,10 @@ function MenuTrigger({
   return <MenuPrimitive.Trigger data-slot="menu-trigger" asChild={asChild ?? false} {...props} />;
 }
 
+/** The menu's list of rows. */
 function MenuContent({
   className,
-  align = 'center',
+  align = "center",
   sideOffset = 4,
   onCloseAutoFocus,
   ...props
@@ -86,7 +91,7 @@ function MenuContent({
         sideOffset={sideOffset}
         className={cn(
           MENU_CONTENT_CLASS,
-          'z-50 max-h-(--radix-dropdown-menu-content-available-height) origin-(--radix-dropdown-menu-content-transform-origin) overflow-x-hidden overflow-y-auto rounded-md border bg-secondary text-foreground shadow-md data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95',
+          "z-50 max-h-(--radix-dropdown-menu-content-available-height) origin-(--radix-dropdown-menu-content-transform-origin) overflow-x-hidden overflow-y-auto rounded-md border bg-secondary text-foreground shadow-md data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95",
           className,
         )}
         {...props}
@@ -94,7 +99,9 @@ function MenuContent({
           onCloseAutoFocus?.(event);
           // Radix focuses the trigger unless the event is prevented. A `focusesElsewhere` row
           // has already focused its target by now, and the trigger would take it back.
-          if (skipReturnRef.current) event.preventDefault();
+          if (skipReturnRef.current) {
+            event.preventDefault();
+          }
           skipReturnRef.current = false;
         }}
       />
@@ -102,6 +109,7 @@ function MenuContent({
   );
 }
 
+/** One action in the menu, which closes it when chosen. */
 function MenuItem({
   iconSlot,
   label,
@@ -114,14 +122,14 @@ function MenuItem({
   href,
   linkSlot,
   ...props
-}: Wide<MenuItemProps, Omit<React.ComponentProps<typeof MenuPrimitive.Item>, 'children'>>) {
+}: Wide<MenuItemProps, Omit<React.ComponentProps<typeof MenuPrimitive.Item>, "children">>) {
   const { setOpen, skipReturnRef } = useContext(MenuContext);
   const row = (
     <>
       {iconSlot}
-      <span className={cn(MENU_ITEM_TEXT_CLASS, 'truncate')}>{label}</span>
-      {typeof trailing === 'string' ? (
-        <span className={cn(MENU_TRAILING_CLASS, 'tracking-widest')}>{trailing}</span>
+      <span className={cn(MENU_ITEM_TEXT_CLASS, "truncate")}>{label}</span>
+      {typeof trailing === "string" ? (
+        <span className={MENU_TRAILING_CLASS}>{trailing}</span>
       ) : (
         trailing
       )}
@@ -134,15 +142,13 @@ function MenuItem({
   // which every router's click does — so a menu handed the router's click would never close.
   // Cloned the other way, the router link is handed radix's click and runs it first. A disabled
   // row is no link at all, so nothing can follow it.
-  const anchor = disabled ? undefined : linkSlot ? (
-    cloneElement(linkSlot, undefined, row)
-  ) : href !== undefined ? (
-    <a href={href}>{row}</a>
-  ) : undefined;
+  const plainAnchor = href !== undefined ? <a href={href}>{row}</a> : undefined;
+  const liveAnchor = linkSlot ? cloneElement(linkSlot, undefined, row) : plainAnchor;
+  const anchor = disabled ? undefined : liveAnchor;
   return (
     <MenuPrimitive.Item
       data-slot="menu-item"
-      data-variant={destructive ? 'destructive' : 'default'}
+      data-variant={destructive ? "destructive" : "default"}
       disabled={disabled}
       textValue={label}
       {...props}
@@ -163,7 +169,9 @@ function MenuItem({
       className={cn(
         MENU_ITEM_CLASS,
         MENU_ITEM_WEB_CLASS,
-        destructive ? 'text-negative focus:bg-negative/10 focus:text-negative' : 'text-foreground focus:bg-hover',
+        destructive
+          ? "text-negative focus:bg-negative/10 focus:text-negative"
+          : "text-foreground focus:bg-hover",
         className,
       )}
     >
@@ -172,6 +180,7 @@ function MenuItem({
   );
 }
 
+/** A rule between groups of rows. */
 function MenuSeparator({
   className,
   ...props
@@ -179,7 +188,7 @@ function MenuSeparator({
   return (
     <MenuPrimitive.Separator
       data-slot="menu-separator"
-      className={cn(MENU_SEPARATOR_CLASS, 'pointer-events-none', className)}
+      className={cn(MENU_SEPARATOR_CLASS, "pointer-events-none", className)}
       {...props}
     />
   );
@@ -189,17 +198,21 @@ function MenuSeparator({
  * A toggle row's inside: `MenuItem`'s icon, label and trailing node, then the ✓ slot at the far
  * edge. `ItemIndicator` renders only while its row is on; the slot around it stays.
  */
-function ToggleRowBody({ iconSlot, label, trailing }: Pick<MenuCheckboxItemProps, 'iconSlot' | 'label' | 'trailing'>) {
+function ToggleRowBody({
+  iconSlot,
+  label,
+  trailing,
+}: Pick<MenuCheckboxItemProps, "iconSlot" | "label" | "trailing">) {
   return (
     <>
       {iconSlot}
-      <span className={cn(MENU_ITEM_TEXT_CLASS, 'truncate')}>{label}</span>
-      {typeof trailing === 'string' ? (
-        <span className={cn(MENU_TRAILING_CLASS, 'tracking-widest')}>{trailing}</span>
+      <span className={cn(MENU_ITEM_TEXT_CLASS, "truncate")}>{label}</span>
+      {typeof trailing === "string" ? (
+        <span className={MENU_TRAILING_CLASS}>{trailing}</span>
       ) : (
         trailing
       )}
-      <span className={cn(MENU_INDICATOR_CLASS, 'flex')}>
+      <span className={cn(MENU_INDICATOR_CLASS, "flex")}>
         <MenuPrimitive.ItemIndicator>
           <Check />
         </MenuPrimitive.ItemIndicator>
@@ -208,8 +221,9 @@ function ToggleRowBody({ iconSlot, label, trailing }: Pick<MenuCheckboxItemProps
   );
 }
 
-const TOGGLE_ROW_CLASS = cn(MENU_ITEM_CLASS, MENU_ITEM_WEB_CLASS, 'text-foreground focus:bg-hover');
+const TOGGLE_ROW_CLASS = cn(MENU_ITEM_CLASS, MENU_ITEM_WEB_CLASS, "text-foreground focus:bg-hover");
 
+/** A row that is checked or not, and toggles when chosen. */
 function MenuCheckboxItem({
   iconSlot,
   label,
@@ -220,7 +234,10 @@ function MenuCheckboxItem({
   onSelect,
   className,
   ...props
-}: Wide<MenuCheckboxItemProps, Omit<React.ComponentProps<typeof MenuPrimitive.CheckboxItem>, 'children'>>) {
+}: Wide<
+  MenuCheckboxItemProps,
+  Omit<React.ComponentProps<typeof MenuPrimitive.CheckboxItem>, "children">
+>) {
   return (
     <MenuPrimitive.CheckboxItem
       data-slot="menu-checkbox-item"
@@ -241,6 +258,7 @@ function MenuCheckboxItem({
   );
 }
 
+/** A set of `MenuRadioItem`s of which one is chosen. */
 function MenuRadioGroup({
   value,
   onValueChange,
@@ -264,7 +282,10 @@ function MenuRadioItem({
   disabled = false,
   className,
   ...props
-}: Wide<MenuRadioItemProps, Omit<React.ComponentProps<typeof MenuPrimitive.RadioItem>, 'children'>>) {
+}: Wide<
+  MenuRadioItemProps,
+  Omit<React.ComponentProps<typeof MenuPrimitive.RadioItem>, "children">
+>) {
   return (
     <MenuPrimitive.RadioItem
       data-slot="menu-radio-item"
@@ -278,4 +299,13 @@ function MenuRadioItem({
   );
 }
 
-export { Menu, MenuCheckboxItem, MenuContent, MenuItem, MenuRadioGroup, MenuRadioItem, MenuSeparator, MenuTrigger };
+export {
+  Menu,
+  MenuCheckboxItem,
+  MenuContent,
+  MenuItem,
+  MenuRadioGroup,
+  MenuRadioItem,
+  MenuSeparator,
+  MenuTrigger,
+};

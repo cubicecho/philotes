@@ -1,15 +1,16 @@
-import { DateTimeInput } from '@/components/ui/date-time-input';
-import { type FieldProps, FieldWrapper, splitProps, useFieldContext } from '@/components/ui/form';
+import { DateTimeInput } from "@/components/ui/date-time-input";
+import { type FieldProps, FieldWrapper, splitProps, useFieldContext } from "@/components/ui/form";
 
 type DateTimeFieldProps = FieldProps & {
   /** `"datetime"` (default) draws the time box beside the date; `"date"` is a day at midnight. */
-  mode?: 'datetime' | 'date' | undefined;
+  mode?: "datetime" | "date" | undefined;
   /** Draws a Clear row in the popover, which writes `null`. */
   clearable?: boolean | undefined;
   /** What the trigger reads while the value is `null`. */
   placeholder?: string | undefined;
 };
 
+/** A `DateTimeInput` bound to a form field holding a `Date | null`. */
 export function DateTimeField(props: DateTimeFieldProps) {
   const [fieldProps, { mode, clearable = false, placeholder }] = splitProps(props);
   const field = useFieldContext<Date | null>();
@@ -27,7 +28,13 @@ export function DateTimeField(props: DateTimeFieldProps) {
   // empty — which draws no Clear row, because there is nothing to clear.
   const control =
     clearable || value === null ? (
-      <DateTimeInput mode={mode} placeholder={placeholder} clearable value={value} onChange={commit} />
+      <DateTimeInput
+        mode={mode}
+        placeholder={placeholder}
+        clearable
+        value={value}
+        onChange={commit}
+      />
     ) : (
       <DateTimeInput mode={mode} placeholder={placeholder} value={value} onChange={commit} />
     );

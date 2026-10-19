@@ -1,16 +1,45 @@
-import { cva } from 'class-variance-authority';
-import { Children, type ReactNode } from 'react';
+import { cva } from "class-variance-authority";
+import { Children, type ReactNode } from "react";
 
+/** The meanings a badge can carry, which pick its colours. */
 export type BadgeVariant =
-  | 'default'
-  | 'secondary'
-  | 'destructive'
-  | 'outline'
-  | 'ghost'
-  | 'link'
-  | 'positive'
-  | 'warning'
-  | 'info';
+  | "default"
+  | "secondary"
+  | "destructive"
+  | "outline"
+  | "ghost"
+  | "link"
+  | "positive"
+  | "warning"
+  | "info"
+  | "destructive-soft"
+  | "positive-soft"
+  | "warning-soft"
+  | "info-soft";
+
+type SoftVariant = "destructive-soft" | "positive-soft" | "warning-soft" | "info-soft";
+
+/**
+ * The dot drawn before a soft badge's words, in the hue. The words themselves are the foreground,
+ * not the hue: `text-negative` on `bg-negative/10` is 3.99:1 in the default light palette, and
+ * positive and warning are under 4.5:1 too — the reason `Alert` keeps its text the foreground. So
+ * the hue is in the tint, the edge and this dot. A literal per hue, so Tailwind finds each class.
+ */
+const SOFT_DOT = {
+  "destructive-soft": "bg-negative",
+  "positive-soft": "bg-positive",
+  "warning-soft": "bg-warning",
+  "info-soft": "bg-info",
+} satisfies Record<SoftVariant, string>;
+
+function isSoft(variant: BadgeVariant | null | undefined): variant is SoftVariant {
+  return variant !== null && variant !== undefined && variant in SOFT_DOT;
+}
+
+/** The soft variants' dot class, `null` for every other variant. */
+export function badgeSoftDotClass(variant: BadgeVariant | null | undefined): string | null {
+  return isSoft(variant) ? `size-1.5 shrink-0 rounded-full ${SOFT_DOT[variant]}` : null;
+}
 
 export type BadgeProps = {
   variant?: BadgeVariant | undefined;
@@ -43,6 +72,17 @@ export type BadgeProps = {
    * it, and by the web half's `asChild`, whose one child is the whole badge.
    */
   onRemove?: (() => void) | undefined;
+  /**
+   * Sets the label in monospace at normal weight, for a machine string: an id, a tool name, a cron
+   * expression. It is on the label's type, not the container, so it reaches the `Text` on native.
+   * `variant` stays free for colour.
+   */
+  mono?: boolean | undefined;
+  /**
+   * Pulses the dot, for something live: a run in progress, a connection that is up. The dot only;
+   * a badge with children ignores it. It stops for a reader who asked for reduced motion.
+   */
+  pulse?: boolean | undefined;
   /** The ✕'s accessible name. Defaults to `Remove <text>`, the badge's own text. */
   removeLabel?: string | undefined;
   /**
@@ -52,9 +92,13 @@ export type BadgeProps = {
   children?: ReactNode;
 };
 
+/** One breath of `pulse`, and how faint the dot gets: Tailwind's `animate-pulse`. */
+export const BADGE_PULSE_MS = 2000;
+export const BADGE_PULSE_LOW = 0.5;
+
 /** Whether `children` holds anything to show, which is what decides pill or dot. */
 export function badgeHasLabel(children: ReactNode): boolean {
-  return !(children === undefined || children === null || children === false || children === '');
+  return children !== undefined && children !== null && children !== false && children !== "";
 }
 
 /**
@@ -63,11 +107,11 @@ export function badgeHasLabel(children: ReactNode): boolean {
  */
 export function badgeRemoveLabel(children: ReactNode, label?: string | undefined): string {
   const text = Children.toArray(children)
-    .filter((child) => typeof child === 'string' || typeof child === 'number')
-    .join('')
+    .filter((child) => typeof child === "string" || typeof child === "number")
+    .join("")
     .trim();
   const name = text || label;
-  return name ? `Remove ${name}` : 'Remove';
+  return name ? `Remove ${name}` : "Remove";
 }
 
 /**
@@ -80,68 +124,89 @@ export function badgeRemoveLabel(children: ReactNode, label?: string | undefined
  * already is, and making it a second axis would allow the two states that mean
  * nothing: a dot with a label it cannot show, and an empty pill.
  */
-export const badgeContainerVariants = cva('shrink-0 rounded-full border border-transparent', {
+export const badgeContainerVariants = cva("shrink-0 rounded-full border border-transparent", {
   variants: {
     variant: {
-      default: 'bg-neutral',
-      secondary: 'bg-foreground/10',
-      destructive: 'bg-negative',
-      outline: 'border-foreground/10 bg-transparent',
-      ghost: 'bg-transparent',
-      link: 'bg-transparent',
-      positive: 'bg-positive',
-      warning: 'bg-warning',
-      info: 'bg-info',
+      default: "bg-neutral",
+      secondary: "bg-foreground/10",
+      destructive: "bg-negative",
+      outline: "border-foreground/10 bg-transparent",
+      ghost: "bg-transparent",
+      link: "bg-transparent",
+      positive: "bg-positive",
+      warning: "bg-warning",
+      info: "bg-info",
+      "destructive-soft": "border-negative/40 bg-negative/10",
+      "positive-soft": "border-positive/40 bg-positive/10",
+      "warning-soft": "border-warning/40 bg-warning/10",
+      "info-soft": "border-info/40 bg-info/10",
     },
     shape: {
-      pill: 'flex-row items-center justify-center gap-1 px-2 py-0.5',
-      dot: 'h-2 w-2',
+      pill: "flex-row items-center justify-center gap-1 px-2 py-0.5",
+      dot: "h-2 w-2",
     },
   },
-  defaultVariants: { variant: 'default', shape: 'pill' },
+  // A dot has no words to carry the hue, so a soft one is the solid colour: a tint 8px wide is
+  // not there.
+  compoundVariants: [
+    { variant: "destructive-soft", shape: "dot", className: "border-transparent bg-negative" },
+    { variant: "positive-soft", shape: "dot", className: "border-transparent bg-positive" },
+    { variant: "warning-soft", shape: "dot", className: "border-transparent bg-warning" },
+    { variant: "info-soft", shape: "dot", className: "border-transparent bg-info" },
+  ],
+  defaultVariants: { variant: "default", shape: "pill" },
 });
 
 /** The label's colour and nothing else, per variant. */
 const BADGE_INK = {
-  default: 'text-neutral-foreground',
-  secondary: 'text-foreground',
-  destructive: 'text-negative-foreground',
-  outline: 'text-foreground',
-  ghost: 'text-foreground',
-  link: 'text-info',
-  positive: 'text-positive-foreground',
-  warning: 'text-warning-foreground',
-  info: 'text-info-foreground',
+  default: "text-neutral-foreground",
+  secondary: "text-foreground",
+  destructive: "text-negative-foreground",
+  outline: "text-foreground",
+  ghost: "text-foreground",
+  link: "text-info",
+  positive: "text-positive-foreground",
+  warning: "text-warning-foreground",
+  info: "text-info-foreground",
+  "destructive-soft": "text-foreground",
+  "positive-soft": "text-foreground",
+  "warning-soft": "text-foreground",
+  "info-soft": "text-foreground",
 } satisfies Record<BadgeVariant, string>;
 
-/** The label's type and colour, per variant. */
-export const badgeTextVariants = cva('text-xs font-medium', {
+/** The label's type and colour, per variant, and set in monospace for `mono`. */
+export const badgeTextVariants = cva("text-xs", {
   variants: {
-    variant: { ...BADGE_INK, link: 'text-info underline-offset-4' },
+    variant: { ...BADGE_INK, link: "text-info underline-offset-4" },
+    mono: { false: "font-semibold", true: "font-mono font-normal" },
   },
-  defaultVariants: { variant: 'default' },
+  defaultVariants: { variant: "default", mono: false },
 });
 
 /**
  * The ✕'s colour on native, where nothing inherits: the label's ink without its
  * type, which an `<Svg>` has no use for. The web ✕ takes `currentColor` instead.
  */
-export const badgeInkVariants = cva('', {
+export const badgeInkVariants = cva("", {
   variants: { variant: BADGE_INK },
-  defaultVariants: { variant: 'default' },
+  defaultVariants: { variant: "default" },
 });
 
 /** The label's class when `backgroundColor` replaced the variant's own. */
-export const badgeTextFallback = 'text-xs font-medium text-foreground';
+export function badgeTextFallback(mono = false): string {
+  return mono
+    ? "text-xs font-mono font-normal text-foreground"
+    : "text-xs font-semibold text-foreground";
+}
 
 /** `badgeInkVariants`' counterpart, for when `backgroundColor` replaced the variant's own. */
-export const badgeInkFallback = 'text-foreground';
+export const badgeInkFallback = "text-foreground";
 
 /**
  * The badge's icon size — the one the web half gives an `<svg>` child — and so the ✕'s. It is
  * shorter than the label's line, so the ✕ never makes the pill taller.
  */
-export const badgeIconClass = 'size-3 shrink-0';
+export const badgeIconClass = "size-3 shrink-0";
 
 /**
  * shadcn's `badgeVariants`: the whole pill's classes, container and label together, for dressing
@@ -153,7 +218,7 @@ export function badgeVariants({
   shape,
 }: {
   variant?: BadgeVariant | null | undefined;
-  shape?: 'pill' | 'dot' | null | undefined;
+  shape?: "pill" | "dot" | null | undefined;
 } = {}): string {
   return `${badgeContainerVariants({ variant, shape })} ${badgeTextVariants({ variant })}`;
 }

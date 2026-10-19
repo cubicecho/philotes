@@ -1,5 +1,5 @@
-import type { ComponentType } from 'react';
-import { createContext } from 'react';
+import type { ComponentType } from "react";
+import { createContext } from "react";
 
 /**
  * What a component that takes an icon *as a prop* should ask for. The two
