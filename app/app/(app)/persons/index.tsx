@@ -2,7 +2,7 @@ import { useMutation } from '@apollo/client';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { graphql } from '@/__generated__/gql';
-import { OrderDirection, type PersonFilters, type PersonRowFragment } from '@/__generated__/graphql';
+import { ContactTypeEnum, OrderDirection, type PersonFilters, type PersonRowFragment } from '@/__generated__/graphql';
 import { PersonFormDialog, type PersonFormValue } from '@/components/domain/person/form';
 import { PersonList, type PersonRowData } from '@/components/domain/person/list';
 import { PageLayout } from '@/components/page-layout';
@@ -10,6 +10,7 @@ import { QueryState } from '@/components/query-state';
 import { usePeople } from '@/hooks/use-people';
 import { useQueryStringState } from '@/hooks/use-query-string-state';
 import { useIsOffline } from '@/lib/connection';
+import { type PersonPrefill, PREFILL_KEYS, prefillFromParams } from '@/lib/contact-intent';
 import { SEARCH_DEFAULTS } from '@/lib/defaults';
 import { invalidateQueryFields } from '@/lib/invalidate';
 import { PeopleSort, SortDirection, searchPeople, sortPeople } from '@/lib/people';
@@ -59,13 +60,16 @@ const CREATE_PERSON = graphql(`
   }
 `);
 
-const CREATE_PERSON_EMAIL = graphql(`
-  mutation CreatePersonEmail($personId: UUID!, $value: String!) {
-    createContactInfo(values: { personId: $personId, type: email, value: $value, isPrimary: true }) {
+const CREATE_PERSON_CONTACT = graphql(`
+  mutation CreatePersonContact($personId: UUID!, $type: ContactTypeEnum!, $value: String!) {
+    createContactInfo(values: { personId: $personId, type: $type, value: $value, isPrimary: true }) {
       id
     }
   }
 `);
+
+/** The query string with every prefill key cleared, once the form has taken them. */
+const NO_PREFILL = Object.fromEntries(PREFILL_KEYS.map((key) => [key, undefined]));
 
 const DELETE_PERSON = graphql(`
   mutation DeletePerson($id: UUID!) {
@@ -118,7 +122,7 @@ interface PersonsUrlState {
 /** The people page: the list with its search, label filter and sort, and the dialog that adds a person. */
 export default function PersonsPage() {
   const router = useRouter();
-  const { new: newParam } = useLocalSearchParams<{ new?: string }>();
+  const { new: newParam, ...otherParams } = useLocalSearchParams<{ new?: string } & Record<string, string>>();
 
   // URL state
   const [urlState, setUrlState] = useQueryStringState<PersonsUrlState>(
@@ -187,7 +191,7 @@ export default function PersonsPage() {
   const [createPerson] = useMutation(CREATE_PERSON, {
     update: (cache) => invalidateQueryFields(cache, ['persons']),
   });
-  const [createPersonEmail] = useMutation(CREATE_PERSON_EMAIL, {
+  const [createPersonContact] = useMutation(CREATE_PERSON_CONTACT, {
     update: (cache) => invalidateQueryFields(cache, ['persons']),
   });
   const [deletePerson] = useMutation(DELETE_PERSON, {
@@ -195,14 +199,19 @@ export default function PersonsPage() {
   });
 
   const [dialogOpen, setDialogOpen] = useState(false);
+  // What the form starts with when another app asked to add a contact (`contact-intent.ts`).
+  const [prefill, setPrefill] = useState<PersonPrefill | undefined>(undefined);
+  // As a string, so the effect below runs when the prefill changes rather than on every render.
+  const paramsPrefill = JSON.stringify(prefillFromParams(otherParams));
 
-  // FAB and other screens can deep-link the create dialog via /persons?new=1
+  // FAB and other screens can deep-link the create dialog via /persons?new=1, with a prefill after it.
   useEffect(() => {
     if (newParam) {
+      setPrefill(JSON.parse(paramsPrefill) as PersonPrefill);
       setDialogOpen(true);
-      router.setParams({ new: undefined });
+      router.setParams({ new: undefined, ...NO_PREFILL });
     }
-  }, [newParam, router]);
+  }, [newParam, paramsPrefill, router]);
 
   // Ordered here, since the copy has no order of its own and the server cannot order by a relation.
   const sortedPersons = sortPeople(matches, sortField, sortDir).map(toRow);
@@ -222,14 +231,18 @@ export default function PersonsPage() {
     await everyone.refresh();
   };
 
-  const handleSubmit = async ({ person, email }: PersonFormValue): Promise<void> => {
+  const handleSubmit = async ({ person, email, phone }: PersonFormValue): Promise<void> => {
     const { data: created } = await createPerson({ variables: { values: person } });
     const personId = created?.createPerson?.id;
+    // The person is saved by now. A refused address or number is reported, and can be added on their page.
     if (personId && email) {
-      // The person is saved by now. A refused address is reported, and can be added on their page.
-      await createPersonEmail({ variables: { personId, value: email } });
+      await createPersonContact({ variables: { personId, type: ContactTypeEnum.Email, value: email } });
+    }
+    if (personId && phone) {
+      await createPersonContact({ variables: { personId, type: ContactTypeEnum.Phone, value: phone } });
     }
     setDialogOpen(false);
+    setPrefill(undefined);
     await everyone.refresh();
   };
 
@@ -270,6 +283,7 @@ export default function PersonsPage() {
         title="New Person"
         description="Add a new person to your CRM."
         availableLabels={labelsData?.labels ?? []}
+        prefill={prefill}
         onSubmit={handleSubmit}
       />
 

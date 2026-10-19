@@ -14,7 +14,69 @@
         "monochromeImage": "./assets/adaptive-icon-monochrome.png",
         "backgroundColor": "#1a1a1a"
       },
-      "blockedPermissions": ["android.permission.CAMERA", "android.permission.RECORD_AUDIO"]
+      "blockedPermissions": ["android.permission.CAMERA", "android.permission.RECORD_AUDIO"],
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "category": ["DEFAULT"],
+          "data": [
+            {
+              "scheme": "content"
+            },
+            {
+              "mimeType": "vnd.android.cursor.item/contact"
+            },
+            {
+              "mimeType": "vnd.android.cursor.item/raw_contact"
+            }
+          ]
+        },
+        {
+          "action": "EDIT",
+          "category": ["DEFAULT"],
+          "data": [
+            {
+              "mimeType": "vnd.android.cursor.item/contact"
+            },
+            {
+              "mimeType": "vnd.android.cursor.item/raw_contact"
+            }
+          ]
+        },
+        {
+          "action": "INSERT",
+          "category": ["DEFAULT"],
+          "data": [
+            {
+              "mimeType": "vnd.android.cursor.dir/contact"
+            },
+            {
+              "mimeType": "vnd.android.cursor.dir/raw_contact"
+            }
+          ]
+        },
+        {
+          "action": "INSERT_OR_EDIT",
+          "category": ["DEFAULT"],
+          "data": [
+            {
+              "mimeType": "vnd.android.cursor.item/contact"
+            },
+            {
+              "mimeType": "vnd.android.cursor.item/raw_contact"
+            }
+          ]
+        },
+        {
+          "action": "PICK",
+          "category": ["DEFAULT"],
+          "data": [
+            {
+              "mimeType": "vnd.android.cursor.dir/contact"
+            }
+          ]
+        }
+      ]
     },
     "web": {
       "bundler": "metro",

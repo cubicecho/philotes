@@ -2,7 +2,14 @@ import { Redirect, Slot } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { View } from 'react-native';
 import { AppShell } from '@/components/layouts/app-shell';
+import { useContactIntents } from '@/hooks/use-contact-intents';
 import { isAuthenticated } from '@/lib/auth';
+
+/** Acts on the contact intents another app sends: only once someone is signed in, so it is its own part. */
+function ContactIntents() {
+  useContactIntents();
+  return null;
+}
 
 /** The signed-in area: the app shell around its routes, or a redirect to /login when there is no token. */
 export default function AppLayout() {
@@ -22,5 +29,10 @@ export default function AppLayout() {
     return <Redirect href="/login" />;
   }
 
-  return <AppShell contentSlot={<Slot />} />;
+  return (
+    <>
+      <ContactIntents />
+      <AppShell contentSlot={<Slot />} />
+    </>
+  );
 }

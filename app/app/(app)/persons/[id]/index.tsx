@@ -1,6 +1,6 @@
 import { type ApolloError, useMutation, useQuery } from '@apollo/client';
 import { Link, useLocalSearchParams, useRouter } from 'expo-router';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { View } from 'react-native';
 import { Users } from '@/components/app-icons';
 import { ConfirmButton } from '@/components/confirm-button';
@@ -59,7 +59,7 @@ function PersonPlaceholder({
 
 /** One person's page: the profile, and a section for each thing recorded about them. */
 export default function PersonDetailPage() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const { id, edit: editParam } = useLocalSearchParams<{ id: string; edit?: string }>();
   const router = useRouter();
 
   const { data, loading, error, refetch } = useQuery(GET_PERSON_DETAIL, {
@@ -87,6 +87,15 @@ export default function PersonDetailPage() {
 
   const person = data?.person;
   const keptPerson = useKeptPerson(id);
+
+  // `?edit=1` opens the edit form once the person is here: another app's "Edit contact" lands so.
+  const hasPerson = person !== undefined && person !== null;
+  useEffect(() => {
+    if (editParam && hasPerson) {
+      setEditPersonOpen(true);
+      router.setParams({ edit: undefined });
+    }
+  }, [editParam, hasPerson, router]);
 
   // Only the first load replaces the page: a refetch behind an open dialog must not unmount it.
   if (!person) {
