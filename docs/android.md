@@ -332,6 +332,22 @@ version that belongs to the installed SDK. Add them with `npx expo install
 land a package from the next SDK. `npx expo install --check` reports any that
 drifted, and CI fails on it; `npx expo install --fix` puts them back.
 
+### react-native-css
+
+NativeWind's runtime, react-native-css, carries two fixes cubeui's native
+registry needs (see cubeui's README, "Two things an Expo app has to add"):
+
+- `patches/react-native-css+3.1.0-rc.0.patch`, applied by `patch-package` in the
+  root `postinstall`. Without it every opacity class (`text-foreground/60`,
+  `bg-negative/10`) resolves to no colour on a device, which draws as black.
+  The patch names the exact version, so moving `react-native-css` off
+  `3.1.0-rc.0` means taking cubeui's patch for the new one.
+- `lightningcss` pinned to 1.30.1 in the root `overrides`, which covers the copy
+  react-native-css compiles with. From 1.30.2 the Android bundle does not build.
+
+A change to either changes the runtime fingerprint, so it needs one new
+development build.
+
 ## Not done yet
 
 - Nothing in this document has run on a device yet. It is checked by the

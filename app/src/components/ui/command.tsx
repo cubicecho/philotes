@@ -149,6 +149,9 @@ function CommandDialog({
   description = COMMAND_DIALOG_DESCRIPTION,
   className,
   showCloseButton = true,
+  label,
+  filter,
+  shouldFilter,
   children,
   ...props
 }: CommandDialogProps) {
@@ -165,7 +168,9 @@ function CommandDialog({
           <DialogTitle>{title}</DialogTitle>
           <DialogDescription>{description}</DialogDescription>
         </DialogHeader>
-        <Command>{children}</Command>
+        <Command label={label} filter={filter} shouldFilter={shouldFilter}>
+          {children}
+        </Command>
       </DialogContent>
     </Dialog>
   );

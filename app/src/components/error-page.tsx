@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { CircleAlert } from "@/components/ui/icons";
 import type { SlotNode } from "@/lib/utils";
 
-type RouteErrorProps = {
+type ErrorPageProps = {
   error: unknown;
   reset: () => void;
   /**
@@ -27,6 +27,8 @@ type RouteErrorProps = {
    */
   details?: ReactNode | boolean;
   /** More buttons beside "Try again" — a reload is the usual one. */
+  actionSlot?: SlotNode;
+  /** @deprecated Use `actionSlot`; this name goes in the next release. `actionSlot` wins. */
   actionsSlot?: SlotNode;
 };
 
@@ -58,15 +60,20 @@ function rawMessage(error: unknown): string | undefined {
   return undefined;
 }
 
-/** The whole-screen message shown when the tree below a route has thrown. */
-export function RouteError({
+/**
+ * The whole-screen message shown when the tree below a route has thrown. `actionsSlot` is the old
+ * name of `actionSlot`, kept for one release; the new name wins when both are passed.
+ */
+export function ErrorPage({
   error,
   reset,
   describe = friendlyMessage,
   title = "Something went wrong",
   details,
+  actionSlot,
   actionsSlot,
-}: RouteErrorProps) {
+}: ErrorPageProps) {
+  const actions = actionSlot ?? actionsSlot;
   const summary = describe(error);
   const detail = details === true ? rawMessage(error) : details || undefined;
   // A plain `Error` is described by its own message, so the default block would print it twice.
@@ -75,21 +82,28 @@ export function RouteError({
   return (
     <View
       role="alert"
-      testID="route-error"
+      testID="error-page"
       className="flex-1 items-center justify-center gap-4 px-8 py-20"
     >
       <View className="rounded-full bg-negative/10 p-4">
         <CircleAlert className="h-7 w-7 text-negative" />
       </View>
-      <View className="max-w-sm items-center">
-        <Text testID="route-error-title" className="font-semibold text-foreground">
+      {/* One width for the text and the details under it, not two centred columns. The title is
+          the screen's heading: `role`/`aria-level` because an `<h1>` has no native counterpart. */}
+      <View className="max-w-md items-center">
+        <Text
+          testID="error-page-title"
+          role="heading"
+          aria-level={1}
+          className="font-semibold text-foreground"
+        >
           {title}
         </Text>
         <Text className="mt-1 text-center text-sm text-foreground/60">{summary}</Text>
       </View>
       {shown ? (
         <View
-          testID="route-error-details"
+          testID="error-page-details"
           className="w-full max-w-md rounded-md border border-foreground/10 px-3 py-2"
         >
           {typeof shown === "string" ? (
@@ -106,8 +120,11 @@ export function RouteError({
       ) : null}
       <View className="flex-row flex-wrap items-center justify-center gap-2">
         <Button variant="outline" size="sm" onPress={reset} content="Try again" />
-        {actionsSlot}
+        {actions}
       </View>
     </View>
   );
 }
+
+/** @deprecated Use `ErrorPage`; this name goes in the next release. */
+export const RouteError = ErrorPage;

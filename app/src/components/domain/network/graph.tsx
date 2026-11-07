@@ -1,5 +1,5 @@
 import { Share2 } from '@/components/app-icons';
-import { EmptyState } from '@/components/page';
+import { EmptyState } from '@/components/empty-state';
 import type { NetworkGraphProps } from './types';
 
 /** The graph is drawn by d3 into an `<svg>`, which only the web has: see `graph.web.tsx`. */

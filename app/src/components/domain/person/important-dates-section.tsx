@@ -2,6 +2,7 @@ import { useMutation } from '@apollo/client';
 import { useState } from 'react';
 import { ImportantDatesMilestoneTypeEnum } from '@/__generated__/graphql';
 import { CalendarPlus } from '@/components/app-icons';
+import { CardLayout } from '@/components/card-layout';
 import {
   CREATE_IMPORTANT_DATE,
   DELETE_IMPORTANT_DATE,
@@ -13,8 +14,7 @@ import {
 import { ImportantDateDialog, type ImportantDateFormValue } from '@/components/domain/person/important-date-form';
 import { ImportantDateRow } from '@/components/domain/person/important-date-row';
 import { SectionAdd } from '@/components/domain/person/section-add';
-import { EmptyState } from '@/components/page';
-import { Section } from '@/components/section';
+import { EmptyState } from '@/components/empty-state';
 import { localIsoDate } from '@/lib/local-date';
 import { personName } from '@/lib/person-name';
 
@@ -64,8 +64,8 @@ export function ImportantDatesSection({ person, allLabels, allPersons, onChanged
 
   return (
     <>
-      <Section
-        surface="card"
+      <CardLayout
+        level={2}
         title="Important Dates"
         contentClassName="gap-2"
         actionSlot={<SectionAdd iconSlot={<CalendarPlus />} onPress={() => setDialogOpen(true)} />}

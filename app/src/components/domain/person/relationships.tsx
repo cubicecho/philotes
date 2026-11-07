@@ -6,8 +6,8 @@ import type { Person_RelationshipsFragment, PersonRelationshipEntry } from '@/__
 import { ConfirmButton } from '@/components/confirm-button';
 import { type EditingRelationship, RelationshipFormDialog } from '@/components/domain/person/relationship-form-dialog';
 import { DELETE_RELATIONSHIP } from '@/components/domain/person/relationship-queries';
+import { EmptyState } from '@/components/empty-state';
 import { ListItem } from '@/components/list-item';
-import { EmptyState } from '@/components/page';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Pencil, Trash2 } from '@/components/ui/icons';

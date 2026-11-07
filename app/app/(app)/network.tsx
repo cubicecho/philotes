@@ -2,9 +2,9 @@ import { useRouter } from 'expo-router';
 import { graphql } from '@/__generated__/gql';
 import { Users } from '@/components/app-icons';
 import { NetworkGraph } from '@/components/domain/network/graph';
-import { EmptyState } from '@/components/page';
+import { EmptyState } from '@/components/empty-state';
+import { LoadState } from '@/components/load-state';
 import { PageLayout } from '@/components/page-layout';
-import { QueryState } from '@/components/query-state';
 import { PAGE_SIZE_DEFAULTS } from '@/lib/defaults';
 import { useAllRows } from '@/lib/use-all-rows';
 
@@ -67,7 +67,7 @@ export default function NetworkPage() {
       contentClassName="flex-1"
       contentSlot={
         showsQueryState ? (
-          <QueryState
+          <LoadState
             query={{ isPending: pending, isError: error !== undefined, error, refetch }}
             what="your network"
             count={persons.length}

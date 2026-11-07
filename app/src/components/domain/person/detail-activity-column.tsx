@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { View } from 'react-native';
 import type { GetPersonInteractionsQuery, GetPersonNotesQuery } from '@/__generated__/graphql';
 import { Heart, MessageSquare, NotebookPen, SquareCheck } from '@/components/app-icons';
+import { CardLayout } from '@/components/card-layout';
 import type { DetailLabel, PersonDetail, PersonStub } from '@/components/domain/person/detail-queries';
 import { PersonGratitudes } from '@/components/domain/person/gratitudes';
 import { ImportantDatesSection } from '@/components/domain/person/important-dates-section';
@@ -10,7 +11,6 @@ import { PersonMentionedIn } from '@/components/domain/person/mentioned-in';
 import { PersonNotes } from '@/components/domain/person/notes';
 import { SectionAdd } from '@/components/domain/person/section-add';
 import { TaskList } from '@/components/domain/task/list';
-import { Section } from '@/components/section';
 
 export interface PersonActivityColumnProps {
   /** The person the page is about. */
@@ -49,8 +49,8 @@ export function PersonActivityColumn({
 
   return (
     <View className="min-w-0 gap-6 lg:flex-1">
-      <Section
-        surface="card"
+      <CardLayout
+        level={2}
         title="Notes"
         actionSlot={<SectionAdd iconSlot={<NotebookPen />} onPress={() => setNoteDialogOpen(true)} />}
         contentSlot={
@@ -74,8 +74,8 @@ export function PersonActivityColumn({
         }
       />
 
-      <Section
-        surface="card"
+      <CardLayout
+        level={2}
         title="Interactions"
         actionSlot={
           <SectionAdd iconSlot={<MessageSquare />} content="Log" onPress={() => onInteractionDialogOpenChange(true)} />
@@ -102,8 +102,8 @@ export function PersonActivityColumn({
 
       <ImportantDatesSection person={person} allLabels={allLabels} allPersons={allPersons} onChanged={onChanged} />
 
-      <Section
-        surface="card"
+      <CardLayout
+        level={2}
         title="Tasks"
         actionSlot={<SectionAdd iconSlot={<SquareCheck />} onPress={() => setTaskDialogOpen(true)} />}
         contentSlot={
@@ -126,8 +126,8 @@ export function PersonActivityColumn({
         }
       />
 
-      <Section
-        surface="card"
+      <CardLayout
+        level={2}
         title="Gratitude"
         actionSlot={<SectionAdd iconSlot={<Heart />} onPress={() => setGratitudeDialogOpen(true)} />}
         contentSlot={
@@ -142,7 +142,7 @@ export function PersonActivityColumn({
       />
 
       {mentionedInNotes.length > 0 ? (
-        <Section surface="card" title="Mentioned In" contentSlot={<PersonMentionedIn notes={mentionedInNotes} />} />
+        <CardLayout level={2} title="Mentioned In" contentSlot={<PersonMentionedIn notes={mentionedInNotes} />} />
       ) : null}
     </View>
   );

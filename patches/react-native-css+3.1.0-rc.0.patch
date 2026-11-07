@@ -1,0 +1,48 @@
+diff --git a/node_modules/react-native-css/dist/commonjs/native/styles/functions/color-mix.js b/node_modules/react-native-css/dist/commonjs/native/styles/functions/color-mix.js
+--- a/node_modules/react-native-css/dist/commonjs/native/styles/functions/color-mix.js
++++ b/node_modules/react-native-css/dist/commonjs/native/styles/functions/color-mix.js
+@@ -12,8 +12,10 @@ const colorMix = (resolveValue, value) => {
+   const resolved = resolveValue(value[2]);
+   if (!Array.isArray(resolved)) return;
+ 
+-  // Resolved descriptors may be cached and shared by another styled component.
+-  const args = [...resolved];
++  // Resolved descriptors may be cached and shared by another styled component, so copy them.
++  // An omitted percentage arrives as `null` (Metro injects the sheet as JSON): drop those, or the leftover
++  // argument makes every `color-mix()` with one percentage (Tailwind's `/50`) resolve to nothing.
++  const args = resolved.filter(arg => arg != null);
+   try {
+     const space = args.shift();
+     const leftValue = args.shift();
+diff --git a/node_modules/react-native-css/dist/module/native/styles/functions/color-mix.js b/node_modules/react-native-css/dist/module/native/styles/functions/color-mix.js
+--- a/node_modules/react-native-css/dist/module/native/styles/functions/color-mix.js
++++ b/node_modules/react-native-css/dist/module/native/styles/functions/color-mix.js
+@@ -8,8 +8,10 @@ export const colorMix = (resolveValue, value) => {
+   const resolved = resolveValue(value[2]);
+   if (!Array.isArray(resolved)) return;
+ 
+-  // Resolved descriptors may be cached and shared by another styled component.
+-  const args = [...resolved];
++  // Resolved descriptors may be cached and shared by another styled component, so copy them.
++  // An omitted percentage arrives as `null` (Metro injects the sheet as JSON): drop those, or the leftover
++  // argument makes every `color-mix()` with one percentage (Tailwind's `/50`) resolve to nothing.
++  const args = resolved.filter(arg => arg != null);
+   try {
+     const space = args.shift();
+     const leftValue = args.shift();
+diff --git a/node_modules/react-native-css/src/native/styles/functions/color-mix.ts b/node_modules/react-native-css/src/native/styles/functions/color-mix.ts
+--- a/node_modules/react-native-css/src/native/styles/functions/color-mix.ts
++++ b/node_modules/react-native-css/src/native/styles/functions/color-mix.ts
+@@ -18,8 +18,10 @@ export const colorMix: StyleFunctionResolver = (resolveValue, value) => {
+   const resolved = resolveValue(value[2]);
+   if (!Array.isArray(resolved)) return;
+ 
+-  // Resolved descriptors may be cached and shared by another styled component.
+-  const args: unknown[] = [...(resolved as unknown[])];
++  // Resolved descriptors may be cached and shared by another styled component, so copy them.
++  // An omitted percentage arrives as `null` (Metro injects the sheet as JSON): drop those, or the leftover
++  // argument makes every `color-mix()` with one percentage (Tailwind's `/50`) resolve to nothing.
++  const args: unknown[] = (resolved as unknown[]).filter((arg) => arg != null);
+   try {
+     const space = args.shift();
+     const leftValue = args.shift();

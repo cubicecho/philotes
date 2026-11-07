@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Text, View } from 'react-native';
-import { Section } from '@/components/section';
+import { CardLayout } from '@/components/card-layout';
 import { SettingRow } from '@/components/setting-row';
 import { Alert } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
@@ -83,8 +83,8 @@ export function PhoneLogCard() {
   const isAnyOn = Object.values(enabled).some(Boolean);
 
   return (
-    <Section
-      surface="card"
+    <CardLayout
+      level={2}
       title="Log Calls and Texts"
       description="Philotes can note when you were last in touch with someone by reading this phone’s call log and texts. It reads the other number, the time, which way it went and how long a call lasted, and never what a text says. What it reads goes to your Philotes server, which keeps an interaction for each number that belongs to one of your people and drops the rest. It reads when the app opens, and every so often in the background."
       contentSlot={

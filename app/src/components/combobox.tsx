@@ -67,6 +67,9 @@ const ON_HIGHLIGHT = Platform.select({
   default: "",
 });
 
+/** The muted lines on a chosen option, which is the chosen tint: muted on it is under 4.5:1. */
+const ON_CHOSEN = "text-foreground";
+
 /** Chips drawn before a `multiple` trigger collapses to a count. */
 const DEFAULT_MAX_DISPLAY = 3;
 
@@ -301,9 +304,12 @@ function OptionRow({
       // In reading order: the end of the row, then the line under it.
       aria-describedby={[metaId, hintId].filter(Boolean).join(" ") || undefined}
       onSelect={() => onPick(option.value)}
-      // `group` so the two muted lines can answer the highlight: see `ON_HIGHLIGHT`.
+      // `group` so the two muted lines can answer the highlight: see `ON_HIGHLIGHT`. A chosen
+      // option is the chosen tint, a step further while highlighted rather than the hover grey.
       className={cn(
         Platform.select({ web: "group", default: "" }),
+        selected && "bg-active/40",
+        selected && Platform.select({ web: "data-[selected=true]:bg-active/60", default: "" }),
         stacked && "items-start",
         option.className,
       )}
@@ -312,7 +318,8 @@ function OptionRow({
         className={cn(
           "size-4 shrink-0",
           stacked && "mt-0.5",
-          selected ? "opacity-100" : "opacity-0",
+          // The ✓ is what says chosen without colour, so on the tint it is full ink.
+          selected ? "text-foreground opacity-100" : "opacity-0",
         )}
         aria-hidden
       />
@@ -324,7 +331,11 @@ function OptionRow({
         {option.hint ? (
           // Wrapped rather than truncated: a reason cut off at the edge of the popover is the
           // same as no reason.
-          <OptionLine id={hintId} slot="combobox-option-hint" className={ON_HIGHLIGHT}>
+          <OptionLine
+            id={hintId}
+            slot="combobox-option-hint"
+            className={cn(ON_HIGHLIGHT, selected && ON_CHOSEN)}
+          >
             {option.hint}
           </OptionLine>
         ) : null}
@@ -333,7 +344,7 @@ function OptionRow({
         <OptionLine
           id={metaId}
           slot="combobox-option-meta"
-          className={cn("shrink-0", ON_HIGHLIGHT, stacked && "mt-0.5")}
+          className={cn("shrink-0", ON_HIGHLIGHT, selected && ON_CHOSEN, stacked && "mt-0.5")}
         >
           {option.meta}
         </OptionLine>
@@ -466,14 +477,19 @@ function SearchMenu({
           {...trigger}
           className={cn(
             "h-auto min-h-10 w-full justify-between gap-2 bg-background px-3 py-1.5 font-normal",
+            // It looks like a field, so it behaves like one: no hover fill, and focus turns its
+            // border `active`, as the select trigger beside it does — not a button's fill.
+            "hover:bg-background focus-visible:bg-background focus-visible:border-active",
             Platform.select({
-              web: "whitespace-normal aria-invalid:border-negative disabled:cursor-not-allowed",
+              web: "whitespace-normal aria-invalid:border-negative aria-invalid:focus-visible:border-active disabled:cursor-not-allowed",
               default: "",
             }),
             className,
           )}
           content={triggerSlot}
-          trailingSlot={<ChevronsUpDown className="size-4 shrink-0 opacity-50" aria-hidden />}
+          trailingSlot={
+            <ChevronsUpDown className="size-4 shrink-0 text-foreground/60" aria-hidden />
+          }
         />
       </PopoverTrigger>
       <PopoverContent
@@ -484,8 +500,8 @@ function SearchMenu({
         className={cn(
           Platform.select({
             // As wide as the trigger, so the list does not open narrower than what opened it.
-            web: "w-[var(--radix-popover-trigger-width)] p-0",
-            default: "w-80 max-w-full p-0",
+            web: "w-[var(--radix-popover-trigger-width)] gap-0 p-0",
+            default: "w-80 max-w-full gap-0 p-0",
           }),
           contentClassName,
         )}

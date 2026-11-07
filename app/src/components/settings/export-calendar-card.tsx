@@ -1,8 +1,8 @@
 import { Text, View } from 'react-native';
 import { graphql } from '@/__generated__/gql';
-import { EmptyState } from '@/components/page';
-import { QueryError } from '@/components/query-state';
-import { Section } from '@/components/section';
+import { CardLayout } from '@/components/card-layout';
+import { EmptyState } from '@/components/empty-state';
+import { LoadError } from '@/components/load-state';
 import { Button } from '@/components/ui/button';
 import { downloadBlob } from '@/components/ui/download-button';
 import { Download } from '@/components/ui/icons';
@@ -86,13 +86,13 @@ export function ExportCalendarCard() {
   }
 
   return (
-    <Section
-      surface="card"
+    <CardLayout
+      level={2}
       title="Export Calendar Events"
       description="Download all your interactions and important dates as an ICS file. You can import this into Google Calendar, Apple Calendar, Outlook, or any other calendar application."
       contentSlot={
         <View className="items-start gap-3">
-          {error ? <QueryError compact error={error} onRetry={() => refetch()} what="your events" /> : null}
+          {error ? <LoadError compact error={error} onRetry={() => refetch()} what="your events" /> : null}
           <Button
             iconSlot={<Download />}
             content={loading ? 'Loading…' : `Export ${totalCount} Events as ICS`}

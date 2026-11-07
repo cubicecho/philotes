@@ -1,7 +1,7 @@
 import { View } from 'react-native';
 import { graphql } from '@/__generated__/gql';
-import { QueryError } from '@/components/query-state';
-import { Section } from '@/components/section';
+import { CardLayout } from '@/components/card-layout';
+import { LoadError } from '@/components/load-state';
 import { Button } from '@/components/ui/button';
 import { downloadBlob } from '@/components/ui/download-button';
 import { Download } from '@/components/ui/icons';
@@ -89,13 +89,13 @@ export function ExportPeopleCard() {
   }
 
   return (
-    <Section
-      surface="card"
+    <CardLayout
+      level={2}
       title="Export People"
       description="Download all your contacts as a CSV file compatible with Google Contacts, Apple Contacts, and other applications."
       contentSlot={
         <View className="items-start gap-3">
-          {exportError ? <QueryError compact error={exportError} onRetry={() => refetch()} what="your people" /> : null}
+          {exportError ? <LoadError compact error={exportError} onRetry={() => refetch()} what="your people" /> : null}
           <Button
             iconSlot={<Download />}
             content={exportLoading ? 'Loading…' : `Export ${persons.length} People as CSV`}

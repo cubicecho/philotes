@@ -137,7 +137,9 @@ function Input({
               leadingSlot != null && INPUT_LEADING_PAD_CLASS,
               trailingSlot != null && INPUT_TRAILING_PAD_CLASS,
               isInvalid(ariaInvalid) && FIELD_INVALID_CLASS,
-              disabled && "opacity-50",
+              // A quiet fill as well as the fade, or a disabled field with a value reads like an
+              // empty one with a placeholder. In the addon form the box carries it.
+              disabled && "bg-foreground/10 opacity-50",
             ],
         className,
       )}
@@ -155,7 +157,7 @@ function Input({
           INPUT_ADDON_BOX_CLASS,
           isInvalid(ariaInvalid) && "border-negative",
           focused && "border-active",
-          disabled && "opacity-50",
+          disabled && "bg-foreground/10 opacity-50",
           wrapperClassName,
         )}
       >

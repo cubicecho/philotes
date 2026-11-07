@@ -5,9 +5,9 @@ import { View } from 'react-native';
 import { graphql } from '@/__generated__/gql';
 import { GitMerge } from '@/components/app-icons';
 import { DuplicateGroupCard, type DuplicatePerson } from '@/components/domain/person/duplicate-group';
-import { EmptyState } from '@/components/page';
+import { EmptyState } from '@/components/empty-state';
+import { LoadState } from '@/components/load-state';
 import { PageLayout } from '@/components/page-layout';
-import { QueryState } from '@/components/query-state';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft } from '@/components/ui/icons';
 import { primaryEmail } from '@/lib/primary-contact';
@@ -81,10 +81,10 @@ export default function DedupePage() {
       title="Find Duplicates"
       description="People who share an email, phone number or other contact detail."
       iconSlot={<GitMerge />}
-      breadcrumbsSlot={backLink}
+      backSlot={backLink}
       contentSlot={
         showsQueryState ? (
-          <QueryState
+          <LoadState
             query={{ isPending: pending, isError: error !== undefined, error, refetch }}
             what="possible duplicates"
             count={groups.length}

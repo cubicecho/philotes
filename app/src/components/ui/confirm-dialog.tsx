@@ -13,6 +13,18 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
+/**
+ * The question asked before unsaved work is thrown away — "Discard your changes?", Discard and
+ * Keep editing — in one place, so `DialogLayout` and `UnsavedChangesDialog` ask it in the same
+ * words.
+ */
+export const DISCARD_QUESTION = {
+  title: "Discard your changes?",
+  description: "What you have typed here will not be saved.",
+  discardLabel: "Discard",
+  keepLabel: "Keep editing",
+} as const;
+
 type ConfirmDialogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -139,7 +151,9 @@ function ConfirmDialogBody({
           <Label id={labelId} htmlFor={inputId}>
             {requireTextLabel ?? (
               <>
-                Type <Text className="font-semibold text-foreground">{requireText}</Text> to confirm
+                {/* Monospace, so the literal reads as the thing to type: inside an already
+                    semibold label a bolder word did not stand out. */}
+                Type <Text className="font-mono text-foreground">{requireText}</Text> to confirm
               </>
             )}
           </Label>

@@ -11,7 +11,7 @@ import {
   GET_RELATIONSHIP_TYPES,
   UPDATE_RELATIONSHIP,
 } from '@/components/domain/person/relationship-queries';
-import { EmptyState } from '@/components/page';
+import { EmptyState } from '@/components/empty-state';
 import { Alert } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';

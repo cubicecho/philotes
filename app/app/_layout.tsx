@@ -4,7 +4,7 @@ import * as SplashScreen from 'expo-splash-screen';
 import { useEffect, useState } from 'react';
 import { Platform, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { RouteError } from '@/components/route-error';
+import { ErrorPage } from '@/components/error-page';
 import { Button } from '@/components/ui/button';
 import { PaletteProvider, useThemePreference } from '@/components/ui/theme-preference';
 import { client, RESTORES_CACHE, restoreCachedData } from '@/lib/apollo';
@@ -85,12 +85,12 @@ export function ErrorBoundary({ error, retry }: ErrorBoundaryProps) {
   return (
     <View className="h-full flex-1 bg-background">
       <SafeAreaView style={SAFE_AREA}>
-        <RouteError
+        <ErrorPage
           error={error}
           reset={() => void retry()}
           details
           // Only a browser has a page to load again; on a device "Try again" is the way back.
-          actionsSlot={
+          actionSlot={
             Platform.OS === 'web' ? (
               <Button variant="outline" size="sm" onPress={() => window.location.reload()} content="Reload" />
             ) : null

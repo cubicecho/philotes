@@ -19,7 +19,7 @@ COPY package.json package-lock.json ./
 COPY db/package.json db/
 COPY server/package.json server/
 COPY app/package.json app/
-RUN npm ci --omit=dev --include-workspace-root --workspace @cubicecho/philotes-db --workspace @cubicecho/philotes-server \
+RUN npm ci --omit=dev --ignore-scripts --include-workspace-root --workspace @cubicecho/philotes-db --workspace @cubicecho/philotes-server \
  && npm cache clean --force
 
 # The server isn't compiled. Its sources are the build output.

@@ -1,18 +1,16 @@
-import { type ApolloError, useQuery } from '@apollo/client';
+import { useQuery } from '@apollo/client';
 import { Link, useLocalSearchParams } from 'expo-router';
 import { Text, View } from 'react-native';
 import { graphql } from '@/__generated__/gql';
 import { CalendarDays } from '@/components/app-icons';
+import { CardLayout } from '@/components/card-layout';
 import { LabelChip } from '@/components/domain/label/label-chip';
 import { RECURRENCE_OPTIONS } from '@/components/domain/person/important-date-form';
 import { GET_PERSON_NOTES } from '@/components/domain/person/person-queries';
-import { EmptyState } from '@/components/page';
+import { LoadState } from '@/components/load-state';
 import { PageLayout } from '@/components/page-layout';
-import { QueryError } from '@/components/query-state';
-import { Section } from '@/components/section';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft } from '@/components/ui/icons';
-import { Spinner } from '@/components/ui/spinner';
 import { formatDay } from '@/lib/local-date';
 import { useAllRows } from '@/lib/use-all-rows';
 
@@ -33,25 +31,6 @@ const GET_DATE_DETAIL = graphql(`
     }
   }
 `);
-
-/** What stands in for the page until there is a date: the failure, a spinner, or "not found". */
-function DatePlaceholder({
-  error,
-  loading,
-  onRetry,
-}: {
-  error: ApolloError | undefined;
-  loading: boolean;
-  onRetry: () => void;
-}) {
-  if (error) {
-    return <QueryError error={error} onRetry={onRetry} what="this date" />;
-  }
-  if (loading) {
-    return <Spinner />;
-  }
-  return <EmptyState icon={CalendarDays} title="Date not found." />;
-}
 
 /** One important date of a person, with that person's notes that share a tag with it. */
 export default function ImportantDateDetailPage() {
@@ -79,8 +58,16 @@ export default function ImportantDateDetailPage() {
       <PageLayout
         title="Important date"
         iconSlot={<CalendarDays />}
-        breadcrumbsSlot={backLink}
-        contentSlot={<DatePlaceholder error={error} loading={loading} onRetry={() => refetch()} />}
+        backSlot={backLink}
+        contentSlot={
+          <LoadState
+            query={{ isPending: loading, isError: error !== undefined, error, refetch }}
+            what="this date"
+            record={date}
+            notFoundLabel="Date not found."
+            level={2}
+          />
+        }
       />
     );
   }
@@ -101,7 +88,7 @@ export default function ImportantDateDetailPage() {
       title={date.name}
       description={recurrenceLabel ? `${dayLabel} · ${recurrenceLabel}` : dayLabel}
       iconSlot={<CalendarDays />}
-      breadcrumbsSlot={backLink}
+      backSlot={backLink}
       contentSlot={
         <View className="gap-6 py-4">
           {date.description ? <Text className="text-foreground/60 text-sm">{date.description}</Text> : null}
@@ -114,8 +101,8 @@ export default function ImportantDateDetailPage() {
             </View>
           ) : null}
 
-          <Section
-            surface="card"
+          <CardLayout
+            level={2}
             title="Related Notes"
             description="Notes from this person that share at least one tag with this date."
             contentSlot={

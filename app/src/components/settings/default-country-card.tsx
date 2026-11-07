@@ -4,8 +4,8 @@ import { Text } from 'react-native';
 import { z } from 'zod';
 import { graphql } from '@/__generated__/gql';
 import { useAppForm } from '@/components/app-form';
-import { QueryError } from '@/components/query-state';
-import { Section } from '@/components/section';
+import { CardLayout } from '@/components/card-layout';
+import { LoadError } from '@/components/load-state';
 import { Form } from '@/components/ui/form';
 
 const GET_DEFAULT_COUNTRY = graphql(`
@@ -61,15 +61,15 @@ export function DefaultCountryCard() {
   }, [stored, form]);
 
   return (
-    <Section
-      surface="card"
+    <CardLayout
+      level={2}
       title="Phone Numbers"
       description="The country a number is read in when it has no country code. It is how a number typed two ways is known to be the same one."
       contentSlot={
         <form.AppForm>
           <Form className="gap-3">
             {loadError ? (
-              <QueryError compact error={loadError} what="your default country" onRetry={() => refetch()} />
+              <LoadError compact error={loadError} what="your default country" onRetry={() => refetch()} />
             ) : null}
             <form.AppField name="country">
               {(field) => (

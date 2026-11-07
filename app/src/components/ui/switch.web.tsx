@@ -60,7 +60,9 @@ function Switch({
       aria-label={ariaLabel ?? accessibilityLabel}
       className={cn(
         SWITCH_TRACK_CLASS,
-        "peer group/switch inline-flex cursor-pointer transition-colors focus-visible:outline-none data-[state=unchecked]:focus-visible:bg-hover data-[state=checked]:focus-visible:bg-active/90 disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:border-negative data-[state=checked]:bg-active data-[state=unchecked]:bg-foreground/50 data-[size=sm]:h-4 data-[size=sm]:w-7",
+        // On, `SWITCH_TRACK_ON_CLASS` under `data-[state=checked]:`, and focused the `/60` step it has
+        // under the pointer.
+        "peer group/switch inline-flex cursor-pointer transition-colors focus-visible:outline-none data-[state=unchecked]:focus-visible:bg-hover data-[state=checked]:border-active data-[state=checked]:bg-active/40 data-[state=checked]:hover:bg-active/60 data-[state=checked]:focus-visible:bg-active/60 disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:border-negative data-[state=unchecked]:bg-foreground/50 data-[size=sm]:h-4 data-[size=sm]:w-7",
         refuses && "cursor-not-allowed opacity-50",
         className,
       )}
@@ -69,7 +71,7 @@ function Switch({
         data-slot="switch-thumb"
         className={cn(
           SWITCH_THUMB_CLASS,
-          "pointer-events-none block ring-0 transition-transform data-[state=checked]:translate-x-4 data-[state=unchecked]:translate-x-0 group-data-[size=sm]/switch:h-3 group-data-[size=sm]/switch:w-3 group-data-[size=sm]/switch:data-[state=checked]:translate-x-3",
+          "pointer-events-none block ring-0 transition-transform data-[state=checked]:bg-foreground data-[state=unchecked]:bg-background data-[state=checked]:translate-x-4 data-[state=unchecked]:translate-x-0 group-data-[size=sm]/switch:h-3 group-data-[size=sm]/switch:w-3 group-data-[size=sm]/switch:data-[state=checked]:translate-x-3",
         )}
       />
     </SwitchPrimitive.Root>

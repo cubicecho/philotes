@@ -36,13 +36,14 @@ ones this app leans on:
 | `DialogLayout` | `dialog-layout.tsx` | Modal — every form goes in one, with `hasUnsavedChanges` |
 | `createAppForm`, `Form` | `ui/form.tsx` | TanStack Form integration; the app's one hook is `@/components/app-form` |
 | `PageLayout` | `page-layout.tsx` | Every route: pinned title block over a scrolling body |
-| `Section` | `section.tsx` | Heading, `actionSlot`, `contentSlot`; `surface="card"` for a card |
+| `Section` | `section.tsx` | A heading over rows or fields: `title`, `actionSlot`, `contentSlot` |
+| `CardLayout` | `card-layout.tsx` | A card with a title: `level={2}` inside a page, `actionSlot`, `contentSlot` |
 | `ListItem` | `list-item.tsx` | A row: `leadingSlot`, `title`, `description`, `actionSlot` |
-| `QueryState`, `QueryError` | `query-state.tsx` | Loading / error / empty for a query |
-| `EmptyState` | `page.tsx` | "Nothing here yet" |
+| `LoadState`, `LoadError` | `load-state.tsx` | Loading / error / empty for a list; with `record` and `notFoundLabel`, loading / error / not found for one record |
+| `EmptyState` | `empty-state.tsx` | "Nothing here yet" |
 | `Combobox`, `ComboboxField` | `combobox.tsx`, `ui/combobox-field.tsx` | One of a long list, or several with `multiple`; `field.ComboboxField` in a form |
 | `Badge` | `ui/badge.tsx` | Pill; `backgroundColor`/`textColor` for user-chosen colours |
-| `SidebarLayout`, `Sidebar`, `SidebarNavItem`, `BarNavItem` | `split-layout.tsx`, `sidebar.tsx` | What `AppShell` is built from |
+| `SidebarLayout`, `Sidebar`, `SidebarItem`, `AppBarItem` | `split-layout.tsx`, `sidebar.tsx` | What `AppShell` is built from |
 | `ThemePicker` | `ui/theme-picker.tsx` | Light / dark / system |
 | icons | `ui/icons.tsx` | The shared icon set; app-only icons are in `app-icons.tsx` |
 
@@ -170,11 +171,11 @@ CSV export is built in the browser.
 ## Add Button Placement in List Sections
 
 Every list section on a detail page (Important Dates, Notes, Relationships,
-etc.) is a `Section` with its add trigger in `actionSlot`:
+etc.) is a `CardLayout` with its add trigger in `actionSlot`:
 
 ```tsx
-<Section
-  surface="card"
+<CardLayout
+  level={2}
   title="Important Dates"
   actionSlot={<Button variant="ghost" size="xs" iconSlot={<CalendarPlus />} content="Add" onPress={() => setDialogOpen(true)} />}
   contentSlot={<SectionList ... createOpen={dialogOpen} onCreateOpenChange={setDialogOpen} />}
@@ -183,7 +184,7 @@ etc.) is a `Section` with its add trigger in `actionSlot`:
 
 **Rules:**
 
-- Use `Section`; do not hand-roll a card with a header row.
+- Use `CardLayout level={2}`; do not hand-roll a card with a header row.
 - The "Add" button lives in the **section header row**, right-aligned, never
   inside the list component itself.
 - Dialog open state (`dialogOpen`, `setDialogOpen`) is owned by the **page**

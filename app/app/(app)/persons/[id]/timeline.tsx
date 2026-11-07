@@ -1,20 +1,17 @@
-import { type ApolloError, useQuery } from '@apollo/client';
+import { useQuery } from '@apollo/client';
 import { Link, useLocalSearchParams } from 'expo-router';
 import { View } from 'react-native';
 import { graphql } from '@/__generated__/gql';
-import { Users } from '@/components/app-icons';
 import { GET_PERSON_INTERACTIONS } from '@/components/domain/person/person-queries';
 import {
   PersonTimeline,
   type TimelineImportantDate,
   type TimelineInteraction,
 } from '@/components/domain/person/timeline';
-import { EmptyState } from '@/components/page';
+import { LoadState } from '@/components/load-state';
 import { PageLayout } from '@/components/page-layout';
-import { QueryError } from '@/components/query-state';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Clock } from '@/components/ui/icons';
-import { Spinner } from '@/components/ui/spinner';
 import { PAGE_SIZE_DEFAULTS } from '@/lib/defaults';
 import { personName } from '@/lib/person-name';
 import { useAllRows } from '@/lib/use-all-rows';
@@ -39,25 +36,6 @@ const GET_PERSON_TIMELINE = graphql(`
     }
   }
 `);
-
-/** What stands in for the timeline until there is a person: the failure, a spinner, or "not found". */
-function TimelinePlaceholder({
-  error,
-  pending,
-  onRetry,
-}: {
-  error: ApolloError | undefined;
-  pending: boolean;
-  onRetry: () => void;
-}) {
-  if (error) {
-    return <QueryError error={error} onRetry={onRetry} what="the timeline" />;
-  }
-  if (pending) {
-    return <Spinner />;
-  }
-  return <EmptyState icon={Users} title="Person not found." />;
-}
 
 /** One person's timeline page: their interactions and important dates on one timeline. */
 export default function PersonTimelinePage() {
@@ -92,8 +70,16 @@ export default function PersonTimelinePage() {
       <PageLayout
         title="Timeline"
         iconSlot={<Clock />}
-        breadcrumbsSlot={backLink}
-        contentSlot={<TimelinePlaceholder error={error} pending={pending} onRetry={() => refetch()} />}
+        backSlot={backLink}
+        contentSlot={
+          <LoadState
+            query={{ isPending: pending, isError: error !== undefined, error, refetch }}
+            what="the timeline"
+            record={person}
+            notFoundLabel="Person not found."
+            level={2}
+          />
+        }
       />
     );
   }
@@ -122,7 +108,7 @@ export default function PersonTimelinePage() {
       title="Timeline"
       description={personName(person)}
       iconSlot={<Clock />}
-      breadcrumbsSlot={backLink}
+      backSlot={backLink}
       contentSlot={
         <View className="py-4">
           <PersonTimeline interactions={interactions} importantDates={importantDates} />

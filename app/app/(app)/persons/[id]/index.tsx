@@ -1,8 +1,7 @@
-import { type ApolloError, useMutation, useQuery } from '@apollo/client';
+import { useMutation, useQuery } from '@apollo/client';
 import { Link, useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { View } from 'react-native';
-import { Users } from '@/components/app-icons';
 import { ConfirmButton } from '@/components/confirm-button';
 import { PersonContactActions } from '@/components/domain/person/contact-actions';
 import { PersonActivityColumn } from '@/components/domain/person/detail-activity-column';
@@ -18,13 +17,11 @@ import { KeptPersonSummary, useKeptPerson } from '@/components/domain/person/kep
 import { PersonLabels } from '@/components/domain/person/labels';
 import { GET_PERSON_INTERACTIONS, GET_PERSON_NOTES } from '@/components/domain/person/person-queries';
 import { PersonProfileSummary } from '@/components/domain/person/profile-summary';
-import { EmptyState } from '@/components/page';
+import { LoadState } from '@/components/load-state';
 import { PageLayout } from '@/components/page-layout';
-import { QueryError } from '@/components/query-state';
 import { Alert } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Clock, Pencil, Trash2 } from '@/components/ui/icons';
-import { Spinner } from '@/components/ui/spinner';
 import { useAvatarUpload } from '@/hooks/use-avatar-upload';
 import { PAGE_SIZE_DEFAULTS } from '@/lib/defaults';
 import { invalidateQueryFields } from '@/lib/invalidate';
@@ -37,25 +34,6 @@ const backLink = (
     <Button variant="link" size="xs" iconSlot={<ArrowLeft />} content="All People" />
   </Link>
 );
-
-/** What stands in for the page until there is a person: the failure, a spinner, or "not found". */
-function PersonPlaceholder({
-  error,
-  pending,
-  onRetry,
-}: {
-  error: ApolloError | undefined;
-  pending: boolean;
-  onRetry: () => void;
-}) {
-  if (error) {
-    return <QueryError error={error} onRetry={onRetry} what="this person" />;
-  }
-  if (pending) {
-    return <Spinner />;
-  }
-  return <EmptyState icon={Users} title="Person not found." />;
-}
 
 /** One person's page: the profile, and a section for each thing recorded about them. */
 export default function PersonDetailPage() {
@@ -105,7 +83,7 @@ export default function PersonDetailPage() {
       return (
         <PageLayout
           title={keptPerson.displayName}
-          breadcrumbsSlot={backLink}
+          backSlot={backLink}
           contentSlot={<KeptPersonSummary person={keptPerson} />}
         />
       );
@@ -114,8 +92,16 @@ export default function PersonDetailPage() {
       <PageLayout
         title="Person"
         loading={pending}
-        breadcrumbsSlot={backLink}
-        contentSlot={<PersonPlaceholder error={error} pending={pending} onRetry={() => refetch()} />}
+        backSlot={backLink}
+        contentSlot={
+          <LoadState
+            query={{ isPending: pending, isError: error !== undefined, error, refetch }}
+            what="this person"
+            record={person}
+            notFoundLabel="Person not found."
+            level={2}
+          />
+        }
       />
     );
   }
@@ -162,7 +148,7 @@ export default function PersonDetailPage() {
     <>
       <PageLayout
         title={name}
-        breadcrumbsSlot={backLink}
+        backSlot={backLink}
         actionSlot={
           <>
             <Link href={`/persons/${id}/timeline`} asChild>

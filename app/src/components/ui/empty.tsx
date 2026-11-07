@@ -18,8 +18,10 @@ const Empty = React.forwardRef<React.ElementRef<typeof View>, ViewProps>(
     <View
       ref={ref}
       testID="empty"
+      // `border-dashed` with no width, as shadcn's Empty: no edge unless a caller adds one. The /10
+      // edge it had was 1.24:1, barely there in light and gone in dark.
       className={cn(
-        "w-full min-w-0 items-center justify-center gap-3 rounded-lg border border-dashed border-foreground/10 py-10",
+        "w-full min-w-0 items-center justify-center gap-3 rounded-lg border-dashed py-10",
         className,
       )}
       {...props}
@@ -82,7 +84,8 @@ const EmptyTitle = React.forwardRef<React.ElementRef<typeof Text>, TextProps>(
     <Text
       ref={ref}
       testID="empty-title"
-      className={cn("font-semibold text-sm text-foreground", className)}
+      // A size over the description's, so the first thing a new user reads leads the block.
+      className={cn("font-semibold text-base text-foreground", className)}
       {...props}
     />
   ),

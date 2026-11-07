@@ -9,7 +9,7 @@ import { DialogLayout } from '@/components/dialog-layout';
 import { MentionTextareaField } from '@/components/domain/person/note-mentions';
 import { ATTACH_NOTE_TAG, DETACH_NOTE_TAG } from '@/components/domain/person/tag-mutations';
 import { RowTags, type TagOption, tagsFieldProps } from '@/components/domain/person/tag-picker';
-import { EmptyState } from '@/components/page';
+import { EmptyState } from '@/components/empty-state';
 import { Alert } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Form } from '@/components/ui/form';
