@@ -42,8 +42,8 @@ type FilePickerCommonProps = {
   accept?: string | undefined;
   /**
    * Take several files per pick: the dialog allows a multi-select and a drop
-   * keeps every file. Off, a pick is one file and a drop keeps the first one
-   * `accept` allows.
+   * keeps every file, a dropped folder's included. Off, a pick is one file and
+   * a drop keeps the first one `accept` allows.
    */
   multiple?: boolean | undefined;
   /**
@@ -58,11 +58,15 @@ type FilePickerCommonProps = {
    */
   read?: "text" | "bytes" | "none" | undefined;
   /**
-   * Pick a folder and everything under it instead of files: the dialog chooses
-   * a folder, a dropped folder is walked, and each file reports where it sat as
-   * its `path`. A folder is several files, so every one `accept` allows is kept
-   * whether or not `multiple` is set — and since only `onPickMany` carries a
-   * `path`, that is the callback to give. Web only.
+   * Make the dialog choose a folder instead of files, and take everything under
+   * it, each file reporting where it sat as its `path`. A folder is several
+   * files, so every one `accept` allows is kept whether or not `multiple` is
+   * set — and since only `onPickMany` carries a `path`, that is the callback to
+   * give. Web only.
+   *
+   * A drop does not need it: a folder dropped on any picker is walked the same
+   * way, so a files zone also takes a folder. Without `directory` that drop
+   * follows `multiple`, like a drop of files.
    */
   directory?: boolean | undefined;
   /** What is being picked. On the zone it is the visible heading; on the button, the accessible name. */

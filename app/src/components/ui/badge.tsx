@@ -140,6 +140,9 @@ export function Badge({
           role="button"
           aria-label={removeLabel ?? badgeRemoveLabel(children, label)}
           hitSlop={REMOVE_HIT_SLOP}
+          // Pressed feedback. A disc in the badge's own ink, as the web half's hover, needs
+          // `bg-current`, which a device has no colour to inherit for.
+          className="rounded-full active:opacity-50"
         >
           <X
             className={cn(badgeIconClass, inkClass)}

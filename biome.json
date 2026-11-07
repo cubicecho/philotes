@@ -63,6 +63,8 @@
         "app/src/lib/number-draft.ts",
         "app/src/lib/select-options.ts",
         "app/src/lib/web-as.d.ts",
+        "app/src/lib/bottom-bar.ts",
+        "app/src/lib/frame-focus-guard.ts",
         "app/cubeui-tokens.css",
         "app/public/index.html"
       ],

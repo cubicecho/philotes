@@ -3,6 +3,7 @@ import { Platform, Pressable, Text, View } from "react-native";
 import {
   SWITCH_THUMB_CLASS,
   SWITCH_TRACK_CLASS,
+  SWITCH_TRACK_ON_CLASS,
   type SwitchProps,
 } from "@/components/ui/switch-base";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -69,13 +70,15 @@ function Switch({
       onBlur={onBlur}
       className={cn(
         SWITCH_TRACK_CLASS,
-        checked ? "bg-active" : "bg-foreground/50",
+        checked ? SWITCH_TRACK_ON_CLASS : "bg-foreground/50",
         // `disabled:` never applies to a Pressable — apply the state directly.
         disabled && "opacity-50",
         className,
       )}
     >
-      <View className={cn(SWITCH_THUMB_CLASS, checked ? "ml-4" : "ml-0")} />
+      <View
+        className={cn(SWITCH_THUMB_CLASS, checked ? "ml-4 bg-foreground" : "ml-0 bg-background")}
+      />
     </Pressable>
   );
 

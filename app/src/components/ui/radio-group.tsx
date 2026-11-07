@@ -248,7 +248,7 @@ type RadioGroupItemProps = {
   /**
    * The picture over the label in a `card` tile, or the segment's face in `segmented`. Ignored by
    * `row`. On device an icon has no `currentColor` to inherit, so in `segmented` give it the
-   * checked segment's `text-active-foreground` and the others' `text-foreground/60` yourself.
+   * checked segment's `text-foreground` and the others' `text-foreground/60` yourself.
    */
   iconSlot?: SlotNode | undefined;
   /**
@@ -310,15 +310,17 @@ function RadioGroupItem({
       .filter(Boolean)
       .join(" ") || undefined;
 
+  // Checked, the circle is the chosen tint, edged in `active` because the tint is not 3:1 from the
+  // surface, and its dot is `foreground`, 3:1 or more on the tint and around it.
   const circle = (
     <View
       className={cn(
         "h-4 w-4 shrink-0 items-center justify-center rounded-full border",
-        checked ? "border-active" : "border-foreground/50",
+        checked ? "border-active bg-active/40" : "border-foreground/50",
         group.invalid && "border-negative",
       )}
     >
-      {checked ? <View className="h-2 w-2 rounded-full bg-active" /> : null}
+      {checked ? <View className="h-2 w-2 rounded-full bg-foreground" /> : null}
     </View>
   );
 
@@ -330,17 +332,20 @@ function RadioGroupItem({
     if (segmented) {
       return cn(
         "min-w-0 flex-1 flex-row items-center justify-center gap-1.5 rounded-sm px-3",
+        // The checked segment is the chosen tint, a step further under the pointer and focused.
         checked
-          ? "bg-active text-active-foreground focus-visible:bg-active/90"
+          ? "bg-active/40 text-foreground hover:bg-active/60 focus-visible:bg-active/60"
           : "text-foreground/60 hover:bg-hover hover:text-foreground focus-visible:bg-hover focus-visible:text-foreground",
       );
     }
     if (card) {
       return cn(
         "min-w-0 flex-1 items-center gap-1.5 rounded-lg border p-3",
-        // The border alone says checked: a tinted fill takes the muted description under 4.5:1.
-        checked ? "border-active bg-background" : "border-foreground/50 bg-background",
-        "focus-visible:bg-hover",
+        // Checked is the chosen tint inside an `active` edge, a step further under the pointer and
+        // focused; its description turns `foreground`, as muted text on the tint is under 4.5:1.
+        checked
+          ? "border-active bg-active/40 hover:bg-active/60 focus-visible:bg-active/60"
+          : "border-foreground/50 bg-background hover:bg-hover focus-visible:bg-hover",
         group.invalid && "border-negative",
       );
     }
@@ -361,7 +366,7 @@ function RadioGroupItem({
               id={labelId}
               className={cn(
                 "truncate text-sm font-semibold",
-                checked ? "text-active-foreground" : "text-foreground/60",
+                checked ? "text-foreground" : "text-foreground/60",
               )}
             >
               {label}
@@ -374,11 +379,22 @@ function RadioGroupItem({
       return (
         <>
           {iconSlot ? <View className="items-center justify-center">{iconSlot}</View> : null}
-          <Text id={labelId} className="text-center text-foreground text-sm font-semibold">
-            {label}
-          </Text>
+          {/* The radio's own dot beside the label: a 1px edge in another colour was the only
+              thing that said which card was chosen, and colour is not to be the only signal. */}
+          <View className="min-w-0 flex-row items-center justify-center gap-2">
+            {circle}
+            <Text id={labelId} className="text-center text-foreground text-sm font-semibold">
+              {label}
+            </Text>
+          </View>
           {description ? (
-            <Text id={descriptionId} className="text-center text-foreground/60 text-xs">
+            <Text
+              id={descriptionId}
+              className={cn(
+                "text-center text-xs",
+                checked ? "text-foreground" : "text-foreground/60",
+              )}
+            >
               {description}
             </Text>
           ) : null}

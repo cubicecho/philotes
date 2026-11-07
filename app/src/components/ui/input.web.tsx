@@ -150,6 +150,9 @@ function Input({
           : [
               leadingSlot != null && INPUT_LEADING_PAD_CLASS,
               trailingSlot != null && INPUT_TRAILING_PAD_CLASS,
+              // A quiet fill as well as the fade, or a disabled field with a value reads like an
+              // empty one with a placeholder. In the addon form the box carries it.
+              "disabled:bg-foreground/10",
             ],
         className,
       )}
@@ -163,7 +166,7 @@ function Input({
         data-slot="input-wrapper"
         className={cn(
           INPUT_ADDON_BOX_CLASS,
-          "focus-within:border-active has-[:disabled]:cursor-not-allowed has-[:disabled]:opacity-50 has-[[aria-invalid=true]]:border-negative has-[[aria-invalid=true]]:focus-within:border-active",
+          "focus-within:border-active has-[:disabled]:cursor-not-allowed has-[:disabled]:bg-foreground/10 has-[:disabled]:opacity-50 has-[[aria-invalid=true]]:border-negative has-[[aria-invalid=true]]:focus-within:border-active",
           wrapperClassName,
         )}
         // A press on the fixed text puts the caret in the value, as a press anywhere in a box does.

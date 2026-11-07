@@ -183,7 +183,7 @@ function FieldContent({ className, ...props }: ViewProps) {
   return (
     <View
       testID="field-content"
-      className={cn("min-w-0 flex-1 flex-col gap-1.5", className)}
+      className={cn("min-w-0 flex-1 flex-col gap-1", className)}
       {...props}
     />
   );

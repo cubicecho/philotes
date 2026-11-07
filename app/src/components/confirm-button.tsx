@@ -49,13 +49,16 @@ export function ConfirmButton({
   requireText,
   requireTextLabel,
   onConfirm,
+  // Quiet on the page and bold in the dialog: the trigger of a destructive question is
+  // `destructive-outline`, and the dialog's own confirm is the filled red step.
+  variant = "destructive-outline",
   ...props
 }: ConfirmButtonProps) {
   const [open, setOpen] = useState(false);
 
   return (
     <>
-      <Button {...props} onPress={() => setOpen(true)} />
+      <Button variant={variant} {...props} onPress={() => setOpen(true)} />
       <ConfirmDialog
         open={open}
         onOpenChange={setOpen}

@@ -153,6 +153,12 @@ export const badgeContainerVariants = cva("shrink-0 rounded-full border border-t
     { variant: "positive-soft", shape: "dot", className: "border-transparent bg-positive" },
     { variant: "warning-soft", shape: "dot", className: "border-transparent bg-warning" },
     { variant: "info-soft", shape: "dot", className: "border-transparent bg-info" },
+    // The quiet ones need a mark of their own as a dot: a /10 fill or ring is 1.24:1, and ghost
+    // and link drew nothing at all, where a dot carrying a name needs 3:1.
+    { variant: "secondary", shape: "dot", className: "bg-foreground/60" },
+    { variant: "outline", shape: "dot", className: "border-foreground/50 bg-transparent" },
+    { variant: "ghost", shape: "dot", className: "bg-foreground/60" },
+    { variant: "link", shape: "dot", className: "bg-info" },
   ],
   defaultVariants: { variant: "default", shape: "pill" },
 });

@@ -113,7 +113,8 @@ function Textarea({
         TEXTAREA_CLASS,
         grows && "min-h-0",
         isInvalid(ariaInvalid) && FIELD_INVALID_CLASS,
-        disabled && "opacity-50",
+        // A quiet fill as well as the fade, so a disabled value does not read as a placeholder.
+        disabled && "bg-foreground/10 opacity-50",
         className,
       )}
     />

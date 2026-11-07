@@ -53,7 +53,7 @@ export function Badge({
           <button
             type="button"
             aria-label={removeLabel ?? badgeRemoveLabel(children, label)}
-            className="-my-1 -mr-1.5 -ml-1 inline-flex cursor-pointer items-center justify-center rounded-full p-1 text-inherit outline-none hover:opacity-75 focus-visible:opacity-75"
+            className="-my-1 -mr-1.5 -ml-1 inline-flex cursor-pointer items-center justify-center rounded-full p-1 text-inherit outline-none hover:bg-current/10 focus-visible:bg-current/10"
             onClick={(event) => {
               event.stopPropagation();
               onRemove();

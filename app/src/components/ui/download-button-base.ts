@@ -48,13 +48,18 @@ export type DownloadButtonProps = (DownloadFromSource | DownloadFromHref) & {
    */
   mimeType?: string | undefined;
   /**
-   * The accessible name: say what is downloaded when the screen has more than one thing that
+   * What the button says. At a text size (`sm`, `default`, `lg`) it is drawn beside the icon — an
+   * "Export" button in a toolbar. At an `icon*` size the square has no room for words, so it is the
+   * accessible name alone: say what is downloaded when the screen has more than one thing that
    * could be — "Download note.md". The default is `Download`.
    */
   label?: string | undefined;
   /** The button's variant. The default is `outline`. */
   variant?: ButtonProps["variant"] | undefined;
-  /** The button's size. The default is `icon-sm`, which sits flush in a row of small text. */
+  /**
+   * The button's size. The default is `icon-sm`, which sits flush in a row of small text; a text
+   * size draws `label` beside the icon.
+   */
   size?: ButtonProps["size"] | undefined;
   /**
    * Device only: where the file goes. The default is `ask`, which leaves it to the person
@@ -133,4 +138,9 @@ export function useDownload({
   );
 
   return { pending, download };
+}
+
+/** Whether `size` is a square with no room for words, where `label` is only the accessible name. */
+export function isIconSize(size: ButtonProps["size"] | undefined): boolean {
+  return typeof size === "string" && size.startsWith("icon");
 }

@@ -39,7 +39,7 @@ export type EmptyStateProps = {
        * for a whole list or page. On, it keeps the left edge of what it sits in, draws no icon
        * bubble and no padding past a `py-2`, and takes no `description` and no `level`: a line
        * inside a region that already has its heading is never what a screen reader lands on. The
-       * same word, for the same place, as `QueryState`'s `compact` — whose `emptySlot` it usually
+       * same word, for the same place, as `LoadState`'s `compact` — whose `emptySlot` it usually
        * is.
        */
       compact?: false | undefined;

@@ -20,6 +20,7 @@ import {
   type MenuSeparatorProps,
   type MenuTriggerProps,
 } from "@/components/ui/menu-base";
+import { FrameFocusGuard } from "@/lib/frame-focus-guard";
 import { cn } from "@/lib/utils";
 
 /** The shared contract, widened to what the radix part underneath accepts. */
@@ -80,6 +81,7 @@ function MenuContent({
   align = "center",
   sideOffset = 4,
   onCloseAutoFocus,
+  children,
   ...props
 }: Wide<MenuContentProps, React.ComponentProps<typeof MenuPrimitive.Content>>) {
   const { skipReturnRef } = useContext(MenuContext);
@@ -91,7 +93,7 @@ function MenuContent({
         sideOffset={sideOffset}
         className={cn(
           MENU_CONTENT_CLASS,
-          "z-50 max-h-(--radix-dropdown-menu-content-available-height) origin-(--radix-dropdown-menu-content-transform-origin) overflow-x-hidden overflow-y-auto rounded-md border bg-secondary text-foreground shadow-md data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95",
+          "z-50 max-h-(--radix-dropdown-menu-content-available-height) origin-(--radix-dropdown-menu-content-transform-origin) overflow-x-hidden overflow-y-auto text-foreground data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95",
           className,
         )}
         {...props}
@@ -104,7 +106,11 @@ function MenuContent({
           }
           skipReturnRef.current = false;
         }}
-      />
+      >
+        {children}
+        {/* A framed app focusing itself would blur the window, which closes a menu at once. */}
+        <FrameFocusGuard />
+      </MenuPrimitive.Content>
     </MenuPrimitive.Portal>
   );
 }
@@ -126,7 +132,13 @@ function MenuItem({
   const { setOpen, skipReturnRef } = useContext(MenuContext);
   const row = (
     <>
-      {iconSlot}
+      {/* The icon quieter than the label, except on a destructive row, where it follows the
+          row's `negative` through currentColor. */}
+      {iconSlot ? (
+        <span className={cn("flex shrink-0", destructive === false && "text-foreground/60")}>
+          {iconSlot}
+        </span>
+      ) : null}
       <span className={cn(MENU_ITEM_TEXT_CLASS, "truncate")}>{label}</span>
       {typeof trailing === "string" ? (
         <span className={MENU_TRAILING_CLASS}>{trailing}</span>
@@ -196,7 +208,9 @@ function MenuSeparator({
 
 /**
  * A toggle row's inside: `MenuItem`'s icon, label and trailing node, then the ✓ slot at the far
- * edge. `ItemIndicator` renders only while its row is on; the slot around it stays.
+ * edge. `ItemIndicator` renders only while its row is on; the slot around it stays. On a row that
+ * is on, the quiet icon and trailing text turn `foreground`: muted on the chosen tint is under
+ * 4.5:1.
  */
 function ToggleRowBody({
   iconSlot,
@@ -205,10 +219,12 @@ function ToggleRowBody({
 }: Pick<MenuCheckboxItemProps, "iconSlot" | "label" | "trailing">) {
   return (
     <>
-      {iconSlot}
+      {iconSlot ? (
+        <span className={cn("flex shrink-0 text-foreground/60", ON_CHECKED_INK)}>{iconSlot}</span>
+      ) : null}
       <span className={cn(MENU_ITEM_TEXT_CLASS, "truncate")}>{label}</span>
       {typeof trailing === "string" ? (
-        <span className={MENU_TRAILING_CLASS}>{trailing}</span>
+        <span className={cn(MENU_TRAILING_CLASS, ON_CHECKED_INK)}>{trailing}</span>
       ) : (
         trailing
       )}
@@ -221,7 +237,17 @@ function ToggleRowBody({
   );
 }
 
-const TOGGLE_ROW_CLASS = cn(MENU_ITEM_CLASS, MENU_ITEM_WEB_CLASS, "text-foreground focus:bg-hover");
+/**
+ * A toggle row is `MenuItem`'s row, and while it is on, the chosen tint, a step further when
+ * highlighted — radix highlights the row under the pointer by focusing it.
+ */
+const TOGGLE_ROW_CLASS = cn(
+  MENU_ITEM_CLASS,
+  MENU_ITEM_WEB_CLASS,
+  "group/toggle text-foreground focus:bg-hover data-[state=checked]:bg-active/40 data-[state=checked]:focus:bg-active/60",
+);
+/** The quiet ink inside a toggle row, lifted to `foreground` while the row is on. */
+const ON_CHECKED_INK = "group-data-[state=checked]/toggle:text-foreground";
 
 /** A row that is checked or not, and toggles when chosen. */
 function MenuCheckboxItem({

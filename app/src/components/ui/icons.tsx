@@ -85,7 +85,14 @@ export function icon(Source: LucideIcon) {
   });
 
   return function Icon({ className, ...props }: IconProps) {
-    const inherited = useContext(IconClassContext);
+    // A `group-*` variant handed down for the label beside it (a focused pill's
+    // `group-focus-visible/pill:text-foreground`) is left out, and the icon keeps the row's ink.
+    // That is only a device's icon: there is no keyboard focus there, and on the web the icon takes
+    // `currentColor` from the pressable, which turns with its own `focus-visible:`.
+    const inherited = useContext(IconClassContext)
+      ?.split(" ")
+      .filter((cls) => cls.startsWith("group-") === false)
+      .join(" ");
     return <Styled className={cn("text-foreground", inherited, className)} {...props} />;
   };
 }

@@ -84,13 +84,15 @@ export function StatTile({
     Platform.OS === "web" ? { "aria-pressed": selected } : { accessibilityState: { selected } };
   const pressed = toggle ? pressedState : {};
 
-  // The label, hint and icon. A selected tile keeps its card fill and is marked by its border
-  // alone, so this ink is the same whether or not it is chosen.
-  const ink = "text-foreground/60";
+  // A selected tile is the chosen tint inside an `active` edge, a step further under the pointer
+  // and focused. Its label, hint and icon turn `foreground` there: muted on the tint is under 4.5:1.
+  const chosen = toggle && selected === true;
+  const ink = chosen ? "text-foreground" : "text-foreground/60";
   const classes = cn(
     "min-w-0 gap-1 p-4",
     onPress !== undefined && PRESSABLE,
-    toggle && selected && "border-active",
+    chosen && "border-active bg-active/40",
+    chosen && Platform.select({ web: "hover:bg-active/60 focus-visible:bg-active/60" }),
     className,
   );
 
@@ -120,7 +122,9 @@ export function StatTile({
         ) : null}
         <Text
           testID="stat-tile-label"
-          className={cn("min-w-0 flex-1 truncate font-semibold text-sm", ink)}
+          // Normal weight, as PropertyRow's label: the label supports the figure under it, and
+          // a grey semibold label competed with it.
+          className={cn("min-w-0 flex-1 truncate text-sm", ink)}
         >
           {label}
         </Text>

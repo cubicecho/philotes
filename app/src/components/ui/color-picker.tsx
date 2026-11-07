@@ -216,7 +216,7 @@ export function ColorPicker({
               ...(disabled ? { "aria-disabled": true } : {}),
             }
           : {})}
-        className={cn("flex-row flex-wrap gap-2", disabled && "opacity-50", contentClassName)}
+        className={cn("flex-row flex-wrap gap-1", disabled && "opacity-50", contentClassName)}
       >
         {palette.map((color) => {
           const selected = sameColor(current, color);
@@ -234,23 +234,30 @@ export function ColorPicker({
               // says its state with `aria-checked`, not `aria-selected`.
               {...(Platform.OS === "web" ? ({ "aria-checked": selected } as const) : {})}
               accessibilityLabel={color}
+              // The chosen ring is `active`, as anything chosen is, and drawn outside the swatch with
+              // a gap (`p-0.5`) so it does not sit on the colour. A border, not `ring-offset`,
+              // which NativeWind has no counterpart for. `gap-1` on the row keeps its width.
               className={cn(
-                "h-9 w-9 items-center justify-center rounded-full border-2",
-                selected ? "border-foreground" : "border-transparent",
+                "h-11 w-11 items-center justify-center rounded-full border-2 p-0.5",
+                selected ? "border-active" : "border-transparent",
               )}
-              style={{ backgroundColor: color }}
             >
-              {selected ? (
-                // The tick has to be legible on whatever the caller passed, and
-                // a caller's palette is not known here — a hardcoded white one
-                // disappears on `#eab308`.
-                <Text
-                  className="text-base leading-none"
-                  style={{ color: readableTextColor(color) ?? "#ffffff" }}
-                >
-                  ✓
-                </Text>
-              ) : null}
+              <View
+                className="h-full w-full items-center justify-center rounded-full"
+                style={{ backgroundColor: color }}
+              >
+                {selected ? (
+                  // The tick has to be legible on whatever the caller passed, and
+                  // a caller's palette is not known here — a hardcoded white one
+                  // disappears on `#eab308`.
+                  <Text
+                    className="text-base leading-none"
+                    style={{ color: readableTextColor(color) ?? "#ffffff" }}
+                  >
+                    ✓
+                  </Text>
+                ) : null}
+              </View>
             </Pressable>
           );
         })}

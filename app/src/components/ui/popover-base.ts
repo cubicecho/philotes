@@ -61,9 +61,13 @@ export type PopoverSectionProps = {
   children?: ReactNode;
 };
 
-/** The pane's card. */
+/**
+ * The pane's card. A column with `gap-4`, as a dialog's card is, so what follows the header (a
+ * button, a field) stands apart from it rather than reading as its third line. A pane that is one
+ * full-bleed thing — a calendar, a command list, a menu — passes `gap-0` with its `p-0`.
+ */
 export const POPOVER_CONTENT_CLASS =
-  "w-72 rounded-md border border-foreground/10 bg-secondary p-4 shadow-md";
+  "w-72 flex-col gap-4 rounded-md border border-foreground/10 bg-secondary p-4 shadow-md";
 /** The block holding the title and the description. */
 export const POPOVER_HEADER_CLASS = "gap-1";
 /** The pane's title. */

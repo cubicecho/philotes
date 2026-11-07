@@ -93,12 +93,13 @@ export type CommandShortcutProps = {
 };
 
 /** A `Command` in a `Dialog`: the palette. `title` and `description` name it and are not drawn. */
-export type CommandDialogProps = DialogProps & {
-  title?: string | undefined;
-  description?: string | undefined;
-  className?: string | undefined;
-  showCloseButton?: boolean | undefined;
-};
+export type CommandDialogProps = DialogProps &
+  Pick<CommandProps, "label" | "filter" | "shouldFilter"> & {
+    title?: string | undefined;
+    description?: string | undefined;
+    className?: string | undefined;
+    showCloseButton?: boolean | undefined;
+  };
 
 /** cmdk's own default name for its list. */
 export const COMMAND_LIST_LABEL = "Suggestions";
