@@ -9,8 +9,8 @@ import type { ReachOutPerson } from '@/components/domain/dashboard/reach-out';
 import { formatOverdueLabel, ReachOut } from '@/components/domain/dashboard/reach-out';
 import type { RecentPerson } from '@/components/domain/dashboard/recently-added';
 import { RecentlyAdded } from '@/components/domain/dashboard/recently-added';
+import { LoadState } from '@/components/load-state';
 import { PageLayout } from '@/components/page-layout';
-import { QueryState } from '@/components/query-state';
 import { computeOverdueByDays } from '@/lib/contact-frequency';
 import { DASHBOARD_DEFAULTS } from '@/lib/defaults';
 import { daysUntilNextOccurrence } from '@/lib/next-occurrence';
@@ -249,7 +249,7 @@ export default function DashboardPage() {
       title="Dashboard"
       contentSlot={
         <View className="py-4">
-          <QueryState
+          <LoadState
             query={{ isPending: pending, isError: hasFailedFirstLoad, error, refetch }}
             what="dashboard data"
             // The widgets say their own "all caught up", so there is no empty rung here.

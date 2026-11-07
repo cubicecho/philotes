@@ -2,11 +2,11 @@ import { useMutation, useQuery } from '@apollo/client';
 import { useState } from 'react';
 import { Text } from 'react-native';
 import { graphql } from '@/__generated__/gql';
+import { CardLayout } from '@/components/card-layout';
 import { ConfirmButton } from '@/components/confirm-button';
+import { EmptyState } from '@/components/empty-state';
 import { ListItem } from '@/components/list-item';
-import { EmptyState } from '@/components/page';
-import { QueryState } from '@/components/query-state';
-import { Section } from '@/components/section';
+import { LoadState } from '@/components/load-state';
 import { Button } from '@/components/ui/button';
 import { Plus } from '@/components/ui/icons';
 import { formatDate } from '@/lib/format';
@@ -79,8 +79,8 @@ export function ApiKeyManager() {
 
   return (
     <>
-      <Section
-        surface="card"
+      <CardLayout
+        level={2}
         title="API Keys"
         description="A key lets another app read your data without your sign-in: a calendar app subscribes to your important dates at a private URL (/ical?key=…), and a contacts app uses one as its password."
         actionSlot={
@@ -94,7 +94,7 @@ export function ApiKeyManager() {
         }
         contentSlot={
           showsQueryState ? (
-            <QueryState
+            <LoadState
               compact
               query={{ isPending: pending, isError: error !== undefined, error, refetch }}
               what="your API keys"

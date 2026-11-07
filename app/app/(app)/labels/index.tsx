@@ -5,8 +5,8 @@ import type { CreateLabelInput, Label_ListFragment } from '@/__generated__/graph
 import { LabelFormDialog } from '@/components/domain/label/form';
 import { LabelList } from '@/components/domain/label/list';
 import { LabelMergeDialog } from '@/components/domain/label/merge-dialog';
+import { LoadState } from '@/components/load-state';
 import { PageLayout } from '@/components/page-layout';
-import { QueryState } from '@/components/query-state';
 import { invalidateQueryFields } from '@/lib/invalidate';
 import { useAllRows } from '@/lib/use-all-rows';
 
@@ -126,7 +126,7 @@ export default function LabelsPage() {
       <PageLayout
         title="Labels"
         contentSlot={
-          <QueryState
+          <LoadState
             query={{ isPending: pending, isError: error !== undefined, error, refetch }}
             what="your labels"
             count={0}

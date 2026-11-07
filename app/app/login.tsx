@@ -5,8 +5,8 @@ import { Platform, Text, View } from 'react-native';
 import { graphql } from '@/__generated__/gql';
 import { SsoSource } from '@/__generated__/graphql';
 import { useAppForm } from '@/components/app-form';
-import { CenteredLayout } from '@/components/centered-layout';
-import { QueryError } from '@/components/query-state';
+import { CenteredCardLayout } from '@/components/centered-card-layout';
+import { LoadError } from '@/components/load-state';
 import { PairSsoForm, SSO_SETUP } from '@/components/settings/sign-in-card';
 import { Alert } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
@@ -208,7 +208,7 @@ function ServerAddressForm({ onSaved }: { onSaved: () => void }) {
   });
 
   return (
-    <CenteredLayout
+    <CenteredCardLayout
       className="bg-background"
       level={1}
       title="Connect to your server"
@@ -266,7 +266,7 @@ function LocalNetSignIn({ onChangeServer, setUpSlot, ...sso }: ServerChoiceProps
   });
 
   return (
-    <CenteredLayout
+    <CenteredCardLayout
       className="bg-background"
       level={1}
       title="Sign in"
@@ -353,7 +353,7 @@ function PasswordSignIn({
 
   if (sentTo !== null) {
     return (
-      <CenteredLayout
+      <CenteredCardLayout
         className="bg-background"
         level={1}
         title="Check your email"
@@ -369,7 +369,7 @@ function PasswordSignIn({
   }
 
   return (
-    <CenteredLayout
+    <CenteredCardLayout
       className="bg-background"
       level={1}
       title={copy.title}
@@ -437,7 +437,7 @@ interface SetUpProps {
  */
 function SetUpSignIn({ onPaired, onCancel }: { onPaired: (name: string) => void; onCancel: () => void }) {
   return (
-    <CenteredLayout
+    <CenteredCardLayout
       className="bg-background"
       level={1}
       title="Set up sign-in"
@@ -477,7 +477,7 @@ export default function LoginPage() {
   if (error) {
     return (
       <View role="main" className="min-h-full flex-1 items-center justify-center gap-4 bg-background p-4">
-        <QueryError error={error} onRetry={() => refetch()} what="the sign-in page" />
+        <LoadError error={error} onRetry={() => refetch()} what="the sign-in page" />
         {/* A wrong address is the likeliest reason a device gets here. */}
         {onChangeServer ? <ChangeServerButton onChangeServer={onChangeServer} /> : null}
       </View>

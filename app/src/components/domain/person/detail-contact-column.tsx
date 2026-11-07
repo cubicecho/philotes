@@ -1,13 +1,13 @@
 import { useState } from 'react';
 import { ScrollView, Text, View } from 'react-native';
 import { BookUser, MapPin, UserRoundPlus } from '@/components/app-icons';
+import { CardLayout } from '@/components/card-layout';
 import { AddressList } from '@/components/domain/address/list';
 import { ContactInfoList } from '@/components/domain/contact-info/list';
 import type { PersonDetail, PersonStub } from '@/components/domain/person/detail-queries';
 import { PersonIntroductions, type PersonWithLabels } from '@/components/domain/person/introductions';
 import { PersonRelationships } from '@/components/domain/person/relationships';
 import { SectionAdd } from '@/components/domain/person/section-add';
-import { Section } from '@/components/section';
 import { Button } from '@/components/ui/button';
 
 export interface PersonContactColumnProps {
@@ -34,8 +34,8 @@ export function PersonContactColumn({ person, allPersons, allPersonsWithLabels, 
   return (
     <View className="min-w-0 gap-6 lg:flex-1">
       {person.howWeMet ? (
-        <Section
-          surface="card"
+        <CardLayout
+          level={2}
           title="How We Met"
           contentClassName="gap-1"
           contentSlot={
@@ -56,8 +56,8 @@ export function PersonContactColumn({ person, allPersons, allPersonsWithLabels, 
         />
       ) : null}
 
-      <Section
-        surface="card"
+      <CardLayout
+        level={2}
         title="Contact Info"
         actionSlot={<SectionAdd iconSlot={<BookUser />} onPress={() => setContactInfoDialogOpen(true)} />}
         contentSlot={
@@ -71,8 +71,8 @@ export function PersonContactColumn({ person, allPersons, allPersonsWithLabels, 
         }
       />
 
-      <Section
-        surface="card"
+      <CardLayout
+        level={2}
         title="Addresses"
         actionSlot={<SectionAdd iconSlot={<MapPin />} onPress={() => setAddressDialogOpen(true)} />}
         contentSlot={
@@ -86,8 +86,8 @@ export function PersonContactColumn({ person, allPersons, allPersonsWithLabels, 
         }
       />
 
-      <Section
-        surface="card"
+      <CardLayout
+        level={2}
         title="Relationships"
         actionSlot={
           // Stays focusable when there is nobody left to link, so the reason can be read.
@@ -114,8 +114,8 @@ export function PersonContactColumn({ person, allPersons, allPersonsWithLabels, 
         }
       />
 
-      <Section
-        surface="card"
+      <CardLayout
+        level={2}
         title="Suggested Introductions"
         contentSlot={
           <ScrollView className="max-h-80" nestedScrollEnabled>

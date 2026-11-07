@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { View } from 'react-native';
 import { LabelChip } from '@/components/domain/label/label-chip';
-import { EmptyState } from '@/components/page';
+import { EmptyState } from '@/components/empty-state';
 import { Button } from '@/components/ui/button';
 import { Tag } from '@/components/ui/icons';
 import type { SelectOption } from '@/lib/select-options';

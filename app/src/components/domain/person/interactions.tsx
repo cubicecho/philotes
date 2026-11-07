@@ -14,7 +14,7 @@ import {
 } from '@/components/domain/person/interaction-form';
 import { ATTACH_INTERACTION_TAG, DETACH_INTERACTION_TAG } from '@/components/domain/person/tag-mutations';
 import { RowTags, type TagOption } from '@/components/domain/person/tag-picker';
-import { EmptyState } from '@/components/page';
+import { EmptyState } from '@/components/empty-state';
 import { Button } from '@/components/ui/button';
 import { Pencil, Trash2 } from '@/components/ui/icons';
 import { EXCERPT_DEFAULTS } from '@/lib/defaults';

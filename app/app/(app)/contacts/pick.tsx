@@ -3,10 +3,10 @@ import { useState } from 'react';
 import { FlatList, Text } from 'react-native';
 import { graphql } from '@/__generated__/gql';
 import { Users } from '@/components/app-icons';
+import { EmptyState } from '@/components/empty-state';
 import { ListItem } from '@/components/list-item';
-import { EmptyState } from '@/components/page';
+import { LoadState } from '@/components/load-state';
 import { PageLayout } from '@/components/page-layout';
-import { QueryState } from '@/components/query-state';
 import { Button } from '@/components/ui/button';
 import { SearchInput } from '@/components/ui/search-input';
 import { usePeople } from '@/hooks/use-people';
@@ -75,7 +75,7 @@ export default function PickContactPage() {
             renderItem={({ item }) => <ListItem title={item.displayName} onPress={() => void choose(item.id)} />}
           />
         ) : (
-          <QueryState
+          <LoadState
             query={{
               isPending: everyone.error === undefined,
               isError: everyone.error !== undefined,

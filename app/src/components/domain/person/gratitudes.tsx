@@ -5,7 +5,7 @@ import { graphql } from '@/__generated__/gql';
 import { useAppForm } from '@/components/app-form';
 import { ConfirmButton } from '@/components/confirm-button';
 import { DialogLayout } from '@/components/dialog-layout';
-import { EmptyState } from '@/components/page';
+import { EmptyState } from '@/components/empty-state';
 import { Alert } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Form } from '@/components/ui/form';

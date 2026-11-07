@@ -4,9 +4,9 @@ import { Text, View } from 'react-native';
 import { graphql } from '@/__generated__/gql';
 import { SsoSource } from '@/__generated__/graphql';
 import { useAppForm } from '@/components/app-form';
+import { CardLayout } from '@/components/card-layout';
 import { ConfirmButton } from '@/components/confirm-button';
-import { QueryError } from '@/components/query-state';
-import { Section } from '@/components/section';
+import { LoadError } from '@/components/load-state';
 import { Alert } from '@/components/ui/alert';
 import { Form } from '@/components/ui/form';
 
@@ -110,7 +110,7 @@ function SsoSettings() {
   const setup = data?.ssoSetup;
 
   if (setup === undefined) {
-    return error ? <QueryError compact error={error} what="the sign-in setup" onRetry={() => refetch()} /> : null;
+    return error ? <LoadError compact error={error} what="the sign-in setup" onRetry={() => refetch()} /> : null;
   }
   if (setup.source === SsoSource.None) {
     return <PairSsoForm />;
@@ -163,8 +163,8 @@ function SsoSettings() {
 /** Settings' sign-in card: pairing the instance with an OpenID Connect provider. */
 export function SignInCard() {
   return (
-    <Section
-      surface="card"
+    <CardLayout
+      level={2}
       title="Sign-in"
       description="People can always sign in with a password. An OpenID Connect provider adds a button for it on the login page."
       contentSlot={<SsoSettings />}

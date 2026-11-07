@@ -1,6 +1,6 @@
 import { Link } from 'expo-router';
 import { CardLayout } from '@/components/card-layout';
-import { EmptyState } from '@/components/page';
+import { EmptyState } from '@/components/empty-state';
 import { Button } from '@/components/ui/button';
 import type { SlotNode } from '@/lib/utils';
 

@@ -3,7 +3,7 @@ import { ImportantDatesMilestoneTypeEnum as Milestone } from '@/__generated__/gr
 import { LabelChip } from '@/components/domain/label/label-chip';
 import { ChannelIcon } from '@/components/domain/person/channel-icon';
 import { sentimentEmoji } from '@/components/domain/person/interaction-form';
-import { EmptyState } from '@/components/page';
+import { EmptyState } from '@/components/empty-state';
 import { SectionHeading } from '@/components/section-heading';
 import { formatDate } from '@/lib/format';
 import { relativeTime } from '@/lib/relative-time';

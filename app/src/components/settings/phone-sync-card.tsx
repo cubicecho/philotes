@@ -1,8 +1,8 @@
 import { useQuery } from '@apollo/client';
 import { graphql } from '@/__generated__/gql';
-import { DescriptionList, PropertyRow } from '@/components/description-list';
-import { QueryError } from '@/components/query-state';
-import { Section } from '@/components/section';
+import { CardLayout } from '@/components/card-layout';
+import { LoadError } from '@/components/load-state';
+import { PropertyList, PropertyRow } from '@/components/property-list';
 import { CopyButton } from '@/components/ui/copy-button';
 import { cardDavUrl } from '@/lib/api-url';
 
@@ -28,14 +28,14 @@ export function PhoneSyncCard() {
   const email = data?.user?.email ?? '';
 
   return (
-    <Section
-      surface="card"
+    <CardLayout
+      level={2}
       title="Sync with Your Phone"
       description="Philotes is a CardDAV address book. Add it to a contacts app, such as DAVx⁵ on Android, and your people appear in the phone's contacts. Edits made on the phone come back here."
       contentSlot={
         <>
-          {error ? <QueryError compact error={error} what="your account" onRetry={() => refetch()} /> : null}
-          <DescriptionList
+          {error ? <LoadError compact error={error} what="your account" onRetry={() => refetch()} /> : null}
+          <PropertyList
             layout="stacked"
             contentSlot={
               <>

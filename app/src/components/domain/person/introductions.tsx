@@ -2,7 +2,7 @@ import { Link } from 'expo-router';
 import { Text, View } from 'react-native';
 import { LabelChip } from '@/components/domain/label/label-chip';
 import { Avatar } from '@/components/domain/person/avatar';
-import { EmptyState } from '@/components/page';
+import { EmptyState } from '@/components/empty-state';
 import { INTRODUCTION_DEFAULTS } from '@/lib/defaults';
 import { personName } from '@/lib/person-name';
 

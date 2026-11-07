@@ -4,8 +4,8 @@ import { View } from 'react-native';
 import { graphql } from '@/__generated__/gql';
 import { ContactTypeEnum } from '@/__generated__/graphql';
 import { GitMerge } from '@/components/app-icons';
+import { CardLayout } from '@/components/card-layout';
 import { ConfirmButton } from '@/components/confirm-button';
-import { Section } from '@/components/section';
 import { Alert } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
@@ -80,8 +80,8 @@ export function DuplicateGroupCard({ matchValue, matchType, persons, onMerged, o
   };
 
   return (
-    <Section
-      surface="card"
+    <CardLayout
+      level={2}
       title={`Shared ${MATCH_TYPE_LABELS[matchType]}: ${matchValue}`}
       description="Choose who to keep. The others are merged into them."
       contentSlot={

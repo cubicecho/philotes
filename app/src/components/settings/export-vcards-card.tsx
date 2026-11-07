@@ -2,7 +2,7 @@ import { useApolloClient } from '@apollo/client';
 import { useState } from 'react';
 import { View } from 'react-native';
 import { graphql } from '@/__generated__/gql';
-import { Section } from '@/components/section';
+import { CardLayout } from '@/components/card-layout';
 import { Alert } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { downloadBlob } from '@/components/ui/download-button';
@@ -42,8 +42,8 @@ export function ExportVCardsCard() {
   }
 
   return (
-    <Section
-      surface="card"
+    <CardLayout
+      level={2}
       title="Export vCards"
       description="Download all your contacts as a vCard (.vcf) file, which a phone or another contacts app can import. Pictures are left out."
       contentSlot={

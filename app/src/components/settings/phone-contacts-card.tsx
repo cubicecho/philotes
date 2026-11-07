@@ -1,8 +1,8 @@
 import { useQuery } from '@apollo/client';
 import { useState } from 'react';
 import { Text } from 'react-native';
-import { QueryError } from '@/components/query-state';
-import { Section } from '@/components/section';
+import { CardLayout } from '@/components/card-layout';
+import { LoadError } from '@/components/load-state';
 import { SettingRow } from '@/components/setting-row';
 import { Switch } from '@/components/ui/switch';
 import { PHONE_CONTACTS_USER } from '@/hooks/use-phone-contacts-sync';
@@ -57,12 +57,12 @@ export function PhoneContactsCard() {
   }
 
   return (
-    <Section
-      surface="card"
+    <CardLayout
+      level={2}
       title="Phone Contacts"
       contentSlot={
         <>
-          {loadError ? <QueryError compact error={loadError} what="your account" onRetry={() => refetch()} /> : null}
+          {loadError ? <LoadError compact error={loadError} what="your account" onRetry={() => refetch()} /> : null}
           <SettingRow
             title="Sync to the phone's contacts"
             description="Adds a Philotes account to the phone. Your people appear in its contacts, dialer and messages, and edits made there come back here. Turning it off takes them off the phone."

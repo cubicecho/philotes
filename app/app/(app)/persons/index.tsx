@@ -5,8 +5,8 @@ import { graphql } from '@/__generated__/gql';
 import { ContactTypeEnum, OrderDirection, type PersonFilters, type PersonRowFragment } from '@/__generated__/graphql';
 import { PersonFormDialog, type PersonFormValue } from '@/components/domain/person/form';
 import { PersonList, type PersonRowData } from '@/components/domain/person/list';
+import { LoadState } from '@/components/load-state';
 import { PageLayout } from '@/components/page-layout';
-import { QueryState } from '@/components/query-state';
 import { usePeople } from '@/hooks/use-people';
 import { useQueryStringState } from '@/hooks/use-query-string-state';
 import { useIsOffline } from '@/lib/connection';
@@ -291,7 +291,7 @@ export default function PersonsPage() {
         <PageLayout
           title="People"
           contentSlot={
-            <QueryState
+            <LoadState
               query={{ isPending: pending, isError: error !== undefined, error, refetch: () => everyone.refresh() }}
               what="your people"
               count={filteredPersons.length}

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Text, View } from 'react-native';
-import { Section } from '@/components/section';
+import { CardLayout } from '@/components/card-layout';
 import { ImportFileButton } from '@/components/settings/import-file-button';
 import { Alert } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
@@ -89,8 +89,8 @@ export function ImportCard({ title, description, pickLabel, accept, preview, onI
   }
 
   return (
-    <Section
-      surface="card"
+    <CardLayout
+      level={2}
       title={title}
       description={description}
       contentSlot={

@@ -3,7 +3,7 @@ import { Link, useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useRef } from 'react';
 import { Text, View } from 'react-native';
 import { graphql } from '@/__generated__/gql';
-import { EmptyState } from '@/components/page';
+import { EmptyState } from '@/components/empty-state';
 import { Button } from '@/components/ui/button';
 import { CircleAlert } from '@/components/ui/icons';
 import { Spinner } from '@/components/ui/spinner';

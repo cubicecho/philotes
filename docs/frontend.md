@@ -268,8 +268,10 @@ Do not edit a vendored file to fix or restyle it — change it in
   `hint` draws a tooltip.
 - **Every screen is a `PageLayout`.** The shell's main area does not scroll; a
   `PageLayout`'s body scrolls under its pinned header.
-- **Loading, error and empty are `QueryState`**, not three hand-written
-  branches.
+- **Loading, error and empty are `LoadState`**, not three hand-written
+  branches. A screen for one record passes `record` and `notFoundLabel`
+  (with `level={2}` under the page's own title) for loading, error and
+  "not found".
 
 ## Form Presentation Rule
 

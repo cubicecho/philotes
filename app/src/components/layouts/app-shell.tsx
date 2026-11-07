@@ -4,7 +4,7 @@ import { Text, View } from 'react-native';
 import { graphql } from '@/__generated__/gql';
 import { House, LogOut, Share2, UserRoundPlus, Users } from '@/components/app-icons';
 import { OfflineBanner } from '@/components/layouts/offline-banner';
-import { BarNavItem, Sidebar, SidebarNavItem, SidebarSection } from '@/components/sidebar';
+import { AppBarItem, Sidebar, SidebarItem, SidebarSection } from '@/components/sidebar';
 import { SidebarLayout } from '@/components/split-layout';
 import { Button } from '@/components/ui/button';
 import { Settings, Tag } from '@/components/ui/icons';
@@ -89,7 +89,7 @@ export function AppShell({ contentSlot }: { contentSlot: SlotNode }) {
               contentSlot={PLACES.filter((place) => place.href !== '/settings').map(
                 ({ href, label, Icon, isActive }) => (
                   <Link key={href} href={href} asChild>
-                    <SidebarNavItem href={href} label={label} iconSlot={<Icon />} active={isActive(pathname)} />
+                    <SidebarItem href={href} label={label} iconSlot={<Icon />} active={isActive(pathname)} />
                   </Link>
                 ),
               )}
@@ -98,7 +98,7 @@ export function AppShell({ contentSlot }: { contentSlot: SlotNode }) {
           footerSlot={
             <>
               <Link href="/settings" asChild>
-                <SidebarNavItem
+                <SidebarItem
                   href="/settings"
                   label="Settings"
                   iconSlot={<Settings />}
@@ -106,7 +106,7 @@ export function AppShell({ contentSlot }: { contentSlot: SlotNode }) {
                 />
               </Link>
               {/* A button, not a link: it does something rather than going somewhere. */}
-              <SidebarNavItem label="Sign out" iconSlot={<LogOut />} onPress={signOut} />
+              <SidebarItem label="Sign out" iconSlot={<LogOut />} onPress={signOut} />
             </>
           }
         />
@@ -116,7 +116,7 @@ export function AppShell({ contentSlot }: { contentSlot: SlotNode }) {
       barPosition="bottom"
       navSlot={PLACES.map(({ href, label, Icon, isActive }) => (
         <Link key={href} href={href} asChild>
-          <BarNavItem label={label} iconSlot={<Icon />} active={isActive(pathname)} />
+          <AppBarItem label={label} iconSlot={<Icon />} active={isActive(pathname)} />
         </Link>
       ))}
       actionSlot={

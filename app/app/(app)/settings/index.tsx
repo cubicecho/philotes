@@ -2,8 +2,8 @@ import { useQuery } from '@apollo/client';
 import { useState } from 'react';
 import { View } from 'react-native';
 import { graphql } from '@/__generated__/gql';
+import { CardLayout } from '@/components/card-layout';
 import { PageLayout } from '@/components/page-layout';
-import { Section } from '@/components/section';
 import { ApiKeyManager } from '@/components/settings/api-key-manager';
 import { DefaultCountryCard } from '@/components/settings/default-country-card';
 import { ExportCalendarCard } from '@/components/settings/export-calendar-card';
@@ -82,8 +82,8 @@ export default function SettingsPage() {
           </TabsContent>
           <TabsContent value="app">
             <View className="gap-6">
-              <Section
-                surface="card"
+              <CardLayout
+                level={2}
                 title="Appearance"
                 description="Customize how Philotes looks on your device."
                 contentSlot={<ThemePicker />}
