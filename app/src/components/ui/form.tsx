@@ -385,8 +385,9 @@ function FieldWrapper({
   labelClassName,
   descriptionClassName,
   errorClassName,
-  // web: biome-ignore lint/correctness/noUnusedFunctionParameters: a `<label htmlFor>` presses it there
-  onLabelPress,
+  // Underscored because the web build, where a `<label htmlFor>` presses the control, never reads
+  // it, and an app compiled with `noUnusedParameters` refused it there (TS6133).
+  onLabelPress: _onLabelPress,
 }: FieldWrapperProps) {
   const folded = Boolean(description) && descriptionPlacement === "popover";
   const hasError = useFieldError() !== undefined;
@@ -408,10 +409,10 @@ function FieldWrapper({
   );
   // The caption presses the control on device, as a `<label htmlFor>` does on the web.
   const captionNode =
-    Platform.OS !== "web" && onLabelPress !== undefined ? (
+    Platform.OS !== "web" && _onLabelPress !== undefined ? (
       <Pressable
         testID="field-label-press"
-        onPress={onLabelPress}
+        onPress={_onLabelPress}
         disabled={fades}
         className="min-w-0 shrink self-start"
       >

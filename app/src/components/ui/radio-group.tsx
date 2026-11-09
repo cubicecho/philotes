@@ -259,9 +259,10 @@ function RadioGroupItem({
     }
     if (segmented) {
       return cn(
-        // 40px, the height of an `Input` and of a tab, and 44pt on device, where it is that tall
-        // itself rather than by a `hitSlop`, as a tab is.
-        "h-10 min-w-0 flex-1 flex-row items-center justify-center gap-1.5 rounded-sm px-3",
+        // A tab's height: 30px on the web, so the frame is 40px, an `Input`'s height, and 44pt on
+        // device, where it is that tall itself rather than by a `hitSlop`, as a tab is.
+        "min-w-0 flex-1 flex-row items-center justify-center gap-1.5 rounded-sm px-3",
+        Platform.OS === "web" ? "h-7.5" : "h-10",
         touchRowClass(),
         // The checked segment is the chosen tint, a step further under the pointer and focused.
         checked
