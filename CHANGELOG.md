@@ -1,3 +1,10 @@
+## [5.11.1](https://github.com/cubicecho/philotes/compare/v5.11.0...v5.11.1) (2026-11-09)
+
+
+### Bug Fixes
+
+* **app:** reinstall cubeui tabs for the 40px strip, and drop the touchTarget workaround ([42fc444](https://github.com/cubicecho/philotes/commit/42fc4449c7d219e691300ad91022a7526388cb2f)), closes [cubeui#540](https://github.com/cubeui/issues/540) [cubeui#541](https://github.com/cubeui/issues/541)
+
 # [5.11.0](https://github.com/cubicecho/philotes/compare/v5.10.0...v5.11.0) (2026-10-19)
 
 
