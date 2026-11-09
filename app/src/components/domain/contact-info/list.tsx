@@ -371,7 +371,7 @@ function AddContactInfoDialog({ personId, open, onOpenChange, onAdded }: AddCont
         <>
           <Button variant="outline" onPress={close} content="Cancel" />
           <form.AppForm>
-            <form.SubmitButton createLabel="Add Contact Info" savingLabel="Saving..." />
+            <form.SubmitButton createLabel="Add Contact Info" />
           </form.AppForm>
         </>
       )}

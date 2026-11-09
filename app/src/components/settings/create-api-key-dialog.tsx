@@ -177,7 +177,7 @@ export function CreateApiKeyDialog({ open, onOpenChange, onCreated }: CreateApiK
         <>
           <Button variant="outline" onPress={close} content="Cancel" />
           <form.AppForm>
-            <form.SubmitButton createLabel="Generate Key" savingLabel="Generating…" />
+            <form.SubmitButton createLabel="Generate Key" loadingLabel="Generating…" />
           </form.AppForm>
         </>
       )}

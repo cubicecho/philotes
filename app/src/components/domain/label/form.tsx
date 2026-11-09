@@ -99,7 +99,7 @@ export function LabelFormDialog({
         <>
           <Button variant="outline" onPress={close} content="Cancel" />
           <form.AppForm>
-            <form.SubmitButton isEdit={isEdit} createLabel={label} editLabel={label} savingLabel="Saving..." />
+            <form.SubmitButton isEdit={isEdit} createLabel={label} editLabel={label} />
           </form.AppForm>
         </>
       )}

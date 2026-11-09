@@ -197,9 +197,7 @@ function NoteFormDialog({
           <Button variant="outline" onPress={close} content="Cancel" />
           <form.AppForm>
             <form.Subscribe selector={(state) => state.values.body}>
-              {(body) => (
-                <form.SubmitButton createLabel={submitLabel} savingLabel="Saving..." disabled={body.trim() === ''} />
-              )}
+              {(body) => <form.SubmitButton createLabel={submitLabel} disabled={body.trim() === ''} />}
             </form.Subscribe>
           </form.AppForm>
         </>

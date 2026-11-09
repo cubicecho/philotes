@@ -230,7 +230,7 @@ export function InteractionFormDialog({
         <>
           <Button variant="outline" onPress={close} content="Cancel" />
           <form.AppForm>
-            <form.SubmitButton createLabel={submitLabel} savingLabel="Saving..." />
+            <form.SubmitButton createLabel={submitLabel} />
           </form.AppForm>
         </>
       )}

@@ -93,7 +93,7 @@ export function PairSsoForm({ onPaired }: { onPaired?: ((name: string) => void) 
             />
           )}
         </form.AppField>
-        <form.SubmitButton createLabel="Connect" savingLabel="Connecting…" />
+        <form.SubmitButton createLabel="Connect" loadingLabel="Connecting…" />
       </Form>
     </form.AppForm>
   );

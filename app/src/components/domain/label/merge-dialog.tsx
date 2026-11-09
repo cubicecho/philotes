@@ -82,7 +82,7 @@ function MergeForm({ label, targets, onMerge, onClose }: LabelMergeDialogProps) 
           <Button variant="outline" onPress={close} content="Cancel" />
           <form.AppForm>
             <form.Subscribe selector={(state) => state.values.targetId}>
-              {(targetId) => <form.SubmitButton createLabel="Merge" savingLabel="Merging…" disabled={!targetId} />}
+              {(targetId) => <form.SubmitButton createLabel="Merge" loadingLabel="Merging…" disabled={!targetId} />}
             </form.Subscribe>
           </form.AppForm>
         </>

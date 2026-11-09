@@ -253,7 +253,7 @@ function AddTaskDialog({ personId, open, onOpenChange, onAdded }: AddTaskDialogP
         <>
           <Button variant="outline" onPress={close} content="Cancel" />
           <form.AppForm>
-            <form.SubmitButton createLabel="Add Task" savingLabel="Adding..." />
+            <form.SubmitButton createLabel="Add Task" loadingLabel="Adding..." />
           </form.AppForm>
         </>
       )}
@@ -285,9 +285,7 @@ export function TaskList({
 
       {openTasks.length > 0 && (
         <View className="gap-2">
-          <SectionHeading variant="overline" level={3}>
-            Open
-          </SectionHeading>
+          <SectionHeading variant="overline" level={3} title="Open" />
           {openTasks.map((task) => (
             <TaskRow key={task.id} task={task} onDelete={onDelete} onUpdate={onUpdate} />
           ))}
@@ -296,9 +294,7 @@ export function TaskList({
 
       {doneTasks.length > 0 && (
         <View className="gap-2">
-          <SectionHeading variant="overline" level={3}>
-            Done
-          </SectionHeading>
+          <SectionHeading variant="overline" level={3} title="Done" />
           {doneTasks.map((task) => (
             <TaskRow key={task.id} task={task} onDelete={onDelete} onUpdate={onUpdate} />
           ))}

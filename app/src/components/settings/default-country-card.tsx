@@ -81,7 +81,7 @@ export function DefaultCountryCard() {
                 {saveError.message}
               </Text>
             ) : null}
-            <form.SubmitButton createLabel="Save" savingLabel="Saving…" className="self-start" />
+            <form.SubmitButton createLabel="Save" loadingLabel="Saving…" className="self-start" />
           </Form>
         </form.AppForm>
       }
