@@ -52,6 +52,12 @@ function Textarea({
     }
     fitRows(inner.current as unknown as GrowingBox, minRows, maxRows);
   };
+  // Not while it grows on device: Android reads `numberOfLines` as the height, not as where it
+  // starts. Under react-native-web it is the `<textarea>`'s `rows`, which `fitRows` measures an
+  // empty box at, so while it grows it is `minRows` there: left out, the browser's own 2 started a
+  // `rows={1}` composer two lines tall (#534).
+  const growingOnWeb = Platform.OS === "web" ? minRows : undefined;
+  const lines = grows ? growingOnWeb : rows;
   // After every render and not only a changed `value`: the text can also arrive as a new
   // `defaultValue`, and the box can change width under it.
   useLayoutEffect(refit);
@@ -93,8 +99,7 @@ function Textarea({
         }
       }}
       placeholder={placeholder}
-      // Not while it grows: Android reads `numberOfLines` as the height, not as where it starts.
-      {...(rows !== undefined && grows === false ? { numberOfLines: rows } : {})}
+      {...(lines === undefined ? {} : { numberOfLines: lines })}
       {...(maxLength !== undefined ? { maxLength } : {})}
       editable={!disabled}
       id={id}

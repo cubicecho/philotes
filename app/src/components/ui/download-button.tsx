@@ -1,11 +1,10 @@
 import { Directory, File, Paths } from "expo-file-system";
 import * as Sharing from "expo-sharing";
-import { Button } from "@/components/ui/button";
+import { Button, isIconSize } from "@/components/ui/button";
 import {
   type DownloadButtonProps,
   type DownloadContent,
   type DownloadDestination,
-  isIconSize,
   useDownload,
 } from "@/components/ui/download-button-base";
 import { Download, Folder, Upload } from "@/components/ui/icons";
@@ -116,6 +115,8 @@ export function DownloadButton({
   size = "icon-sm",
   destination = "ask",
   disabled,
+  hint,
+  tooltip,
   onDownloaded,
   onError,
   className,
@@ -137,6 +138,8 @@ export function DownloadButton({
       {...(isIconSize(size) ? {} : { content: label })}
       loading={pending}
       disabled={disabled}
+      hint={hint}
+      tooltip={tooltip}
       className={className}
       {...(destination === "ask" ? {} : { onPress: () => save(destination) })}
       iconSlot={<Download aria-hidden />}

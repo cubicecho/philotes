@@ -1,7 +1,11 @@
 import type { LucideIcon, LucideProps } from "lucide-react-native";
+import ActivitySource from "lucide-react-native/icons/activity";
+import ArchiveSource from "lucide-react-native/icons/archive";
+import ArchiveRestoreSource from "lucide-react-native/icons/archive-restore";
 import ArrowDownWideNarrowSource from "lucide-react-native/icons/arrow-down-wide-narrow";
 import ArrowLeftSource from "lucide-react-native/icons/arrow-left";
 import ArrowRightSource from "lucide-react-native/icons/arrow-right";
+import BotSource from "lucide-react-native/icons/bot";
 import CalendarSource from "lucide-react-native/icons/calendar";
 import CheckSource from "lucide-react-native/icons/check";
 import ChevronDownSource from "lucide-react-native/icons/chevron-down";
@@ -23,21 +27,33 @@ import FilePenSource from "lucide-react-native/icons/file-pen";
 import FileTextSource from "lucide-react-native/icons/file-text";
 import FolderSource from "lucide-react-native/icons/folder";
 import FolderPenSource from "lucide-react-native/icons/folder-pen";
+import GitBranchSource from "lucide-react-native/icons/git-branch";
 import InfoSource from "lucide-react-native/icons/info";
 import KeyRoundSource from "lucide-react-native/icons/key-round";
+import LayersSource from "lucide-react-native/icons/layers";
 import LibrarySource from "lucide-react-native/icons/library";
+import ListSource from "lucide-react-native/icons/list";
+import ListChecksSource from "lucide-react-native/icons/list-checks";
 import LoaderCircleSource from "lucide-react-native/icons/loader-circle";
 import LockSource from "lucide-react-native/icons/lock";
+import LogOutSource from "lucide-react-native/icons/log-out";
 import MonitorSource from "lucide-react-native/icons/monitor";
 import MoonSource from "lucide-react-native/icons/moon";
 import PauseSource from "lucide-react-native/icons/pause";
 import PencilSource from "lucide-react-native/icons/pencil";
 import PlaySource from "lucide-react-native/icons/play";
 import PlugSource from "lucide-react-native/icons/plug";
+import PlugZapSource from "lucide-react-native/icons/plug-zap";
 import PlusSource from "lucide-react-native/icons/plus";
 import RefreshCwSource from "lucide-react-native/icons/refresh-cw";
+import RotateCcwClockSource from "lucide-react-native/icons/rotate-ccw-clock";
+import RouteSource from "lucide-react-native/icons/route";
+import ScanSearchSource from "lucide-react-native/icons/scan-search";
 import SearchSource from "lucide-react-native/icons/search";
+import ServerSource from "lucide-react-native/icons/server";
 import SettingsSource from "lucide-react-native/icons/settings";
+import SkipForwardSource from "lucide-react-native/icons/skip-forward";
+import SparklesSource from "lucide-react-native/icons/sparkles";
 import SquareSource from "lucide-react-native/icons/square";
 import SunSource from "lucide-react-native/icons/sun";
 import TagSource from "lucide-react-native/icons/tag";
@@ -49,6 +65,7 @@ import Undo2Source from "lucide-react-native/icons/undo-2";
 import UploadSource from "lucide-react-native/icons/upload";
 import UserRoundSource from "lucide-react-native/icons/user-round";
 import XSource from "lucide-react-native/icons/x";
+import ZapSource from "lucide-react-native/icons/zap";
 import { styled } from "nativewind";
 import { useContext } from "react";
 import { IconClassContext } from "@/components/ui/icons-base";
@@ -66,10 +83,10 @@ export type IconProps = Omit<LucideProps, "className"> & {
  *
  * ```tsx
  * // app-icons.tsx
- * import ArchiveSource from "lucide-react-native/icons/archive";
+ * import StarSource from "lucide-react-native/icons/star";
  * import { icon } from "@/components/ui/icons";
  *
- * export const Archive = icon(ArchiveSource);
+ * export const Star = icon(StarSource);
  * ```
  *
  * `icons.web.tsx` exports an `icon` that hands its argument back, so the
@@ -97,9 +114,13 @@ export function icon(Source: LucideIcon) {
   };
 }
 
+export const Activity = icon(ActivitySource);
+export const Archive = icon(ArchiveSource);
+export const ArchiveRestore = icon(ArchiveRestoreSource);
 export const ArrowDownWideNarrow = icon(ArrowDownWideNarrowSource);
 export const ArrowLeft = icon(ArrowLeftSource);
 export const ArrowRight = icon(ArrowRightSource);
+export const Bot = icon(BotSource);
 export const Calendar = icon(CalendarSource);
 export const Check = icon(CheckSource);
 export const ChevronDown = icon(ChevronDownSource);
@@ -121,21 +142,33 @@ export const FilePen = icon(FilePenSource);
 export const FileText = icon(FileTextSource);
 export const Folder = icon(FolderSource);
 export const FolderPen = icon(FolderPenSource);
+export const GitBranch = icon(GitBranchSource);
 export const Info = icon(InfoSource);
 export const KeyRound = icon(KeyRoundSource);
+export const Layers = icon(LayersSource);
 export const Library = icon(LibrarySource);
+export const List = icon(ListSource);
+export const ListChecks = icon(ListChecksSource);
 export const LoaderCircle = icon(LoaderCircleSource);
 export const Lock = icon(LockSource);
+export const LogOut = icon(LogOutSource);
 export const Monitor = icon(MonitorSource);
 export const Moon = icon(MoonSource);
 export const Pause = icon(PauseSource);
 export const Pencil = icon(PencilSource);
 export const Play = icon(PlaySource);
 export const Plug = icon(PlugSource);
+export const PlugZap = icon(PlugZapSource);
 export const Plus = icon(PlusSource);
 export const RefreshCw = icon(RefreshCwSource);
+export const RotateCcwClock = icon(RotateCcwClockSource);
+export const Route = icon(RouteSource);
+export const ScanSearch = icon(ScanSearchSource);
 export const Search = icon(SearchSource);
+export const Server = icon(ServerSource);
 export const Settings = icon(SettingsSource);
+export const SkipForward = icon(SkipForwardSource);
+export const Sparkles = icon(SparklesSource);
 export const Square = icon(SquareSource);
 export const Sun = icon(SunSource);
 export const Tag = icon(TagSource);
@@ -145,3 +178,4 @@ export const Undo2 = icon(Undo2Source);
 export const Upload = icon(UploadSource);
 export const UserRound = icon(UserRoundSource);
 export const X = icon(XSource);
+export const Zap = icon(ZapSource);

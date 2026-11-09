@@ -94,44 +94,44 @@
   --radius: 0.625rem;
   --background: #ffffff;
   --foreground: #0a0a0a;
-  --secondary: #fafafa;
+  --secondary: #f5f5f5;
   --neutral: #171717;
   --neutral-foreground: #fafafa;
-  --hover: #d4eaf0;
+  --hover: #d0e6ec;
   --active: #2d6d7e;
   --active-foreground: #ffffff;
-  --positive: #166534;
+  --positive: #196635;
   --positive-foreground: #ffffff;
-  --warning: #92400e;
+  --warning: #742c02;
   --warning-foreground: #ffffff;
-  --info: #0369a1;
+  --info: #0863a6;
   --info-foreground: #ffffff;
-  --negative: #c10007;
+  --negative: #b02b26;
   --negative-foreground: #ffffff;
   --overlay: #000000;
-  --card: #fafafa;
+  --card: #f5f5f5;
   --card-foreground: #0a0a0a;
-  --popover: #fafafa;
+  --popover: #f5f5f5;
   --popover-foreground: #0a0a0a;
   --primary: #171717;
   --primary-foreground: #fafafa;
   --secondary-foreground: #0a0a0a;
   --muted: rgba(10, 10, 10, 0.1);
   --muted-foreground: rgba(10, 10, 10, 0.6);
-  --accent: #d4eaf0;
+  --accent: #d0e6ec;
   --accent-foreground: #0a0a0a;
   --selection: #2d6d7e;
   --selection-foreground: #ffffff;
-  --destructive: #c10007;
+  --destructive: #b02b26;
   --destructive-foreground: #ffffff;
   --border: rgba(10, 10, 10, 0.1);
   --input: rgba(10, 10, 10, 0.5);
   --ring: #2d6d7e;
-  --sidebar: #fafafa;
+  --sidebar: #ffffff;
   --sidebar-foreground: #0a0a0a;
   --sidebar-primary: #2d6d7e;
   --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #d4eaf0;
+  --sidebar-accent: #d0e6ec;
   --sidebar-accent-foreground: #0a0a0a;
   --sidebar-border: rgba(10, 10, 10, 0.1);
   --sidebar-ring: #2d6d7e;
@@ -164,13 +164,13 @@
   :root {
     --background: #0a0a0a;
     --foreground: #fafafa;
-    --secondary: #262626;
+    --secondary: #171717;
     --neutral: #e5e5e5;
     --neutral-foreground: #171717;
-    --hover: #1c3238;
+    --hover: #142a30;
     --active: #69a2b3;
     --active-foreground: #0a0a0a;
-    --positive: #22c55e;
+    --positive: #4ade80;
     --positive-foreground: #0a0a0a;
     --warning: #f59e0b;
     --warning-foreground: #0a0a0a;
@@ -179,16 +179,16 @@
     --negative: #ff6467;
     --negative-foreground: #0a0a0a;
     --overlay: #000000;
-    --card: #262626;
+    --card: #171717;
     --card-foreground: #fafafa;
-    --popover: #262626;
+    --popover: #171717;
     --popover-foreground: #fafafa;
     --primary: #e5e5e5;
     --primary-foreground: #171717;
     --secondary-foreground: #fafafa;
     --muted: rgba(250, 250, 250, 0.1);
     --muted-foreground: rgba(250, 250, 250, 0.6);
-    --accent: #1c3238;
+    --accent: #142a30;
     --accent-foreground: #fafafa;
     --selection: #69a2b3;
     --selection-foreground: #0a0a0a;
@@ -197,11 +197,11 @@
     --border: rgba(250, 250, 250, 0.1);
     --input: rgba(250, 250, 250, 0.5);
     --ring: #69a2b3;
-    --sidebar: #262626;
+    --sidebar: #0a0a0a;
     --sidebar-foreground: #fafafa;
     --sidebar-primary: #69a2b3;
     --sidebar-primary-foreground: #0a0a0a;
-    --sidebar-accent: #1c3238;
+    --sidebar-accent: #142a30;
     --sidebar-accent-foreground: #fafafa;
     --sidebar-border: rgba(250, 250, 250, 0.1);
     --sidebar-ring: #69a2b3;
@@ -230,13 +230,13 @@
 :is(html.dark) {
   --background: #0a0a0a;
   --foreground: #fafafa;
-  --secondary: #262626;
+  --secondary: #171717;
   --neutral: #e5e5e5;
   --neutral-foreground: #171717;
-  --hover: #1c3238;
+  --hover: #142a30;
   --active: #69a2b3;
   --active-foreground: #0a0a0a;
-  --positive: #22c55e;
+  --positive: #4ade80;
   --positive-foreground: #0a0a0a;
   --warning: #f59e0b;
   --warning-foreground: #0a0a0a;
@@ -245,16 +245,16 @@
   --negative: #ff6467;
   --negative-foreground: #0a0a0a;
   --overlay: #000000;
-  --card: #262626;
+  --card: #171717;
   --card-foreground: #fafafa;
-  --popover: #262626;
+  --popover: #171717;
   --popover-foreground: #fafafa;
   --primary: #e5e5e5;
   --primary-foreground: #171717;
   --secondary-foreground: #fafafa;
   --muted: rgba(250, 250, 250, 0.1);
   --muted-foreground: rgba(250, 250, 250, 0.6);
-  --accent: #1c3238;
+  --accent: #142a30;
   --accent-foreground: #fafafa;
   --selection: #69a2b3;
   --selection-foreground: #0a0a0a;
@@ -263,11 +263,11 @@
   --border: rgba(250, 250, 250, 0.1);
   --input: rgba(250, 250, 250, 0.5);
   --ring: #69a2b3;
-  --sidebar: #262626;
+  --sidebar: #0a0a0a;
   --sidebar-foreground: #fafafa;
   --sidebar-primary: #69a2b3;
   --sidebar-primary-foreground: #0a0a0a;
-  --sidebar-accent: #1c3238;
+  --sidebar-accent: #142a30;
   --sidebar-accent-foreground: #fafafa;
   --sidebar-border: rgba(250, 250, 250, 0.1);
   --sidebar-ring: #69a2b3;
@@ -276,44 +276,44 @@
 :is(html.light) {
   --background: #ffffff;
   --foreground: #0a0a0a;
-  --secondary: #fafafa;
+  --secondary: #f5f5f5;
   --neutral: #171717;
   --neutral-foreground: #fafafa;
-  --hover: #d4eaf0;
+  --hover: #d0e6ec;
   --active: #2d6d7e;
   --active-foreground: #ffffff;
-  --positive: #166534;
+  --positive: #196635;
   --positive-foreground: #ffffff;
-  --warning: #92400e;
+  --warning: #742c02;
   --warning-foreground: #ffffff;
-  --info: #0369a1;
+  --info: #0863a6;
   --info-foreground: #ffffff;
-  --negative: #c10007;
+  --negative: #b02b26;
   --negative-foreground: #ffffff;
   --overlay: #000000;
-  --card: #fafafa;
+  --card: #f5f5f5;
   --card-foreground: #0a0a0a;
-  --popover: #fafafa;
+  --popover: #f5f5f5;
   --popover-foreground: #0a0a0a;
   --primary: #171717;
   --primary-foreground: #fafafa;
   --secondary-foreground: #0a0a0a;
   --muted: rgba(10, 10, 10, 0.1);
   --muted-foreground: rgba(10, 10, 10, 0.6);
-  --accent: #d4eaf0;
+  --accent: #d0e6ec;
   --accent-foreground: #0a0a0a;
   --selection: #2d6d7e;
   --selection-foreground: #ffffff;
-  --destructive: #c10007;
+  --destructive: #b02b26;
   --destructive-foreground: #ffffff;
   --border: rgba(10, 10, 10, 0.1);
   --input: rgba(10, 10, 10, 0.5);
   --ring: #2d6d7e;
-  --sidebar: #fafafa;
+  --sidebar: #ffffff;
   --sidebar-foreground: #0a0a0a;
   --sidebar-primary: #2d6d7e;
   --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #d4eaf0;
+  --sidebar-accent: #d0e6ec;
   --sidebar-accent-foreground: #0a0a0a;
   --sidebar-border: rgba(10, 10, 10, 0.1);
   --sidebar-ring: #2d6d7e;
@@ -328,24 +328,24 @@
 :is(html[data-palette="monokai"]) {
   --background: #272822;
   --foreground: #f8f8f2;
-  --secondary: #2d2e27;
+  --secondary: #2e2f28;
   --neutral: #a6e22e;
   --neutral-foreground: #272822;
   --hover: #3e3d32;
   --active: #ae81ff;
   --active-foreground: #272822;
-  --positive: #22c55e;
+  --positive: #2bca63;
   --positive-foreground: #272822;
-  --warning: #fd971f;
+  --warning: #fd9d16;
   --warning-foreground: #272822;
   --info: #66d9ef;
   --info-foreground: #272822;
-  --negative: #ff7398;
+  --negative: #ff74a0;
   --negative-foreground: #272822;
   --overlay: #000000;
-  --card: #2d2e27;
+  --card: #2e2f28;
   --card-foreground: #f8f8f2;
-  --popover: #2d2e27;
+  --popover: #2e2f28;
   --popover-foreground: #f8f8f2;
   --primary: #a6e22e;
   --primary-foreground: #272822;
@@ -356,12 +356,12 @@
   --accent-foreground: #f8f8f2;
   --selection: #ae81ff;
   --selection-foreground: #272822;
-  --destructive: #ff7398;
+  --destructive: #ff74a0;
   --destructive-foreground: #272822;
   --border: rgba(248, 248, 242, 0.1);
   --input: rgba(248, 248, 242, 0.5);
   --ring: #ae81ff;
-  --sidebar: #2d2e27;
+  --sidebar: #272822;
   --sidebar-foreground: #f8f8f2;
   --sidebar-primary: #ae81ff;
   --sidebar-primary-foreground: #272822;
@@ -409,6 +409,37 @@
 :is(html[data-palette="monokai"]) {
   scrollbar-color: rgba(248, 248, 242, 0.4) transparent;
   color-scheme: dark;
+}
+
+/*
+ * Reduced motion (#441). When the reader's system asks for it, an `animate-in` or `animate-out`
+ * keeps its fade and loses its movement: a dialog no longer zooms, a tooltip no longer slides.
+ * tw-animate-css draws both from these variables, so one rule here reaches every element that
+ * wears one, an app's own included.
+ *
+ * The fade stays because it is how a thing says it arrived, and because radix waits for the
+ * exit animation's `animationend` before it unmounts a closed dialog, menu or popover:
+ * `animation: none` would leave it on the page.
+ *
+ * `!important` because `zoom-in-95` sets the same variable on the element itself, and where
+ * the utilities are unlayered a class outranks `*`. A movement an app wants kept anyway takes
+ * an `!important` of its own. Native never sees this: react-native-css drops a universal
+ * selector, and `motion-safe:` and `motion-reduce:` never match on device —
+ * `useReducedMotion()` from `@cubeui/reduced-motion` is the way to ask there.
+ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  ::before,
+  ::after {
+    --tw-enter-translate-x: 0 !important;
+    --tw-enter-translate-y: 0 !important;
+    --tw-enter-scale: 1 !important;
+    --tw-enter-rotate: 0 !important;
+    --tw-exit-translate-x: 0 !important;
+    --tw-exit-translate-y: 0 !important;
+    --tw-exit-scale: 1 !important;
+    --tw-exit-rotate: 0 !important;
+  }
 }
 
 @theme inline {

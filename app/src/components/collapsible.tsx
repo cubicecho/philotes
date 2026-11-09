@@ -2,7 +2,18 @@ import type { ReactNode } from "react";
 import * as React from "react";
 import { Platform, Pressable, Text, View } from "react-native";
 import { ChevronRight } from "@/components/ui/icons";
-import { cn, type SlotNode } from "@/lib/utils";
+import {
+  actionGap,
+  cn,
+  HEADING_DESCRIPTION,
+  HEADING_GAP,
+  HEADING_TITLE,
+  HEADING_WRAP_FLOOR,
+  HEADING_WRAP_GAP,
+  hasSlot,
+  type SlotNode,
+  touchRowClass,
+} from "@/lib/utils";
 
 type CollapsibleProps = {
   /**
@@ -28,9 +39,13 @@ type CollapsibleProps = {
   onOpenChange?: ((open: boolean) => void) | undefined;
   /** Where an uncontrolled collapsible starts. Shut by default, the way `<details>` is. */
   defaultOpen?: boolean | undefined;
+  /** On the whole collapsible, the header and what it opens onto together. */
   className?: string | undefined;
+  /** On the header row: the chevron, the title and description, and the action. */
   headerClassName?: string | undefined;
+  /** On a string title's own `Text`: its size, its colour. */
   titleClassName?: string | undefined;
+  /** On the box that holds `contentSlot`, indented under the title. */
   contentClassName?: string | undefined;
 };
 
@@ -97,8 +112,10 @@ export function CollapsibleTrigger({
       className={cn(
         "min-w-0 flex-1 flex-row items-start gap-2 rounded-sm",
         Platform.select({
-          web: "text-left focus-visible:bg-hover focus-visible:outline-none",
-          default: undefined,
+          // Under the pointer as focused: hovered, and no ring.
+          web: "text-left transition-colors hover:bg-hover focus-visible:bg-hover focus-visible:outline-none",
+          // Pressed looks hovered, as a row's pressed part does.
+          default: "active:bg-hover",
         }),
         className,
       )}
@@ -109,7 +126,10 @@ export function CollapsibleTrigger({
         aria-hidden
         className={cn(
           "mt-0.5 size-4 shrink-0 text-foreground/60",
-          Platform.select({ web: "transition-transform", default: undefined }),
+          Platform.select({
+            web: "transition-transform motion-reduce:transition-none",
+            default: undefined,
+          }),
           open && "rotate-90",
           chevronClassName,
         )}
@@ -121,8 +141,8 @@ export function CollapsibleTrigger({
 
 /**
  * A titled part of a screen whose body shows and hides: "Show completed (3)" under a list. The
- * look is a muted `text-sm` line with the chevron before it; `titleClassName` makes the title the
- * foreground where the collapsible is a section's heading.
+ * heading is the rhythm every block and row shares — a 14px semibold title, a quieter line of the
+ * same size under it, the action level with the title's top — with the chevron before it.
  *
  * The whole header is one `CollapsibleTrigger`, and `actionSlot` sits outside it, because a button
  * in a button is invalid. Open is uncontrolled with `defaultOpen` or controlled with `open`, and
@@ -144,7 +164,7 @@ export function Collapsible({
   const [ownOpen, setOwnOpen] = React.useState(defaultOpen);
   const open = openProp ?? ownOpen;
   const contentId = React.useId();
-  const shown = open && contentSlot !== undefined && contentSlot !== null && contentSlot !== false;
+  const shown = open && hasSlot(contentSlot);
 
   const toggle = () => {
     if (openProp === undefined) {
@@ -153,32 +173,43 @@ export function Collapsible({
     onOpenChange?.(!open);
   };
 
+  // On device the button is a finger's 44pt tall (#470). A title alone is one line, which sits in
+  // the middle of that, and the action with it; a title over a description already fills it.
+  const centred = Platform.OS !== "web" && (description === undefined || description === null);
+
   return (
     <View testID="collapsible" className={cn("min-w-0 gap-2", className)}>
       <View
         testID="collapsible-header"
-        className={cn("min-w-0 flex-row items-start gap-2", headerClassName)}
+        // The rhythm's wrap: the action drops under the title once the title would have less
+        // than the floor beside it.
+        className={cn(
+          "min-w-0 flex-row flex-wrap items-start gap-x-2",
+          centred && "items-center",
+          HEADING_WRAP_GAP,
+          headerClassName,
+        )}
       >
         <CollapsibleTrigger
           testID="collapsible-trigger"
+          className={cn(HEADING_WRAP_FLOOR, touchRowClass(), centred && "items-center")}
           open={open}
           onPress={toggle}
           controls={shown ? contentId : undefined}
           contentSlot={
-            <View className="min-w-0 flex-1 gap-0.5">
-              {asText(
-                title,
-                cn("font-semibold text-foreground/60 text-sm", titleClassName),
-                "collapsible-title",
-              )}
+            <View className={cn("min-w-0 flex-1", HEADING_GAP)}>
+              {asText(title, cn(HEADING_TITLE, titleClassName), "collapsible-title")}
               {description
-                ? asText(description, "text-foreground/60 text-xs", "collapsible-description")
+                ? asText(description, HEADING_DESCRIPTION, "collapsible-description")
                 : null}
             </View>
           }
         />
-        {actionSlot ? (
-          <View testID="collapsible-action" className="shrink-0 flex-row items-center gap-1">
+        {hasSlot(actionSlot) ? (
+          <View
+            testID="collapsible-action"
+            className={cn("shrink-0 flex-row items-center", actionGap(actionSlot))}
+          >
             {actionSlot}
           </View>
         ) : null}

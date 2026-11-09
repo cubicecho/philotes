@@ -10,7 +10,7 @@ import type { DateRange } from "@/components/ui/calendar-base";
 import { Calendar as CalendarIcon, X } from "@/components/ui/icons";
 import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { cn } from "@/lib/utils";
+import { cn, fieldTriggerClass } from "@/lib/utils";
 
 export type { DateRange };
 
@@ -51,9 +51,11 @@ function timeValue(date: Date): string {
  *
  * Three call sites had this as a copied `w-[250px] justify-between bg-input-background pl-2 pr-3
  * text-left font-normal`, and a fourth had it in React Native. The fixed `250px` is dropped —
- * width belongs to the layout the field is in, and `FormField` already gives it one.
+ * width belongs to the layout the field is in, and `FormField` already gives it one. The look is
+ * `fieldTriggerClass`, the combobox trigger's: a field's focus and invalid border, where it was an
+ * outline button's hover fill and no invalid border at all (#464).
  */
-const TRIGGER = "w-full justify-between px-3 text-left font-normal";
+const TRIGGER = "w-full justify-between px-3 text-left";
 
 /**
  * The value's one line. `truncate` is the ellipsis on the web; on device it is `numberOfLines`,
@@ -72,7 +74,13 @@ const ONE_LINE = Platform.select({ web: "truncate", default: "line-clamp-1" });
 type PickerAria = Pick<
   AriaAttributes,
   "aria-label" | "aria-labelledby" | "aria-describedby" | "aria-invalid" | "aria-required"
-> & { id?: string | undefined };
+> & {
+  /**
+   * The trigger's id: what a `FieldLabel htmlFor` points at on the web, and a target for
+   * `aria-labelledby` on device.
+   */
+  id?: string | undefined;
+};
 
 type PickerTriggerProps = PickerAria & {
   empty: boolean;
@@ -127,7 +135,7 @@ export function PickerTrigger({
                 ...(ariaInvalid === undefined ? {} : { "aria-invalid": ariaInvalid }),
               }
             : {})}
-          className={cn(TRIGGER, className)}
+          className={cn(TRIGGER, fieldTriggerClass(ariaInvalid), className)}
           content={
             // The colour is on the words, not the button: native has no colour inheritance, so the
             // placeholder's muted class has to be on the `Text` itself.
@@ -184,18 +192,28 @@ export function ClearRow({ onClear }: { onClear: () => void }) {
 type CalendarProps = ComponentProps<typeof Calendar>;
 
 type DatePickerProps = PickerAria & {
+  /** The chosen day, or `null` (or `undefined`) for none, when the trigger reads `placeholder`. */
   value?: Date | null | undefined;
+  /** Told the new day when the reader picks one, and `null` when they clear it. */
   onValueChange: (value: Date | null) => void;
   /** Adds a time box under the calendar and keeps the clock through a day change. */
   showTime?: boolean | undefined;
+  /** What the trigger reads with no date chosen. */
   placeholder?: string | undefined;
   /** How the chosen date reads on the trigger. Defaults to `PPP`, or `PPP p` with a time. */
   format?: string | undefined;
   /** Which days cannot be chosen — a `DateMatcher`, so `{ before: new Date() }` works. */
   disabledDates?: CalendarProps["disabled"] | undefined;
+  /**
+   * A Clear row under the calendar while a date is chosen, which sets the value to `null`. Turn it
+   * off for a date the field cannot be without.
+   */
   clearable?: boolean | undefined;
+  /** The trigger cannot be pressed, and the field reads as unavailable. */
   disabled?: boolean | undefined;
+  /** On the trigger, the field-shaped button that opens the calendar. */
   className?: string | undefined;
+  /** On the popover the calendar is drawn in. */
   contentClassName?: string | undefined;
   /** Anything else the calendar takes: `startMonth`, `numberOfMonths`, `weekStartsOn`. */
   calendarProps?: Omit<CalendarProps, "mode" | "selected" | "onSelect" | "disabled"> | undefined;
@@ -292,10 +310,19 @@ type DateRangePickerProps = Omit<
   DatePickerProps,
   "value" | "onValueChange" | "showTime" | "calendarProps"
 > & {
+  /**
+   * The chosen range, or `null` (or `undefined`) for none. `to` is unset while only the start is
+   * picked.
+   */
   value?: DateRange | null | undefined;
+  /**
+   * Told the range on every pick, so first with only `from` set, and `null` when the reader clears
+   * it.
+   */
   onValueChange: (value: DateRange | null) => void;
   /** Months side by side. Two, because a range usually crosses one. */
   numberOfMonths?: number | undefined;
+  /** Anything else the calendar takes: `startMonth`, `weekStartsOn`. */
   calendarProps?: Omit<CalendarProps, "mode" | "selected" | "onSelect" | "disabled"> | undefined;
 };
 

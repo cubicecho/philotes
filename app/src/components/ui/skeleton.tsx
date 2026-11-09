@@ -1,6 +1,7 @@
 import type * as React from "react";
 import { useEffect, useRef } from "react";
 import { Animated, Easing, View } from "react-native";
+import { useReducedMotion } from "@/components/ui/reduced-motion";
 import { PULSE_DURATION_MS, PULSE_LOW, skeletonClass } from "@/components/ui/skeleton-base";
 import { cn } from "@/lib/utils";
 
@@ -19,8 +20,13 @@ const PulsingView = Animated.createAnimatedComponent(View);
 /** A pulsing block standing in for content that has not arrived. */
 function Skeleton({ className, style, ...props }: SkeletonProps) {
   const opacity = useRef(new Animated.Value(1)).current;
+  const reducedMotion = useReducedMotion();
 
   useEffect(() => {
+    if (reducedMotion) {
+      opacity.setValue(1);
+      return;
+    }
     const half = {
       duration: PULSE_DURATION_MS / 2,
       easing: PULSE_EASING,
@@ -34,7 +40,7 @@ function Skeleton({ className, style, ...props }: SkeletonProps) {
     );
     loop.start();
     return () => loop.stop();
-  }, [opacity]);
+  }, [opacity, reducedMotion]);
 
   return (
     <PulsingView

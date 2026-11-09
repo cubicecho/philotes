@@ -6,6 +6,7 @@ import {
   type HTMLAttributes,
   type ReactElement,
   type ReactNode,
+  type Ref,
   useContext,
   useEffect,
   useRef,
@@ -13,6 +14,7 @@ import {
 } from "react";
 import { Platform, Pressable, ScrollView, Text, View } from "react-native";
 import { IconClassContext } from "@/components/ui/icons-base";
+import { useReducedMotion } from "@/components/ui/reduced-motion";
 import {
   TABS_LIST_CLASS,
   TABS_LIST_INSET,
@@ -23,7 +25,13 @@ import {
   type TabsProps,
   type TabsTriggerProps,
 } from "@/components/ui/tabs-base";
-import { cn } from "@/lib/utils";
+import {
+  type RovingKeyEvent,
+  type RovingSet,
+  useRovingFocus,
+  useRovingItem,
+} from "@/lib/roving-focus";
+import { cn, FOCUS_EDGE, touchRowClass } from "@/lib/utils";
 
 type TabsState = { value: string; setValue: (value: string) => void };
 
@@ -49,8 +57,22 @@ function Tabs({ value: controlled, onValueChange, defaultValue, className, child
 /** Where a tab sits in the row: its near edge and its width. */
 type Span = { x: number; width: number };
 
-/** How a trigger tells its list where the selected tab is, so the list can bring it into view. */
-const TabsListContext = createContext<(tab: Span) => void>(() => {});
+type TabsListState = RovingSet & {
+  /** How a trigger tells its list where the selected tab is, so the list can bring it into view. */
+  reveal: (tab: Span) => void;
+  /** The one tab Tab lands on. */
+  tabStop: string | undefined;
+  /** An arrow key, Home or End on the tab `from`. */
+  move: (from: string, event: RovingKeyEvent) => void;
+};
+
+const TabsListContext = createContext<TabsListState>({
+  reveal: () => {},
+  tabStop: undefined,
+  move: () => {},
+  register: () => {},
+  unregister: () => {},
+});
 
 /** The row of tab buttons. */
 function TabsList({
@@ -64,6 +86,14 @@ function TabsList({
   const viewport = useRef(0);
   const offset = useRef(0);
   const selected = useRef<Span | undefined>(undefined);
+  const animated = useReducedMotion() === false;
+  const tabs = useContext(TabsContext);
+  // Automatic activation, radix's default and the web half's: the tab an arrow lands on is shown.
+  const roving = useRovingFocus({
+    current: tabs.value,
+    onMove: tabs.setValue,
+    orientation: "horizontal",
+  });
 
   const reveal = () => {
     const tab = selected.current;
@@ -73,9 +103,9 @@ function TabsList({
     }
     const end = tab.x + tab.width;
     if (tab.x < offset.current) {
-      scroller.current?.scrollTo({ x: Math.max(0, tab.x - TABS_LIST_INSET) });
+      scroller.current?.scrollTo({ x: Math.max(0, tab.x - TABS_LIST_INSET), animated });
     } else if (end > offset.current + viewport.current) {
-      scroller.current?.scrollTo({ x: end - viewport.current + TABS_LIST_INSET });
+      scroller.current?.scrollTo({ x: end - viewport.current + TABS_LIST_INSET, animated });
     }
   };
 
@@ -86,7 +116,9 @@ function TabsList({
       role="tablist"
       aria-label={ariaLabel}
       aria-labelledby={ariaLabelledBy}
-      className={cn("max-w-full flex-row", TABS_LIST_CLASS, className)}
+      // `self-start`: as wide as its tabs, as the web half's `inline-flex` list is, where a column
+      // stretched it across. A caller who wants it across passes `self-stretch`.
+      className={cn("max-w-full self-start flex-row", TABS_LIST_CLASS, className)}
     >
       <ScrollView
         ref={scroller}
@@ -101,13 +133,16 @@ function TabsList({
         }}
         scrollEventThrottle={16}
         className="shrink grow"
-        // `grow` so tabs that fit are centred in the list, as they were before it scrolled.
+        // `grow` so tabs that fit are centred in a list stretched wider than they are.
         contentContainerClassName="grow flex-row items-center justify-center"
       >
         <TabsListContext.Provider
-          value={(tab) => {
-            selected.current = tab;
-            reveal();
+          value={{
+            ...roving,
+            reveal: (tab) => {
+              selected.current = tab;
+              reveal();
+            },
           }}
         >
           {children}
@@ -159,16 +194,30 @@ function TabsTrigger({
   linkSlot,
 }: TabsTriggerProps) {
   const tabs = useContext(TabsContext);
-  const reveal = useContext(TabsListContext);
+  const list = useContext(TabsListContext);
+  const { reveal } = list;
+  const ref = useRovingItem<View>(list, value, disabled);
   const span = useRef<Span | undefined>(undefined);
   const active = tabs.value === value;
-  // A quiet tab lifts to full ink under the pointer, as the web half's does; the colour is on each
-  // `Text`, which only the pressable's `group` reaches. Web only: a device has no pointer.
+  // Web only: a device has no Tab key, and a `tabIndex` there would do nothing for a screen reader.
+  const keys =
+    Platform.OS === "web"
+      ? {
+          tabIndex: list.tabStop === value ? (0 as const) : (-1 as const),
+          onKeyDown: (event: RovingKeyEvent) => list.move(value, event),
+        }
+      : {};
+  // A quiet tab lifts to full ink under the pointer and focused, as the web half's does; the colour
+  // is on each `Text`, which only the pressable's `group` reaches. Web only: a device has no
+  // pointer, and no keyboard focus to show.
   const color = active
     ? "text-foreground"
     : cn(
         "text-foreground/60",
-        Platform.select({ web: "group-hover:text-foreground", default: "" }),
+        Platform.select({
+          web: "group-hover:text-foreground group-focus-visible:text-foreground",
+          default: "",
+        }),
       );
 
   // Chosen from somewhere other than a press — a link, the caller's own state — the tab may be
@@ -182,8 +231,15 @@ function TabsTrigger({
 
   const styling = cn(
     TABS_TRIGGER_CLASS,
-    // The active tab is the chosen tint, a step further under the pointer and focused.
-    active ? "bg-active/40 hover:bg-active/60 focus-visible:bg-active/60" : "group hover:bg-hover",
+    // 44pt on device, a finger's target, and the list grows to hold it: the scroller clips a touch
+    // at its edge, so the tab has to be that tall itself rather than reach it with a `hitSlop`.
+    touchRowClass(),
+    // The active tab is the chosen tint, a step further under the pointer, focused and pressed;
+    // another looks hovered then, as the web half's does. Neither draws a ring.
+    "focus-visible:outline-none",
+    active
+      ? "bg-active/40 hover:bg-active/60 focus-visible:bg-active/60 active:bg-active/60"
+      : "group hover:bg-hover focus-visible:bg-hover active:bg-hover",
     disabled && "opacity-50",
     className,
   );
@@ -214,8 +270,10 @@ function TabsTrigger({
             "aria-selected": active,
             "aria-disabled": disabled,
             className: cn("flex", styling),
+            ...keys,
             ...(typeof linkSlot.type === "string" ? { onClick: select } : { onPress: select }),
           } as unknown as HTMLAttributes<HTMLElement>)}
+          ref={ref as unknown as Ref<HTMLElement>}
         >
           {cloneElement(linkSlot as ReactElement, undefined, inside)}
         </Slot>
@@ -225,7 +283,9 @@ function TabsTrigger({
 
   const tab = (
     <Pressable
+      ref={ref}
       role="tab"
+      {...keys}
       onLayout={(event) => {
         const { x, width } = event.nativeEvent.layout;
         span.current = { x, width };
@@ -256,7 +316,15 @@ function TabsContent({ value, className, children }: TabsContentProps) {
     return null;
   }
   return (
-    <View role="tabpanel" className={cn("mt-2", className)}>
+    <View
+      role="tabpanel"
+      // A tab stop under Expo web, as radix's panel is on the web, so Tab reaches the pane from its
+      // tab even when nothing in it takes focus. A device has no Tab key.
+      {...(Platform.OS === "web" ? { tabIndex: 0 as const } : {})}
+      // Nothing in the pane looks hovered, so it shows focus as a scroll box does: its edge turns
+      // `active`. A border, not the inset line, which a card filling the pane would cover.
+      className={cn("mt-2 rounded-md", FOCUS_EDGE, className)}
+    >
       {children}
     </View>
   );

@@ -8,12 +8,15 @@ export type CopyButtonProps = {
    * The accessible name before the press: say what is copied when the screen has more than one
    * thing that could be — "Copy endpoint URL". The default is `Copy`. For the moment after a
    * press the name is `Copied`, whatever this says. Inside a `CodeBlock` with a `title`, the
-   * default is "Copy {title}".
+   * default is "Copy {title}". At a text size it is also drawn beside the icon.
    */
   label?: string | undefined;
   /** The button's variant. The default is `outline`. */
   variant?: ButtonProps["variant"] | undefined;
-  /** The button's size. The default is `icon-sm`, which sits flush in a row of small text. */
+  /**
+   * The button's size. The default is `icon-sm`, which sits flush in a row of small text; a text
+   * size draws `label` beside the icon.
+   */
   size?: ButtonProps["size"] | undefined;
   /** Called once the text is on the clipboard — a toast, an analytics event. */
   onCopied?: (() => void) | undefined;
@@ -33,7 +36,19 @@ export type CopyButtonProps = {
    * hoverable (`aria-disabled`), so the reason it is off can still be read.
    */
   hint?: ButtonProps["hint"] | undefined;
-  /** The button's class: its position, say `absolute top-2 right-2` over a snippet. */
+  /**
+   * Whether the tooltip is drawn: the `hint`, or with none at an `icon*` size the name, `label`
+   * and then `Copied`. Off, a `hint` is still the button's description. Turn it off where the
+   * icon already explains itself.
+   *
+   * @defaultValue true
+   */
+  tooltip?: ButtonProps["tooltip"] | undefined;
+  /**
+   * The button's class, for its place in a row: `ml-auto`, `self-end`. Beside a block of text it
+   * goes in the block's `actionSlot` — `CodeBlock`, `CardLayout`, `Section`, `PropertyRow`,
+   * `ListItem` — not in an `absolute` corner over the block, where it covers the text.
+   */
   className?: string | undefined;
 };
 

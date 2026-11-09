@@ -1,7 +1,7 @@
 import * as React from "react";
-import { Pressable, Text, View } from "react-native";
+import { Platform, Pressable, Text, View } from "react-native";
 import { ColorBar } from "@/components/ui/color-bar";
-import { cn } from "@/lib/utils";
+import { CardBodyContext, cn, HEADING_DESCRIPTION, HEADING_GAP, HEADING_TITLE } from "@/lib/utils";
 
 // `className` is re-declared rather than inherited: nativewind types it as
 // `className?: string`, which under `exactOptionalPropertyTypes` rejects the
@@ -32,10 +32,24 @@ type CardProps = ViewProps & {
  */
 const CARD_SURFACE_CLASS = "rounded-lg border border-foreground/10 bg-secondary text-foreground";
 
+/**
+ * What a pressable card adds: it looks hovered under the pointer, focused and pressed, and draws
+ * no ring. On the web a compiled `Pressable` is a `<button>`, which centres its text.
+ */
+const CARD_PRESSABLE_CLASS = Platform.select({
+  web: "text-left transition-colors hover:bg-hover focus-visible:bg-hover focus-visible:outline-none active:bg-hover",
+  default: "active:bg-hover",
+});
+
 /** A bordered surface for one thing, pressable when given `onPress`. */
 const Card = React.forwardRef<React.ElementRef<typeof View>, CardProps>(
   ({ className, accentColor, accentLabel, onPress, children, ...props }, ref) => {
-    const classes = cn(CARD_SURFACE_CLASS, accentColor && "relative overflow-hidden", className);
+    const classes = cn(
+      CARD_SURFACE_CLASS,
+      onPress && CARD_PRESSABLE_CLASS,
+      accentColor && "relative overflow-hidden",
+      className,
+    );
     const inner = (
       <>
         <ColorBar color={accentColor} label={accentLabel} />
@@ -66,7 +80,7 @@ Card.displayName = "Card";
 /** The top of a card, holding its title and description. */
 const CardHeader = React.forwardRef<React.ElementRef<typeof View>, ViewProps>(
   ({ className, ...props }, ref) => (
-    <View ref={ref} className={cn("flex flex-col gap-1 p-4", className)} {...props} />
+    <View ref={ref} className={cn("flex flex-col p-4", HEADING_GAP, className)} {...props} />
   ),
 );
 CardHeader.displayName = "CardHeader";
@@ -80,9 +94,11 @@ type CardTitleProps = TextProps & {
   level?: 1 | 2 | 3 | undefined;
 };
 
-// shadcn's current card: the page's own text size, so a card under a page header never has a
-// bigger title than the page does (#249).
-const CARD_TITLE = "text-base font-semibold leading-none text-foreground";
+// The heading rhythm's title (#473): the size of the description under it and of a row's title,
+// so a card of rows reads as one type scale, and never bigger than the page's title (#249). It
+// keeps `text-sm`'s 20px line where shadcn's is `leading-none`, which clipped a truncated title's
+// descenders.
+const CARD_TITLE = HEADING_TITLE;
 
 // One arm per level because the compiler emits `<h1>`–`<h3>` from a *literal* `aria-level`; a level
 // held in a variable would be a tag chosen at runtime, which it refuses (see `page-header.tsx`).
@@ -127,15 +143,20 @@ CardTitle.displayName = "CardTitle";
 /** The muted line under the card's title. */
 const CardDescription = React.forwardRef<React.ElementRef<typeof Text>, TextProps>(
   ({ className, ...props }, ref) => (
-    <Text ref={ref} className={cn("text-sm text-foreground/60", className)} {...props} />
+    <Text ref={ref} className={cn(HEADING_DESCRIPTION, className)} {...props} />
   ),
 );
 CardDescription.displayName = "CardDescription";
 
-/** The card's body. */
+/**
+ * The card's body. A `List` or a `Table` inside it reaches into its padding, so the rows line up
+ * with the card's title: see `CardBodyContext`.
+ */
 const CardContent = React.forwardRef<React.ElementRef<typeof View>, ViewProps>(
   ({ className, ...props }, ref) => (
-    <View ref={ref} className={cn("p-4 pt-0", className)} {...props} />
+    <CardBodyContext.Provider value={true}>
+      <View ref={ref} className={cn("p-4 pt-0", className)} {...props} />
+    </CardBodyContext.Provider>
   ),
 );
 CardContent.displayName = "CardContent";

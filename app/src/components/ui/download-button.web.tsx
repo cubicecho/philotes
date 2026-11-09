@@ -1,9 +1,8 @@
-import { Button } from "@/components/ui/button";
+import { Button, isIconSize } from "@/components/ui/button";
 import {
   type DownloadButtonProps,
   type DownloadContent,
   type DownloadDestination,
-  isIconSize,
   useDownload,
 } from "@/components/ui/download-button-base";
 import { Download } from "@/components/ui/icons";
@@ -58,6 +57,8 @@ export function DownloadButton({
   variant = "outline",
   size = "icon-sm",
   disabled,
+  hint,
+  tooltip,
   onDownloaded,
   onError,
   className,
@@ -73,6 +74,8 @@ export function DownloadButton({
       {...(isIconSize(size) ? {} : { content: label })}
       loading={pending}
       disabled={disabled}
+      hint={hint}
+      tooltip={tooltip}
       className={className}
       onPress={() =>
         void download({

@@ -1,12 +1,6 @@
-import {
-  cloneElement,
-  createContext,
-  isValidElement,
-  type ReactElement,
-  useContext,
-  useState,
-} from "react";
+import { createContext, isValidElement, useContext, useState } from "react";
 import { Modal, Pressable, Text, View } from "react-native";
+import { OverlayLayer } from "@/components/ui/overlay";
 import type {
   PopoverAnchorProps,
   PopoverCloseProps,
@@ -21,7 +15,7 @@ import {
   POPOVER_HEADER_CLASS,
   POPOVER_TITLE_CLASS,
 } from "@/components/ui/popover-base";
-import { cn } from "@/lib/utils";
+import { addHandlers, CardBodyContext, cn } from "@/lib/utils";
 
 type PopoverState = { open: boolean; setOpen: (open: boolean) => void };
 
@@ -51,9 +45,7 @@ function Popover({ open, onOpenChange, defaultOpen = false, children }: PopoverP
 function PopoverTrigger({ asChild, children }: PopoverTriggerProps) {
   const { setOpen } = useContext(PopoverContext);
   if (asChild && isValidElement(children)) {
-    return cloneElement(children as ReactElement<{ onPress?: () => void }>, {
-      onPress: () => setOpen(true),
-    });
+    return addHandlers(children, { onPress: () => setOpen(true) });
   }
   return (
     // The `role` is hand-written because a `<button>` has no native counterpart.
@@ -75,8 +67,12 @@ function PopoverContent({ className, children }: PopoverContentProps) {
           role="button"
           aria-label="Close"
         />
-        <View className={cn(POPOVER_CONTENT_CLASS, className)}>{children}</View>
+        <View className={cn(POPOVER_CONTENT_CLASS, className)}>
+          <CardBodyContext.Provider value={false}>{children}</CardBodyContext.Provider>
+        </View>
       </View>
+      {/* Last, so a tooltip or a toast raised while it is open is drawn over it. */}
+      <OverlayLayer />
     </Modal>
   );
 }
@@ -85,9 +81,7 @@ function PopoverContent({ className, children }: PopoverContentProps) {
 function PopoverClose({ asChild, className, children }: PopoverCloseProps) {
   const { setOpen } = useContext(PopoverContext);
   if (asChild && isValidElement(children)) {
-    return cloneElement(children as ReactElement<{ onPress?: () => void }>, {
-      onPress: () => setOpen(false),
-    });
+    return addHandlers(children, { onPress: () => setOpen(false) });
   }
   return (
     // The `role` is hand-written because a `<button>` has no native counterpart.
