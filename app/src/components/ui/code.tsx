@@ -1,6 +1,9 @@
 import { createContext, type ReactNode, useLayoutEffect, useRef, useState } from "react";
-import { Platform, Pressable, ScrollView, Text, View } from "react-native";
-import { cn, type SlotNode } from "@/lib/utils";
+import { Platform, ScrollView, Text, View } from "react-native";
+import { Button } from "@/components/ui/button";
+import { useOverflows } from "@/components/ui/overflows";
+import { useReducedMotion } from "@/components/ui/reduced-motion";
+import { CODE_TEXT, cn, FOCUS_EDGE, hasSlot, type SlotNode } from "@/lib/utils";
 
 /** Monospaced text inline in a sentence. */
 export function Code({
@@ -13,7 +16,8 @@ export function Code({
   return (
     <Text
       className={cn(
-        "rounded-sm bg-foreground/10 px-1 py-0.5 font-mono text-xs text-foreground",
+        CODE_TEXT,
+        "rounded-sm bg-foreground/10 px-1 py-0.5 text-foreground",
         className,
       )}
     >
@@ -37,7 +41,7 @@ const MAX_HEIGHTS = {
 export const CodeBlockTitleContext = createContext<string | undefined>(undefined);
 
 /** The block's type, which is `Code`'s: the two are one family and should not drift apart. */
-const TEXT = "font-mono text-xs text-foreground";
+const TEXT = cn(CODE_TEXT, "text-foreground");
 
 /**
  * One line, with an ellipsis: `truncate` on the web, `line-clamp-1` on device, which is what
@@ -86,6 +90,11 @@ export type CodeBlockProps = {
    * live region: a log read aloud line by line drowns out everything else.
    */
   follow?: boolean | undefined;
+  /**
+   * The button's words that bring a reader who scrolled up back to the end of a `follow` block.
+   * The default is "Jump to latest"; pass the app's own translation.
+   */
+  jumpLabel?: string | undefined;
   /** The block's root: its width, its margin. */
   className?: string | undefined;
 };
@@ -126,7 +135,7 @@ type Following = {
   onGrow: () => void;
 };
 
-type CodeBlockTextProps = Pick<CodeBlockProps, "content" | "wrap" | "maxHeight"> & {
+type CodeBlockTextProps = Pick<CodeBlockProps, "content" | "wrap" | "maxHeight" | "title"> & {
   following?: Following | undefined;
 };
 
@@ -141,31 +150,41 @@ type CodeBlockTextProps = Pick<CodeBlockProps, "content" | "wrap" | "maxHeight">
  * the compiler refuses an element chosen at runtime — it folds `Platform.OS === "web"` to `true`,
  * keeps the first arm, and drops the `ScrollView`s below it as unreachable.
  */
-function CodeBlockText({ content, wrap, maxHeight, following }: CodeBlockTextProps) {
+function CodeBlockText({ content, wrap, maxHeight, title, following }: CodeBlockTextProps) {
   const height = maxHeight ? MAX_HEIGHTS[maxHeight] : undefined;
+  const [measured, overflows] = useOverflows();
 
   if (Platform.OS === "web") {
     return (
       <View
         testID="code-block-content"
+        ref={(node) => {
+          measured.current = node;
+          if (following) {
+            following.scroller.current = node;
+          }
+        }}
         // A region that scrolls has to be reachable by keyboard, or only a mouse wheel can read
-        // the end of the line (axe `scrollable-region-focusable`). A block that wraps and has no
-        // cap cannot scroll, so it takes no tab stop — which is what keeps a one-line value
-        // beside its copy button from being two stops.
-        tabIndex={wrap && !maxHeight ? undefined : 0}
+        // the end of the line (axe `scrollable-region-focusable`). Only while it has something to
+        // scroll, though: text that fits, as a one-line value beside its copy button does, would
+        // be a stray stop, and a log that grows past the cap becomes one.
+        tabIndex={overflows ? 0 : undefined}
         // A view's own props have no scroll event (on device a view does not scroll), so the
-        // listener and the ref go on as a spread, untyped. The element under it is a `<div>`.
+        // listener goes on as a spread, untyped. The element under it is a `<div>`.
         {...(following
           ? {
-              ref: (node: unknown) => {
-                following.scroller.current = node;
-              },
               "aria-live": "off" as const,
               onScroll: ({ currentTarget: box }: WebScrollEvent) =>
                 following.onAtEnd(box.scrollHeight - box.scrollTop - box.clientHeight <= END_SLACK),
             }
           : {})}
-        className={cn("min-w-0 flex-1 overflow-auto p-3", height)}
+        className={cn(
+          "min-w-0 flex-1 overflow-auto p-3",
+          height,
+          overflows && FOCUS_EDGE,
+          // The edge follows the block's corners, which are its own only where no header sits.
+          overflows && (title === undefined ? "rounded-md" : "rounded-b-md"),
+        )}
       >
         <Text
           webAs="pre"
@@ -253,9 +272,11 @@ export function CodeBlock({
   title,
   language,
   follow = false,
+  jumpLabel = "Jump to latest",
   className,
 }: CodeBlockProps) {
   const scroller = useRef<unknown>(null);
+  const reducedMotion = useReducedMotion();
   // Whether the reader is at the end, which is whether the block follows. It starts there.
   const [atEnd, setAtEnd] = useState(true);
 
@@ -280,7 +301,7 @@ export function CodeBlock({
       }
     : undefined;
 
-  const action = actionSlot ? (
+  const action = hasSlot(actionSlot) ? (
     // `p-0.5` and not the text's `p-3`: an icon button is as tall as a line of text and its
     // padding together, so a one-line block stays one line tall with the button in it.
     <View testID="code-block-action" className="shrink-0 p-0.5">
@@ -288,23 +309,30 @@ export function CodeBlock({
     </View>
   ) : null;
   const text = (
-    <CodeBlockText content={content} wrap={wrap} maxHeight={maxHeight} following={following} />
+    <CodeBlockText
+      content={content}
+      wrap={wrap}
+      maxHeight={maxHeight}
+      title={title}
+      following={following}
+    />
   );
   const jump =
     follow && atEnd === false ? (
-      <Pressable
+      // A button laid over the text, so the smallest shadow, as a copy button over a block has.
+      <Button
         testID="code-block-jump"
-        role="button"
+        size="sm"
+        variant="outline"
+        content={jumpLabel}
         onPress={() => {
           setAtEnd(true);
           if (scroller.current) {
-            toEnd(scroller.current, true);
+            toEnd(scroller.current, reducedMotion === false);
           }
         }}
-        className="absolute right-2 bottom-2 rounded-md border border-foreground/10 bg-background px-2 py-1 shadow-sm"
-      >
-        <Text className="text-xs text-foreground">Jump to latest</Text>
-      </Pressable>
+        className="absolute right-2 bottom-2 shadow-sm"
+      />
     ) : null;
 
   if (title === undefined) {

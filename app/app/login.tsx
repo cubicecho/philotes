@@ -233,7 +233,7 @@ function ServerAddressForm({ onSaved }: { onSaved: () => void }) {
                 />
               )}
             </form.AppField>
-            <form.SubmitButton createLabel="Continue" savingLabel="Connecting…" />
+            <form.SubmitButton createLabel="Continue" loadingLabel="Connecting…" />
           </Form>
         </form.AppForm>
       }
@@ -279,7 +279,7 @@ function LocalNetSignIn({ onChangeServer, setUpSlot, ...sso }: ServerChoiceProps
                 {(field) => <field.InputField label="Email" type="email" />}
               </form.AppField>
               {error ? <Text className="text-negative text-sm">{error.message}</Text> : null}
-              <form.SubmitButton createLabel="Sign in" savingLabel="Signing in…" />
+              <form.SubmitButton createLabel="Sign in" loadingLabel="Signing in…" />
             </Form>
           </form.AppForm>
         </WithSso>
@@ -391,7 +391,7 @@ function PasswordSignIn({
 
               {failure === null ? null : <Text className="text-negative text-sm">{failure}</Text>}
 
-              <form.SubmitButton createLabel={copy.submit} savingLabel={copy.submitting} />
+              <form.SubmitButton createLabel={copy.submit} loadingLabel={copy.submitting} />
             </Form>
           </form.AppForm>
         </WithSso>

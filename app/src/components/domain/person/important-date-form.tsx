@@ -273,7 +273,7 @@ export function ImportantDateDialog({
         <>
           <Button variant="outline" onPress={close} content="Cancel" />
           <form.AppForm>
-            <form.SubmitButton createLabel="Save" savingLabel="Saving..." />
+            <form.SubmitButton createLabel="Save" />
           </form.AppForm>
         </>
       )}

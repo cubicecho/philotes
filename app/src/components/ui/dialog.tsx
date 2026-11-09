@@ -1,14 +1,14 @@
 import {
   Children,
-  cloneElement,
   createContext,
   isValidElement,
-  type ReactElement,
   useContext,
+  useEffect,
+  useId,
   useRef,
   useState,
 } from "react";
-import { Modal, Pressable, Text, View } from "react-native";
+import { Modal, Platform, Pressable, Text, View } from "react-native";
 import { Button } from "@/components/ui/button";
 import {
   DIALOG_CONTENT_CLASS,
@@ -25,9 +25,12 @@ import {
   type DialogProps,
   type DialogSectionProps,
   type DialogTriggerProps,
+  focusOnOpen,
+  holdOpen,
 } from "@/components/ui/dialog-base";
 import { X } from "@/components/ui/icons";
-import { cn } from "@/lib/utils";
+import { OverlayLayer } from "@/components/ui/overlay";
+import { addHandlers, CardBodyContext, cn } from "@/lib/utils";
 
 /** The open side of the same problem, read by `DialogTrigger`. */
 const DialogOpenContext = createContext<(open: boolean) => void>(() => {});
@@ -48,6 +51,13 @@ const DialogEscapeContext = createContext<{ current: ((event: Event) => void) | 
  * — which owns both the backdrop and the X — reads it.
  */
 const DialogCloseContext = createContext<() => void>(() => {});
+
+/**
+ * The id `DialogContent` names its card by, which `DialogTitle` takes as its own. Radix wires the
+ * same pair on the web; here a card named by nothing was an unnamed `dialog` to a screen reader,
+ * which reads its role and no title (#510).
+ */
+const DialogTitleIdContext = createContext<string | undefined>(undefined);
 
 /** The root of a dialog: it holds the open state. */
 function Dialog({ open, onOpenChange, defaultOpen = false, children }: DialogProps) {
@@ -93,22 +103,12 @@ function Dialog({ open, onOpenChange, defaultOpen = false, children }: DialogPro
           <DialogCloseContext.Provider value={() => setOpen(false)}>
             {rest}
           </DialogCloseContext.Provider>
+          {/* Last, so a tooltip or a toast raised while the dialog is open is drawn over it. */}
+          <OverlayLayer />
         </Modal>
       </DialogEscapeContext.Provider>
     </DialogOpenContext.Provider>
   );
-}
-
-type Pressed = ReactElement<{ onPress?: (() => void) | undefined }>;
-
-/** The child with `action` added to its own press rather than swapped in for it. */
-function addPress(child: Pressed, action: () => void) {
-  return cloneElement(child, {
-    onPress: () => {
-      child.props.onPress?.();
-      action();
-    },
-  });
 }
 
 /**
@@ -122,7 +122,7 @@ function DialogTrigger({ asChild, children }: DialogTriggerProps) {
   const open = useContext(DialogOpenContext);
   const show = () => open(true);
   if (asChild && isValidElement(children)) {
-    return addPress(children as Pressed, show);
+    return addHandlers(children, { onPress: show });
   }
   return (
     <Pressable onPress={show} role="button">
@@ -138,7 +138,7 @@ function DialogTrigger({ asChild, children }: DialogTriggerProps) {
 function DialogClose({ asChild, className, children }: DialogCloseProps) {
   const close = useContext(DialogCloseContext);
   if (asChild && isValidElement(children)) {
-    return addPress(children as Pressed, close);
+    return addHandlers(children, { onPress: close });
   }
   return (
     // The `role` is hand-written because a `<button>` has no native counterpart.
@@ -174,6 +174,19 @@ function DialogContent({
   const close = useContext(DialogCloseContext);
   const escapeRef = useContext(DialogEscapeContext);
   escapeRef.current = onEscapeKeyDown;
+  const panel = useRef<View>(null);
+  const titleId = useId();
+
+  // Under Expo web the `Modal`'s own trap focuses the first thing it can, which is the backdrop's
+  // Close, then a button: a filled one focused looks hovered and read unfilled on open. So the
+  // first field takes focus, or with none the panel, as the web half's does. This runs before the
+  // trap's, which then finds focus already inside. A device draws no keyboard focus.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: once, as the dialog opens
+  useEffect(() => {
+    if (Platform.OS === "web" && panel.current) {
+      focusOnOpen(panel.current as unknown as HTMLElement, role === "alertdialog");
+    }
+  }, []);
 
   // The backdrop press is native's "interact outside". `preventDefault` on the
   // synthetic event is what a caller uses to keep the dialog open, matching radix.
@@ -188,23 +201,40 @@ function DialogContent({
     }
   };
   return (
-    <View className="flex-1 items-center justify-center bg-overlay/60 p-6">
+    // `p-4`: 16px clear of the screen's edges, the web half's `max-w-[calc(100%-2rem)]`.
+    <View className="flex-1 items-center justify-center bg-overlay/60 p-4">
       {/* The backdrop is a sibling laid out underneath rather than a parent of
           the card, because `Pressable` has no `stopPropagation` — nesting the
-          card inside it would make every press on the card close the dialog. */}
-      <Pressable
-        className="absolute inset-0"
-        onPress={interactOutside}
-        role="button"
-        aria-label="Close"
-      />
+          card inside it would make every press on the card close the dialog.
+          A backdrop that refuses every press is not drawn: a button there would
+          be read out as Close and then not close. The `Modal` is its own
+          window, so a press on the bare overlay reaches nothing behind it. */}
+      {onInteractOutside === holdOpen ? null : (
+        <Pressable
+          className="absolute inset-0"
+          onPress={interactOutside}
+          role="button"
+          aria-label="Close"
+        />
+      )}
       <View
+        ref={panel}
         // `dialog` unless the caller says `alertdialog`, as radix's content is.
         role={role ?? "dialog"}
         aria-modal
-        className={cn(DIALOG_CONTENT_CLASS, className)}
+        // Named by its title: `aria-labelledby` under Expo web, and Android's labelled-by on device.
+        aria-labelledby={titleId}
+        // Focusable from script only, so the panel can take focus on open; and no ring when it has.
+        {...(Platform.OS === "web" ? { tabIndex: -1 as const } : {})}
+        className={cn(
+          DIALOG_CONTENT_CLASS,
+          Platform.select({ web: "outline-none", default: undefined }),
+          className,
+        )}
       >
-        {children}
+        <DialogTitleIdContext.Provider value={titleId}>
+          <CardBodyContext.Provider value={false}>{children}</CardBodyContext.Provider>
+        </DialogTitleIdContext.Provider>
         {showCloseButton ? (
           <Pressable
             className={DIALOG_DISMISS_CLASS}
@@ -248,8 +278,10 @@ function DialogFooter({ className, showCloseButton = false, children }: DialogFo
 
 /** The dialog's title, and its accessible name. */
 function DialogTitle({ className, children }: DialogSectionProps) {
+  const titleId = useContext(DialogTitleIdContext);
   return (
     <Text
+      {...(titleId === undefined ? {} : { nativeID: titleId })}
       // The `role` is hand-written because an `<h2>` has no native counterpart.
       role="heading"
       aria-level={2}

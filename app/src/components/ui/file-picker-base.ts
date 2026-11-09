@@ -122,6 +122,7 @@ export type FilePickerButtonProps = FilePickerCommonProps &
      * colours it. Defaults to the upload icon.
      */
     iconSlot?: SlotNode | undefined;
+    /** On the button's box, as `Button`'s `className`. */
     className?: string | undefined;
   };
 

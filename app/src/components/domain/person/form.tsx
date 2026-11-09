@@ -363,7 +363,7 @@ export function PersonFormDialog({
               isEdit={isEdit}
               createLabel={label}
               editLabel={label}
-              savingLabel={isEdit ? 'Saving...' : 'Creating...'}
+              loadingLabel={isEdit ? 'Saving...' : 'Creating...'}
             />
           </form.AppForm>
         </>

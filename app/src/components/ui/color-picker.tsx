@@ -1,9 +1,16 @@
+import type * as React from "react";
 import { useId, useState } from "react";
-import { Platform, Pressable, Text, View } from "react-native";
+import { Platform, Pressable, View } from "react-native";
 import { Button } from "@/components/ui/button";
+import { Check } from "@/components/ui/icons";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { readableTextColor } from "@/lib/readable-text-color";
+import {
+  type RovingKeyEvent,
+  type RovingSet,
+  useRovingFocus,
+  useRovingItem,
+} from "@/lib/roving-focus";
 import { cn } from "@/lib/utils";
 
 /**
@@ -78,6 +85,73 @@ function sameColor(a: string, b: string): boolean {
   return isHexColor(a) && isHexColor(b) && expand(a) === expand(b);
 }
 
+type SwatchProps = {
+  color: string;
+  selected: boolean;
+  disabled: boolean;
+  /** The row's roving tab stop: which swatch Tab lands on, and where an arrow key goes. */
+  roving: RovingSet & {
+    tabStop: string | undefined;
+    move: (from: string, event: RovingKeyEvent) => void;
+  };
+  onPress: () => void;
+};
+
+/** One colour in the row: a radio, named by its hex. */
+function Swatch({ color, selected, disabled, roving, onPress }: SwatchProps) {
+  const ref = useRovingItem<React.ElementRef<typeof Pressable>>(roving, color, disabled);
+  return (
+    <Pressable
+      ref={ref}
+      onPress={onPress}
+      disabled={disabled}
+      // A swatch row is a radio group: one of the set is current, and
+      // the label is the colour itself, which nothing else conveys.
+      accessibilityRole="radio"
+      accessibilityState={{ selected, disabled }}
+      // The same fact in the spelling the web understands — react-native-web forwards an
+      // allowlist of `aria-*` props and ignores `accessibilityState` entirely. A radio
+      // says its state with `aria-checked`, not `aria-selected`. One tab stop for the row, with
+      // the arrows between swatches, as `RadioGroup` has: sixteen stops was sixteen presses of
+      // Tab to get past the row to the hex field.
+      {...(Platform.OS === "web"
+        ? ({
+            "aria-checked": selected,
+            tabIndex: roving.tabStop === color ? 0 : -1,
+            onKeyDown: (event: RovingKeyEvent) => roving.move(color, event),
+          } as const)
+        : {})}
+      accessibilityLabel={color}
+      // The chosen ring is `active`, as anything chosen is, and drawn outside the swatch with
+      // a gap (`p-0.5`) so it does not sit on the colour. A border, not `ring-offset`,
+      // which NativeWind has no counterpart for. `gap-1` on the row keeps its width.
+      //
+      // Under the pointer, pressed and focused, another swatch is ringed in the `/60` grey a border
+      // under the pointer takes, and the chosen one fills its gap with the `/60` step of the tint,
+      // so its ring thickens. A fill alone would be hidden behind the colour. No browser ring.
+      className={cn(
+        "h-11 w-11 items-center justify-center rounded-full border-2 p-0.5 focus-visible:outline-none",
+        selected ? "border-active" : "border-transparent",
+        disabled === false &&
+          (selected
+            ? "hover:bg-active/60 focus-visible:bg-active/60 active:bg-active/60"
+            : "hover:border-foreground/60 focus-visible:border-foreground/60 active:border-foreground/60"),
+      )}
+    >
+      <View
+        className="h-full w-full items-center justify-center rounded-full"
+        style={{ backgroundColor: color }}
+      >
+        {selected ? (
+          // `Checkbox`'s tick, in an ink legible on whatever the caller passed: a caller's palette
+          // is not known here, and a hardcoded white one disappears on `#eab308`.
+          <Check className="h-4 w-4" color={readableTextColor(color) ?? "#ffffff"} aria-hidden />
+        ) : null}
+      </View>
+    </Pressable>
+  );
+}
+
 /**
  * The props, in this registry's vocabulary and in the one cubeui's popover picker shipped with
  * on `main`, so a call site written against either compiles. The aliases are exactly that —
@@ -105,8 +179,8 @@ type ColorPickerProps = {
   /** The hex field's placeholder. A format hint by default, for the reason given at the field. */
   placeholder?: string | undefined;
   /**
-   * The hex field's accessible name, drawn only for a screen reader. Web only: it is a `<label>`
-   * pointed at the field, and native has no label/control association to make.
+   * The hex field's accessible name, for a screen reader. It replaces the name a field's label
+   * gives the hex box, so leave it off inside a `FormField` or a bound `ColorField`.
    */
   hexLabel?: string | undefined;
   /** The swatch row's accessible name, when `aria-label` does not already give one. */
@@ -186,6 +260,10 @@ export function ColorPicker({
     }
   }
 
+  // The swatch the value is, in the palette's own spelling: `#F80` picks the `#ff8800` swatch.
+  const chosenSwatch = palette.find((color) => sameColor(current, color));
+  const roving = useRovingFocus({ current: chosenSwatch, onMove: emit, disabled });
+
   const onChangeText = (text: string) => {
     setDraft(text);
     const typed = normalizeHex(text);
@@ -218,63 +296,21 @@ export function ColorPicker({
           : {})}
         className={cn("flex-row flex-wrap gap-1", disabled && "opacity-50", contentClassName)}
       >
-        {palette.map((color) => {
-          const selected = sameColor(current, color);
-          return (
-            <Pressable
-              key={color}
-              onPress={() => emit(color)}
-              disabled={disabled}
-              // A swatch row is a radio group: one of the set is current, and
-              // the label is the colour itself, which nothing else conveys.
-              accessibilityRole="radio"
-              accessibilityState={{ selected, disabled }}
-              // The same fact in the spelling the web understands — react-native-web forwards an
-              // allowlist of `aria-*` props and ignores `accessibilityState` entirely. A radio
-              // says its state with `aria-checked`, not `aria-selected`.
-              {...(Platform.OS === "web" ? ({ "aria-checked": selected } as const) : {})}
-              accessibilityLabel={color}
-              // The chosen ring is `active`, as anything chosen is, and drawn outside the swatch with
-              // a gap (`p-0.5`) so it does not sit on the colour. A border, not `ring-offset`,
-              // which NativeWind has no counterpart for. `gap-1` on the row keeps its width.
-              className={cn(
-                "h-11 w-11 items-center justify-center rounded-full border-2 p-0.5",
-                selected ? "border-active" : "border-transparent",
-              )}
-            >
-              <View
-                className="h-full w-full items-center justify-center rounded-full"
-                style={{ backgroundColor: color }}
-              >
-                {selected ? (
-                  // The tick has to be legible on whatever the caller passed, and
-                  // a caller's palette is not known here — a hardcoded white one
-                  // disappears on `#eab308`.
-                  <Text
-                    className="text-base leading-none"
-                    style={{ color: readableTextColor(color) ?? "#ffffff" }}
-                  >
-                    ✓
-                  </Text>
-                ) : null}
-              </View>
-            </Pressable>
-          );
-        })}
+        {palette.map((color) => (
+          <Swatch
+            key={color}
+            color={color}
+            selected={sameColor(current, color)}
+            disabled={disabled}
+            roving={roving}
+            onPress={() => emit(color)}
+          />
+        ))}
       </View>
-      {/*
-        The hex field's own name, for a screen reader only. It is a `<label>` pointed at the field
-        because `Input` takes no `aria-label`; on native there is no label/control association to
-        make, so nothing is drawn there.
-      */}
-      {Platform.OS === "web" && hexLabel ? (
-        <Label htmlFor={inputId} className="sr-only">
-          {hexLabel}
-        </Label>
-      ) : null}
       <View className="flex-row items-center gap-2">
         <Input
           id={inputId}
+          aria-label={hexLabel}
           // A format hint rather than a colour by default: the field's job is the colour that
           // is *not* in the row above, so showing one of them would mislead.
           placeholder={placeholder}

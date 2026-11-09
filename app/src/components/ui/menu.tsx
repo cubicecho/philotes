@@ -5,8 +5,11 @@ import {
   type ReactElement,
   type Ref,
   type RefObject,
+  useCallback,
   useContext,
   useEffect,
+  useLayoutEffect,
+  useMemo,
   useRef,
   useState,
 } from "react";
@@ -15,6 +18,7 @@ import { Check } from "@/components/ui/icons";
 import { IconClassContext } from "@/components/ui/icons-base";
 import {
   MENU_CONTENT_CLASS,
+  MENU_ICON_ROOM_CLASS,
   MENU_INDICATOR_CLASS,
   MENU_ITEM_CLASS,
   MENU_ITEM_TEXT_CLASS,
@@ -30,7 +34,7 @@ import {
   type MenuTriggerProps,
 } from "@/components/ui/menu-base";
 import { Popover, PopoverContent } from "@/components/ui/popover";
-import { cn } from "@/lib/utils";
+import { addHandlers, cn, touchRowClass } from "@/lib/utils";
 
 type MenuState = {
   open: boolean;
@@ -102,25 +106,18 @@ function MenuTrigger({ asChild, children }: MenuTriggerProps) {
   if (asChild && isValidElement(children)) {
     // The child's own ref still gets the node; the menu only needs to read it too.
     const own = (children.props as { ref?: Ref<View> }).ref;
-    return cloneElement(
-      children as ReactElement<{
-        onPress?: () => void;
-        ref?: Ref<View>;
-        "aria-expanded"?: boolean;
-      }>,
-      {
-        onPress: () => setOpen(true),
-        "aria-expanded": open,
-        ref: (node: View | null) => {
-          triggerRef.current = node;
-          if (typeof own === "function") {
-            own(node);
-          } else if (own) {
-            own.current = node;
-          }
-        },
+    const opens = addHandlers(children, { onPress: () => setOpen(true) });
+    return cloneElement(opens as ReactElement<{ ref?: Ref<View>; "aria-expanded"?: boolean }>, {
+      "aria-expanded": open,
+      ref: (node: View | null) => {
+        triggerRef.current = node;
+        if (typeof own === "function") {
+          own(node);
+        } else if (own) {
+          own.current = node;
+        }
       },
-    );
+    });
   }
   return (
     // The `role` is hand-written because a `<button>` has no native counterpart.
@@ -130,13 +127,41 @@ function MenuTrigger({ asChild, children }: MenuTriggerProps) {
   );
 }
 
+type IconColumn = {
+  /** Whether any row in the menu draws an icon. */
+  drawn: boolean;
+  /** Called by a row that draws one; the function it returns is called when it stops. */
+  claim: () => () => void;
+};
+
+const IconColumnContext = createContext<IconColumn>({ drawn: false, claim: () => () => {} });
+
+/**
+ * The room for an icon, for a row with none while another row in the menu draws one. The web half
+ * asks the stylesheet with `:has()`; a device has no selector to ask, so each row with an icon says
+ * so, before the sheet is painted.
+ */
+function useIconRoom(hasIcon: boolean) {
+  const { drawn, claim } = useContext(IconColumnContext);
+  useLayoutEffect(() => (hasIcon ? claim() : undefined), [hasIcon, claim]);
+  return hasIcon === false && drawn ? <View className={MENU_ICON_ROOM_CLASS} /> : null;
+}
+
 /** The menu's list of rows. */
 function MenuContent({ className, "aria-label": ariaLabel, children }: MenuContentProps) {
+  const [iconRows, setIconRows] = useState(0);
+  const claim = useCallback(() => {
+    setIconRows((count) => count + 1);
+    return () => setIconRows((count) => count - 1);
+  }, []);
+  const column = useMemo(() => ({ drawn: iconRows > 0, claim }), [iconRows, claim]);
   return (
     <PopoverContent className={cn(MENU_CONTENT_CLASS, "w-64", className)}>
-      <View role="menu" aria-label={ariaLabel}>
-        {children}
-      </View>
+      <IconColumnContext.Provider value={column}>
+        <View role="menu" aria-label={ariaLabel}>
+          {children}
+        </View>
+      </IconColumnContext.Provider>
     </PopoverContent>
   );
 }
@@ -154,6 +179,7 @@ function MenuItem({
   linkSlot,
 }: MenuItemProps) {
   const { setOpen, skipReturnRef } = useContext(MenuContext);
+  const iconRoom = useIconRoom(Boolean(iconSlot));
   const ink = destructive ? "text-negative" : "text-foreground";
   const row = (
     <Pressable
@@ -167,6 +193,8 @@ function MenuItem({
       }}
       className={cn(
         MENU_ITEM_CLASS,
+        // A finger's 44pt on device, rather than the web's 32px row (#470).
+        touchRowClass(),
         destructive ? "active:bg-negative/10" : "active:bg-hover",
         disabled && "opacity-50",
         className,
@@ -179,6 +207,7 @@ function MenuItem({
         value={cn("size-4 shrink-0", destructive ? ink : "text-foreground/60")}
       >
         {iconSlot}
+        {iconRoom}
         <Text numberOfLines={1} className={cn(MENU_ITEM_TEXT_CLASS, ink)}>
           {label}
         </Text>
@@ -239,6 +268,7 @@ function ToggleRow({
   disabled = false,
   className,
 }: ToggleRowProps) {
+  const iconRoom = useIconRoom(Boolean(iconSlot));
   const ink = "text-foreground";
   // The quiet icon and trailing text, lifted to `foreground` on a row that is on: muted on the
   // chosen tint is under 4.5:1.
@@ -252,6 +282,7 @@ function ToggleRow({
       onPress={onPress}
       className={cn(
         MENU_ITEM_CLASS,
+        touchRowClass(),
         // On, the row is the chosen tint, a step further while pressed.
         checked ? "bg-active/40 active:bg-active/60" : "active:bg-hover",
         disabled && "opacity-50",
@@ -261,6 +292,7 @@ function ToggleRow({
       {/* The icon quieter than the label, as MenuItem's. */}
       <IconClassContext.Provider value={cn("size-4 shrink-0", quiet)}>
         {iconSlot}
+        {iconRoom}
         <Text numberOfLines={1} className={cn(MENU_ITEM_TEXT_CLASS, ink)}>
           {label}
         </Text>

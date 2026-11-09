@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import * as React from "react";
 import { Platform, Text, View } from "react-native";
-import { cn, type SlotNode } from "@/lib/utils";
+import { actionGap, cn, hasSlot, type SlotNode } from "@/lib/utils";
 
 type Layout = "inline" | "stacked";
 
@@ -69,6 +69,7 @@ type PropertyListProps = {
    * only true on a wide screen is the kind rule 11 renames later.
    */
   layout?: Layout | undefined;
+  /** On the list, the `<dl>` on the web. The gap between the rows is here. */
   className?: string | undefined;
 };
 
@@ -121,7 +122,9 @@ type PropertyRowProps = {
    * of what is said about it.
    */
   actionSlot?: SlotNode | undefined;
+  /** On the row, the label and value together. */
   className?: string | undefined;
+  /** On the label's own `Text`, the `<dt>` on the web. */
   labelClassName?: string | undefined;
   /**
    * A string or number value's own `Text`, so a path, a version or an id is `value={path}
@@ -174,7 +177,10 @@ export function PropertyRow({
         webAs="dd"
         testID="property-row-value"
         className={cn(
-          "min-w-0 flex-row items-center gap-2",
+          // `items-start`, so the value keeps to its label and the action sits level with its top,
+          // as the heading rhythm puts every action. Centred, a 36px button pushed the value 8px
+          // down: off its label's line inline, and away from the label over it when stacked.
+          "min-w-0 flex-row items-start gap-2",
           VALUES[layout],
           // A string's class is on its `Text`, below. Left here as well, a `font-mono` would reach
           // the hint and the action on the web, by inheritance, and neither of them on device.
@@ -189,8 +195,11 @@ export function PropertyRow({
             </Text>
           ) : null}
         </View>
-        {actionSlot ? (
-          <View testID="property-row-action" className="shrink-0 flex-row items-center gap-1">
+        {hasSlot(actionSlot) ? (
+          <View
+            testID="property-row-action"
+            className={cn("shrink-0 flex-row items-center", actionGap(actionSlot))}
+          >
             {actionSlot}
           </View>
         ) : null}

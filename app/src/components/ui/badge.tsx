@@ -1,5 +1,5 @@
-import { Children, useEffect, useRef, useState } from "react";
-import { AccessibilityInfo, Animated, Easing, Pressable, Text, View } from "react-native";
+import { Children, useEffect, useRef } from "react";
+import { Animated, Easing, Pressable, Text, View } from "react-native";
 import {
   BADGE_PULSE_LOW,
   BADGE_PULSE_MS,
@@ -18,10 +18,17 @@ import {
 } from "@/components/ui/badge-base";
 import { X } from "@/components/ui/icons";
 import { IconClassContext } from "@/components/ui/icons-base";
-import { cn } from "@/lib/utils";
+import { useReducedMotion } from "@/components/ui/reduced-motion";
+import { cn, hitSlopFor } from "@/lib/utils";
 
-/** A 12px glyph grown to about 28 by 28 of touch, without growing the pill. */
-const REMOVE_HIT_SLOP = { top: 8, bottom: 8, left: 6, right: 8 } as const;
+/**
+ * The 12px ✕ grown to a finger's 44pt (#470) without growing the pill: all of the height, and the
+ * width mostly past the badge's far end. It reaches 6px back over the label and no further, so a
+ * press on the words does not remove the badge; a badge after it in a row keeps its own presses,
+ * since of two overlapping targets the later takes the touch.
+ */
+const REMOVE_DRAWN = { height: 12 } as const;
+const REMOVE_HIT_SLOP = { ...hitSlopFor(REMOVE_DRAWN), left: 6, right: 26 } as const;
 
 /** Tailwind's `animate-pulse` curve, so the device breathes the way the web does. */
 const PULSE_EASE_IN = 0.4;
@@ -30,25 +37,6 @@ const PULSE_EASING = Easing.bezier(PULSE_EASE_IN, 0, PULSE_EASE_OUT, 1);
 
 /** `View`, which NativeWind hands a `className` to, able to take an animated `opacity`. */
 const PulsingView = Animated.createAnimatedComponent(View);
-
-/** Whether the reader asked the system for reduced motion, kept up to date as they change it. */
-function useReduceMotion(): boolean {
-  const [reduce, setReduce] = useState(false);
-  useEffect(() => {
-    let live = true;
-    AccessibilityInfo.isReduceMotionEnabled().then((value) => {
-      if (live) {
-        setReduce(value);
-      }
-    });
-    const subscription = AccessibilityInfo.addEventListener("reduceMotionChanged", setReduce);
-    return () => {
-      live = false;
-      subscription.remove();
-    };
-  }, []);
-  return reduce;
-}
 
 /**
  * The dot's opacity for `pulse`: a loop on the native driver while it runs, still at 1 otherwise.
@@ -91,8 +79,8 @@ export function Badge({
   children,
 }: BadgeProps) {
   const shape = badgeHasLabel(children) ? "pill" : "dot";
-  const reduceMotion = useReduceMotion();
-  const pulsing = pulse && shape === "dot" && reduceMotion === false;
+  const reducedMotion = useReducedMotion();
+  const pulsing = pulse && shape === "dot" && reducedMotion === false;
   const opacity = usePulse(pulsing);
   const textClass = backgroundColor
     ? badgeTextFallback(mono)

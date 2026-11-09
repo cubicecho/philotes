@@ -66,7 +66,22 @@ export type DownloadButtonProps = (DownloadFromSource | DownloadFromHref) & {
    * pressing. The browser has one answer, its own downloads, and ignores this.
    */
   destination?: DownloadDestination | undefined;
+  /** Off: a press saves nothing. Say why with `hint`, as on `Button` — "Save the note first". */
   disabled?: boolean | undefined;
+  /**
+   * The button's tooltip, read after its name, as on `Button` and `CopyButton`. With `disabled` it
+   * keeps the button focusable and hoverable (`aria-disabled`), so the reason it is off can still
+   * be read.
+   */
+  hint?: ButtonProps["hint"] | undefined;
+  /**
+   * Whether the tooltip is drawn: the `hint`, or with none at an `icon*` size, `label`. A text
+   * size with no `hint` draws its label and has no tooltip. Off, a `hint` is still the button's
+   * description. Turn it off where the icon already explains itself.
+   *
+   * @defaultValue true
+   */
+  tooltip?: ButtonProps["tooltip"] | undefined;
   /** Called once the file has been handed over — a toast, an analytics event. */
   onDownloaded?: (() => void) | undefined;
   /**
@@ -138,9 +153,4 @@ export function useDownload({
   );
 
   return { pending, download };
-}
-
-/** Whether `size` is a square with no room for words, where `label` is only the accessible name. */
-export function isIconSize(size: ButtonProps["size"] | undefined): boolean {
-  return typeof size === "string" && size.startsWith("icon");
 }

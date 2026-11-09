@@ -155,7 +155,7 @@ function AddLabelDialog({ personId, available, open, onOpenChange, onAdd }: AddL
         <>
           <Button variant="outline" onPress={close} content="Cancel" />
           <form.AppForm>
-            <form.SubmitButton createLabel="Add" savingLabel="Adding..." />
+            <form.SubmitButton createLabel="Add" loadingLabel="Adding..." />
           </form.AppForm>
         </>
       )}

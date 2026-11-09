@@ -15,6 +15,9 @@ import '../global.css';
 /** Fills the screen. A style, because the safe area view is not one of the views a class name reaches. */
 const SAFE_AREA = { flex: 1 } as const;
 
+/** Every edge but the bottom, which `SidebarLayout`'s `barPosition="bottom"` bar pads for itself. */
+const SAFE_EDGES = ['top', 'left', 'right'] as const;
+
 if (RESTORES_CACHE) {
   // The splash screen stays up while the cache is read back, so the first screen drawn has its data.
   SplashScreen.preventAutoHideAsync().catch((error: unknown) => {
@@ -65,9 +68,11 @@ export default function RootLayout() {
   return (
     <PaletteProvider>
       <ApolloProvider client={client}>
-        {/* On a phone the app draws under the status bar and the navigation bar; this keeps it clear of both. */}
+        {/* On a phone the app draws under the status bar and the navigation bar; this keeps it clear of the
+            status bar and the sides. The bottom edge is left out: the app shell's bar along the bottom takes
+            that inset itself, and would count it twice. */}
         <View className="flex-1 bg-background">
-          <SafeAreaView style={SAFE_AREA}>
+          <SafeAreaView style={SAFE_AREA} edges={SAFE_EDGES}>
             <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: 'transparent' } }} />
           </SafeAreaView>
         </View>

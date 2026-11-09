@@ -304,7 +304,7 @@ const form = useAppForm({
     <form.AppField name="name" validators={{ onChange: ({ value }) => (value.trim() ? undefined : 'Required') }}>
       {(field) => <field.InputField label="Name" />}
     </form.AppField>
-    <form.SubmitButton createLabel="Add" editLabel="Save" isEdit={isEdit} savingLabel="Saving…" />
+    <form.SubmitButton createLabel="Add" editLabel="Save" isEdit={isEdit} />
   </Form>
 </form.AppForm>
 ```

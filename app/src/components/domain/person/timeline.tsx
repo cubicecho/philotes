@@ -159,9 +159,7 @@ export function PersonTimeline({ interactions, importantDates }: PersonTimelineP
     <View className="gap-6">
       {groups.map((group) => (
         <View key={group.key} className="gap-3">
-          <SectionHeading variant="overline" level={2}>
-            {group.heading}
-          </SectionHeading>
+          <SectionHeading variant="overline" level={2} title={group.heading} />
 
           {/* The rail is this view's left border; each entry's dot sits on it. */}
           <View className="ml-4 border-foreground/10 border-l">

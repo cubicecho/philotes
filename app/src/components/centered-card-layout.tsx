@@ -38,13 +38,13 @@ export function CenteredCardLayout({
   level = 1,
   ...card
 }: CenteredCardLayoutProps) {
-  // The card is the page here, so its title is the page's: an h1 at PageHeader level 1's text-xl,
+  // The card is the page here, so its title is the page's: an h1 at PageHeader `lg`'s text-2xl,
   // not a card title barely over the field labels under it. A caller's titleClassName still wins.
   const body = (
     <CardLayout
       {...card}
       level={level}
-      titleClassName={cn("text-xl", titleClassName)}
+      titleClassName={cn("text-2xl", titleClassName)}
       className={cn(CARD, cardClassName)}
     />
   );

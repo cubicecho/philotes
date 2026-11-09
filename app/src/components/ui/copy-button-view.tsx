@@ -1,5 +1,5 @@
 import { useContext } from "react";
-import { Button } from "@/components/ui/button";
+import { Button, isIconSize } from "@/components/ui/button";
 import { CodeBlockTitleContext } from "@/components/ui/code";
 import { type CopyButtonProps, useCopy } from "@/components/ui/copy-button-base";
 import { Check, Copy } from "@/components/ui/icons";
@@ -20,6 +20,7 @@ export function CopyButtonView({
   onError,
   disabled,
   hint,
+  tooltip,
   className,
 }: CopyButtonViewProps) {
   const { copied, copy } = useCopy(write, { value, onCopied, onError });
@@ -33,9 +34,11 @@ export function CopyButtonView({
       variant={variant}
       size={size}
       aria-label={copied ? "Copied" : name}
+      {...(isIconSize(size) ? {} : { content: copied ? "Copied" : name })}
       className={className}
       disabled={disabled}
       hint={hint}
+      tooltip={tooltip}
       onPress={() => {
         // `Button` already refuses the press; this keeps a disabled copy from writing regardless.
         if (disabled === true) {

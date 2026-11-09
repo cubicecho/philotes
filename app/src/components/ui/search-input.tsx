@@ -81,6 +81,9 @@ export function SearchInput({
             variant="secondary"
             size="icon-xs"
             aria-label={clearLabel}
+            // A ✕ in a search box needs no caption, and the web half's plain `<button>` has none
+            // (#425, #432).
+            tooltip={false}
             onPress={() => {
               change("");
               inner.current?.focus();

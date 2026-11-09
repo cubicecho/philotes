@@ -116,9 +116,7 @@ function GratitudeFormDialog({ open, onOpenChange, onSubmit }: GratitudeFormDial
           <Button variant="outline" onPress={close} content="Cancel" />
           <form.AppForm>
             <form.Subscribe selector={(state) => state.values.body}>
-              {(body) => (
-                <form.SubmitButton createLabel="Add Gratitude" savingLabel="Saving..." disabled={body.trim() === ''} />
-              )}
+              {(body) => <form.SubmitButton createLabel="Add Gratitude" disabled={body.trim() === ''} />}
             </form.Subscribe>
           </form.AppForm>
         </>

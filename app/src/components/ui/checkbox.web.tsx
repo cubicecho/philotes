@@ -37,7 +37,9 @@ function Checkbox({
       aria-label={ariaLabel ?? accessibilityLabel}
       className={cn(
         CHECKBOX_CLASS,
-        "peer flex border-foreground/50 bg-background text-foreground focus-visible:outline-none data-[state=unchecked]:focus-visible:bg-hover disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:border-negative data-[state=checked]:border-active data-[state=checked]:bg-active/40 data-[state=checked]:hover:bg-active/60 data-[state=checked]:focus-visible:bg-active/60 data-[state=indeterminate]:border-active data-[state=indeterminate]:bg-active/40 data-[state=indeterminate]:hover:bg-active/60 data-[state=indeterminate]:focus-visible:bg-active/60",
+        // Invalid is stacked on the checked states, not only beside them: a `data-[state]:` edge is
+        // emitted after an `aria-invalid:` one and would win, hiding a refused checked box.
+        "peer flex border-foreground/50 bg-background text-foreground focus-visible:outline-none data-[state=unchecked]:hover:bg-hover data-[state=unchecked]:focus-visible:bg-hover disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:border-negative aria-invalid:data-[state=checked]:border-negative aria-invalid:data-[state=indeterminate]:border-negative data-[state=checked]:border-active data-[state=checked]:bg-active/40 data-[state=checked]:hover:bg-active/60 data-[state=checked]:focus-visible:bg-active/60 data-[state=indeterminate]:border-active data-[state=indeterminate]:bg-active/40 data-[state=indeterminate]:hover:bg-active/60 data-[state=indeterminate]:focus-visible:bg-active/60",
         className,
       )}
     >

@@ -1,6 +1,7 @@
 import { createContext, useContext, useState } from "react";
 import { Modal, Pressable, ScrollView, Text, View } from "react-native";
 import { Check, ChevronDown } from "@/components/ui/icons";
+import { OverlayLayer } from "@/components/ui/overlay";
 import {
   SELECT_CONTENT_CLASS,
   SELECT_ICON_CLASS,
@@ -21,7 +22,7 @@ import {
   type SelectTriggerProps,
   type SelectValueProps,
 } from "@/components/ui/select-base";
-import { cn, FIELD_INVALID_CLASS, isInvalid } from "@/lib/utils";
+import { CardBodyContext, cn, FIELD_INVALID_CLASS, isInvalid, touchRowClass } from "@/lib/utils";
 
 type SelectState = {
   disabled: boolean;
@@ -140,9 +141,13 @@ function SelectContent({ className, children }: SelectContentProps) {
         />
         <View className={cn(SELECT_CONTENT_CLASS, "max-h-96 w-full max-w-sm p-1", className)}>
           {/* `list`, because React Native's roles stop short of radix's `listbox`. */}
-          <ScrollView role="list">{children}</ScrollView>
+          <ScrollView role="list">
+            <CardBodyContext.Provider value={false}>{children}</CardBodyContext.Provider>
+          </ScrollView>
         </View>
       </View>
+      {/* Last, so a toast raised while the list is open is drawn over it. */}
+      <OverlayLayer />
     </Modal>
   );
 }
@@ -161,10 +166,12 @@ function SelectItem({ value, disabled = false, className, children }: SelectItem
         select.onValueChange(value);
         select.setOpen(false);
       }}
-      // The chosen option is the chosen tint.
+      // The chosen option is the chosen tint, and a pressed one looks hovered, or a step further
+      // on the tint. A finger's 44pt on device, rather than the web's 32px row (#470).
       className={cn(
         SELECT_ITEM_CLASS,
-        selected && "bg-active/40",
+        touchRowClass(),
+        selected ? "bg-active/40 active:bg-active/60" : "active:bg-hover",
         disabled && "opacity-50",
         className,
       )}

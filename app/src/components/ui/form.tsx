@@ -3,7 +3,7 @@ import type { DeepKeys } from "@tanstack/react-form";
 import { createFormHook, createFormHookContexts, useStore } from "@tanstack/react-form";
 import type { ComponentType, ReactNode } from "react";
 import * as React from "react";
-import { Text, View } from "react-native";
+import { Platform, Pressable, Text, View } from "react-native";
 import {
   PasswordInput,
   type PasswordInputProps,
@@ -60,7 +60,7 @@ import {
   storedValueOf,
   withEmptyOption,
 } from "@/lib/select-options";
-import { cn, type SlotNode } from "@/lib/utils";
+import { cn, HEADING_GAP, type SlotNode } from "@/lib/utils";
 
 /** TanStack Form's contexts, which the bound fields read their field and form from. */
 export const { fieldContext, formContext, useFieldContext, useFormContext } =
@@ -181,16 +181,26 @@ function FieldLabel({ ...props }: React.ComponentProps<typeof Label>) {
  * radix's `Slot` is used on both platforms. It only clones its child with merged
  * props; there is no DOM in it, so it works under React Native unchanged.
  */
-function FieldControl({ ...props }: React.ComponentProps<typeof Slot>) {
+function FieldControl({
+  disabled,
+  ...props
+}: React.ComponentProps<typeof Slot> & {
+  /** The field's `disabled`, handed on to the control. Left off, the control's own stands. */
+  disabled?: boolean | undefined;
+}) {
   const { controlId, labelId, descriptionId, messageId, hasError, asGroup } =
     useFieldComponentContext();
   const describedBy = [descriptionId, hasError ? messageId : null].filter(Boolean).join(" ");
+  // A spread, because `Slot` is typed for an `HTMLElement`, which has no `disabled`; the control
+  // it clones does.
+  const handedOn = disabled === undefined ? {} : { disabled };
   return (
     <Slot
       id={controlId}
       aria-labelledby={asGroup ? labelId : undefined}
       aria-describedby={describedBy || undefined}
       aria-invalid={hasError || undefined}
+      {...handedOn}
       {...props}
     />
   );
@@ -239,7 +249,9 @@ type FieldRowProps = {
   contentSlot?: ReactNode;
   /** How many fit on a line before the row wraps. */
   perRow?: keyof typeof CELL_SIZE | undefined;
+  /** On the row, which wraps its cells. */
   className?: string | undefined;
+  /** On every cell, the box each field is drawn in. Its width comes from `perRow`. */
   cellClassName?: string | undefined;
 };
 
@@ -297,6 +309,11 @@ type BoundFieldProps = {
   descriptionIconSlot?: SlotNode | undefined;
   /** Draws the asterisk and sets `aria-required` on the control. */
   required?: boolean | undefined;
+  /**
+   * The control cannot be changed, and the field fades as one: the label and the description
+   * with the control, which is handed `disabled` too.
+   */
+  disabled?: boolean | undefined;
   /** `horizontal` puts the control first and the label beside it: a checkbox, a switch. */
   orientation?: "vertical" | "horizontal" | undefined;
   /** See {@link Field}: the label names the control by `aria-labelledby`. */
@@ -314,6 +331,7 @@ const FIELD_KEYS = new Set<string>([
   "descriptionPlacement",
   "descriptionIconSlot",
   "required",
+  "disabled",
   "orientation",
   "asGroup",
   "className",
@@ -341,6 +359,12 @@ function splitProps<T>(props: BoundFieldProps & T): [BoundFieldProps, T] {
 
 type FieldWrapperProps = BoundFieldProps & {
   controlSlot: SlotNode;
+  /**
+   * What a press on the label does on device: a checkbox's or a switch's toggle, so the caption is
+   * a target as well as the small control beside it (#470). A device has no `htmlFor` to do that.
+   * The web's `<label htmlFor>` already does, so there it is not used.
+   */
+  onLabelPress?: (() => void) | undefined;
 };
 
 /**
@@ -354,14 +378,23 @@ function FieldWrapper({
   descriptionPlacement = "inline",
   descriptionIconSlot,
   required = false,
+  disabled,
   orientation = "vertical",
   asGroup,
   className,
   labelClassName,
   descriptionClassName,
   errorClassName,
+  // web: biome-ignore lint/correctness/noUnusedFunctionParameters: a `<label htmlFor>` presses it there
+  onLabelPress,
 }: FieldWrapperProps) {
   const folded = Boolean(description) && descriptionPlacement === "popover";
+  const hasError = useFieldError() !== undefined;
+  // A control handed in `disabled` already fades the field too, as `FormField` reads it on the web.
+  const fades =
+    disabled === true ||
+    (React.isValidElement<{ disabled?: unknown }>(controlSlot) &&
+      controlSlot.props.disabled === true);
   const labelNode = (
     <FieldLabel className={cn(folded && "min-w-0 shrink", labelClassName)}>
       {label}
@@ -373,11 +406,25 @@ function FieldWrapper({
       ) : null}
     </FieldLabel>
   );
+  // The caption presses the control on device, as a `<label htmlFor>` does on the web.
+  const captionNode =
+    Platform.OS !== "web" && onLabelPress !== undefined ? (
+      <Pressable
+        testID="field-label-press"
+        onPress={onLabelPress}
+        disabled={fades}
+        className="min-w-0 shrink self-start"
+      >
+        {labelNode}
+      </Pressable>
+    ) : (
+      labelNode
+    );
   // Beside the label and not inside it: the label is a `Text`, a button in a `Text` is not
   // something the device lays out, and on the web it would be a button inside a `<label>`.
   const title = folded ? (
     <View testID="field-label-row" className="min-w-0 flex-row items-center gap-2">
-      {labelNode}
+      {captionNode}
       <DescriptionHint
         testID="field-description-trigger"
         label={label}
@@ -387,22 +434,39 @@ function FieldWrapper({
       />
     </View>
   ) : (
-    labelNode
+    captionNode
   );
-  const wired = <FieldControl aria-required={required || undefined}>{controlSlot}</FieldControl>;
+  const wired = (
+    <FieldControl aria-required={required || undefined} disabled={disabled}>
+      {controlSlot}
+    </FieldControl>
+  );
+  const shownDescription = Boolean(description) && folded === false;
+  // One column, so two lines of the field's text are the heading rhythm's 4px apart in both
+  // orientations, as the web `FormField` has them. Drawn only when there is a line in it: an
+  // empty box is still a gap in the field's column.
   const rest = (
     <>
-      {description && folded === false ? (
-        <FieldDescription className={descriptionClassName}>{description}</FieldDescription>
+      {shownDescription || hasError ? (
+        <View testID="field-messages" className={cn("min-w-0", HEADING_GAP)}>
+          {shownDescription ? (
+            <FieldDescription className={descriptionClassName}>{description}</FieldDescription>
+          ) : null}
+          <FieldError className={errorClassName} />
+        </View>
       ) : null}
       {folded ? <FieldDescriptionText>{description}</FieldDescriptionText> : null}
-      <FieldError className={errorClassName} />
     </>
   );
 
   if (orientation === "horizontal") {
     return (
-      <Field orientation="horizontal" asGroup={asGroup} className={cn("items-start", className)}>
+      <Field
+        orientation="horizontal"
+        asGroup={asGroup}
+        disabled={fades}
+        className={cn("items-start", className)}
+      >
         {wired}
         <FieldContent>
           {title}
@@ -412,7 +476,7 @@ function FieldWrapper({
     );
   }
   return (
-    <Field asGroup={asGroup} className={className}>
+    <Field asGroup={asGroup} disabled={fades} className={className}>
       {title}
       {wired}
       {rest}
@@ -573,8 +637,6 @@ type SelectFieldProps = BoundFieldProps & {
    */
   options: readonly SelectFieldEntry[];
   placeholder?: string;
-  /** The trigger will not open: a list with nothing in it yet, a choice another field decides. */
-  disabled?: boolean | undefined;
   /**
    * Adds a first row for "nothing", which writes `null`. The field then holds `string | null`,
    * and reads `null`, `undefined` and `""` as that row.
@@ -671,23 +733,26 @@ type CheckboxFieldProps = Omit<BoundFieldProps, "label"> & {
 function CheckboxField(props: CheckboxFieldProps) {
   const [fieldProps, checkbox] = splitProps(props);
   const field = useFieldContext<boolean>();
+  const toggle = (checked: boolean) => {
+    field.handleChange(checked);
+    // A press is the whole interaction, and a `Pressable` on device is never blurred — so nothing
+    // else would mark the field touched.
+    field.handleBlur();
+  };
 
   return (
     <FieldWrapper
       orientation="horizontal"
       {...fieldProps}
+      // The 16pt box is too small to be the only target on device: its caption presses it too.
+      onLabelPress={() => toggle((field.state.value ?? false) === false)}
       controlSlot={
         <Checkbox
           {...checkbox}
           accessibilityLabel={props.label}
           checked={field.state.value ?? false}
           onBlur={field.handleBlur}
-          onCheckedChange={(checked) => {
-            field.handleChange(checked === true);
-            // A press is the whole interaction, and a `Pressable` on device is never blurred —
-            // so nothing else would mark the field touched.
-            field.handleBlur();
-          }}
+          onCheckedChange={(checked) => toggle(checked === true)}
         />
       }
     />
@@ -709,21 +774,24 @@ type SwitchFieldProps = Omit<BoundFieldProps, "label"> & {
 function SwitchField(props: SwitchFieldProps) {
   const [fieldProps, control] = splitProps(props);
   const field = useFieldContext<boolean>();
+  const toggle = (checked: boolean) => {
+    field.handleChange(checked);
+    field.handleBlur();
+  };
 
   return (
     <FieldWrapper
       orientation="horizontal"
       {...fieldProps}
+      // The caption presses the switch on device, as the unbound `SwitchField`'s does.
+      onLabelPress={() => toggle((field.state.value ?? false) === false)}
       controlSlot={
         <Switch
           {...control}
           accessibilityLabel={props.label}
           checked={field.state.value ?? false}
           onBlur={field.handleBlur}
-          onCheckedChange={(checked) => {
-            field.handleChange(checked);
-            field.handleBlur();
-          }}
+          onCheckedChange={toggle}
         />
       }
     />
@@ -731,10 +799,22 @@ function SwitchField(props: SwitchFieldProps) {
 }
 
 type SubmitButtonProps = {
-  isEdit?: boolean;
-  createLabel?: string;
-  editLabel?: string;
-  savingLabel?: string;
+  /**
+   * Whether the form edits something that exists (`editLabel`) or creates one (`createLabel`).
+   * Left out, the form has not said, and the button says "Save", which is true of both.
+   */
+  isEdit?: boolean | undefined;
+  /**
+   * The label on a form that creates: "Add task". Defaults to "Create" when `isEdit` is `false`,
+   * and to "Save" when `isEdit` is left out.
+   */
+  createLabel?: string | undefined;
+  /** The label when `isEdit` is set. */
+  editLabel?: string | undefined;
+  /** The label while the submit runs, in place of the other: "Adding…". "Saving…" if left out. */
+  loadingLabel?: string | undefined;
+  /** @deprecated Use `loadingLabel`, the name `Button` gives it. Kept for one release. */
+  savingLabel?: string | undefined;
   /** Leading glyph, e.g. `<Plus className="mr-1 h-4 w-4" />`. */
   iconSlot?: SlotNode;
   /**
@@ -757,24 +837,27 @@ type SubmitButtonProps = {
  * every form guards against a double submit the same way rather than each one
  * remembering to.
  *
- * Coloured by what it does, which `isEdit` already says: saving changes keeps the work, so it is
- * `positive`; creating adds something, so it is `info`. A `variant` passed in still wins.
+ * `positive` whether it creates or edits: either way it keeps what was typed. The web
+ * `app-form`'s is the same, with the same label props. A `variant` passed in still wins.
  */
 function SubmitButton({
-  isEdit = false,
-  createLabel = "Create",
+  isEdit,
+  createLabel,
   editLabel = "Save changes",
-  savingLabel = "Saving…",
+  loadingLabel,
+  savingLabel,
   iconSlot,
   disabled,
   requireChanges = false,
-  variant,
+  variant = "positive",
   ...props
 }: SubmitButtonProps) {
   const form = useFormContext();
   const canSubmit = useStore(form.store, (s) => s.canSubmit);
   const isSubmitting = useStore(form.store, (s) => s.isSubmitting);
   const untouched = useStore(form.store, (s) => s.isDefaultValue);
+  // "Create" only when the form says it creates: a bare submit is as often an edit form's.
+  const created = createLabel ?? (isEdit === false ? "Create" : "Save");
 
   // A `Pressable` is not a form control, so it never raises the DOM submit event
   // `<Form>` listens for — it has to call `handleSubmit` itself. Enter inside a
@@ -787,13 +870,13 @@ function SubmitButton({
       onPress={() => {
         form.handleSubmit();
       }}
-      variant={variant ?? (isEdit ? "positive" : "info")}
+      variant={variant}
       {...props}
       disabled={disabled === true || canSubmit === false || (requireChanges && untouched)}
       loading={isSubmitting}
-      loadingLabel={savingLabel}
+      loadingLabel={loadingLabel ?? savingLabel ?? "Saving…"}
       iconSlot={iconSlot}
-      content={isEdit ? editLabel : createLabel}
+      content={isEdit === true ? editLabel : created}
     />
   );
 }

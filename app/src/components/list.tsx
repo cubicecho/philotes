@@ -1,6 +1,6 @@
-import { Children, Fragment, isValidElement, type ReactElement } from "react";
+import { Children, Fragment, isValidElement, type ReactElement, useContext } from "react";
 import { View } from "react-native";
-import { cn, type SlotNode } from "@/lib/utils";
+import { CardBodyContext, cn, type SlotNode } from "@/lib/utils";
 
 /**
  * A row's cell. The padding is the list's and not the row's, so a `ListItem`, a `CollapsibleRow` and
@@ -13,6 +13,14 @@ const ROW = "min-w-0 py-1";
  * takes no row of its own and a list of one row has none.
  */
 const RULE = "border-foreground/10 border-t";
+
+/**
+ * In a card's body, the list reaches out by a row's own `px-3` (`Item` at `sm`), so a row's title
+ * starts where the card's title, description and footer do and its end lines up with the card's
+ * action. Inset by the card's padding as well, the rows' text sat 12px in from every other edge in
+ * the card, and the eye read the list as a box set inside the card rather than as its body.
+ */
+const IN_CARD = "-mx-3";
 
 /**
  * A nested row's indent, one step per level, and the guide down its start edge that shows which row
@@ -55,6 +63,7 @@ type ListProps = {
   label?: string;
   /** A rule between rows. On unless turned off, for rows that are cards of their own. */
   divided?: boolean;
+  /** On the list itself, the box its rows are drawn in. */
   className?: string;
 };
 
@@ -69,15 +78,23 @@ type ListProps = {
  *   item carries `aria-level` (the depth plus one), so a step under a decision is read as nested.
  * - It has no empty and no loading state: those rungs are `LoadState`'s, above the list, and a
  *   list of no rows is not drawn at all rather than announced as "list, 0 items".
+ * - In a card's body it reaches into the card's padding by a row's inset, so the rows' titles line
+ *   up with the card's. A row of your own brings `ListItem`'s `px-3` to line up the same way.
  */
 function List({ contentSlot, label, divided = true, className }: ListProps) {
+  const inCard = useContext(CardBodyContext);
   const all = rows(contentSlot);
   if (all.length === 0) {
     return null;
   }
 
   return (
-    <View role="list" testID="list" aria-label={label} className={cn("min-w-0", className)}>
+    <View
+      role="list"
+      testID="list"
+      aria-label={label}
+      className={cn("min-w-0", inCard && IN_CARD, className)}
+    >
       {all.map(({ key, row, depth }, index) => {
         const level = depth === undefined ? 0 : step(depth);
         return (
