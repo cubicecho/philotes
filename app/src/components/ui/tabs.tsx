@@ -19,7 +19,9 @@ import {
   TABS_LIST_CLASS,
   TABS_LIST_INSET,
   TABS_TRIGGER_CLASS,
+  TABS_TRIGGER_DEVICE_HEIGHT,
   TABS_TRIGGER_TEXT_CLASS,
+  TABS_TRIGGER_WEB_HEIGHT,
   type TabsContentProps,
   type TabsListProps,
   type TabsProps,
@@ -231,6 +233,8 @@ function TabsTrigger({
 
   const styling = cn(
     TABS_TRIGGER_CLASS,
+    // 30px in a browser, so the framed list is 40px, the row's height, as the web half's is.
+    Platform.OS === "web" ? TABS_TRIGGER_WEB_HEIGHT : TABS_TRIGGER_DEVICE_HEIGHT,
     // 44pt on device, a finger's target, and the list grows to hold it: the scroller clips a touch
     // at its edge, so the tab has to be that tall itself rather than reach it with a `hitSlop`.
     touchRowClass(),

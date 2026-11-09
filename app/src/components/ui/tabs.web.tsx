@@ -6,6 +6,7 @@ import {
   TABS_LIST_INSET,
   TABS_TRIGGER_CLASS,
   TABS_TRIGGER_TEXT_CLASS,
+  TABS_TRIGGER_WEB_HEIGHT,
   type TabsContentProps,
   type TabsListProps,
   type TabsProps,
@@ -125,6 +126,7 @@ function TabsTrigger({
         "[&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
         "inline-flex shrink-0 whitespace-nowrap transition-all focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50 text-foreground/60 hover:bg-hover hover:text-foreground data-[state=inactive]:focus-visible:bg-hover data-[state=inactive]:focus-visible:text-foreground data-[state=active]:bg-active/40 data-[state=active]:text-foreground data-[state=active]:hover:bg-active/60 data-[state=active]:focus-visible:bg-active/60",
         TABS_TRIGGER_CLASS,
+        TABS_TRIGGER_WEB_HEIGHT,
         TABS_TRIGGER_TEXT_CLASS,
         className,
       )}

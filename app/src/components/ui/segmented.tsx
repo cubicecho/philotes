@@ -292,12 +292,16 @@ const SegmentedButton = React.forwardRef<React.ElementRef<typeof Pressable>, Seg
           onPress?.(event);
         }}
         className={cn(
-          // Inside the frame a pill is a tab: 40px, the height of an `Input` and a default
-          // `Button`, and 44pt on device, with `rounded-sm`, the radius nested in the frame's. It
-          // is that tall itself on device rather than by a `hitSlop`, as a tab is, so a framed
-          // segmented control and a tab list are one height side by side (#537).
+          // Inside the frame a pill is a tab, with `rounded-sm`, the radius nested in the frame's:
+          // 30px on the web, so the frame is 40px, the height of an `Input` and a default
+          // `Button`; 44pt on device, that tall itself rather than by a `hitSlop`, as a tab is. A
+          // framed segmented control and a tab list are then one height side by side (#537).
           group?.framed
-            ? cn("h-10 justify-center rounded-sm px-3", touchRowClass())
+            ? cn(
+                "justify-center rounded-sm px-3",
+                Platform.OS === "web" ? "h-7.5" : "h-10",
+                touchRowClass(),
+              )
             : "rounded-md px-3 py-1.5",
           // The current pill is the chosen tint, a step further under the pointer, focused and
           // pressed; another looks hovered then, as `RadioGroup`'s segments do. Neither draws a ring.
