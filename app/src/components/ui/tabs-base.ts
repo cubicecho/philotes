@@ -42,7 +42,8 @@ export type TabsTriggerProps = {
    * The far end of the tab, after its label: a dot for unsaved changes or a server in error, a
    * count. What it says is part of the tab's name, so a dot is `<Badge variant="warning"
    * label="Unsaved changes" />`, which is read as "Device, Unsaved changes", and not a bare
-   * coloured view, which is read as nothing.
+   * coloured view, which is read as nothing. It sits in a ring of the list's background, so a dot
+   * shows on the chosen tab's tint, and it fits the tab's height: a dot, or a `Badge` with a count.
    */
   trailingSlot?: SlotNode | undefined;
   /**
@@ -87,3 +88,10 @@ export const TABS_TRIGGER_WEB_HEIGHT = "h-7.5";
 export const TABS_TRIGGER_DEVICE_HEIGHT = "h-10";
 /** The type of a tab's label. */
 export const TABS_TRIGGER_TEXT_CLASS = "text-sm font-semibold";
+/**
+ * Round `trailingSlot`, a ring of the list's own background: a status dot on the chosen tab's
+ * tint, or on it under the pointer, is under 3:1 in some palettes (2:1 at the `/60` step), and on
+ * the background it is 4.5:1 or more in every one (WCAG 1.4.11). On a tab at rest it is the list's
+ * colour, and not there.
+ */
+export const TABS_TRIGGER_TRAILING_CLASS = "items-center rounded-full bg-background p-0.5";

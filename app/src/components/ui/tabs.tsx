@@ -21,6 +21,7 @@ import {
   TABS_TRIGGER_CLASS,
   TABS_TRIGGER_DEVICE_HEIGHT,
   TABS_TRIGGER_TEXT_CLASS,
+  TABS_TRIGGER_TRAILING_CLASS,
   TABS_TRIGGER_WEB_HEIGHT,
   type TabsContentProps,
   type TabsListProps,
@@ -33,7 +34,7 @@ import {
   useRovingFocus,
   useRovingItem,
 } from "@/lib/roving-focus";
-import { cn, FOCUS_EDGE, touchRowClass } from "@/lib/utils";
+import { cn, FOCUS_EDGE, hasSlot, touchRowClass } from "@/lib/utils";
 
 type TabsState = { value: string; setValue: (value: string) => void };
 
@@ -253,7 +254,9 @@ function TabsTrigger({
   const inside = (
     <>
       {label(children, cn(TABS_TRIGGER_TEXT_CLASS, color))}
-      {trailingSlot}
+      {hasSlot(trailingSlot) === false ? null : (
+        <View className={cn("flex-row", TABS_TRIGGER_TRAILING_CLASS)}>{trailingSlot}</View>
+      )}
     </>
   );
 
