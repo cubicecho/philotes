@@ -1,7 +1,7 @@
 import type { FieldPolicy, NormalizedCacheObject } from '@apollo/client';
 import { scalarTypePolicies } from '@/__generated__/type-policies';
 import { dateTypePolicy } from '@/lib/date-type-policy';
-import { localIsoDate, parseLocalDay } from '@/lib/local-date';
+import { dayOf, dayToDate, parseDay } from '@/lib/day';
 
 // The cache as text, for the copy a device keeps between runs. The cache holds `Date` objects where
 // the API sends dates, and plain JSON would bring every one of them back as a string.
@@ -50,7 +50,7 @@ export function encodeCache(data: NormalizedCacheObject): string {
     const original = this[field];
     // A day is written as the day it is here, so that it is the same day wherever it is read back.
     const isDay = original instanceof Date && datePolicyOf(this, field) === dateTypePolicy;
-    return isDay ? localIsoDate(original) : value;
+    return isDay ? (dayOf(original) ?? value) : value;
   });
 }
 
@@ -68,7 +68,11 @@ export function decodeCache(text: string): NormalizedCacheObject | null {
       if (policy === undefined || typeof value !== 'string') {
         return value;
       }
-      return policy === dateTypePolicy ? parseLocalDay(value) : new Date(value);
+      if (policy === dateTypePolicy) {
+        const day = parseDay(value);
+        return day === undefined ? null : dayToDate(day);
+      }
+      return new Date(value);
     });
   } catch {
     return null;

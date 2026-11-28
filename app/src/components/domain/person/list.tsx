@@ -8,14 +8,15 @@ import { LabelChip } from '@/components/domain/label/label-chip';
 import { Avatar } from '@/components/domain/person/avatar';
 import { QuickLogDialog } from '@/components/domain/person/quick-log';
 import { EmptyState } from '@/components/empty-state';
+import { FilterBar } from '@/components/filter-bar';
 import { ListItem } from '@/components/list-item';
 import { PageLayout } from '@/components/page-layout';
 import { Button } from '@/components/ui/button';
-import { Search, Trash2, X } from '@/components/ui/icons';
+import { Search, Trash2 } from '@/components/ui/icons';
 import { SearchInput } from '@/components/ui/search-input';
+import { formatAgo } from '@/lib/format';
 import { personName } from '@/lib/person-name';
 import { type ContactValue, primaryEmail, primaryPhone } from '@/lib/primary-contact';
-import { relativeTime } from '@/lib/relative-time';
 import { cn } from '@/lib/utils';
 
 /** One of a person's contact values, as far as the list needs it. */
@@ -120,7 +121,11 @@ function PersonRow({ person, divided, onDeletePress, onLogPress, activeLabelIds 
       onPress={() => router.push(`/persons/${person.id}`)}
       leadingSlot={<Avatar name={name} avatarPath={person.avatarPath} size="md" />}
       title={name}
-      description={person.lastContactedAt ? `Last contact: ${relativeTime(person.lastContactedAt)}` : (email ?? '')}
+      description={
+        person.lastContactedAt
+          ? `Last contact: ${formatAgo(person.lastContactedAt, undefined, { by: 'day' })}`
+          : (email ?? '')
+      }
       meta={
         person.labels.length > 0 ? (
           <View className="hidden max-w-64 flex-row flex-wrap justify-end gap-1 sm:flex">
@@ -185,9 +190,16 @@ export interface PersonListProps {
   activeLabelIds: string[];
   /** Called with a label's id to turn its filter on or off. */
   onToggleLabel: (id: string) => void;
-  /** The search text. */
+  /** The search text, as the box holds it. */
   q: string;
+  /** Called with the box's text on every key. */
   onSearchChange: (q: string) => void;
+  /** Called with the box's text once typing has paused, at once on Enter or when the box is emptied. */
+  onSearchSettled: (q: string) => void;
+  /** How long typing has to pause before `onSearchSettled`, in milliseconds. */
+  searchDebounceMs: number;
+  /** Empties the search, both the box and what is searched for: part of Clear filters. */
+  onClearSearch: () => void;
   loading?: boolean;
   /** The chosen sort, one of the `SortOption` values. */
   sortValue: string;
@@ -215,6 +227,9 @@ export function PersonList({
   onToggleLabel,
   q,
   onSearchChange,
+  onSearchSettled,
+  searchDebounceMs,
+  onClearSearch,
   loading = false,
   sortValue,
   onSortChange,
@@ -230,7 +245,7 @@ export function PersonList({
   const hasFilters = q.trim().length > 0 || activeLabelIds.length > 0;
 
   const handleClearFilters = () => {
-    onSearchChange('');
+    onClearSearch();
     for (const id of activeLabelIds) {
       onToggleLabel(id);
     }
@@ -295,43 +310,47 @@ export function PersonList({
           </View>
         }
         headerContentSlot={
-          <View className="gap-3">
-            <View className="flex-row items-center gap-2">
-              <View className="min-w-0 flex-1">
-                <SearchInput
-                  label="Search people"
-                  placeholder="Search by name, email or phone…"
-                  value={q}
-                  onChangeText={onSearchChange}
-                />
-              </View>
-              <View className="shrink-0">
-                <Combobox
-                  aria-label="Sort people"
-                  options={SORT_OPTIONS}
-                  value={sortValue}
-                  onValueChange={onSortChange}
-                />
-              </View>
-            </View>
-            {allLabels.length > 0 && (
-              <View className="flex-row flex-wrap items-center gap-1.5">
-                {allLabels.map((l) => (
-                  <LabelChip
-                    key={l.id}
-                    label={l.label}
-                    color={l.color}
-                    selected={activeLabelSet.has(l.id)}
-                    onPress={() => onToggleLabel(l.id)}
-                    onRemove={activeLabelSet.has(l.id) ? () => onToggleLabel(l.id) : undefined}
+          <FilterBar
+            contentSlot={
+              <>
+                <View className="min-w-48 flex-1">
+                  <SearchInput
+                    label="Search people"
+                    placeholder="Search by name, email or phone…"
+                    value={q}
+                    onChangeText={onSearchChange}
+                    onSettledText={onSearchSettled}
+                    debounce={searchDebounceMs}
                   />
-                ))}
-                {hasFilters && (
-                  <Button variant="ghost" size="xs" content="Clear" iconSlot={<X />} onPress={handleClearFilters} />
+                </View>
+                <View className="shrink-0">
+                  <Combobox
+                    aria-label="Sort people"
+                    options={SORT_OPTIONS}
+                    value={sortValue}
+                    onValueChange={onSortChange}
+                  />
+                </View>
+                {allLabels.length > 0 && (
+                  // A line of its own, under the search and the sort, as wide as the bar.
+                  <View className="w-full flex-row flex-wrap items-center gap-1.5">
+                    {allLabels.map((l) => (
+                      <LabelChip
+                        key={l.id}
+                        label={l.label}
+                        color={l.color}
+                        selected={activeLabelSet.has(l.id)}
+                        onPress={() => onToggleLabel(l.id)}
+                        onRemove={activeLabelSet.has(l.id) ? () => onToggleLabel(l.id) : undefined}
+                      />
+                    ))}
+                  </View>
                 )}
-              </View>
-            )}
-          </View>
+              </>
+            }
+            isFiltered={hasFilters}
+            onClear={handleClearFilters}
+          />
         }
         contentSlot={
           persons.length === 0 ? (

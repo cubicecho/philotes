@@ -37,7 +37,9 @@ type ColorDotProps = {
 };
 
 /**
- * A small round colour swatch standing in for a category, status or tag.
+ * A small round colour swatch standing in for a category or a tag, in a colour someone picked. A
+ * status (live, failing, unsaved) is `Badge`'s dot, whose colours are the status tokens and which
+ * pulses.
  *
  * A hex colour is drawn through `hexToAccent`, as `ColorBar` draws its stripe: a dot that means
  * something is a mark someone has to see, 3:1 from what it sits on (WCAG 1.4.11), and a picked

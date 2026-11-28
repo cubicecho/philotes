@@ -15,7 +15,7 @@ import { ImportantDateDialog, type ImportantDateFormValue } from '@/components/d
 import { ImportantDateRow } from '@/components/domain/person/important-date-row';
 import { SectionAdd } from '@/components/domain/person/section-add';
 import { EmptyState } from '@/components/empty-state';
-import { localIsoDate } from '@/lib/local-date';
+import { dayOf } from '@/lib/day';
 import { personName } from '@/lib/person-name';
 
 /** Every milestone an important date can mark. */
@@ -79,7 +79,7 @@ export function ImportantDatesSection({ person, allLabels, allPersons, onChanged
                 id={d.id}
                 personId={person.id}
                 name={d.name}
-                date={d.date instanceof Date ? localIsoDate(d.date) : d.date}
+                date={d.date instanceof Date ? (dayOf(d.date) ?? '') : d.date}
                 kind={d.kind}
                 hasYear={d.hasYear}
                 description={d.description}

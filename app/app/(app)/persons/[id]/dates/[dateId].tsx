@@ -11,7 +11,7 @@ import { LoadState } from '@/components/load-state';
 import { PageLayout } from '@/components/page-layout';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft } from '@/components/ui/icons';
-import { formatDay } from '@/lib/local-date';
+import { dayOf, formatDay } from '@/lib/day';
 import { useAllRows } from '@/lib/use-all-rows';
 
 const GET_DATE_DETAIL = graphql(`
@@ -81,7 +81,8 @@ export default function ImportantDateDetailPage() {
     .map((note) => ({ id: note.id, body: note.body, labels: note.labels ?? [] }))
     .filter((note) => note.labels.some((l) => dateLabelIds.has(l.id)));
 
-  const dayLabel = formatDay(date.date, date.hasYear);
+  // A day with no year known is written without one: a birthday kept as a month and a day.
+  const dayLabel = formatDay(dayOf(date.date) ?? '', date.hasYear ? 'long' : 'short');
 
   return (
     <PageLayout

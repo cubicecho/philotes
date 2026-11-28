@@ -2,8 +2,8 @@ import { useRouter } from 'expo-router';
 import { UserPlus } from '@/components/app-icons';
 import { Avatar } from '@/components/domain/person/avatar';
 import { ListItem } from '@/components/list-item';
+import { formatAgo } from '@/lib/format';
 import { personName } from '@/lib/person-name';
-import { relativeTime } from '@/lib/relative-time';
 import { Widget } from './widget';
 
 /** A person as the recently-added card shows them. */
@@ -30,7 +30,7 @@ export function RecentlyAdded({ persons }: { persons: RecentPerson[] }) {
           key={p.id}
           leadingSlot={<Avatar name={personName(p)} avatarPath={p.avatarPath} size="sm" />}
           title={personName(p)}
-          meta={relativeTime(p.createdAt)}
+          meta={formatAgo(p.createdAt, undefined, { by: 'day' })}
           onPress={() => router.push(`/persons/${p.id}`)}
         />
       ))}

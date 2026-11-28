@@ -1,6 +1,6 @@
 import { InMemoryCache } from '@apollo/client';
 import { parse } from 'graphql';
-import { describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { scalarTypePolicies } from '@/__generated__/type-policies';
 import { CACHE_FORMAT, decodeCache, encodeCache } from '@/lib/cache-codec';
 
@@ -92,5 +92,30 @@ describe('the stored cache', () => {
     expect(decodeCache('not json')).toBeNull();
     expect(decodeCache('null')).toBeNull();
     expect(decodeCache('{"format":1}')).toBeNull();
+  });
+});
+
+// A day is held as its local midnight, so the zone decides which UTC day that midnight falls on: the
+// day before east of Greenwich, the same day west of it. The day written must be the local one in both.
+describe.each(['Europe/Berlin', 'America/Los_Angeles'])('the stored cache in %s', (timeZone) => {
+  const originalTimeZone = process.env.TZ;
+
+  beforeAll(() => {
+    process.env.TZ = timeZone;
+  });
+
+  afterAll(() => {
+    process.env.TZ = originalTimeZone;
+  });
+
+  it('writes the local day, and reads it back as that day', () => {
+    const text = encodeCache(filledCache().extract());
+    expect(text).toContain('"date":"1815-12-10"');
+
+    const restored = new InMemoryCache({ typePolicies: scalarTypePolicies });
+    restored.restore(decodeCache(text) ?? {});
+    const after = restored.readQuery<{ persons: Array<{ importantDates: Array<{ date: Date }> }> }>({ query: PERSON });
+    const date = after?.persons[0]?.importantDates[0]?.date;
+    expect([date?.getFullYear(), date?.getMonth(), date?.getDate()]).toEqual([1815, 11, 10]);
   });
 });

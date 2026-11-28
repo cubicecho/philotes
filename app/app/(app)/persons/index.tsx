@@ -1,6 +1,6 @@
 import { useMutation } from '@apollo/client';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { graphql } from '@/__generated__/gql';
 import { ContactTypeEnum, OrderDirection, type PersonFilters, type PersonRowFragment } from '@/__generated__/graphql';
 import { PersonFormDialog, type PersonFormValue } from '@/components/domain/person/form';
@@ -15,22 +15,6 @@ import { SEARCH_DEFAULTS } from '@/lib/defaults';
 import { invalidateQueryFields } from '@/lib/invalidate';
 import { PeopleSort, SortDirection, searchPeople, sortPeople } from '@/lib/people';
 import { useAllRows } from '@/lib/use-all-rows';
-
-/**
- * Delays a function until its calls have stopped for a while.
- *
- * @typeParam T - The function being delayed.
- * @param fn - What to call once the calls stop.
- * @param delay - How long the calls must pause, in milliseconds.
- * @returns A function that restarts the wait on every call and hands its last arguments to `fn`.
- */
-function debounce<T extends (...args: Parameters<T>) => void>(fn: T, delay: number): (...args: Parameters<T>) => void {
-  let timer: ReturnType<typeof setTimeout>;
-  return (...args) => {
-    clearTimeout(timer);
-    timer = setTimeout(() => fn(...args), delay);
-  };
-}
 
 // The search, which the server runs whenever it can be reached. The whole list is not read here:
 // `usePeople` keeps it.
@@ -140,18 +124,29 @@ export default function PersonsPage() {
   const sortField: PeopleSort = urlState.sortField ?? PeopleSort.Name;
   const sortDir: SortDirection = urlState.sortDir ?? SortDirection.Ascending;
 
-  // Local search state — instant input feedback, debounced URL/query update
+  // The box's text follows every key; the URL, and so the query, takes it once typing has paused.
   const [searchValue, setSearchValue] = useState(urlQ);
-
-  const debouncedSetUrlQ = useCallback(
-    debounce((q: string) => setUrlState({ q }), SEARCH_DEFAULTS.debounceMs),
-    // debounce returns a new function only once; setUrlState is stable
-    [],
-  );
+  // The box's text as of the last key, read by a settle that a render has not caught up with yet.
+  const typedText = useRef(urlQ);
 
   const handleSearchChange = (value: string): void => {
+    typedText.current = value;
     setSearchValue(value);
-    debouncedSetUrlQ(value);
+  };
+
+  const handleSearchSettled = (value: string): void => {
+    // Clear filters empties the box from outside it, which does not stop a wait already running for the
+    // text typed before, so a settle for text the box no longer holds is dropped.
+    const isStale = value !== typedText.current;
+    if (isStale) {
+      return;
+    }
+    setUrlState({ q: value });
+  };
+
+  const handleClearSearch = (): void => {
+    handleSearchChange('');
+    setUrlState({ q: '' });
   };
 
   // Build GraphQL query variables
@@ -306,6 +301,9 @@ export default function PersonsPage() {
           onToggleLabel={handleToggleLabel}
           q={searchValue}
           onSearchChange={handleSearchChange}
+          onSearchSettled={handleSearchSettled}
+          searchDebounceMs={SEARCH_DEFAULTS.debounceMs}
+          onClearSearch={handleClearSearch}
           loading={isSearching && search.loading}
           sortValue={`${sortField}-${sortDir}`}
           onSortChange={handleSortChange}

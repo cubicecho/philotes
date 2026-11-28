@@ -9,8 +9,7 @@ import { ListItem } from '@/components/list-item';
 import { LoadState } from '@/components/load-state';
 import { Button } from '@/components/ui/button';
 import { Plus } from '@/components/ui/icons';
-import { formatDate } from '@/lib/format';
-import { relativeTime } from '@/lib/relative-time';
+import { formatAgo, formatDate } from '@/lib/format';
 import { CreateApiKeyDialog } from './create-api-key-dialog';
 
 const MY_API_KEYS = graphql(`
@@ -56,7 +55,7 @@ const NO_DATE = '—';
  */
 function keyDetails(key: ApiKeyRecord): string {
   return [
-    `Last used: ${key.lastUsedAt ? relativeTime(new Date(key.lastUsedAt)) : 'never'}`,
+    `Last used: ${key.lastUsedAt ? formatAgo(key.lastUsedAt, undefined, { by: 'day' }) : 'never'}`,
     key.expiresAt ? `Expires: ${formatDate(key.expiresAt) || NO_DATE}` : null,
     `Created: ${formatDate(key.createdAt) || NO_DATE}`,
   ]
