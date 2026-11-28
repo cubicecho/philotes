@@ -2,7 +2,7 @@
 // every field these shapes name. Dates arrive as `Date` objects, made by the Apollo cache's scalar policies.
 
 import { ContactInfosKindEnum, ContactTypeEnum, ImportantDatesKindEnum } from '@/__generated__/graphql';
-import { localIsoDate } from '@/lib/local-date';
+import { dayOf } from '@/lib/day';
 
 /** One way to reach a person, as the CSV export reads it. */
 export interface ExportContactInfo {
@@ -109,7 +109,7 @@ function birthdayCell(person: ExportPerson): string {
   if (!birthday) {
     return '';
   }
-  const day = localIsoDate(birthday.date);
+  const day = dayOf(birthday.date) ?? '';
   const isYearless = birthday.hasYear === false;
   return isYearless ? `--${day.slice(YEAR_PREFIX_LENGTH)}` : day;
 }

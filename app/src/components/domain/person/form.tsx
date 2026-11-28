@@ -7,6 +7,7 @@ import { Alert } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { FieldRow, Form } from '@/components/ui/form';
 import type { PersonPrefill } from '@/lib/contact-intent';
+import { dayOf, dayToDate, parseDay } from '@/lib/day';
 import { ContactFrequency } from '@/lib/vocabulary';
 
 /** How often to stay in touch, as options; the empty value is no cadence. */
@@ -74,36 +75,20 @@ type PersonFormFields = z.infer<typeof personSchema>;
 const UNNAMED_MESSAGE = 'Give a name, a nickname or an organization.';
 
 /**
- * `YYYY-MM-DD` read as a local day: `new Date(str)` would be UTC midnight, the day before out west.
+ * A stored day as the date picker holds it: its local midnight.
  *
  * @param value - The day as a `YYYY-MM-DD` string, or a `Date`, which is returned as it is.
- * @returns Local midnight of that day, or `null` for a missing value or a string without all three parts.
+ * @returns Local midnight of that day, or `null` for a missing value or a string that is not a day.
  */
-function parseDay(value: string | Date | null | undefined): Date | null {
+function dayAsDate(value: string | Date | null | undefined): Date | null {
   if (!value) {
     return null;
   }
   if (value instanceof Date) {
     return value;
   }
-  const [year, month, day] = value.split('-').map(Number);
-  const isIncomplete = !year || !month || !day;
-  if (isIncomplete) {
-    return null;
-  }
-  return new Date(year, month - 1, day);
-}
-
-/**
- * A date's local calendar day, as the server stores it.
- *
- * @param date - The date; its local year, month and day are used.
- * @returns The day as `YYYY-MM-DD`.
- */
-function formatDay(date: Date): string {
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  return `${date.getFullYear()}-${month}-${day}`;
+  const day = parseDay(value);
+  return day === undefined ? null : dayToDate(day);
 }
 
 /** The person columns the form submits. */
@@ -186,7 +171,7 @@ export function PersonFormDialog({
     phone: prefill?.phone ?? '',
     contactFrequency: initialValues?.contactFrequency || NO_FREQUENCY,
     howWeMet: initialValues?.howWeMet ?? '',
-    firstMetDate: parseDay(initialValues?.firstMetDate),
+    firstMetDate: dayAsDate(initialValues?.firstMetDate),
     labelIds: initialValues?.labelIds ?? [],
   };
 
@@ -221,7 +206,7 @@ export function PersonFormDialog({
             about: value.about.trim() || null,
             contactFrequency: value.contactFrequency === NO_FREQUENCY ? null : value.contactFrequency,
             howWeMet: value.howWeMet || null,
-            firstMetDate: value.firstMetDate ? formatDay(value.firstMetDate) : null,
+            firstMetDate: value.firstMetDate ? (dayOf(value.firstMetDate) ?? null) : null,
           },
           email: value.email.trim() || null,
           phone: value.phone.trim() || null,

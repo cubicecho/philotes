@@ -5,8 +5,7 @@ import { ChannelIcon } from '@/components/domain/person/channel-icon';
 import { sentimentEmoji } from '@/components/domain/person/interaction-form';
 import { EmptyState } from '@/components/empty-state';
 import { SectionHeading } from '@/components/section-heading';
-import { formatDate } from '@/lib/format';
-import { relativeTime } from '@/lib/relative-time';
+import { formatAgo, formatDate } from '@/lib/format';
 import { cn } from '@/lib/utils';
 import { InteractionChannel } from '@/lib/vocabulary';
 
@@ -172,7 +171,7 @@ export function PersonTimeline({ interactions, importantDates }: PersonTimelineP
                   <View className="mb-1 flex-row items-baseline gap-2">
                     <Text className="font-medium text-foreground/60 text-xs">{formatDate(item.date)}</Text>
                     <Text className="text-foreground/60 text-xs">·</Text>
-                    <Text className="text-foreground/60 text-xs">{relativeTime(item.date)}</Text>
+                    <Text className="text-foreground/60 text-xs">{formatAgo(item.date, undefined, { by: 'day' })}</Text>
                   </View>
 
                   {item.type === 'interaction' ? (

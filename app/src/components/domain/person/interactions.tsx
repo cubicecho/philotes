@@ -18,7 +18,7 @@ import { EmptyState } from '@/components/empty-state';
 import { Button } from '@/components/ui/button';
 import { Pencil, Trash2 } from '@/components/ui/icons';
 import { EXCERPT_DEFAULTS } from '@/lib/defaults';
-import { relativeTime } from '@/lib/relative-time';
+import { formatAgo } from '@/lib/format';
 
 /** Logs an interaction. Shared with the quick log on the people list. */
 export const CREATE_INTERACTION = graphql(`
@@ -174,7 +174,9 @@ function InteractionRow({ interaction, allTags, onChanged }: InteractionRowProps
             <View className="min-w-0 flex-1 gap-0.5">
               {/* Date + sentiment */}
               <View className="flex-row items-center gap-2">
-                <Text className="text-xs text-foreground/60">{relativeTime(interaction.occurredAt)}</Text>
+                <Text className="text-xs text-foreground/60">
+                  {formatAgo(interaction.occurredAt, undefined, { by: 'day' })}
+                </Text>
                 {interaction.sentiment && (
                   <Text aria-label={interaction.sentiment} className="text-xs text-foreground">
                     {sentimentEmoji(interaction.sentiment)}

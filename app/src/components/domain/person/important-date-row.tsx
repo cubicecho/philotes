@@ -18,7 +18,7 @@ import { RowTags, type TagOption } from '@/components/domain/person/tag-picker';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Pencil, Trash2 } from '@/components/ui/icons';
-import { formatDay, parseLocalDay } from '@/lib/local-date';
+import { formatDay, parseDay } from '@/lib/day';
 
 const UPDATE_IMPORTANT_DATE = graphql(`
   mutation UpdateImportantDate(
@@ -109,7 +109,7 @@ export function ImportantDateRow({
 }: ImportantDateRowProps) {
   const recurrenceLabel = RECURRENCE_OPTIONS.find((o) => o.value === recurrence)?.label;
   const milestoneLabel = MILESTONE_TYPE_OPTIONS.find((o) => o.value === milestoneType)?.label;
-  const day = parseLocalDay(date);
+  const day = parseDay(date);
   const [editOpen, setEditOpen] = useState(false);
   const [attachTag] = useMutation(ATTACH_IMPORTANT_DATE_TAG);
   const [detachTag] = useMutation(DETACH_IMPORTANT_DATE_TAG);
@@ -151,7 +151,9 @@ export function ImportantDateRow({
               {description && <Text className="text-xs text-foreground/60">{description}</Text>}
             </View>
             <View className="flex-row flex-wrap items-center gap-1.5">
-              <Text className="text-xs text-foreground/60">{day ? formatDay(day, hasYear) : date}</Text>
+              <Text className="text-xs text-foreground/60">
+                {day ? formatDay(day, hasYear ? 'long' : 'short') : date}
+              </Text>
               {recurrenceLabel && <Badge variant="secondary">{recurrenceLabel}</Badge>}
               {milestoneLabel && <Badge variant="info">{milestoneLabel}</Badge>}
             </View>

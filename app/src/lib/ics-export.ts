@@ -1,8 +1,8 @@
 // RFC 5545 calendar export. The `GetAllEventsForExport` query in export-calendar-card.tsx must select
 // every field these shapes name. Dates arrive as `Date` objects, made by the Apollo cache's scalar policies.
 
+import { dayOf } from '@/lib/day';
 import { CALENDAR_EXPORT_DEFAULTS } from '@/lib/defaults';
-import { localIsoDate } from '@/lib/local-date';
 import { type NamedPerson, personName } from '@/lib/person-name';
 import { MS_PER_MINUTE } from '@/lib/time';
 import { Recurrence } from '@/lib/vocabulary';
@@ -74,7 +74,7 @@ function formatIcsDateTime(date: Date): string {
  * @returns The form `YYYYMMDD`.
  */
 function formatIcsDateOnly(date: Date): string {
-  return localIsoDate(date).replace(/-/g, '');
+  return (dayOf(date) ?? '').replace(/-/g, '');
 }
 
 /**

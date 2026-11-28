@@ -7,8 +7,9 @@ import { DialogLayout } from '@/components/dialog-layout';
 import { PropertyList, PropertyRow } from '@/components/property-list';
 import { Alert } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
-import { CopyButton } from '@/components/ui/copy-button';
 import { Form } from '@/components/ui/form';
+import { SecretReveal } from '@/components/ui/secret-reveal';
+import { addDays, today } from '@/lib/day';
 
 const MY_CREATE_API_KEY = graphql(`
   mutation MyCreateApiKey($input: CreateApiKeyInput!) {
@@ -62,10 +63,7 @@ interface CreateApiKeyDialogProps {
  * @returns The moment as `YYYY-MM-DDT00:00:00`, with no offset.
  */
 function expiryDate(days: number): string {
-  const d = new Date();
-  d.setDate(d.getDate() + days);
-  const pad = (n: number) => n.toString().padStart(2, '0');
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T00:00:00`;
+  return `${addDays(today(), days)}T00:00:00`;
 }
 
 /**
@@ -120,27 +118,25 @@ export function CreateApiKeyDialog({ open, onOpenChange, onCreated }: CreateApiK
         description="Copy the calendar URL below and paste it into your calendar app. The token will not be shown again."
         contentSlot={
           <View className="gap-4">
-            <Alert variant="warning" title="Store your token securely — it will not be shown again." />
+            <SecretReveal
+              value={state.token}
+              label="Raw Token"
+              copyLabel="Copy token"
+              title="Store your token securely — it will not be shown again."
+            />
             <PropertyList
               layout="stacked"
               contentSlot={
-                <>
-                  <PropertyRow
-                    label="Calendar Subscription URL"
-                    value={icalUrl}
-                    valueClassName="font-mono text-xs"
-                    hint={
-                      'Paste this URL into Google Calendar → "Other calendars" → "From URL", or Apple Calendar → File → New Calendar Subscription.'
-                    }
-                    actionSlot={<CopyButton value={icalUrl} label="Copy URL" />}
-                  />
-                  <PropertyRow
-                    label="Raw Token"
-                    value={state.token}
-                    valueClassName="font-mono text-xs"
-                    actionSlot={<CopyButton value={state.token} label="Copy token" />}
-                  />
-                </>
+                <PropertyRow
+                  label="Calendar Subscription URL"
+                  value={icalUrl}
+                  code
+                  copyValue={icalUrl}
+                  copyLabel="Copy URL"
+                  hint={
+                    'Paste this URL into Google Calendar → "Other calendars" → "From URL", or Apple Calendar → File → New Calendar Subscription.'
+                  }
+                />
               }
             />
           </View>
